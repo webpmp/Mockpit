@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ComponentRenderer, renderNotificationIcon } from './ComponentRenderer';
 import { BottomDock } from './BottomDock';
+import { VehicleBackground } from './VehicleBackground';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ActiveView, ComponentInstance, NotificationStackPosition, TransitionStyle } from '../types';
 import { COMPONENT_FLAGS } from '../config/componentFlags';
@@ -432,19 +433,31 @@ export const Canvas: React.FC = () => {
             </div>
           )}
 
-          {/* Figma-Style Uniform Canvas Grid */}
-          {!isPresentation && gridConfig.visible && (
-            <div
-              className="absolute inset-0 pointer-events-none z-0"
-              style={{
-                backgroundImage: `
-                  linear-gradient(to right, ${hexToRgba(gridConfig.color, gridConfig.opacity)} 1px, transparent 1px),
-                  linear-gradient(to bottom, ${hexToRgba(gridConfig.color, gridConfig.opacity)} 1px, transparent 1px)
-                `,
-                backgroundSize: `${gridConfig.size}px ${gridConfig.size}px`,
-              }}
-            />
-          )}
+          {/* Global Vehicle Background Silhouette Layer */}
+          <VehicleBackground />
+
+          {/* Figma-Style Uniform Canvas Grid Overlay */}
+          {!isPresentation && gridConfig.visible && (() => {
+            // Map user opacity setting (0% - 100%) to actual alpha % (3% - 18%)
+            // 0% setting -> 3% alpha (barely visible trace)
+            // 50% setting -> 10.5% alpha (clearly visible)
+            // 100% setting -> 18% alpha (full grid)
+            const userOpacity = typeof gridConfig.opacity === 'number' ? gridConfig.opacity : 20;
+            const alphaPercent = 3 + (Math.max(0, Math.min(100, userOpacity)) / 100) * 15;
+
+            return (
+              <div
+                className="absolute inset-0 pointer-events-none z-[2]"
+                style={{
+                  backgroundImage: `
+                    linear-gradient(to right, ${hexToRgba(gridConfig.color, alphaPercent)} 1px, transparent 1px),
+                    linear-gradient(to bottom, ${hexToRgba(gridConfig.color, alphaPercent)} 1px, transparent 1px)
+                  `,
+                  backgroundSize: `${gridConfig.size}px ${gridConfig.size}px`,
+                }}
+              />
+            );
+          })()}
 
           {/* Infotainment Dashboard Header Bar */}
           <div className="absolute top-0 left-0 right-0 h-10 px-8 bg-slate-950/90 backdrop-blur border-b border-slate-800/60 flex items-center justify-between text-xs font-mono text-slate-400 z-30 pointer-events-auto">
@@ -519,7 +532,7 @@ export const Canvas: React.FC = () => {
 
           {/* Empty Canvas Overlay in Editor Mode for Screen Views */}
           {!isPresentation && components.length === 0 && (
-            <div className="absolute inset-x-16 inset-y-20 border-2 border-dashed border-slate-800/80 rounded-3xl flex flex-col items-center justify-center text-slate-500 bg-slate-900/20 pointer-events-none">
+            <div className="absolute inset-x-16 inset-y-20 z-10 border-2 border-dashed border-slate-800/80 rounded-3xl flex flex-col items-center justify-center text-slate-500 bg-slate-900/20 pointer-events-none">
               <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 mb-3 text-sky-400">
                 {activeView === 'navigation' && <MapPin className="w-8 h-8" />}
                 {activeView === 'media' && <Music className="w-8 h-8" />}
@@ -549,7 +562,7 @@ export const Canvas: React.FC = () => {
           {/* Editor Canvas for Screens or Home Screen Presentation Renderer */}
           {!isPresentation || (isPresentation && activeView === 'home') ? (
             <div
-              className={`absolute inset-x-0 top-0 ${
+              className={`absolute inset-x-0 top-0 z-10 ${
                 isPresentation ? 'bottom-[84px] overflow-hidden pointer-events-none' : 'bottom-0'
               }`}
             >

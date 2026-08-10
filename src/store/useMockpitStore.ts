@@ -16,6 +16,7 @@ import {
   ScreenMode,
   TransitionStyle,
   VehicleState,
+  VehicleBackgroundSettings,
 } from '../types';
 
 const LOCAL_STORAGE_KEY = 'mockpit_components_v1';
@@ -27,6 +28,7 @@ const LOCAL_STORAGE_DOCK_ORDER_KEY = 'mockpit_dock_order_v1';
 const LOCAL_STORAGE_SCREENS_KEY = 'mockpit_screens_v1';
 const LOCAL_STORAGE_PALETTE_KEY = 'mockpit_palette_v1';
 const LOCAL_STORAGE_GRID_KEY = 'mockpit_grid_config_v1';
+const LOCAL_STORAGE_VEHICLE_BG_KEY = 'mockpit_vehicle_bg_config_v1';
 
 export const DEFAULT_SCREENS: ScreenDefinition[] = [
   { id: 'home', name: 'Home', order: 0, transitionStyle: 'fade', parentId: null },
@@ -448,6 +450,43 @@ function loadSavedGridConfig(): GridConfig {
   };
 }
 
+export const DEFAULT_VEHICLE_BACKGROUND: VehicleBackgroundSettings = {
+  enabled: true,
+  vehicle: '/vehicles/processed/vehicle-01.png',
+  opacity: 8,
+  blur: 0,
+  position: 'center',
+  scale: 100,
+  blendMode: 'auto',
+};
+
+function loadSavedVehicleBackground(): VehicleBackgroundSettings {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_VEHICLE_BG_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (typeof parsed === 'object' && parsed !== null) {
+        let vehiclePath = typeof parsed.vehicle === 'string' ? parsed.vehicle : '/vehicles/processed/vehicle-01.png';
+        if (vehiclePath.startsWith('/vehicles/') && !vehiclePath.includes('/processed/')) {
+          vehiclePath = vehiclePath.replace('/vehicles/', '/vehicles/processed/');
+        }
+        return {
+          enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : true,
+          vehicle: vehiclePath,
+          opacity: typeof parsed.opacity === 'number' ? Math.max(0, Math.min(15, parsed.opacity)) : 8,
+          blur: typeof parsed.blur === 'number' ? Math.max(0, Math.min(20, parsed.blur)) : 0,
+          position: parsed.position || 'center',
+          scale: typeof parsed.scale === 'number' ? Math.max(20, Math.min(300, parsed.scale)) : 100,
+          blendMode: ['auto', 'normal', 'multiply'].includes(parsed.blendMode) ? parsed.blendMode : 'auto',
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load vehicle background from localStorage', e);
+  }
+  return DEFAULT_VEHICLE_BACKGROUND;
+}
+
 interface MockpitStore {
   vehicleState: VehicleState;
   screens: ScreenDefinition[];
@@ -476,6 +515,8 @@ interface MockpitStore {
   toggleGridVisibility: () => void;
   toggleSnapToGrid: () => void;
   resnapAllComponentsToGrid: (newSize: number) => void;
+  vehicleBackground: VehicleBackgroundSettings;
+  setVehicleBackground: (config: Partial<VehicleBackgroundSettings>) => void;
 
   // Dynamic Screen Management
   addScreen: (name: string, transitionStyle?: TransitionStyle, parentId?: string | null) => string;
@@ -701,6 +742,18 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       };
     });
   },
+
+  vehicleBackground: loadSavedVehicleBackground(),
+  setVehicleBackground: (partial) =>
+    set((state) => {
+      const updated = { ...state.vehicleBackground, ...partial };
+      try {
+        localStorage.setItem(LOCAL_STORAGE_VEHICLE_BG_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save vehicle background config to localStorage', e);
+      }
+      return { vehicleBackground: updated };
+    }),
 
   addScreen: (name, transitionStyle = 'fade', parentId = null) => {
     const state = get();

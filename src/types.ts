@@ -1,6 +1,29 @@
 export type GearState = 'P' | 'R' | 'N' | 'D';
 export type DriveModeState = 'Eco' | 'Normal' | 'Sport';
 
+export type VehicleBackgroundPosition =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'center-left'
+  | 'center'
+  | 'center-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
+
+export type VehicleBackgroundBlendMode = 'auto' | 'normal' | 'multiply';
+
+export interface VehicleBackgroundSettings {
+  enabled: boolean;
+  vehicle: string | null;
+  opacity: number;
+  blur: number;
+  position: VehicleBackgroundPosition;
+  scale: number;
+  blendMode: VehicleBackgroundBlendMode;
+}
+
 export type GridConfig = {
   visible: boolean;
   size: number;

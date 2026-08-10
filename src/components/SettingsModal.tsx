@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, X, Palette, Check, Info, Sparkles, RefreshCw, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2 } from 'lucide-react';
+import { Settings, X, Palette, Check, Info, Sparkles, RefreshCw, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2, Car } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
-import { BUILTIN_PALETTES, PaletteConfig, PalettePresetId } from '../types';
+import { BUILTIN_PALETTES, PaletteConfig, PalettePresetId, VehicleBackgroundPosition } from '../types';
+import { getAvailableVehicles } from '../utils/vehicleAssets';
 
 export const SettingsModal: React.FC = () => {
   const isSettingsOpen = useMockpitStore((s) => s.isSettingsOpen);
@@ -14,6 +15,11 @@ export const SettingsModal: React.FC = () => {
   const toggleGridVisibility = useMockpitStore((s) => s.toggleGridVisibility);
   const toggleSnapToGrid = useMockpitStore((s) => s.toggleSnapToGrid);
   const resnapAllComponentsToGrid = useMockpitStore((s) => s.resnapAllComponentsToGrid);
+
+  const vehicleBackground = useMockpitStore((s) => s.vehicleBackground);
+  const setVehicleBackground = useMockpitStore((s) => s.setVehicleBackground);
+
+  const availableVehicles = getAvailableVehicles();
 
   // Local state for custom color pickers
   const [customPrimary, setCustomPrimary] = useState(activePalette.primary || '#38bdf8');
@@ -516,6 +522,231 @@ export const SettingsModal: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Global Vehicle Background Silhouette Section */}
+        <div className="space-y-3.5 pt-4 border-t border-slate-800/80">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-200 font-mono">
+              <Car className="w-4 h-4 text-sky-400" />
+              <span>VEHICLE BACKGROUND SILHOUETTE</span>
+            </div>
+            <button
+              onClick={() => setVehicleBackground({ enabled: !vehicleBackground.enabled })}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer border ${
+                vehicleBackground.enabled
+                  ? 'bg-sky-500/15 border-sky-500/40 text-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.2)]'
+                  : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              <span>VEHICLE BG {vehicleBackground.enabled ? 'ON' : 'OFF'}</span>
+            </button>
+          </div>
+
+          {vehicleBackground.enabled && (
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3.5">
+              {/* Vehicle Asset Selection with Thumbnails */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-slate-300 font-mono">
+                    Vehicle Model
+                  </label>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    {availableVehicles.length} assets available
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1.5 bg-slate-900/80 rounded-lg border border-slate-800 custom-scrollbar">
+                  {/* "None" option */}
+                  <button
+                    onClick={() => setVehicleBackground({ vehicle: null })}
+                    className={`p-2 rounded-lg border text-left flex flex-col items-center justify-center gap-1 transition-all cursor-pointer min-h-[72px] ${
+                      !vehicleBackground.vehicle
+                        ? 'bg-sky-500/15 border-sky-500 text-sky-300 shadow-sm'
+                        : 'bg-slate-950 border-slate-800/80 hover:border-slate-700 text-slate-400'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded bg-slate-900/80 border border-slate-800 flex items-center justify-center text-xs font-mono font-bold text-slate-500">
+                      Ø
+                    </div>
+                    <span className="text-[10px] font-mono truncate max-w-full text-center font-bold">
+                      None
+                    </span>
+                  </button>
+
+                  {availableVehicles.map((v) => {
+                    const isSelected =
+                      vehicleBackground.vehicle === v.url || vehicleBackground.vehicle === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => setVehicleBackground({ vehicle: v.url })}
+                        className={`p-1.5 rounded-lg border text-left flex flex-col items-center justify-between gap-1 transition-all cursor-pointer relative group ${
+                          isSelected
+                            ? 'bg-sky-500/15 border-sky-500 text-sky-300 shadow-sm ring-1 ring-sky-500/40'
+                            : 'bg-slate-950 border-slate-800/80 hover:border-slate-700 text-slate-400'
+                        }`}
+                      >
+                        <div className="w-full h-10 rounded bg-slate-900/90 border border-slate-800/60 p-1 flex items-center justify-center overflow-hidden">
+                          <img
+                            src={v.url}
+                            alt={v.name}
+                            className="w-full h-full object-contain filter contrast-125 brightness-110"
+                            loading="lazy"
+                          />
+                        </div>
+                        <span className="text-[10px] font-mono truncate max-w-full text-center font-bold text-slate-300 group-hover:text-slate-100">
+                          {v.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Opacity Slider (0% to 15%) */}
+              <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-slate-200 font-mono">
+                    Opacity (Subtle Silhouette)
+                  </label>
+                  <span className="text-xs font-mono font-bold text-sky-400">
+                    {vehicleBackground.opacity}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={15}
+                  value={vehicleBackground.opacity}
+                  onChange={(e) =>
+                    setVehicleBackground({ opacity: parseInt(e.target.value, 10) })
+                  }
+                  className="w-full accent-sky-400 cursor-pointer"
+                />
+                <div className="flex justify-between text-[9px] font-mono text-slate-500">
+                  <span>0% (Invisible)</span>
+                  <span>8% (Default)</span>
+                  <span>15% (Max)</span>
+                </div>
+              </div>
+
+              {/* Blur Slider (0px to 12px) */}
+              <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-slate-200 font-mono">
+                    Blur (Soft Atmosphere)
+                  </label>
+                  <span className="text-xs font-mono font-bold text-sky-400">
+                    {vehicleBackground.blur ?? 4}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={12}
+                  step={1}
+                  value={vehicleBackground.blur ?? 4}
+                  onChange={(e) =>
+                    setVehicleBackground({ blur: parseInt(e.target.value, 10) })
+                  }
+                  className="w-full accent-sky-400 cursor-pointer"
+                />
+                <div className="flex justify-between text-[9px] font-mono text-slate-500">
+                  <span>0px (Sharp)</span>
+                  <span>4px (Default)</span>
+                  <span>12px (Max Soft)</span>
+                </div>
+              </div>
+
+              {/* Position 3x3 Grid Selector */}
+              <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-2">
+                <label className="text-[11px] font-bold text-slate-200 font-mono block">
+                  Canvas Anchor Position
+                </label>
+                <div className="grid grid-cols-3 gap-1.5 w-52 mx-auto p-1 bg-slate-950 rounded-lg border border-slate-800">
+                  {[
+                    { id: 'top-left', label: 'Top Left' },
+                    { id: 'top-center', label: 'Top Ctr' },
+                    { id: 'top-right', label: 'Top Right' },
+                    { id: 'center-left', label: 'Ctr Left' },
+                    { id: 'center', label: 'Center' },
+                    { id: 'center-right', label: 'Ctr Right' },
+                    { id: 'bottom-left', label: 'Btm Left' },
+                    { id: 'bottom-center', label: 'Btm Ctr' },
+                    { id: 'bottom-right', label: 'Btm Right' },
+                  ].map((pos) => {
+                    const isPosSelected = vehicleBackground.position === pos.id;
+                    return (
+                      <button
+                        key={pos.id}
+                        onClick={() =>
+                          setVehicleBackground({ position: pos.id as VehicleBackgroundPosition })
+                        }
+                        className={`py-1.5 px-1 text-[9px] font-mono font-bold rounded border transition-all cursor-pointer text-center leading-none ${
+                          isPosSelected
+                            ? 'bg-sky-500/25 border-sky-500 text-sky-300 shadow-sm'
+                            : 'bg-slate-900 border-slate-800/80 text-slate-500 hover:text-slate-300'
+                        }`}
+                        title={`Anchor: ${pos.id}`}
+                      >
+                        {pos.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Scale & Blend Mode Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {/* Scale */}
+                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-200 font-mono">Scale</label>
+                    <span className="text-xs font-mono font-bold text-sky-400">
+                      {vehicleBackground.scale}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={50}
+                    max={200}
+                    step={5}
+                    value={vehicleBackground.scale}
+                    onChange={(e) =>
+                      setVehicleBackground({ scale: parseInt(e.target.value, 10) })
+                    }
+                    className="w-full accent-sky-400 cursor-pointer"
+                  />
+                </div>
+
+                {/* Blend Mode */}
+                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-200 font-mono block">
+                    Blend Mode
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {(['auto', 'normal', 'multiply'] as const).map((bm) => {
+                      const isBmSelected = vehicleBackground.blendMode === bm;
+                      return (
+                        <button
+                          key={bm}
+                          onClick={() => setVehicleBackground({ blendMode: bm })}
+                          className={`py-1 text-[10px] font-mono font-bold capitalize rounded border transition-all cursor-pointer text-center ${
+                            isBmSelected
+                              ? 'bg-sky-500/25 border-sky-500 text-sky-300'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          {bm}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Live Integration Info Callout */}
