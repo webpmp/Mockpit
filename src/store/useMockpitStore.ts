@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { SEED_COMPONENTS } from '../data/seedProject';
 import {
+  ActiveInputState,
   ActiveView,
   Binding,
   BUILTIN_PALETTES,
@@ -9,6 +10,7 @@ import {
   CopiedComponentState,
   getComponentCategory,
   GridConfig,
+  KeyboardSlideDirection,
   NotificationStackPosition,
   PaletteConfig,
   PalettePresetId,
@@ -17,6 +19,9 @@ import {
   TransitionStyle,
   VehicleState,
   VehicleBackgroundSettings,
+  EgoVehicleType,
+  TextScalePreset,
+  TEXT_SCALE_FACTORS,
 } from '../types';
 
 const LOCAL_STORAGE_KEY = 'mockpit_components_v1';
@@ -27,8 +32,35 @@ const LOCAL_STORAGE_STATE_KEY = 'mockpit_vehicle_state_v1';
 const LOCAL_STORAGE_DOCK_ORDER_KEY = 'mockpit_dock_order_v1';
 const LOCAL_STORAGE_SCREENS_KEY = 'mockpit_screens_v1';
 const LOCAL_STORAGE_PALETTE_KEY = 'mockpit_palette_v1';
+const LOCAL_STORAGE_TEXT_SCALE_KEY = 'mockpit_text_scale_v1';
 const LOCAL_STORAGE_GRID_KEY = 'mockpit_grid_config_v1';
 const LOCAL_STORAGE_VEHICLE_BG_KEY = 'mockpit_vehicle_bg_config_v1';
+const LOCAL_STORAGE_KEYBOARD_DIRECTION_KEY = 'mockpit_keyboard_slide_direction_v1';
+const LOCAL_STORAGE_EGO_VEHICLE_TYPE_KEY = 'mockpit_ego_vehicle_type_v1';
+
+const loadSavedEgoVehicleType = (): EgoVehicleType => {
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_EGO_VEHICLE_TYPE_KEY);
+    if (val && ['compactSedan', 'midsizeSedan', 'luxurySedan', 'truck', 'coupe'].includes(val)) {
+      return val as EgoVehicleType;
+    }
+  } catch (e) {
+    console.error('Failed to load ego vehicle type from localStorage', e);
+  }
+  return 'midsizeSedan';
+};
+
+const loadSavedKeyboardSlideDirection = (): KeyboardSlideDirection => {
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_KEYBOARD_DIRECTION_KEY);
+    if (val && ['bottom', 'top', 'left', 'right'].includes(val)) {
+      return val as KeyboardSlideDirection;
+    }
+  } catch (e) {
+    console.error('Failed to load keyboard slide direction from localStorage', e);
+  }
+  return 'bottom';
+};
 
 export const DEFAULT_SCREENS: ScreenDefinition[] = [
   { id: 'home', name: 'Home', order: 0, transitionStyle: 'fade', parentId: null },
@@ -48,10 +80,13 @@ const INITIAL_VEHICLE_STATE: VehicleState = {
   isCharging: false,
   doorOpen: false,
   driveMode: 'Normal',
+  headlights: 'Off',
   signalBars: 4,
   mapLat: 37.3318,
   mapLng: -122.0311,
   cruiseControlActive: false,
+  blindSpotWarning: false,
+  proximityWarning: false,
 };
 
 // Remove warning components from home screen seed components since warning is in notificationComponents
@@ -211,40 +246,56 @@ const NAVIGATION_SEED_COMPONENTS: ComponentInstance[] = [
   },
 ];
 
+const MEDIA_SEED_COMPONENTS: ComponentInstance[] = [
+  {
+    id: 'comp-media-player-1',
+    type: 'media',
+    x: 40,
+    y: 40,
+    width: 900,
+    height: 520,
+    staticProps: {
+      service: 'Spotify',
+      title: 'Starboy',
+      artist: 'The Weeknd ft. Daft Punk',
+      album: 'Starboy',
+      label: 'Music Media Player',
+    },
+    bindings: [],
+  },
+];
+
 const INITIAL_COMPONENTS_BY_SCREEN: Record<ActiveView, ComponentInstance[]> = {
   home: HOME_SEED_COMPONENTS,
   navigation: NAVIGATION_SEED_COMPONENTS,
-  media: [],
+  media: MEDIA_SEED_COMPONENTS,
   phone: [],
 };
 
 export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number; height: number; maxHeight: number }> = {
-  battery: { width: 340, height: 130, maxHeight: 250 },
-  gear: { width: 200, height: 140, maxHeight: 250 },
-  speed: { width: 220, height: 150, maxHeight: 280 },
-  warning: { width: 380, height: 100, maxHeight: 250 },
-  charging: { width: 340, height: 120, maxHeight: 250 },
-  map: { width: 440, height: 280, maxHeight: 950 },
-  media: { width: 340, height: 150, maxHeight: 350 },
-  climate: { width: 280, height: 140, maxHeight: 250 },
-  phone: { width: 320, height: 130, maxHeight: 250 },
-  driveMode: { width: 280, height: 140, maxHeight: 250 },
-  tirePressure: { width: 320, height: 160, maxHeight: 300 },
-  navHome: { width: 380, height: 140, maxHeight: 250 },
-  navDestination: { width: 380, height: 200, maxHeight: 350 },
-  navSearch: { width: 380, height: 220, maxHeight: 350 },
-  navTripEstimate: { width: 380, height: 160, maxHeight: 300 },
-  subnav: { width: 480, height: 60, maxHeight: 120 },
+  battery: { width: 340, height: 140, maxHeight: 1080 },
+  gear: { width: 200, height: 140, maxHeight: 1080 },
+  speed: { width: 220, height: 160, maxHeight: 1080 },
+  warning: { width: 380, height: 140, maxHeight: 1080 },
+  charging: { width: 340, height: 140, maxHeight: 1080 },
+  map: { width: 440, height: 280, maxHeight: 1080 },
+  media: { width: 720, height: 480, maxHeight: 1080 },
+  climate: { width: 320, height: 150, maxHeight: 1080 },
+  phone: { width: 340, height: 150, maxHeight: 1080 },
+  driveMode: { width: 320, height: 160, maxHeight: 1080 },
+  tirePressure: { width: 380, height: 210, maxHeight: 1080 },
+  navHome: { width: 380, height: 160, maxHeight: 1080 },
+  navDestination: { width: 380, height: 200, maxHeight: 1080 },
+  navSearch: { width: 380, height: 220, maxHeight: 1080 },
+  navTripEstimate: { width: 380, height: 170, maxHeight: 1080 },
+  overheadVisualization: { width: 780, height: 480, maxHeight: 1080 },
 };
 
 function sanitizeComponentList(list: ComponentInstance[]): ComponentInstance[] {
   return list.map((c) => {
     let updated = { ...c };
-    const dim = DEFAULT_COMPONENT_DIMENSIONS[c.type];
-    if (dim && typeof updated.height === 'number') {
-      if (updated.height > dim.maxHeight) {
-        updated.height = dim.height;
-      }
+    if (typeof updated.height === 'number') {
+      updated.height = Math.max(40, Math.min(1080, updated.height));
     }
     if (typeof c.zIndex === 'number') {
       updated.zIndex = Math.max(-10, Math.min(100, c.zIndex));
@@ -401,6 +452,31 @@ export function applyCssVariables(palette: PaletteConfig) {
   }
 }
 
+export function applyTextScaleVariables(scalePreset: TextScalePreset) {
+  if (typeof document !== 'undefined') {
+    const root = document.documentElement;
+    const factor = TEXT_SCALE_FACTORS[scalePreset] ?? 1.0;
+    root.style.setProperty('--text-scale', String(factor));
+    root.style.removeProperty('font-size');
+  }
+}
+
+function loadSavedTextScale(): TextScalePreset {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_TEXT_SCALE_KEY);
+    if (saved && ['small', 'medium', 'large', 'xlarge'].includes(saved)) {
+      const preset = saved as TextScalePreset;
+      applyTextScaleVariables(preset);
+      return preset;
+    }
+  } catch (e) {
+    console.error('Failed to load saved text scale from localStorage', e);
+  }
+  const defaultScale: TextScalePreset = 'medium';
+  applyTextScaleVariables(defaultScale);
+  return defaultScale;
+}
+
 function loadSavedPalette(): PaletteConfig {
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_PALETTE_KEY);
@@ -508,6 +584,8 @@ interface MockpitStore {
   isSettingsOpen: boolean;
   toggleSettingsModal: () => void;
   setSettingsModalOpen: (open: boolean) => void;
+  textScale: TextScalePreset;
+  setTextScale: (scale: TextScalePreset) => void;
   activePalette: PaletteConfig;
   setPalette: (palette: PaletteConfig) => void;
   gridConfig: GridConfig;
@@ -517,6 +595,20 @@ interface MockpitStore {
   resnapAllComponentsToGrid: (newSize: number) => void;
   vehicleBackground: VehicleBackgroundSettings;
   setVehicleBackground: (config: Partial<VehicleBackgroundSettings>) => void;
+  egoVehicleType: EgoVehicleType;
+  setEgoVehicleType: (type: EgoVehicleType) => void;
+
+  // On-screen Virtual Keyboard
+  keyboardSlideDirection: KeyboardSlideDirection;
+  setKeyboardSlideDirection: (dir: KeyboardSlideDirection) => void;
+  activeInputState: ActiveInputState;
+  isKeyboardVisible: boolean;
+  openKeyboard: (inputState: NonNullable<ActiveInputState>) => void;
+  closeKeyboard: () => void;
+  updateActiveInputValue: (val: string) => void;
+  typeKeyboardKey: (char: string) => void;
+  backspaceKeyboardKey: () => void;
+  clearKeyboardKey: () => void;
 
   // Dynamic Screen Management
   addScreen: (name: string, transitionStyle?: TransitionStyle, parentId?: string | null) => string;
@@ -647,6 +739,17 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   toggleSettingsModal: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
   setSettingsModalOpen: (open) => set({ isSettingsOpen: open }),
 
+  textScale: loadSavedTextScale(),
+  setTextScale: (scale) => {
+    applyTextScaleVariables(scale);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_TEXT_SCALE_KEY, scale);
+    } catch (e) {
+      console.error('Failed to save text scale to localStorage', e);
+    }
+    set({ textScale: scale });
+  },
+
   activePalette: initialPalette,
   setPalette: (palette) => {
     applyCssVariables(palette);
@@ -679,16 +782,22 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       }
       return { gridConfig: updated };
     }),
-  toggleSnapToGrid: () =>
+  toggleSnapToGrid: () => {
     set((state) => {
-      const updated = { ...state.gridConfig, snapToGrid: !state.gridConfig.snapToGrid };
+      const nextSnap = !state.gridConfig.snapToGrid;
+      const updated = { ...state.gridConfig, snapToGrid: nextSnap };
       try {
         localStorage.setItem(LOCAL_STORAGE_GRID_KEY, JSON.stringify(updated));
       } catch (e) {
         console.error('Failed to save grid config to localStorage', e);
       }
       return { gridConfig: updated };
-    }),
+    });
+    const { gridConfig, resnapAllComponentsToGrid } = get();
+    if (gridConfig.snapToGrid && gridConfig.size > 0) {
+      resnapAllComponentsToGrid(gridConfig.size);
+    }
+  },
   resnapAllComponentsToGrid: (newSize: number) => {
     if (newSize <= 0) return;
     set((state) => {
@@ -754,6 +863,97 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       }
       return { vehicleBackground: updated };
     }),
+
+  egoVehicleType: loadSavedEgoVehicleType(),
+  setEgoVehicleType: (type) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_EGO_VEHICLE_TYPE_KEY, type);
+    } catch (e) {
+      console.error('Failed to save ego vehicle type to localStorage', e);
+    }
+    set({ egoVehicleType: type });
+  },
+
+  keyboardSlideDirection: loadSavedKeyboardSlideDirection(),
+  setKeyboardSlideDirection: (dir) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEYBOARD_DIRECTION_KEY, dir);
+    } catch (e) {
+      console.error('Failed to save keyboard slide direction to localStorage', e);
+    }
+    set({ keyboardSlideDirection: dir });
+  },
+
+  activeInputState: null,
+  isKeyboardVisible: false,
+
+  openKeyboard: (inputState) => {
+    set({
+      activeInputState: inputState,
+      isKeyboardVisible: true,
+    });
+  },
+
+  closeKeyboard: () => {
+    set({
+      isKeyboardVisible: false,
+      activeInputState: null,
+    });
+  },
+
+  updateActiveInputValue: (val) => {
+    const current = get().activeInputState;
+    if (current) {
+      current.onChange(val);
+      set({
+        activeInputState: {
+          ...current,
+          value: val,
+        },
+      });
+    }
+  },
+
+  typeKeyboardKey: (char) => {
+    const current = get().activeInputState;
+    if (current) {
+      const nextVal = current.value + char;
+      current.onChange(nextVal);
+      set({
+        activeInputState: {
+          ...current,
+          value: nextVal,
+        },
+      });
+    }
+  },
+
+  backspaceKeyboardKey: () => {
+    const current = get().activeInputState;
+    if (current) {
+      const nextVal = current.value.slice(0, -1);
+      current.onChange(nextVal);
+      set({
+        activeInputState: {
+          ...current,
+          value: nextVal,
+        },
+      });
+    }
+  },
+
+  clearKeyboardKey: () => {
+    const current = get().activeInputState;
+    if (current) {
+      current.onChange('');
+      set({
+        activeInputState: {
+          ...current,
+          value: '',
+        },
+      });
+    }
+  },
 
   addScreen: (name, transitionStyle = 'fade', parentId = null) => {
     const state = get();
@@ -918,8 +1118,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       speedDriftCeiling = 8;
     }
 
-    // Speed drift: ±1–2 mph around set speed when cruise active, otherwise ±1–speedDriftCeiling mph while gear === 'D' or 'R'
-    if (currentVs.cruiseControlActive) {
+    // Speed drift: ±1–2 mph around set speed when cruise active AND gear === 'D', otherwise ±1–speedDriftCeiling mph while gear === 'D' or 'R'
+    if (currentVs.cruiseControlActive && currentVs.gear === 'D') {
       const setSpeed = currentVs.cruiseSetSpeed ?? currentVs.speed;
       if (currentVs.cruiseSetSpeed === undefined) {
         newVs.cruiseSetSpeed = setSpeed;
@@ -1013,8 +1213,11 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     set((state) => {
       const rawUpdated = { ...state.vehicleState, ...partial };
 
-      // Manage cruise control set speed
-      if (rawUpdated.cruiseControlActive) {
+      // Cruise Control can ONLY be active in gear D
+      if (rawUpdated.gear !== 'D') {
+        rawUpdated.cruiseControlActive = false;
+        rawUpdated.cruiseSetSpeed = undefined;
+      } else if (rawUpdated.cruiseControlActive) {
         if (!prevVs.cruiseControlActive || rawUpdated.cruiseSetSpeed === undefined) {
           rawUpdated.cruiseSetSpeed = rawUpdated.speed;
         }
@@ -1061,10 +1264,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     }
 
     // Trigger event-based notifications on state transitions
-    if (
-      partial.cruiseControlActive !== undefined &&
-      partial.cruiseControlActive !== prevVs.cruiseControlActive
-    ) {
+    if (prevVs.cruiseControlActive !== vs.cruiseControlActive) {
       if (vs.cruiseControlActive) {
         get().triggerEventNotification('cruise_on');
       } else {
@@ -1149,6 +1349,36 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     } else if (notif.message.includes('DISENGAGED') || notif.message.includes('OFF')) {
       get().triggerEventNotification('cruise_off');
     }
+
+    const severity = notif.severity || 'warning';
+    const color =
+      notif.color ||
+      (severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f59e0b' : '#38bdf8');
+    const newNotif: ComponentInstance = {
+      id: `transient-notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      type: 'warning',
+      x: 0,
+      y: 0,
+      width: 380,
+      height: 120,
+      staticProps: {
+        label:
+          severity === 'critical'
+            ? 'CRITICAL ALERT'
+            : severity === 'warning'
+            ? 'TIRE ALERT'
+            : 'NOTIFICATION',
+        icon: notif.icon || 'alert-triangle',
+        message: notif.message,
+        visible: 'true',
+        color,
+        severity,
+      },
+      bindings: [],
+    };
+    set((state) => ({
+      transientNotifications: [newNotif, ...state.transientNotifications.slice(0, 4)],
+    }));
   },
 
   clearTransientNotification: (id) => {
@@ -1157,7 +1387,11 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     }));
   },
 
-  setScreenMode: (mode) => set({ screenMode: mode }),
+  setScreenMode: (mode) =>
+    set((state) => ({
+      screenMode: mode,
+      isSettingsOpen: mode === 'presentation' ? false : state.isSettingsOpen,
+    })),
 
   setActiveView: (view) =>
     set((state) => ({
@@ -1381,26 +1615,32 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         bindings = [];
         break;
       case 'media':
-        width = 340;
-        height = 150;
-        staticProps = { title: 'Midnight City', artist: 'M83', album: "Hurry Up, We're Dreaming" };
+        width = 720;
+        height = 480;
+        staticProps = {
+          service: 'Spotify',
+          title: 'Starboy',
+          artist: 'The Weeknd ft. Daft Punk',
+          album: 'Starboy',
+          label: 'Music Media Player',
+        };
         bindings = [];
         break;
       case 'climate':
-        width = 280;
-        height = 140;
+        width = 320;
+        height = 150;
         staticProps = { temp: '72°F', fanSpeed: 'Auto 3', mode: 'AC Dual' };
         bindings = [];
         break;
       case 'phone':
-        width = 320;
-        height = 130;
+        width = 340;
+        height = 150;
         staticProps = { contact: 'Alex Morgan', number: '+1 (555) 019-2834', status: 'Connected' };
         bindings = [];
         break;
       case 'driveMode':
-        width = 280;
-        height = 130;
+        width = 320;
+        height = 160;
         staticProps = { label: 'Drive Mode' };
         bindings = [
           {
@@ -1422,14 +1662,14 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         ];
         break;
       case 'tirePressure':
-        width = 320;
-        height = 160;
+        width = 380;
+        height = 210;
         staticProps = { frontLeft: '35 PSI', frontRight: '35 PSI', rearLeft: '36 PSI', rearRight: '36 PSI' };
         bindings = [];
         break;
       case 'navHome':
         width = 380;
-        height = 140;
+        height = 160;
         staticProps = { address: '100 Infinite Loop, Cupertino, CA', lat: '37.3318', lng: '-122.0311', label: 'Home' };
         bindings = [];
         break;
@@ -1447,14 +1687,40 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         break;
       case 'navTripEstimate':
         width = 380;
-        height = 160;
+        height = 170;
         staticProps = { startLat: '37.3318', startLng: '-122.0311', destLat: '37.7456', destLng: '-119.5936', consumptionRate: '0.32' };
         bindings = [];
         break;
-      case 'subnav':
-        width = 480;
-        height = 60;
-        staticProps = { variant: 'pills', color: '#38bdf8' };
+      case 'overheadVisualization':
+        width = 780;
+        height = 480;
+        staticProps = {
+          label: 'Overhead Driving Visualization',
+          color: '#38bdf8',
+          lanesCount: '2',
+          opposingLanesCount: '2',
+          trafficDensity: 'low',
+          sameDirCount: '2',
+          opposingDirCount: '1',
+          intersectionEnabled: 'true',
+          crossTrafficCount: '2',
+          trafficLightState: 'green',
+          crosswalkEnabled: 'true',
+          stopLineEnabled: 'true',
+          speedLimitValue: '65',
+          speedLimitUnits: 'MPH',
+          speedLimitVisible: 'true',
+          speedLimitPosition: 'bottom-right',
+          speedLimitStyle: 'us_standard',
+          blindSpotWarning: 'auto',
+          leftBlindSpot: 'false',
+          rightBlindSpot: 'false',
+          blindSpotColor: '#ef4444',
+          blindSpotOpacity: '0.6',
+          sensorWarning: 'auto',
+          sensorColor: '#ef4444',
+          sensorOpacity: '0.6',
+        };
         bindings = [];
         break;
     }
@@ -1514,9 +1780,16 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
   updateComponentPosition: (id, x, y) => {
     set((state) => {
+      let finalX = x;
+      let finalY = y;
+      if (state.gridConfig.snapToGrid && state.gridConfig.size > 0) {
+        finalX = Math.round(x / state.gridConfig.size) * state.gridConfig.size;
+        finalY = Math.round(y / state.gridConfig.size) * state.gridConfig.size;
+      }
+
       const inNotifs = state.notificationComponents.some((c) => c.id === id);
       if (inNotifs) {
-        const updatedNotifs = state.notificationComponents.map((c) => (c.id === id ? { ...c, x, y } : c));
+        const updatedNotifs = state.notificationComponents.map((c) => (c.id === id ? { ...c, x: finalX, y: finalY } : c));
         try {
           localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifs));
         } catch (e) {
@@ -1529,7 +1802,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
       const activeScreen = state.activeView;
       const currentList = state.componentsByScreen[activeScreen] || [];
-      const updatedList = currentList.map((c) => (c.id === id ? { ...c, x, y } : c));
+      const updatedList = currentList.map((c) => (c.id === id ? { ...c, x: finalX, y: finalY } : c));
       const updatedScreens = {
         ...state.componentsByScreen,
         [activeScreen]: updatedList,
@@ -1549,10 +1822,17 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
   updateComponentSize: (id, width, height) => {
     set((state) => {
+      let finalW = width;
+      let finalH = height;
+      if (state.gridConfig.snapToGrid && state.gridConfig.size > 0) {
+        finalW = Math.max(state.gridConfig.size, Math.round(width / state.gridConfig.size) * state.gridConfig.size);
+        finalH = Math.max(state.gridConfig.size, Math.round(height / state.gridConfig.size) * state.gridConfig.size);
+      }
+
       const inNotifs = state.notificationComponents.some((c) => c.id === id);
       if (inNotifs) {
         const updatedNotifs = state.notificationComponents.map((c) =>
-          c.id === id ? { ...c, width: Math.max(80, width), height: Math.max(50, height) } : c
+          c.id === id ? { ...c, width: Math.max(80, finalW), height: Math.max(50, finalH) } : c
         );
         try {
           localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifs));
@@ -1568,12 +1848,12 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       const currentList = state.componentsByScreen[activeScreen] || [];
       const updatedList = currentList.map((c) => {
         if (c.id === id) {
-          const dim = DEFAULT_COMPONENT_DIMENSIONS[c.type];
-          const maxH = dim ? dim.maxHeight : 950;
+          const maxW = Math.max(40, 1920 - (c.x || 0));
+          const maxH = Math.max(40, 1080 - (c.y || 0));
           return {
             ...c,
-            width: Math.max(80, width),
-            height: Math.min(maxH, Math.max(50, height)),
+            width: Math.min(maxW, Math.max(40, finalW)),
+            height: Math.min(maxH, Math.max(40, finalH)),
           };
         }
         return c;
@@ -2005,7 +2285,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       const resetState: Record<string, ComponentInstance[]> = {
         home: HOME_SEED_COMPONENTS,
         navigation: NAVIGATION_SEED_COMPONENTS,
-        media: [],
+        media: MEDIA_SEED_COMPONENTS,
         phone: [],
       };
       try {

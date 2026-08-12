@@ -1,7 +1,7 @@
 export const COMPONENT_FLAGS = {
-  media: false,
-  climate: false,
-  phone: false,
+  media: true,
+  climate: true,
+  phone: true,
   driveMode: true,
-  tirePressure: false,
+  tirePressure: true,
 };

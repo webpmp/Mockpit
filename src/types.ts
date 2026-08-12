@@ -1,3 +1,15 @@
+export type KeyboardSlideDirection = 'bottom' | 'top' | 'left' | 'right';
+export type EgoVehicleType = 'compactSedan' | 'midsizeSedan' | 'luxurySedan' | 'truck' | 'coupe';
+
+export type ActiveInputState = {
+  inputId: string;
+  componentId?: string;
+  value: string;
+  placeholder?: string;
+  keyboardSlideDirectionOverride?: KeyboardSlideDirection | 'default';
+  onChange: (value: string) => void;
+} | null;
+
 export type GearState = 'P' | 'R' | 'N' | 'D';
 export type DriveModeState = 'Eco' | 'Normal' | 'Sport';
 
@@ -32,6 +44,15 @@ export type GridConfig = {
   snapToGrid: boolean;
   bgImage?: string;
   bgOpacity?: number;
+};
+
+export type TextScalePreset = 'small' | 'medium' | 'large' | 'xlarge';
+
+export const TEXT_SCALE_FACTORS: Record<TextScalePreset, number> = {
+  small: 0.875,
+  medium: 1.0,
+  large: 1.15,
+  xlarge: 1.30,
 };
 
 export type PalettePresetId = 'cyberSky' | 'neonAmber' | 'electricViolet' | 'emeraldMint' | 'custom';
@@ -82,16 +103,19 @@ export type VehicleState = {
   isCharging: boolean;
   doorOpen: boolean;
   driveMode: DriveModeState;
+  headlights?: 'On' | 'Off';
   signalBars?: number;    // 1 - 5 bars
   mapLat?: number;        // dynamic map center latitude
   mapLng?: number;        // dynamic map center longitude
   cruiseControlActive?: boolean;
   cruiseSetSpeed?: number;
+  blindSpotWarning?: boolean;
+  proximityWarning?: boolean;
 };
 
 export type BindingCondition = '<' | '>' | '=' | '!=' | '>=' | '<=';
 
-export type TargetProp = 'color' | 'visible' | 'text' | 'icon' | 'severity';
+export type TargetProp = 'color' | 'visible' | 'opacity' | 'text' | 'icon' | 'severity';
 
 export type Binding = {
   id: string;
@@ -118,7 +142,7 @@ export type ComponentType =
   | 'navDestination'
   | 'navSearch'
   | 'navTripEstimate'
-  | 'subnav';
+  | 'overheadVisualization';
 
 export type ComponentInstance = {
   id: string;

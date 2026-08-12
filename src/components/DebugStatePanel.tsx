@@ -1,7 +1,28 @@
 import React from 'react';
 import { useMockpitStore, isPresetActive } from '../store/useMockpitStore';
 import { DriveModeState, GearState } from '../types';
-import { Sliders, Zap, AlertTriangle, ChevronDown, ChevronUp, RotateCcw, Gauge } from 'lucide-react';
+import { Zap, AlertTriangle, ChevronDown, ChevronUp, RotateCcw, Gauge, ShieldAlert, Eye, Sun, Car } from 'lucide-react';
+
+const SteeringWheel: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="3" />
+    <line x1="12" y1="15" x2="12" y2="21" />
+    <line x1="9.4" y1="10.5" x2="4.2" y2="7.5" />
+    <line x1="14.6" y1="10.5" x2="19.8" y2="7.5" />
+  </svg>
+);
 
 const GEARS: GearState[] = ['P', 'R', 'N', 'D'];
 const DRIVE_MODES: DriveModeState[] = ['Eco', 'Normal', 'Sport'];
@@ -31,6 +52,7 @@ export const DebugStatePanel: React.FC = () => {
   };
 
   const handleToggleCruise = () => {
+    if (vehicleState.gear !== 'D') return;
     const newCruise = !vehicleState.cruiseControlActive;
     setVehicleState({ cruiseControlActive: newCruise });
     triggerNotification({
@@ -40,6 +62,8 @@ export const DebugStatePanel: React.FC = () => {
       severity: 'info',
     });
   };
+
+  const isHeadlightsOn = vehicleState.headlights === 'On';
 
   return (
     <div
@@ -55,7 +79,7 @@ export const DebugStatePanel: React.FC = () => {
       >
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs font-black tracking-widest text-slate-200 uppercase">
-            <Sliders className="w-4 h-4 text-sky-400" />
+            <SteeringWheel className="w-4 h-4 text-sky-400" />
             Drive Simulator
           </div>
         </div>
@@ -118,230 +142,358 @@ export const DebugStatePanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Body (Single Expand/Collapse Control) */}
+      {/* Main Body - Organized logically with comfortable height and spacing */}
       {isDebugOpen && (
-        <div className="p-4 px-6 flex flex-col gap-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-stretch">
-            {/* Gear Select */}
-            <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 flex flex-col justify-between">
-              <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">
-                Gear Selector
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                {GEARS.map((g) => {
-                  const isActive = vehicleState.gear === g;
-                  return (
-                    <button
-                      key={g}
-                      onClick={() => setVehicleState({ gear: g })}
-                      className={`py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-sky-500 text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.5)] scale-105'
-                          : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                      }`}
-                    >
-                      {g}
-                    </button>
-                  );
-                })}
-              </div>
+        <div className="p-5 px-6 flex flex-col gap-5 overflow-y-auto max-h-[70vh]">
+          {/* DRIVING GROUP */}
+          <div className="space-y-2">
+            <div className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-widest flex items-center gap-1.5">
+              <Gauge className="w-3.5 h-3.5" />
+              <span>Driving State</span>
             </div>
 
-            {/* Speed Slider */}
-            {(() => {
-              const isParked = vehicleState.gear === 'P';
-              const isNeutral = vehicleState.gear === 'N';
-              return (
-                <div
-                  className={`bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 flex flex-col justify-between transition-opacity ${
-                    isParked ? 'opacity-60' : ''
-                  }`}
-                  title={isParked ? 'Speed is locked at 0 MPH while in Park (P)' : isNeutral ? 'Vehicle is coasting in Neutral (N)' : undefined}
-                >
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                      Speed
-                      {isParked && <span className="text-[9px] text-amber-400/80 font-normal">(Locked P)</span>}
-                      {isNeutral && vehicleState.speed > 0 && <span className="text-[9px] text-sky-400 font-normal animate-pulse">(Coasting...)</span>}
-                    </span>
-                    <span className="text-xs font-black font-mono text-sky-400">
-                      {vehicleState.speed} <span className="text-[10px] text-slate-500">MPH</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 my-auto">
-                    <input
-                      type="range"
-                      min={0}
-                      max={120}
-                      disabled={isParked}
-                      value={vehicleState.speed}
-                      onChange={(e) => setVehicleState({ speed: Number(e.target.value) })}
-                      className={`w-full accent-sky-400 h-2 bg-slate-800 rounded-lg ${
-                        isParked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                      }`}
-                    />
-                  </div>
-
-                  {/* Cruise Control Toggle */}
-                  <div className="flex items-center justify-between border-t border-slate-800/80 pt-2 mt-2 shrink-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <Gauge className={`w-3.5 h-3.5 shrink-0 ${vehicleState.cruiseControlActive ? 'text-emerald-400' : 'text-slate-500'}`} />
-                      <span className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider truncate">
-                        Cruise Control
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[10px] font-mono font-bold ${vehicleState.cruiseControlActive ? 'text-emerald-400' : 'text-slate-500'}`}>
-                        {vehicleState.cruiseControlActive ? 'SET' : 'OFF'}
-                      </span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+              {/* Gear Select */}
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Gear Selector
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {GEARS.map((g) => {
+                    const isActive = vehicleState.gear === g;
+                    return (
                       <button
-                        onClick={handleToggleCruise}
-                        className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer ${
-                          vehicleState.cruiseControlActive ? 'bg-emerald-500' : 'bg-slate-800 border border-slate-700'
+                        key={g}
+                        onClick={() => setVehicleState({ gear: g })}
+                        className={`py-2 rounded-xl font-black text-xs transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-sky-500 text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.5)] scale-105'
+                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
                         }`}
-                        title="Toggle Cruise Control"
                       >
-                        <div
-                          className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
-                            vehicleState.cruiseControlActive ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
+                        {g}
                       </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Speed Slider */}
+              {(() => {
+                const isParked = vehicleState.gear === 'P';
+                const isNeutral = vehicleState.gear === 'N';
+                return (
+                  <div
+                    className={`bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between transition-opacity ${
+                      isParked ? 'opacity-60' : ''
+                    }`}
+                    title={isParked ? 'Speed is locked at 0 MPH while in Park (P)' : isNeutral ? 'Vehicle is coasting in Neutral (N)' : undefined}
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        Speed
+                      </span>
+                      <span className="text-xs font-black font-mono text-sky-400">
+                        {vehicleState.speed} <span className="text-[10px] text-slate-500">MPH</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 my-auto">
+                      <input
+                        type="range"
+                        min={0}
+                        max={120}
+                        disabled={isParked}
+                        value={vehicleState.speed}
+                        onChange={(e) => setVehicleState({ speed: Number(e.target.value) })}
+                        className={`w-full accent-sky-400 h-2 bg-slate-800 rounded-lg ${
+                          isParked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                        }`}
+                      />
+                    </div>
+
+                    {/* Cruise Control Toggle */}
+                    <div className="flex items-center justify-between border-t border-slate-800/80 pt-2 mt-2 shrink-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Gauge className={`w-3.5 h-3.5 shrink-0 ${vehicleState.cruiseControlActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        <span className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider truncate">
+                          Cruise Control
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[10px] font-mono font-bold ${vehicleState.cruiseControlActive ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          {vehicleState.cruiseControlActive ? 'SET' : 'OFF'}
+                        </span>
+                        {(() => {
+                          const isCruiseDisabled = vehicleState.gear !== 'D';
+                          return (
+                            <button
+                              disabled={isCruiseDisabled}
+                              onClick={handleToggleCruise}
+                              className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
+                                isCruiseDisabled
+                                  ? 'bg-slate-800/40 border border-slate-800/80 opacity-40 cursor-not-allowed'
+                                  : vehicleState.cruiseControlActive
+                                  ? 'bg-emerald-500 cursor-pointer'
+                                  : 'bg-slate-800 border border-slate-700 cursor-pointer'
+                              }`}
+                              title={isCruiseDisabled ? 'Cruise Control is only available in Drive (D)' : 'Toggle Cruise Control'}
+                            >
+                              <div
+                                className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                                  vehicleState.cruiseControlActive ? 'translate-x-4' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Drive Mode Select */}
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Drive Mode
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {DRIVE_MODES.map((dm) => {
+                    const isActive = (vehicleState.driveMode || 'Normal') === dm;
+                    return (
+                      <button
+                        key={dm}
+                        onClick={() => setVehicleState({ driveMode: dm })}
+                        className={`py-2 px-1 rounded-xl font-bold text-[11px] font-mono transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-cyan-400 text-slate-950 shadow-[0_0_12px_rgba(34,211,238,0.5)] scale-105'
+                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        {dm}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* VEHICLE GROUP */}
+          <div className="space-y-2">
+            <div className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+              <Car className="w-3.5 h-3.5" />
+              <span>Vehicle & ADAS State</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-stretch">
+              {/* Battery Slider */}
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                    Battery
+                  </span>
+                  <span
+                    className={`text-xs font-black font-mono ${
+                      vehicleState.batteryPercent < 15 ? 'text-rose-400' : 'text-emerald-400'
+                    }`}
+                  >
+                    {Math.round(vehicleState.batteryPercent)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round(vehicleState.batteryPercent)}
+                  onChange={(e) => setVehicleState({ batteryPercent: Number(e.target.value) })}
+                  className="w-full accent-emerald-400 cursor-pointer h-2 bg-slate-800 rounded-lg my-auto"
+                />
+              </div>
+
+              {/* Is Charging Toggle */}
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0 pr-1">
+                  <div
+                    className={`p-2 rounded-xl shrink-0 ${
+                      vehicleState.isCharging
+                        ? 'bg-blue-500/20 text-blue-400'
+                        : !canCharge
+                        ? 'bg-slate-800 text-slate-600'
+                        : 'bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    <Zap className="w-4 h-4 fill-current" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider truncate">
+                      Charging
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-200 truncate">
+                      {vehicleState.isCharging
+                        ? 'Plugged In'
+                        : !canCharge
+                        ? 'Park to Charge'
+                        : 'Disconnected'}
                     </div>
                   </div>
                 </div>
-              );
-            })()}
 
-            {/* Drive Mode Select */}
-            <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 flex flex-col justify-between">
-              <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">
-                Drive Mode
-              </div>
-              <div className="grid grid-cols-3 gap-1">
-                {DRIVE_MODES.map((dm) => {
-                  const isActive = (vehicleState.driveMode || 'Normal') === dm;
-                  return (
-                    <button
-                      key={dm}
-                      onClick={() => setVehicleState({ driveMode: dm })}
-                      className={`py-1.5 px-1 rounded-xl font-bold text-[11px] font-mono transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-cyan-400 text-slate-950 shadow-[0_0_12px_rgba(34,211,238,0.5)] scale-105'
-                          : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                      }`}
-                    >
-                      {dm}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Battery Slider */}
-            <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 flex flex-col justify-between">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
-                  Battery
-                </span>
-                <span
-                  className={`text-xs font-black font-mono ${
-                    vehicleState.batteryPercent < 15 ? 'text-rose-400' : 'text-emerald-400'
+                <button
+                  disabled={!canCharge && !vehicleState.isCharging}
+                  onClick={() => (canCharge || vehicleState.isCharging) && setVehicleState({ isCharging: !vehicleState.isCharging })}
+                  title={canCharge ? 'Toggle Charging' : 'Park the vehicle to enable charging'}
+                  className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 ${
+                    !canCharge && !vehicleState.isCharging
+                      ? 'bg-slate-800 opacity-40 cursor-not-allowed'
+                      : vehicleState.isCharging
+                      ? 'bg-blue-500 cursor-pointer'
+                      : 'bg-slate-800 cursor-pointer'
                   }`}
                 >
-                  {Math.round(vehicleState.batteryPercent)}%
-                </span>
+                  <div
+                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                      vehicleState.isCharging ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={Math.round(vehicleState.batteryPercent)}
-                onChange={(e) => setVehicleState({ batteryPercent: Number(e.target.value) })}
-                className="w-full accent-emerald-400 cursor-pointer h-2 bg-slate-800 rounded-lg my-auto"
-              />
-            </div>
 
-            {/* Is Charging Toggle */}
-            <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0 pr-1">
-                <div
-                  className={`p-2 rounded-xl shrink-0 ${
-                    vehicleState.isCharging
-                      ? 'bg-blue-500/20 text-blue-400'
-                      : !canCharge
-                      ? 'bg-slate-800 text-slate-600'
-                      : 'bg-slate-800 text-slate-500'
+              {/* Door Open Toggle */}
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0 pr-1">
+                  <div
+                    className={`p-2 rounded-xl shrink-0 ${
+                      vehicleState.doorOpen ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider truncate">
+                      Door
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-200 truncate">
+                      {vehicleState.doorOpen ? 'Ajar / Open' : 'Closed'}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setVehicleState({ doorOpen: !vehicleState.doorOpen })}
+                  className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
+                    vehicleState.doorOpen ? 'bg-amber-500' : 'bg-slate-800'
                   }`}
                 >
-                  <Zap className="w-4 h-4 fill-current" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider truncate">
-                    Charging
-                  </div>
-                  <div className="text-[11px] font-bold text-slate-200 truncate">
-                    {vehicleState.isCharging
-                      ? 'Plugged In'
-                      : !canCharge
-                      ? 'Park to Charge'
-                      : 'Disconnected'}
-                  </div>
-                </div>
+                  <div
+                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                      vehicleState.doorOpen ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
 
-              <button
-                disabled={!canCharge && !vehicleState.isCharging}
-                onClick={() => (canCharge || vehicleState.isCharging) && setVehicleState({ isCharging: !vehicleState.isCharging })}
-                title={canCharge ? 'Toggle Charging' : 'Park the vehicle to enable charging'}
-                className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 ${
-                  !canCharge && !vehicleState.isCharging
-                    ? 'bg-slate-800 opacity-40 cursor-not-allowed'
-                    : vehicleState.isCharging
-                    ? 'bg-blue-500 cursor-pointer'
-                    : 'bg-slate-800 cursor-pointer'
-                }`}
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
-                    vehicleState.isCharging ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
+              {/* Headlights Control */}
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0 pr-1">
+                  <div
+                    className={`p-2 rounded-xl shrink-0 ${
+                      isHeadlightsOn ? 'bg-sky-500/20 text-sky-400' : 'bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    <Sun className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider truncate">
+                      Headlights
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-200 truncate">
+                      {isHeadlightsOn ? 'On' : 'Off'}
+                    </div>
+                  </div>
+                </div>
 
-            {/* Door Open Toggle */}
-            <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0 pr-1">
-                <div
-                  className={`p-2 rounded-xl shrink-0 ${
-                    vehicleState.doorOpen ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'
+                <button
+                  onClick={() => setVehicleState({ headlights: isHeadlightsOn ? 'Off' : 'On' })}
+                  className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
+                    isHeadlightsOn ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
                 >
-                  <AlertTriangle className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider truncate">
-                    Door
-                  </div>
-                  <div className="text-[11px] font-bold text-slate-200 truncate">
-                    {vehicleState.doorOpen ? 'Ajar / Open' : 'Closed'}
-                  </div>
-                </div>
+                  <div
+                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                      isHeadlightsOn ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
 
-              <button
-                onClick={() => setVehicleState({ doorOpen: !vehicleState.doorOpen })}
-                className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
-                  vehicleState.doorOpen ? 'bg-amber-500' : 'bg-slate-800'
-                }`}
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
-                    vehicleState.doorOpen ? 'translate-x-5' : 'translate-x-0'
+              {/* Blind Spot Warning Toggle */}
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0 pr-1">
+                  <div
+                    className={`p-2 rounded-xl shrink-0 ${
+                      vehicleState.blindSpotWarning ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider truncate">
+                      Blind Spot
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-200 truncate">
+                      {vehicleState.blindSpotWarning ? 'Active Alert' : 'Clear'}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setVehicleState({ blindSpotWarning: !vehicleState.blindSpotWarning })}
+                  className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
+                    vehicleState.blindSpotWarning ? 'bg-rose-500' : 'bg-slate-800'
                   }`}
-                />
-              </button>
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                      vehicleState.blindSpotWarning ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Proximity Warning Toggle */}
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0 pr-1">
+                  <div
+                    className={`p-2 rounded-xl shrink-0 ${
+                      vehicleState.proximityWarning ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider truncate">
+                      Proximity
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-200 truncate">
+                      {vehicleState.proximityWarning ? 'Sensor Alert' : 'Clear'}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setVehicleState({ proximityWarning: !vehicleState.proximityWarning })}
+                  className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
+                    vehicleState.proximityWarning ? 'bg-rose-500' : 'bg-slate-800'
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                      vehicleState.proximityWarning ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
         </div>

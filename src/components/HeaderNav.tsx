@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useMockpitStore } from '../store/useMockpitStore';
+import { ScreenDefinition } from '../types';
 import {
   Play,
   Edit3,
@@ -19,6 +20,7 @@ import {
   ArrowDown,
   CornerDownRight,
   FolderTree,
+  Trash2,
 } from 'lucide-react';
 
 const getScreenIcon = (id: string) => {
@@ -36,6 +38,7 @@ export const HeaderNav: React.FC = () => {
   const setActiveView = useMockpitStore((s) => s.setActiveView);
   const screens = useMockpitStore((s) => s.screens);
   const addScreen = useMockpitStore((s) => s.addScreen);
+  const deleteScreen = useMockpitStore((s) => s.deleteScreen);
   const moveScreen = useMockpitStore((s) => s.moveScreen);
   const isSettingsOpen = useMockpitStore((s) => s.isSettingsOpen);
   const toggleSettingsModal = useMockpitStore((s) => s.toggleSettingsModal);
@@ -43,6 +46,20 @@ export const HeaderNav: React.FC = () => {
 
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Modal State for Adding Screens (replaces blocked window.prompt)
+  const [addScreenModal, setAddScreenModal] = useState<{
+    isOpen: boolean;
+    parentId: string | null;
+    parentName?: string;
+    defaultName: string;
+  } | null>(null);
+  const [newScreenNameInput, setNewScreenNameInput] = useState('');
+  const modalInputRef = useRef<HTMLInputElement>(null);
+
+  // Modal State for Deleting Screens and Resetting Seed Data
+  const [deleteTargetScreen, setDeleteTargetScreen] = useState<ScreenDefinition | null>(null);
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
 
   const isPresentation = screenMode === 'presentation';
 
@@ -54,6 +71,16 @@ export const HeaderNav: React.FC = () => {
 
   // Top-level screens (parentId === null)
   const topLevelScreens = screens.filter((s) => !s.parentId);
+
+  // Auto focus input when add screen modal opens
+  useEffect(() => {
+    if (addScreenModal) {
+      setTimeout(() => {
+        modalInputRef.current?.focus();
+        modalInputRef.current?.select();
+      }, 50);
+    }
+  }, [addScreenModal]);
 
   // Close mega-menu on outside click
   useEffect(() => {
@@ -70,30 +97,39 @@ export const HeaderNav: React.FC = () => {
     };
   }, [isMegaMenuOpen]);
 
-  const handleAddTopLevelScreen = () => {
-    const name = window.prompt('Enter new top-level screen name:', `Screen ${topLevelScreens.length + 1}`);
-    if (name && name.trim()) {
-      addScreen(name.trim(), 'fade', null);
-      setIsMegaMenuOpen(false);
-    }
+  const handleOpenAddTopLevelModal = () => {
+    const defaultName = `Screen ${topLevelScreens.length + 1}`;
+    setNewScreenNameInput(defaultName);
+    setAddScreenModal({
+      isOpen: true,
+      parentId: null,
+      defaultName,
+    });
   };
 
-  const handleAddChildScreen = (parentId: string, parentName: string) => {
-    const name = window.prompt(`Enter child screen name under "${parentName}":`);
-    if (name && name.trim()) {
-      addScreen(name.trim(), 'fade', parentId);
-      setIsMegaMenuOpen(false);
-    }
+  const handleOpenAddChildModal = (parentId: string, parentName: string) => {
+    const parentChildren = screens.filter((s) => s.parentId === parentId);
+    const defaultName = `${parentName} Sub ${parentChildren.length + 1}`;
+    setNewScreenNameInput(defaultName);
+    setAddScreenModal({
+      isOpen: true,
+      parentId,
+      parentName,
+      defaultName,
+    });
+  };
+
+  const handleConfirmAddScreen = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!addScreenModal) return;
+    const trimmed = newScreenNameInput.trim() || addScreenModal.defaultName;
+    const newId = addScreen(trimmed, 'fade', addScreenModal.parentId);
+    setActiveView(newId);
+    setAddScreenModal(null);
   };
 
   const handleReset = () => {
-    if (
-      window.confirm(
-        'Reset canvas to default seed data? Custom screens and layouts will be restored.'
-      )
-    ) {
-      resetToSeedData();
-    }
+    setShowResetConfirmModal(true);
   };
 
   const ActiveIcon = activeScreenDef ? getScreenIcon(activeScreenDef.id) : Layout;
@@ -101,20 +137,22 @@ export const HeaderNav: React.FC = () => {
   return (
     <header className="h-11 bg-slate-950 border-b border-slate-900 px-4 flex items-center justify-between shrink-0 select-none relative z-50">
       {/* App Branding */}
-      <div className="flex items-center gap-2">
-        <span
-          className="text-xs font-black tracking-widest font-mono uppercase"
-          style={{ color: 'var(--color-primary)' }}
-        >
-          MOCKPIT
-        </span>
-        <span className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
-          v0.12
-        </span>
-      </div>
+      {!isPresentation && (
+        <div className="flex items-center gap-2">
+          <span
+            className="text-xs font-black tracking-widest font-mono uppercase"
+            style={{ color: 'var(--color-primary)' }}
+          >
+            MOCKPIT
+          </span>
+          <span className="text-[0.625rem] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+            v0.12
+          </span>
+        </div>
+      )}
 
       {/* Center Controls: Mega-Menu Screen Selector & Mode Switcher */}
-      <div className="flex items-center gap-2">
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
         {/* Current Screen Selector Button (Opens Mega-Menu) */}
         <div className="relative" ref={menuRef}>
           <button
@@ -155,8 +193,8 @@ export const HeaderNav: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={handleAddTopLevelScreen}
-                    className="px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 hover:bg-sky-500 hover:text-slate-950 transition-all text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                    onClick={handleOpenAddTopLevelModal}
+                    className="px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 hover:bg-sky-500 hover:text-slate-950 transition-all text-[0.6875rem] font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" /> + Add Screen
                   </button>
@@ -204,7 +242,7 @@ export const HeaderNav: React.FC = () => {
                           )}
                         </button>
 
-                        {/* Top-Level Reorder Left / Right */}
+                        {/* Top-Level Reorder Left / Right and Delete */}
                         {!isHome && (
                           <div className="flex items-center gap-0.5 opacity-60 hover:opacity-100 transition-opacity">
                             <button
@@ -227,6 +265,16 @@ export const HeaderNav: React.FC = () => {
                             >
                               <ArrowRight className="w-3 h-3" />
                             </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteTargetScreen(parentScreen);
+                              }}
+                              className="p-0.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors cursor-pointer ml-1"
+                              title="Delete screen"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </div>
                         )}
                       </div>
@@ -234,7 +282,7 @@ export const HeaderNav: React.FC = () => {
                       {/* Child Screens Column List */}
                       <div className="flex-1 space-y-1 my-1 min-h-[48px]">
                         {childScreens.length === 0 ? (
-                          <div className="text-[10px] text-slate-600 font-mono italic p-2 text-center">
+                          <div className="text-[0.625rem] text-slate-600 font-mono italic p-2 text-center">
                             No child screens
                           </div>
                         ) : (
@@ -263,7 +311,7 @@ export const HeaderNav: React.FC = () => {
                                   <span className="truncate">{childScreen.name}</span>
                                 </button>
 
-                                {/* Child Screen Reorder Up / Down */}
+                                {/* Child Screen Reorder Up / Down & Delete */}
                                 <div className="flex items-center gap-0.5 opacity-0 group-hover/child:opacity-100 transition-opacity">
                                   <button
                                     onClick={(e) => {
@@ -285,6 +333,16 @@ export const HeaderNav: React.FC = () => {
                                   >
                                     <ArrowDown className="w-2.5 h-2.5" />
                                   </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteTargetScreen(childScreen);
+                                    }}
+                                    className="p-0.5 text-slate-400 hover:text-rose-400 rounded cursor-pointer ml-0.5"
+                                    title="Delete child screen"
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </button>
                                 </div>
                               </div>
                             );
@@ -294,8 +352,8 @@ export const HeaderNav: React.FC = () => {
 
                       {/* Column Footer: + Add Child */}
                       <button
-                        onClick={() => handleAddChildScreen(parentScreen.id, parentScreen.name)}
-                        className="mt-2 w-full py-1 px-2 rounded-lg text-[10px] font-bold font-mono text-slate-400 hover:text-sky-300 bg-slate-950/60 border border-dashed border-slate-800 hover:border-sky-500/40 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        onClick={() => handleOpenAddChildModal(parentScreen.id, parentScreen.name)}
+                        className="mt-2 w-full py-1 px-2 rounded-lg text-[0.625rem] font-bold font-mono text-slate-400 hover:text-sky-300 bg-slate-950/60 border border-dashed border-slate-800 hover:border-sky-500/40 transition-all flex items-center justify-center gap-1 cursor-pointer"
                       >
                         <Plus className="w-3 h-3" /> Add Child
                       </button>
@@ -341,27 +399,197 @@ export const HeaderNav: React.FC = () => {
       </div>
 
       {/* Utility Action Icons */}
-      <div className="flex items-center gap-1.5">
-        <button
-          onClick={toggleSettingsModal}
-          className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
-            isSettingsOpen
-              ? 'bg-sky-500/10 border-sky-500/30 text-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.2)]'
-              : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
-          }`}
-          title="Settings (Palette System)"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
+      {!isPresentation && (
+        <div className="flex items-center gap-1.5 ml-auto">
+          <button
+            onClick={toggleSettingsModal}
+            className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
+              isSettingsOpen
+                ? 'bg-sky-500/10 border-sky-500/30 text-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+            title="Settings (Palette System)"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
 
-        <button
-          onClick={handleReset}
-          className="p-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer"
-          title="Reset Canvas (Restore Seed State)"
-        >
-          <RotateCcw className="w-4 h-4" />
-        </button>
-      </div>
+          <button
+            onClick={handleReset}
+            className="p-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer"
+            title="Reset Canvas (Restore Seed State)"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Custom Modal for Adding Top-Level or Child Screen */}
+      {addScreenModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 w-full max-w-sm space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <FolderTree className="w-4 h-4 text-sky-400" />
+                <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wide font-mono">
+                  {addScreenModal.parentId ? 'Add Child Screen' : 'Add Top-Level Screen'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddScreenModal(null)}
+                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmAddScreen} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-300 font-mono block">
+                  {addScreenModal.parentId
+                    ? `Child Screen Name (under "${addScreenModal.parentName}")`
+                    : 'Screen Title'}
+                </label>
+                <input
+                  ref={modalInputRef}
+                  type="text"
+                  value={newScreenNameInput}
+                  onChange={(e) => setNewScreenNameInput(e.target.value)}
+                  placeholder={addScreenModal.defaultName}
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl px-3 py-2 text-sm text-slate-100 font-mono outline-none transition-all"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAddScreenModal(null)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Create Screen</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Modal for Deleting Screen */}
+      {deleteTargetScreen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 w-full max-w-sm space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-rose-400">
+                <Trash2 className="w-4 h-4" />
+                <h3 className="text-xs font-bold uppercase tracking-wide font-mono">
+                  Delete Screen
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteTargetScreen(null)}
+                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-300 font-mono">
+              <p>
+                Are you sure you want to delete <span className="font-bold text-sky-300">"{deleteTargetScreen.name}"</span> and all its components?
+              </p>
+              {screens.some((s) => s.parentId === deleteTargetScreen.id) && (
+                <div className="text-amber-400 text-[11px] bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl font-mono">
+                  <span className="font-bold block mb-0.5">⚠️ Child Screens Included</span>
+                  Deleting "{deleteTargetScreen.name}" will also delete all child screens under it.
+                </div>
+              )}
+              <p className="text-slate-400 text-[11px]">This action cannot be undone.</p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetScreen(null)}
+                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteScreen(deleteTargetScreen.id);
+                  setDeleteTargetScreen(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Confirm Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Modal for Resetting to Seed Data */}
+      {showResetConfirmModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 w-full max-w-sm space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-sky-400">
+                <RotateCcw className="w-4 h-4" />
+                <h3 className="text-xs font-bold uppercase tracking-wide font-mono">
+                  Reset Seed Data
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResetConfirmModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-300 font-mono">
+              <p>
+                Are you sure you want to reset the canvas to default seed data?
+              </p>
+              <p className="text-slate-400 text-[11px]">
+                Custom screens, child screens, and modified component layouts will be restored to default factory presets.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirmModal(false)}
+                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetConfirmModal(false);
+                  resetToSeedData();
+                }}
+                className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Confirm Reset</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

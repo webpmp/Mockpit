@@ -172,7 +172,7 @@ export const BottomDock: React.FC = () => {
             )}
 
             <Icon className="w-4 h-4 transition-transform group-hover:scale-105" style={{ color: isActive && !isEditor ? 'var(--color-primary)' : undefined }} />
-            <span className="text-[9px] font-bold tracking-wider uppercase font-mono max-w-[80px] truncate">{item.name}</span>
+            <span className="text-[0.5625rem] font-bold tracking-wider uppercase font-mono max-w-[80px] truncate">{item.name}</span>
 
             {/* Active Pill Indicator (Presentation Mode) */}
             {isActive && !isEditor && (

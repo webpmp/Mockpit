@@ -50,8 +50,7 @@ export const VehicleBackground: React.FC = () => {
 
   // User scale modifier: 100% setting = 1.0
   const userScaleRatio = (scale ?? 100) / 100;
-  // Base scale ~1.35 to fit comfortably within the canvas with ~10-15% edge margins
-  const baseScaleVal = 1.35 * userScaleRatio;
+  const baseScaleVal = userScaleRatio;
 
   // Dynamically resolve active canvas theme color for vehicle tinting
   const tintColor = activePalette?.primary || gridConfig?.color || '#38bdf8';
@@ -72,7 +71,7 @@ export const VehicleBackground: React.FC = () => {
 
   return (
     <div
-      className={`absolute inset-0 pointer-events-none z-[1] overflow-hidden flex ${positionClass} p-8 sm:p-12`}
+      className={`absolute inset-0 pointer-events-none z-[1] overflow-hidden flex ${positionClass}`}
       style={{
         pointerEvents: 'none',
         userSelect: 'none',
@@ -97,9 +96,9 @@ export const VehicleBackground: React.FC = () => {
         </defs>
       </svg>
 
-      {/* Bounded vehicle container (~72% max canvas size) ensuring comfortable edge margins */}
+      {/* Full-bleed background container flush with all canvas edges */}
       <div
-        className="relative w-[72%] h-[72%] max-w-full max-h-full flex items-center justify-center pointer-events-none transition-all duration-300"
+        className="relative w-full h-full flex items-center justify-center pointer-events-none transition-all duration-300"
         style={{
           opacity: opacityVal,
           transform: `scale(${baseScaleVal})`,
@@ -107,11 +106,11 @@ export const VehicleBackground: React.FC = () => {
           pointerEvents: 'none',
         }}
       >
-        {/* Crisp original source vehicle PNG with GPU theme tinting and object-fit: contain */}
+        {/* Full-bleed source vehicle PNG with GPU theme tinting and object-fit: cover */}
         <img
           src={displayVehicle}
           alt="Vehicle Background Silhouette"
-          className="w-full h-full object-contain pointer-events-none select-none transition-all duration-300"
+          className="w-full h-full object-cover pointer-events-none select-none transition-all duration-300"
           style={{
             filter: blurVal > 0 ? `url(#${filterId}) blur(${blurVal}px)` : `url(#${filterId})`,
             mixBlendMode: resolvedBlendMode,

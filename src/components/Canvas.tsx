@@ -2,8 +2,9 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ComponentRenderer, renderNotificationIcon } from './ComponentRenderer';
 import { BottomDock } from './BottomDock';
 import { VehicleBackground } from './VehicleBackground';
+import { VirtualKeyboard } from './VirtualKeyboard';
 import { useMockpitStore } from '../store/useMockpitStore';
-import { ActiveView, ComponentInstance, NotificationStackPosition, TransitionStyle } from '../types';
+import { ActiveView, ComponentInstance, NotificationStackPosition, TransitionStyle, TEXT_SCALE_FACTORS } from '../types';
 import { COMPONENT_FLAGS } from '../config/componentFlags';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, FOCUSED_APP_RECT } from '../config/constants';
 import { getResolvedProps } from '../lib/bindingEvaluator';
@@ -96,6 +97,7 @@ export const Canvas: React.FC = () => {
   const screenMode = useMockpitStore((s) => s.screenMode);
   const activeView = useMockpitStore((s) => s.activeView);
   const gridConfig = useMockpitStore((s) => s.gridConfig);
+  const textScale = useMockpitStore((s) => s.textScale);
 
   const selectComponent = useMockpitStore((s) => s.selectComponent);
   const setActiveView = useMockpitStore((s) => s.setActiveView);
@@ -105,6 +107,9 @@ export const Canvas: React.FC = () => {
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
 
   const isPresentation = screenMode === 'presentation';
+
+  const activeScreenDef = screens.find((s) => s.id === activeView);
+  const activeScreenDisplayName = activeScreenDef ? activeScreenDef.name : activeView;
 
   // v0.11 Ambient simulation ticker in Presentation mode
   useEffect(() => {
@@ -309,8 +314,13 @@ export const Canvas: React.FC = () => {
           newY = Math.round(rawY);
         }
 
-        newX = Math.max(0, Math.min(CANVAS_WIDTH - 100, newX));
-        newY = Math.max(0, Math.min(CANVAS_HEIGHT - 50, newY));
+        const currentComps = useMockpitStore.getState().components;
+        const comp = currentComps.find((c) => c.id === dragInfo.id);
+        const compW = comp?.width || 100;
+        const compH = comp?.height || 50;
+
+        newX = Math.max(0, Math.min(CANVAS_WIDTH - compW, newX));
+        newY = Math.max(0, Math.min(CANVAS_HEIGHT - compH, newY));
 
         updateComponentPosition(dragInfo.id, newX, newY);
       }
@@ -322,6 +332,14 @@ export const Canvas: React.FC = () => {
         const rawW = resizeInfo.initialW + deltaX;
         const rawH = resizeInfo.initialH + deltaY;
 
+        const currentComps = useMockpitStore.getState().components;
+        const comp = currentComps.find((c) => c.id === resizeInfo.id);
+        const compX = comp?.x ?? 0;
+        const compY = comp?.y ?? 0;
+
+        const maxW = Math.max(40, CANVAS_WIDTH - compX);
+        const maxH = Math.max(40, CANVAS_HEIGHT - compY);
+
         let newW: number;
         let newH: number;
 
@@ -329,11 +347,11 @@ export const Canvas: React.FC = () => {
           newW = Math.round(rawW / gridConfig.size) * gridConfig.size;
           newH = Math.round(rawH / gridConfig.size) * gridConfig.size;
           const minSize = Math.max(gridConfig.size, 40);
-          newW = Math.max(minSize, newW);
-          newH = Math.max(minSize, newH);
+          newW = Math.max(minSize, Math.min(maxW, newW));
+          newH = Math.max(minSize, Math.min(maxH, newH));
         } else {
-          newW = Math.round(Math.max(120, rawW));
-          newH = Math.round(Math.max(80, rawH));
+          newW = Math.round(Math.max(40, Math.min(maxW, rawW)));
+          newH = Math.round(Math.max(40, Math.min(maxH, rawH)));
         }
 
         updateComponentSize(resizeInfo.id, newW, newH);
@@ -412,12 +430,13 @@ export const Canvas: React.FC = () => {
       >
         {/* Scaled Inner Canvas */}
         <div
-          className="absolute inset-0 origin-top-left overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
+          className="vehicle-hmi-canvas absolute inset-0 origin-top-left overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
           style={{
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
             transform: `scale(${scale})`,
-          }}
+            '--text-scale': TEXT_SCALE_FACTORS[textScale] || 1,
+          } as React.CSSProperties}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
         >
@@ -462,8 +481,6 @@ export const Canvas: React.FC = () => {
           {/* Infotainment Dashboard Header Bar */}
           <div className="absolute top-0 left-0 right-0 h-10 px-8 bg-slate-950/90 backdrop-blur border-b border-slate-800/60 flex items-center justify-between text-xs font-mono text-slate-400 z-30 pointer-events-auto">
             <div className="flex items-center gap-4">
-              <span>72°F OUTSIDE</span>
-
               {/* Minimized Notifications Row */}
               {isPresentation && (() => {
                 const minimizedNotifs = sortNotificationsBySeverity(
@@ -504,6 +521,7 @@ export const Canvas: React.FC = () => {
               })()}
             </div>
             <div className="flex items-center gap-4 font-bold">
+              <span className="mr-3 font-normal text-slate-300">72°F</span>
               <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               {/* Animated 1-5 bar signal indicator (v0.11) */}
               <div
@@ -538,12 +556,13 @@ export const Canvas: React.FC = () => {
                 {activeView === 'media' && <Music className="w-8 h-8" />}
                 {activeView === 'phone' && <Phone className="w-8 h-8" />}
                 {activeView === 'home' && <LayoutGrid className="w-8 h-8" />}
+                {!['navigation', 'media', 'phone', 'home'].includes(activeView) && <Layout className="w-8 h-8" />}
               </div>
               <p className="text-sm font-bold text-slate-300 uppercase font-mono tracking-wider">
-                {activeView.toUpperCase()} SCREEN CANVAS EMPTY
+                {activeScreenDisplayName.toUpperCase()} SCREEN CANVAS EMPTY
               </p>
               <p className="text-xs text-slate-500 max-w-md text-center mt-1 font-mono">
-                Drag components from the library on the left or click + to author this app screen's layout.
+                Drag components from the library on the left, or click the + icon next to a component to add it to this screen.
               </p>
             </div>
           )}
@@ -581,13 +600,22 @@ export const Canvas: React.FC = () => {
                   return (
                     <div
                       key={comp.id}
-                      className="absolute group cursor-pointer transition-all duration-300 ease-out pointer-events-auto"
+                      className={`absolute group cursor-pointer pointer-events-auto ${
+                        dragInfo?.id === comp.id || resizeInfo?.id === comp.id
+                          ? 'transition-none'
+                          : 'transition-all duration-200 ease-out'
+                      }`}
                       style={{
                         left: comp.x,
                         top: comp.y,
                         width: comp.width,
                         height: comp.height,
                         zIndex: effectiveZ,
+                      }}
+                      onMouseDown={(e) => {
+                        if (!isPresentation) {
+                          handleMouseDown(e, comp.id, comp.x, comp.y);
+                        }
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -748,6 +776,8 @@ export const Canvas: React.FC = () => {
           })()}
 
 
+          {/* On-Screen Touch Virtual Keyboard anchored to vehicle canvas */}
+          <VirtualKeyboard />
         </div>
       </div>
     </div>

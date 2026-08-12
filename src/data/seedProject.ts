@@ -33,10 +33,10 @@ export const SEED_COMPONENTS: ComponentInstance[] = [
   {
     id: 'comp-speed-1',
     type: 'speed',
-    x: 810,
+    x: 800,
     y: 180,
     width: 220,
-    height: 150,
+    height: 160,
     staticProps: {
       label: '0',
       unit: 'mph',
@@ -91,7 +91,7 @@ export const SEED_COMPONENTS: ComponentInstance[] = [
     x: 1480,
     y: 60,
     width: 360,
-    height: 130,
+    height: 140,
     staticProps: {
       label: '82%',
       color: '#22c55e',
@@ -130,7 +130,7 @@ export const SEED_COMPONENTS: ComponentInstance[] = [
     x: 80,
     y: 220,
     width: 340,
-    height: 130,
+    height: 120,
     staticProps: {
       icon: 'alert-triangle',
       message: 'DOOR AJAR',
@@ -160,7 +160,7 @@ export const SEED_COMPONENTS: ComponentInstance[] = [
     id: 'comp-charging-1',
     type: 'charging',
     x: 1480,
-    y: 210,
+    y: 220,
     width: 360,
     height: 120,
     staticProps: {

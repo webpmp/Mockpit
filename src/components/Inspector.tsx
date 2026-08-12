@@ -12,9 +12,12 @@ const ScreenPropertiesPanel: React.FC = () => {
   const deleteScreen = useMockpitStore((s) => s.deleteScreen);
   const componentsByScreen = useMockpitStore((s) => s.componentsByScreen);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   const activeScreen = screens.find((s) => s.id === activeView) || screens[0];
   const isHome = activeScreen?.id === 'home';
   const compCount = (componentsByScreen[activeScreen?.id] || []).length;
+  const childScreens = screens.filter((s) => s.parentId === activeScreen?.id);
 
   const transitionOptions: Array<{ id: TransitionStyle; label: string; desc: string }> = [
     { id: 'fade', label: 'Fade', desc: 'Smooth cross-fade opacity transition' },
@@ -133,15 +136,68 @@ const ScreenPropertiesPanel: React.FC = () => {
       {!isHome && (
         <div className="border-t border-slate-800/80 pt-4">
           <button
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to delete screen "${activeScreen.name}" and all its components?`)) {
-                deleteScreen(activeScreen.id);
-              }
-            }}
+            onClick={() => setShowDeleteModal(true)}
             className="w-full p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
           >
             <Trash2 className="w-4 h-4" /> Delete Screen
           </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && !isHome && activeScreen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 w-full max-w-sm space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-rose-400">
+                <Trash2 className="w-4 h-4" />
+                <h3 className="text-xs font-bold uppercase tracking-wide font-mono">
+                  Delete Screen
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-300 font-mono">
+              <p>
+                Are you sure you want to delete <span className="font-bold text-sky-300">"{activeScreen.name}"</span> and all its components?
+              </p>
+              {childScreens.length > 0 && (
+                <div className="text-amber-400 text-[11px] bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl font-mono">
+                  <span className="font-bold block mb-0.5">⚠️ Child Screens Included</span>
+                  Deleting "{activeScreen.name}" will also delete {childScreens.length} child screen{childScreens.length > 1 ? 's' : ''} ({childScreens.map((c) => c.name).join(', ')}).
+                </div>
+              )}
+              <p className="text-slate-400 text-[11px]">This action cannot be undone.</p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  deleteScreen(activeScreen.id);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Confirm Delete</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -159,7 +215,7 @@ const VEHICLE_STATE_FIELDS: Array<{ field: keyof VehicleState; label: string; ty
 ];
 
 const CONDITIONS: BindingCondition[] = ['<', '>', '=', '!=', '>='];
-const TARGET_PROPS: TargetProp[] = ['color', 'visible', 'text', 'icon', 'severity'];
+const TARGET_PROPS: TargetProp[] = ['color', 'visible', 'opacity', 'text', 'icon', 'severity'];
 
 const GeometryInput: React.FC<{
   label: string;
@@ -218,6 +274,8 @@ export const Inspector: React.FC = () => {
   const updateComponentSize = useMockpitStore((s) => s.updateComponentSize);
   const updateComponentZIndex = useMockpitStore((s) => s.updateComponentZIndex);
   const bringToFront = useMockpitStore((s) => s.bringToFront);
+  const setEgoVehicleType = useMockpitStore((s) => s.setEgoVehicleType);
+  const egoVehicleType = useMockpitStore((s) => s.egoVehicleType);
   const sendToBack = useMockpitStore((s) => s.sendToBack);
   const addBinding = useMockpitStore((s) => s.addBinding);
   const updateBinding = useMockpitStore((s) => s.updateBinding);
@@ -380,8 +438,8 @@ export const Inspector: React.FC = () => {
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-400">
             Inspector Panel
           </span>
-          <h2 className="text-sm font-bold text-slate-100 capitalize">
-            {selectedComp.type} Component
+          <h2 className="text-sm font-bold text-slate-100">
+            {DEFAULT_COMPONENT_LABELS[selectedComp.type] || selectedComp.type}
           </h2>
         </div>
         <button
@@ -419,7 +477,7 @@ export const Inspector: React.FC = () => {
             }`}
             title={
               copiedComponent
-                ? `Paste copied ${copiedComponent.component.type} component (Ctrl/Cmd+V)`
+                ? `Paste copied ${DEFAULT_COMPONENT_LABELS[copiedComponent.component.type] || copiedComponent.component.type} component (Ctrl/Cmd+V)`
                 : 'Nothing in clipboard to paste'
             }
           >
@@ -431,7 +489,7 @@ export const Inspector: React.FC = () => {
         {copiedComponent && (
           <div className="text-[10px] text-slate-400 font-mono flex items-center justify-between pt-0.5">
             <span>In Clipboard:</span>
-            <span className="text-sky-300 font-bold capitalize">{copiedComponent.component.type}</span>
+            <span className="text-sky-300 font-bold">{DEFAULT_COMPONENT_LABELS[copiedComponent.component.type] || copiedComponent.component.type}</span>
           </div>
         )}
       </div>
@@ -473,7 +531,7 @@ export const Inspector: React.FC = () => {
               label="Height"
               value={selectedComp.height}
               min={60}
-              max={DEFAULT_COMPONENT_DIMENSIONS[selectedComp.type]?.maxHeight || 950}
+              max={Math.max(60, 1080 - selectedComp.y)}
               onChange={(val) => updateComponentSize(selectedComp.id, selectedComp.width, val)}
             />
           </div>
@@ -692,16 +750,334 @@ export const Inspector: React.FC = () => {
               </>
             )}
 
+            {selectedComp.type === 'media' && (
+              <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
+                  Music Service
+                </label>
+                <select
+                  value={selectedComp.staticProps.service || 'Spotify'}
+                  onChange={(e) => handleStaticPropChange('service', e.target.value)}
+                  className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                >
+                  <option value="Spotify">Spotify</option>
+                  <option value="Apple Music">Apple Music</option>
+                  <option value="YouTube Music">YouTube Music</option>
+                  <option value="Amazon Music">Amazon Music</option>
+                </select>
+              </div>
+            )}
+
+            {['navSearch', 'media', 'navHome', 'navDestination'].includes(selectedComp.type) && (
+              <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">
+                  <span>Keyboard Slide Override</span>
+                  <span className="text-[9px] text-sky-400 font-normal">Touch Keyboard</span>
+                </label>
+                <select
+                  value={selectedComp.staticProps.keyboardSlideDirection || 'default'}
+                  onChange={(e) => handleStaticPropChange('keyboardSlideDirection', e.target.value)}
+                  className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                >
+                  <option value="default">Default (System Settings)</option>
+                  <option value="bottom">Bottom Slide</option>
+                  <option value="top">Top Slide</option>
+                  <option value="left">Left Slide</option>
+                  <option value="right">Right Slide</option>
+                </select>
+              </div>
+            )}
+
+            {selectedComp.type === 'overheadVisualization' && (
+              <div className="space-y-3">
+                {/* Ego Vehicle Model */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                    Ego Vehicle Model
+                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-300 font-mono font-semibold">Silhouette</span>
+                    <select
+                      value={selectedComp.staticProps.egoVehicleType || 'auto'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        handleStaticPropChange('egoVehicleType', val);
+                        if (val !== 'auto') {
+                          setEgoVehicleType(val as any);
+                        }
+                      }}
+                      className="bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 font-semibold"
+                    >
+                      <option value="auto">Auto</option>
+                      <option value="compactSedan">Compact Sedan</option>
+                      <option value="midsizeSedan">Mid-size Sedan</option>
+                      <option value="luxurySedan">Luxury Sedan</option>
+                      <option value="truck">Truck</option>
+                      <option value="coupe">Coupe</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Traffic System */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                    Traffic Density Control
+                  </span>
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-[11px] text-slate-300 font-mono">Preset</span>
+                    <select
+                      value={(() => {
+                        const s = selectedComp.staticProps.sameDirCount;
+                        const o = selectedComp.staticProps.opposingDirCount;
+                        const td = selectedComp.staticProps.trafficDensity;
+                        if (s === '2' && o === '1') return 'low';
+                        if (s === '3' && o === '3') return 'medium';
+                        if (s === '5' && o === '4') return 'high';
+                        if (td === 'custom') return 'custom';
+                        if (s !== undefined || o !== undefined) return 'custom';
+                        return td || 'low';
+                      })()}
+                      onChange={(e) => {
+                        const preset = e.target.value;
+                        if (!selectedComp) return;
+                        if (preset === 'low') {
+                          updateComponentStaticProps(selectedComp.id, {
+                            trafficDensity: 'low',
+                            sameDirCount: '2',
+                            opposingDirCount: '1',
+                          });
+                        } else if (preset === 'medium') {
+                          updateComponentStaticProps(selectedComp.id, {
+                            trafficDensity: 'medium',
+                            sameDirCount: '3',
+                            opposingDirCount: '3',
+                          });
+                        } else if (preset === 'high') {
+                          updateComponentStaticProps(selectedComp.id, {
+                            trafficDensity: 'high',
+                            sameDirCount: '5',
+                            opposingDirCount: '4',
+                          });
+                        } else if (preset === 'custom') {
+                          updateComponentStaticProps(selectedComp.id, {
+                            trafficDensity: 'custom',
+                          });
+                        }
+                      }}
+                      className="bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 font-semibold"
+                    >
+                      <option value="low">Low (3 Cars)</option>
+                      <option value="medium">Medium (6 Cars)</option>
+                      <option value="high">High (9 Cars)</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[9px] text-slate-400 block font-mono">Same-Dir Vehicles</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="8"
+                        value={
+                          selectedComp.staticProps.sameDirCount !== undefined
+                            ? selectedComp.staticProps.sameDirCount
+                            : selectedComp.staticProps.trafficDensity === 'high'
+                            ? '5'
+                            : selectedComp.staticProps.trafficDensity === 'medium'
+                            ? '3'
+                            : '2'
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const currentOpp =
+                            selectedComp.staticProps.opposingDirCount !== undefined
+                              ? selectedComp.staticProps.opposingDirCount
+                              : selectedComp.staticProps.trafficDensity === 'high'
+                              ? '4'
+                              : selectedComp.staticProps.trafficDensity === 'medium'
+                              ? '3'
+                              : '1';
+                          let density = 'custom';
+                          if (val === '2' && currentOpp === '1') density = 'low';
+                          else if (val === '3' && currentOpp === '3') density = 'medium';
+                          else if (val === '5' && currentOpp === '4') density = 'high';
+
+                          updateComponentStaticProps(selectedComp.id, {
+                            sameDirCount: val,
+                            trafficDensity: density,
+                          });
+                        }}
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-slate-400 block font-mono">Opposing Vehicles</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="8"
+                        value={
+                          selectedComp.staticProps.opposingDirCount !== undefined
+                            ? selectedComp.staticProps.opposingDirCount
+                            : selectedComp.staticProps.trafficDensity === 'high'
+                            ? '4'
+                            : selectedComp.staticProps.trafficDensity === 'medium'
+                            ? '3'
+                            : '1'
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const currentSame =
+                            selectedComp.staticProps.sameDirCount !== undefined
+                              ? selectedComp.staticProps.sameDirCount
+                              : selectedComp.staticProps.trafficDensity === 'high'
+                              ? '5'
+                              : selectedComp.staticProps.trafficDensity === 'medium'
+                              ? '3'
+                              : '2';
+                          let density = 'custom';
+                          if (currentSame === '2' && val === '1') density = 'low';
+                          else if (currentSame === '3' && val === '3') density = 'medium';
+                          else if (currentSame === '5' && val === '4') density = 'high';
+
+                          updateComponentStaticProps(selectedComp.id, {
+                            opposingDirCount: val,
+                            trafficDensity: density,
+                          });
+                        }}
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Speed Limit Settings */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                      Speed Limit Sign
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleStaticPropChange(
+                          'speedLimitVisible',
+                          selectedComp.staticProps.speedLimitVisible === 'false' ? 'true' : 'false'
+                        )
+                      }
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono transition-colors ${
+                        selectedComp.staticProps.speedLimitVisible !== 'false'
+                          ? 'bg-sky-500 text-slate-950'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700'
+                      }`}
+                    >
+                      {selectedComp.staticProps.speedLimitVisible !== 'false' ? 'SHOW' : 'HIDE'}
+                    </button>
+                  </div>
+
+                  {selectedComp.staticProps.speedLimitVisible !== 'false' && (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div>
+                        <label className="text-[9px] text-slate-400 block font-mono">Value</label>
+                        <input
+                          type="text"
+                          value={selectedComp.staticProps.speedLimitValue || '65'}
+                          onChange={(e) => handleStaticPropChange('speedLimitValue', e.target.value)}
+                          className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 block font-mono">Position</label>
+                        <select
+                          value={
+                            selectedComp.staticProps.speedLimitPosition === 'bottom-left'
+                              ? 'bottom-left'
+                              : 'bottom-right'
+                          }
+                          onChange={(e) => handleStaticPropChange('speedLimitPosition', e.target.value)}
+                          className="w-full bg-slate-900 px-1.5 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                        >
+                          <option value="bottom-right">Bottom Right</option>
+                          <option value="bottom-left">Bottom Left</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ADAS Spatial Warnings */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                    ADAS Warnings
+                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-300 font-mono">Blind Spot Warning</span>
+                    <select
+                      value={selectedComp.staticProps.blindSpotWarning || 'auto'}
+                      onChange={(e) => handleStaticPropChange('blindSpotWarning', e.target.value)}
+                      className="bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                    >
+                      <option value="auto">Auto (Proximity)</option>
+                      <option value="true">Force ON</option>
+                      <option value="false">Force OFF</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-300 font-mono">Proximity Sensor Arc</span>
+                    <select
+                      value={selectedComp.staticProps.sensorWarning || 'auto'}
+                      onChange={(e) => handleStaticPropChange('sensorWarning', e.target.value)}
+                      className="bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                    >
+                      <option value="auto">Auto (Proximity)</option>
+                      <option value="true">Force ON</option>
+                      <option value="false">Force OFF</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {Object.entries(selectedComp.staticProps)
               .filter(
                 ([key]) =>
                   key !== 'displayStyle' &&
                   key !== 'maxSpeed' &&
                   key !== 'label' &&
+                  key !== 'service' &&
+                  key !== 'keyboardSlideDirection' &&
                   key !== 'drainPercentPerInterval' &&
                   key !== 'drainIntervalSeconds' &&
                   key !== 'chargePercentPerInterval' &&
-                  key !== 'chargeIntervalSeconds'
+                  key !== 'chargeIntervalSeconds' &&
+                  key !== 'lanesCount' &&
+                  key !== 'opposingLanesCount' &&
+                  key !== 'sameDirCount' &&
+                  key !== 'opposingDirCount' &&
+                  key !== 'intersectionEnabled' &&
+                  key !== 'crossTrafficCount' &&
+                  key !== 'trafficLightState' &&
+                  key !== 'crosswalkEnabled' &&
+                  key !== 'stopLineEnabled' &&
+                  key !== 'speedLimitValue' &&
+                  key !== 'speedLimitUnits' &&
+                  key !== 'speedLimitVisible' &&
+                  key !== 'speedLimitPosition' &&
+                  key !== 'speedLimitStyle' &&
+                  key !== 'blindSpotWarning' &&
+                  key !== 'leftBlindSpot' &&
+                  key !== 'rightBlindSpot' &&
+                  key !== 'blindSpotColor' &&
+                  key !== 'blindSpotOpacity' &&
+                  key !== 'sensorWarning' &&
+                  key !== 'sensorColor' &&
+                  key !== 'sensorOpacity' &&
+                  key !== 'showPedestrians' &&
+                  key !== 'showCones' &&
+                  key !== 'showConstruction' &&
+                  key !== 'trafficData' &&
+                  key !== 'sceneObjectsData'
               )
               .map(([key, val]) => (
                 <div key={key} className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">

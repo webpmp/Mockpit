@@ -16,6 +16,7 @@ import {
   Trash2,
   AlertTriangle,
   LayoutGrid,
+  Eye,
 } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ComponentType, NotificationStackPosition } from '../types';
@@ -33,7 +34,7 @@ interface ComponentLibraryItem {
 const NOTIFICATION_LIBRARY_ITEMS: ComponentLibraryItem[] = [
   {
     type: 'warning',
-    title: 'Warning / Alert Overlay',
+    title: 'Warning Alert Overlay',
     description: 'Pop-up warning overlay on critical event',
     icon: AlertTriangle,
     color: '#f59e0b',
@@ -52,7 +53,7 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
   },
   {
     type: 'gear',
-    title: 'Gear Indicator',
+    title: 'Gear Select',
     description: 'Drive mode gear selector (P/R/N/D)',
     icon: Gauge,
     color: '#f8fafc',
@@ -67,16 +68,8 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
     defaultBindingDesc: 'text → bound live to speed',
   },
   {
-    type: 'subnav',
-    title: 'Sub-Navigation Bar',
-    description: 'Dynamic tab row for switching child screens',
-    icon: LayoutGrid,
-    color: '#38bdf8',
-    defaultBindingDesc: 'Dynamic tabs for current screen children',
-  },
-  {
     type: 'charging',
-    title: 'Charging Badge',
+    title: 'Charging Status',
     description: 'Active EV charging status pill',
     icon: Zap,
     color: '#3b82f6',
@@ -110,7 +103,7 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
     ? [
         {
           type: 'tirePressure' as ComponentType,
-          title: 'Tire Pressure Display',
+          title: 'Tire Pressure Monitor',
           description: '4-wheel TPMS PSI pressure layout',
           icon: CircleDot,
           color: '#eab308',
@@ -131,7 +124,7 @@ const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [
   },
   {
     type: 'navHome',
-    title: 'Home Address',
+    title: 'Home Location',
     description: 'Stored home location text & Lat/Lng coordinates',
     icon: MapPin,
     color: '#38bdf8',
@@ -139,7 +132,7 @@ const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [
   },
   {
     type: 'navDestination',
-    title: 'Destination & Waypoints',
+    title: 'Trip Planner Component',
     description: 'Destination input with ordered multi-stop trip list',
     icon: Compass,
     color: '#f59e0b',
@@ -147,7 +140,7 @@ const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [
   },
   {
     type: 'navSearch',
-    title: 'Search Map',
+    title: 'Navigation Search Component',
     description: 'POIs, chargers & restaurant search with mock results',
     icon: MapPin,
     color: '#10b981',
@@ -161,6 +154,14 @@ const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [
     color: '#a855f7',
     defaultBindingDesc: 'Straight-line distance & battery estimate',
   },
+  {
+    type: 'overheadVisualization',
+    title: 'Overhead Driving Visualization',
+    description: 'Top-down ADAS driving environment & spatial visualization',
+    icon: Eye,
+    color: '#38bdf8',
+    defaultBindingDesc: 'Spatial top-down ADAS road & traffic visualization',
+  },
 ];
 
 const MEDIA_WIDGET_ITEMS: ComponentLibraryItem[] = [
@@ -168,11 +169,11 @@ const MEDIA_WIDGET_ITEMS: ComponentLibraryItem[] = [
     ? [
         {
           type: 'media' as ComponentType,
-          title: 'Media Player',
-          description: 'Audio track playback & media controls',
+          title: 'Music Media Player',
+          description: 'Multi-service music player with library, search & playback',
           icon: Music,
           color: '#ec4899',
-          defaultBindingDesc: 'media track & controls shell',
+          defaultBindingDesc: 'Self-contained music player UI',
         },
       ]
     : []),
@@ -183,7 +184,7 @@ const PHONE_WIDGET_ITEMS: ComponentLibraryItem[] = [
     ? [
         {
           type: 'phone' as ComponentType,
-          title: 'Phone / Contacts',
+          title: 'Phone & Contacts',
           description: 'Active phone call & contact display',
           icon: Phone,
           color: '#a855f7',
@@ -554,10 +555,6 @@ export const Sidebar: React.FC = () => {
         );
       })}
 
-      {/* Footer Info */}
-      <div className="mt-auto p-3 border-t border-slate-800/80 bg-slate-950/60 text-[11px] text-slate-400 text-center font-mono shrink-0">
-        {totalComponentsCount} Canvas Components Available
-      </div>
     </div>
   );
 };

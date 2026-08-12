@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   AlertTriangle,
   Battery,
@@ -33,6 +33,9 @@ import {
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { MusicMediaPlayer } from './MusicMediaPlayer';
+import { MockpitInput } from './MockpitInput';
+import { OverheadDrivingVisualization } from './OverheadDrivingVisualization';
 import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ComponentInstance, DriveModeState, VehicleState } from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
@@ -46,22 +49,22 @@ interface ComponentRendererProps {
 }
 
 export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
-  battery: 'High Voltage Battery',
-  gear: 'Drive Select',
-  speed: 'Vehicle Velocity',
-  warning: 'Vehicle Alert',
-  charging: 'EV Power System',
+  battery: 'Battery Indicator',
+  gear: 'Gear Select',
+  speed: 'Speed Readout',
+  warning: 'Warning Alert Overlay',
+  charging: 'Charging Status',
   map: 'Navigation Map',
-  media: 'Audio Player',
+  media: 'Music Media Player',
   climate: 'Climate Control',
-  phone: 'Phone System',
-  driveMode: 'Drive Mode',
-  tirePressure: 'Tire Pressure (TPMS)',
+  phone: 'Phone & Contacts',
+  driveMode: 'Drive Mode Selector',
+  tirePressure: 'Tire Pressure Monitor',
   navHome: 'Home Location',
-  navDestination: 'Trip Route & Waypoints',
-  navSearch: 'POIs & Charger Search',
+  navDestination: 'Trip Planner Component',
+  navSearch: 'Navigation Search Component',
   navTripEstimate: 'Trip Estimate',
-  subnav: 'Sub-Navigation Widget',
+  overheadVisualization: 'Overhead Driving Visualization',
 };
 
 export const getAlphaColor = (color: string, hexAlpha: string, mixPercent: number = 25): string => {
@@ -105,8 +108,6 @@ export const getComponentDefaultIcon = (type: string, customColor: string, iconK
       return <Search className={className} style={{ color: customColor }} />;
     case 'navTripEstimate':
       return <Zap className={className} style={{ color: customColor }} />;
-    case 'subnav':
-      return <Layers className={className} style={{ color: customColor }} />;
     default:
       return <Gauge className={className} style={{ color: customColor }} />;
   }
@@ -130,7 +131,7 @@ export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex items-center justify-between text-[10px] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1.5 border-b border-slate-800/60 ${className}`}>
+    <div className={`flex items-center justify-between text-[0.625rem] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1.5 border-b border-slate-800/60 ${className}`}>
       <span className="flex items-center gap-1.5 min-w-0 truncate">
         {getComponentDefaultIcon(type, customColor, iconKey)}
         <span className="truncate">{label}</span>
@@ -221,6 +222,315 @@ const MapResizer: React.FC = () => {
   return null;
 };
 
+const NavHomeWidget: React.FC<{
+  component: ComponentInstance;
+  resolved: Record<string, any>;
+  isSelected?: boolean;
+  customColor: string;
+  baseOpacity: string;
+  styleOpacity?: number;
+}> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
+  const initialAddress = resolved.address || component.staticProps?.address || '1234 Silicon Way, San Jose, CA 95134';
+  const [address, setAddress] = React.useState(initialAddress);
+  const coords = resolved.coords || component.staticProps?.coords || '37.3861° N, 122.0839° W';
+  const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navHome;
+
+  return (
+    <div
+      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
+    >
+      <ComponentHeader
+        type="navHome"
+        label={headerLabel}
+        customColor={customColor}
+        rightElement={
+          <span className="text-[0.5625rem] font-mono px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 font-semibold">
+            SAVED
+          </span>
+        }
+      />
+
+      <div className="flex-1 min-h-0 my-1.5 space-y-1.5 flex flex-col justify-center">
+        <MockpitInput
+          value={address}
+          onChange={setAddress}
+          placeholder="Enter Home address..."
+          componentId={component.id}
+          keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+          icon={<MapPin className="w-3.5 h-3.5 text-slate-400" />}
+        />
+        <div className="text-[0.625rem] text-slate-400 font-mono pl-1">
+          Coordinates: <span className="text-slate-300">{coords}</span>
+        </div>
+      </div>
+
+      <button
+        onClick={() => alert(`Starting route to Home: ${address}`)}
+        className="w-full py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+      >
+        <Navigation className="w-3.5 h-3.5 text-slate-400" /> Navigate Home
+      </button>
+    </div>
+  );
+};
+
+const NavDestinationWidget: React.FC<{
+  component: ComponentInstance;
+  resolved: Record<string, any>;
+  isSelected?: boolean;
+  customColor: string;
+  baseOpacity: string;
+  styleOpacity?: number;
+}> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
+  const initialPrimaryDest = resolved.destination || component.staticProps?.destination || 'Yosemite National Park Valley';
+  const [primaryDest, setPrimaryDest] = React.useState(initialPrimaryDest);
+  const initialWaypoints = component.staticProps?.waypoints
+    ? JSON.parse(component.staticProps.waypoints)
+    : ['Stop 1: EV Supercharger Bay (12 mins)', 'Stop 2: Scenic Overlook Rest Area'];
+  const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navDestination;
+
+  return (
+    <div
+      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
+    >
+      <ComponentHeader
+        type="navDestination"
+        label={headerLabel}
+        customColor={customColor}
+        rightElement={
+          <span className="text-[0.5625rem] font-mono text-slate-400">{initialWaypoints.length + 1} STOPS</span>
+        }
+      />
+
+      <div className="flex-1 min-h-0 my-1.5 space-y-1.5 overflow-y-auto pr-1 custom-scrollbar">
+        <MockpitInput
+          value={primaryDest}
+          onChange={setPrimaryDest}
+          placeholder="Primary Destination..."
+          componentId={component.id}
+          keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+          icon={<Flag className="w-3.5 h-3.5 text-slate-400" />}
+        />
+
+        {initialWaypoints.map((wp: string, i: number) => (
+          <div key={i} className="p-1.5 rounded-lg bg-slate-950/40 border border-slate-800/60 flex items-center justify-between text-[0.6875rem] text-slate-300">
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="w-4 h-4 rounded-full bg-slate-800 text-[0.5625rem] font-bold font-mono flex items-center justify-center text-slate-400 shrink-0">
+                {i + 1}
+              </span>
+              <span className="truncate">{wp}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
+        <button
+          onClick={() => alert(`Recalculating route to ${primaryDest}...`)}
+          className="flex-1 py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1 cursor-pointer border border-slate-700"
+        >
+          <Navigation className="w-3.5 h-3.5 text-slate-400" /> Start Guidance
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const NavSearchWidget: React.FC<{
+  component: ComponentInstance;
+  resolved: Record<string, any>;
+  isSelected?: boolean;
+  customColor: string;
+  baseOpacity: string;
+  styleOpacity?: number;
+}> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
+  const [query, setQuery] = React.useState('');
+  const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navSearch;
+
+  const samplePOIs = [
+    { name: 'Tesla Supercharger - 250kW', status: '8/12 Open', dist: '1.2 mi' },
+    { name: 'Electrify America - 350kW', status: '4/6 Open', dist: '2.4 mi' },
+    { name: 'Starbucks Coffee Drive-thru', status: 'Open Now', dist: '0.8 mi' },
+  ];
+
+  const filteredPOIs = query.trim()
+    ? samplePOIs.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+    : samplePOIs;
+
+  return (
+    <div
+      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
+    >
+      <ComponentHeader
+        type="navSearch"
+        label={headerLabel}
+        customColor={customColor}
+        rightElement={
+          <span className="text-[0.5625rem] font-mono text-slate-400">NEARBY</span>
+        }
+      />
+
+      <div className="my-1">
+        <MockpitInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Search EV chargers, food, parking..."
+          componentId={component.id}
+          keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+          icon={<Search className="w-3.5 h-3.5 text-slate-500" />}
+        />
+      </div>
+
+      <div className="flex-1 min-h-0 my-1 space-y-1 overflow-y-auto pr-1 custom-scrollbar">
+        {filteredPOIs.length === 0 ? (
+          <div className="text-[0.6875rem] text-slate-500 italic p-1">No matching results</div>
+        ) : (
+          filteredPOIs.map((poi, idx) => (
+            <div
+              key={idx}
+              onClick={() => alert(`Selected POI: ${poi.name}`)}
+              className="p-1.5 rounded-lg bg-slate-950/50 hover:bg-slate-800/80 border border-slate-800/80 flex items-center justify-between cursor-pointer transition-colors"
+            >
+              <div className="min-w-0 pr-1">
+                <div className="text-[0.6875rem] font-bold text-slate-200 truncate">{poi.name}</div>
+                <div className="text-[0.5625rem] text-emerald-400 font-mono">{poi.status}</div>
+              </div>
+              <span className="text-[0.625rem] font-mono text-slate-400 shrink-0 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                {poi.dist}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="text-[0.5625rem] text-slate-500 font-mono text-center pt-1 border-t border-slate-800/60">
+        FILTERED SAMPLE POIS
+      </div>
+    </div>
+  );
+};
+
+interface TirePressureWidgetProps {
+  component: ComponentInstance;
+  resolved: Record<string, any>;
+  isSelected?: boolean;
+  customColor: string;
+  baseOpacity: string;
+  styleOpacity: number;
+}
+
+const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
+  component,
+  resolved,
+  isSelected,
+  customColor,
+  baseOpacity,
+  styleOpacity,
+}) => {
+  const flStr = resolved.frontLeft || '35 PSI';
+  const frStr = resolved.frontRight || '35 PSI';
+  const rlStr = resolved.rearLeft || '36 PSI';
+  const rrStr = resolved.rearRight || '36 PSI';
+  const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.tirePressure;
+
+  const warningThresh = Number(component.staticProps?.warningThreshold) || 31;
+  const criticalThresh = Number(component.staticProps?.criticalThreshold) || 27;
+
+  const parsePsi = (val: string) => {
+    const num = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+    return isNaN(num) ? 35 : num;
+  };
+
+  const tires = [
+    { code: 'FL', label: 'Front Left', str: flStr, psi: parsePsi(flStr) },
+    { code: 'FR', label: 'Front Right', str: frStr, psi: parsePsi(frStr) },
+    { code: 'RL', label: 'Rear Left', str: rlStr, psi: parsePsi(rlStr) },
+    { code: 'RR', label: 'Rear Right', str: rrStr, psi: parsePsi(rrStr) },
+  ];
+
+  const getStatus = (psi: number) => {
+    if (psi <= criticalThresh) return 'critical';
+    if (psi <= warningThresh) return 'warning';
+    return 'normal';
+  };
+
+  const triggeredRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    tires.forEach((tire) => {
+      const status = getStatus(tire.psi);
+      const prevStatus = triggeredRef.current[tire.code];
+
+      if (status !== 'normal' && status !== prevStatus) {
+        triggeredRef.current[tire.code] = status;
+        useMockpitStore.getState().triggerNotification({
+          message: `${status === 'critical' ? 'CRITICAL' : 'LOW'} TIRE PRESSURE: ${tire.code} (${tire.psi} PSI)`,
+          icon: 'alert-triangle',
+          color: status === 'critical' ? '#ef4444' : '#f59e0b',
+          severity: status,
+        });
+      } else if (status === 'normal' && prevStatus) {
+        delete triggeredRef.current[tire.code];
+      }
+    });
+  }, [flStr, frStr, rlStr, rrStr, warningThresh, criticalThresh]);
+
+  return (
+    <div
+      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
+    >
+      <ComponentHeader
+        type="tirePressure"
+        label={headerLabel}
+        customColor={customColor}
+      />
+
+      <div className="flex-1 min-h-0 grid grid-cols-2 gap-2 my-1 text-center items-center">
+        {tires.map((tire) => {
+          const status = getStatus(tire.psi);
+          let containerClasses = 'p-2 rounded-xl border transition-all duration-300 flex flex-col justify-center items-center';
+          let labelClasses = 'text-[0.625rem] block font-mono font-bold';
+          let valClasses = 'text-xs font-black font-mono';
+
+          if (status === 'critical') {
+            containerClasses += ' bg-red-950/60 border-red-500/80 shadow-[0_0_12px_rgba(239,68,68,0.3)] animate-pulse';
+            labelClasses += ' text-red-400';
+            valClasses += ' text-red-300';
+          } else if (status === 'warning') {
+            containerClasses += ' bg-amber-950/50 border-amber-500/80 shadow-[0_0_10px_rgba(245,158,11,0.2)]';
+            labelClasses += ' text-amber-400';
+            valClasses += ' text-amber-300';
+          } else {
+            containerClasses += ' bg-slate-950/60 border-slate-800/80';
+            labelClasses += ' text-slate-500';
+            valClasses += ' text-slate-100';
+          }
+
+          return (
+            <div key={tire.code} className={containerClasses}>
+              <div className="flex items-center gap-1 justify-center">
+                <span className={labelClasses}>{tire.code}</span>
+                {status !== 'normal' && (
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      status === 'critical' ? 'bg-red-500 animate-ping' : 'bg-amber-400'
+                    }`}
+                  />
+                )}
+              </div>
+              <span className={valClasses}>{tire.str}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   component,
   vehicleState,
@@ -268,11 +578,31 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   // Visibility logic
   const isVisible = resolved.visible !== 'false' && resolved.visible !== '0';
 
-  if (!isVisible && isPresentation && component.type !== 'charging') {
+  if (!isVisible && isPresentation) {
     return null;
   }
 
-  const baseOpacity = !isVisible ? 'opacity-30 border-dashed' : 'opacity-100';
+  // Parse configured opacity (if present in staticProps or resolved props)
+  let configuredOpacity: number | undefined = undefined;
+  if (resolved.opacity !== undefined) {
+    const parsed = parseFloat(String(resolved.opacity).replace('%', ''));
+    if (!isNaN(parsed)) {
+      configuredOpacity = parsed > 1 ? parsed / 100 : parsed;
+    }
+  } else if (component.staticProps?.opacity !== undefined) {
+    const parsed = parseFloat(String(component.staticProps.opacity).replace('%', ''));
+    if (!isNaN(parsed)) {
+      configuredOpacity = parsed > 1 ? parsed / 100 : parsed;
+    }
+  }
+
+  // Editor mode: force 100% opacity (opacity: 1) regardless of state, bindings, or configured opacity.
+  // Presentation mode: use configured opacity if present, otherwise 1.
+  const styleOpacity = isPresentation
+    ? (configuredOpacity !== undefined ? configuredOpacity : 1)
+    : 1;
+
+  const baseOpacity = 'opacity-100';
   const customColor = resolved.color || 'var(--color-primary)';
 
   switch (component.type) {
@@ -284,10 +614,13 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         : `${roundedPercent}%`;
       const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.battery;
 
+      const maxRangeMiles = Number(component.staticProps?.maxRange) || 350;
+      const liveRange = Math.round((percent / 100) * maxRangeMiles);
+
       return (
         <div
           className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
+          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
             type="battery"
@@ -296,19 +629,19 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             rightElement={
               vehicleState.isCharging ? (
                 vehicleState.batteryPercent >= 100 ? (
-                  <span className="flex items-center gap-1 text-emerald-400 font-bold text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                  <span className="flex items-center gap-1 text-emerald-400 font-bold text-[0.625rem] bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40">
                     <Check className="w-3 h-3 text-emerald-400" />
                     CHARGING COMPLETE
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-emerald-400 font-bold animate-pulse text-[10px] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="flex items-center gap-1 text-emerald-400 font-bold animate-pulse text-[0.625rem] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                     <Zap className="w-3 h-3 fill-emerald-400" />
                     CHARGING
                   </span>
                 )
               ) : (
-                <span className="text-[10px] font-mono text-slate-500">
-                  {Math.round(percent * 4.2)} mi range
+                <span className="text-[0.625rem] font-mono font-bold text-slate-400 uppercase">
+                  {liveRange} MILE RANGE
                 </span>
               )
             }
@@ -318,9 +651,11 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             <div className="text-3xl font-black tracking-tight" style={{ color: customColor }}>
               {textVal}
             </div>
-            <div className="text-xs text-slate-400 font-mono">
-              {vehicleState.isCharging ? '350 kW DC Fast' : `${roundedPercent}% Capacity`}
-            </div>
+            {vehicleState.isCharging && (
+              <div className="text-xs text-slate-400 font-mono">
+                350 kW DC Fast
+              </div>
+            )}
           </div>
 
           {/* Battery Level Progress Bar */}
@@ -346,17 +681,12 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       return (
         <div
           className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between items-stretch shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
+          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
             type="gear"
             label={headerLabel}
             customColor={customColor}
-            rightElement={
-              <span className="text-[10px] font-mono font-bold text-slate-400">
-                {currentGear}
-              </span>
-            }
           />
 
           <div className="flex items-center justify-center my-auto">
@@ -444,7 +774,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         return (
           <div
             className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
-            style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined }}
+            style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
           >
             <ComponentHeader
               type="speed"
@@ -634,7 +964,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         return (
           <div
             className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
-            style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined }}
+            style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
           >
             <ComponentHeader
               type="speed"
@@ -745,10 +1075,9 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               </svg>
             </div>
 
-            <div className="w-full flex justify-between items-center text-slate-500 font-mono z-10 border-t border-slate-800/80 pt-1.5 shrink-0" style={{ fontSize: 'clamp(8px, 4.2cqmin, 16px)' }}>
-              <span>LIMIT 65</span>
+            <div className="w-full flex justify-end items-center text-slate-500 font-mono z-10 border-t border-slate-800/80 pt-1.5 shrink-0" style={{ fontSize: 'clamp(8px, 4.2cqmin, 16px)' }}>
               {vehicleState.cruiseControlActive && (
-                <span className="text-emerald-400 font-bold">CRUISE SET</span>
+                <span className="text-emerald-400 font-bold ml-auto">CRUISE SET</span>
               )}
             </div>
 
@@ -766,7 +1095,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       return (
         <div
           className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
-          style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined }}
+          style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
             type="speed"
@@ -791,10 +1120,9 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             </div>
           </div>
 
-          <div className="w-full flex justify-between items-center text-slate-500 font-mono z-10 border-t border-slate-800/80 pt-2 shrink-0" style={{ fontSize: 'clamp(8px, 4.2cqmin, 16px)' }}>
-            <span>LIMIT 65</span>
+          <div className="w-full flex justify-end items-center text-slate-500 font-mono z-10 border-t border-slate-800/80 pt-2 shrink-0" style={{ fontSize: 'clamp(8px, 4.2cqmin, 16px)' }}>
             {vehicleState.cruiseControlActive && (
-              <span className="text-emerald-400 font-bold">CRUISE SET</span>
+              <span className="text-emerald-400 font-bold ml-auto">CRUISE SET</span>
             )}
           </div>
 
@@ -843,6 +1171,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           style={{
             borderColor: customColor,
             boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
+            opacity: styleOpacity,
           }}
         >
           <ComponentHeader
@@ -889,49 +1218,52 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
 
     case 'charging': {
-      if (forceDismissCharging) {
+      if (forceDismissCharging && isPresentation) {
         return null;
       }
 
       const roundedPercent = Math.round(vehicleState.batteryPercent);
-      const isComplete = isChargingComplete;
+      const targetPercent = Math.min(100, Math.max(1, Number(component.staticProps?.targetChargePercent) || 80));
+      const chargeRateKw = Number(component.staticProps?.chargeRateKw) || 350;
+      const isComplete = isChargingComplete || roundedPercent >= 100;
 
       const displayLabel = isComplete
         ? 'CHARGING COMPLETE'
         : (resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.charging);
 
-      const displayText = isComplete
-        ? 'CHARGING COMPLETE'
-        : (resolved.text || 'DC FAST CHARGING');
-
-      const statusSubtext = isComplete
-        ? '100% Charged • Complete'
-        : `350 kW • ${roundedPercent}% Charged`;
-
       const badgeColor = isComplete ? '#10b981' : customColor;
+
+      let timeString = '';
+      if (!vehicleState.isCharging) {
+        timeString = 'Not Charging';
+      } else if (roundedPercent >= targetPercent) {
+        timeString = targetPercent === 100 ? 'Fully Charged' : `Target ${targetPercent}% Reached`;
+      } else {
+        const remainingPercent = targetPercent - roundedPercent;
+        const remainingKwh = (remainingPercent / 100) * 75;
+        const remainingHours = remainingKwh / chargeRateKw;
+        const remainingMins = Math.max(1, Math.round(remainingHours * 60));
+        timeString = `~${remainingMins} min${remainingMins === 1 ? '' : 's'} to ${targetPercent}%`;
+      }
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-blue-950/40 border p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-slate-900/90 border p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{
             borderColor: badgeColor,
             boxShadow: isVisible || isComplete ? `0 0 20px ${getAlphaColor(badgeColor, '30', 20)}` : undefined,
+            opacity: styleOpacity,
           }}
         >
           <ComponentHeader
             type="charging"
             label={displayLabel}
             customColor={badgeColor}
-            rightElement={
-              <span className={`text-[10px] font-mono font-bold ${isComplete ? 'text-emerald-400' : 'text-blue-400'}`}>
-                {roundedPercent}%
-              </span>
-            }
           />
 
-          <div className="flex items-center gap-3 my-1">
+          <div className="flex items-center gap-3.5 my-1">
             <div
-              className="p-2.5 rounded-xl shrink-0 border"
+              className="p-2.5 rounded-xl shrink-0 border flex items-center justify-center"
               style={{
                 backgroundColor: getAlphaColor(badgeColor, '20', 15),
                 borderColor: getAlphaColor(badgeColor, '40', 25),
@@ -945,13 +1277,19 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               )}
             </div>
 
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-bold tracking-wider truncate" style={{ color: badgeColor }}>
-                {displayText}
-              </span>
-              <span className="text-xs text-slate-400 font-mono">
-                {statusSubtext}
-              </span>
+            <div className="flex flex-col min-w-0 flex-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black tracking-tight" style={{ color: badgeColor }}>
+                  {roundedPercent}%
+                </span>
+                <span className="text-xs font-mono font-semibold text-slate-300 truncate">
+                  {timeString}
+                </span>
+              </div>
+
+              <div className="text-[0.625rem] text-slate-400 font-mono mt-0.5">
+                {vehicleState.isCharging ? `${chargeRateKw} kW Charge Rate` : 'Plug in to start charging'}
+              </div>
             </div>
           </div>
         </div>
@@ -966,22 +1304,22 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3 flex flex-col shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
+          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
             type="map"
             label={headerLabel}
             customColor={customColor}
-            className="mb-1.5"
+            className="px-3 pt-3"
             rightElement={
-              <span className="text-[9px] font-mono text-slate-500">
+              <span className="text-[0.5625rem] font-mono text-slate-500">
                 {lat.toFixed(2)}°, {lng.toFixed(2)}°
               </span>
             }
           />
 
-          <div className="flex-1 w-full rounded-xl overflow-hidden relative border border-slate-800/80 z-0">
+          <div className="flex-1 w-full overflow-hidden relative z-0">
             <MapContainer
               center={[lat, lng]}
               zoom={zoom}
@@ -1004,41 +1342,16 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
     // Scaffolded disabled-by-default infotainment shells
     case 'media': {
-      const title = resolved.title || 'Midnight City';
-      const artist = resolved.artist || 'M83';
       const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.media;
 
       return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
-        >
-          <ComponentHeader
-            type="media"
-            label={headerLabel}
-            customColor={customColor}
-            rightElement={
-              <span className="text-[10px] font-mono text-slate-500">Bluetooth</span>
-            }
-          />
-
-          <div className="flex items-center gap-3 my-1">
-            <div className="w-10 h-10 rounded-lg bg-pink-500/20 border border-pink-500/30 flex items-center justify-center shrink-0">
-              <Music className="w-5 h-5 text-pink-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-slate-100 truncate">{title}</div>
-              <div className="text-xs text-slate-400 truncate">{artist}</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
-            <div className="text-[10px] font-mono text-slate-500">1:42 / 4:03</div>
-            <div className="flex items-center gap-2 text-slate-300">
-              <Play className="w-4 h-4 fill-current text-pink-400" />
-            </div>
-          </div>
-        </div>
+        <MusicMediaPlayer
+          component={component}
+          isSelected={isSelected}
+          customColor={customColor}
+          styleOpacity={styleOpacity}
+          headerLabel={headerLabel}
+        />
       );
     }
 
@@ -1050,28 +1363,28 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       return (
         <div
           className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
+          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
             type="climate"
             label={headerLabel}
             customColor={customColor}
             rightElement={
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">
+              <span className="text-[0.5625rem] px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 font-semibold">
                 DUAL AC
               </span>
             }
           />
 
-          <div className="flex items-center justify-between my-1">
-            <div className="text-3xl font-black text-orange-400 tracking-tight">{temp}</div>
+          <div className="flex-1 min-h-0 flex items-center justify-between my-1">
+            <div className="text-3xl font-black text-slate-100 tracking-tight">{temp}</div>
             <div className="flex items-center gap-1.5 text-xs text-slate-300 font-mono bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/50">
               <Fan className="w-3.5 h-3.5 text-slate-400" />
               <span>{fanSpeed}</span>
             </div>
           </div>
 
-          <div className="text-[10px] text-slate-500 font-mono flex justify-between pt-1 border-t border-slate-800/60">
+          <div className="text-[0.625rem] text-slate-500 font-mono flex justify-between pt-1 border-t border-slate-800/60">
             <span>DRIVER: {temp}</span>
             <span>PASSENGER: 70°F</span>
           </div>
@@ -1087,19 +1400,19 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       return (
         <div
           className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
+          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
             type="phone"
             label={headerLabel}
             customColor={customColor}
             rightElement={
-              <span className="text-[9px] text-emerald-400 font-mono">CONNECTED</span>
+              <span className="text-[0.5625rem] text-emerald-400 font-mono">CONNECTED</span>
             }
           />
 
-          <div className="my-1 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 font-bold text-xs shrink-0">
+          <div className="flex-1 min-h-0 my-1 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 font-bold text-xs shrink-0">
               {contact.charAt(0)}
             </div>
             <div className="min-w-0">
@@ -1108,7 +1421,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             </div>
           </div>
 
-          <div className="text-[10px] text-slate-500 font-mono pt-1 border-t border-slate-800/60">
+          <div className="text-[0.625rem] text-slate-500 font-mono pt-1 border-t border-slate-800/60">
             Hands-free calling ready
           </div>
         </div>
@@ -1123,27 +1436,15 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       return (
         <div
           className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
+          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
             type="driveMode"
             label={headerLabel}
             customColor={customColor}
-            rightElement={
-              <span
-                className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border transition-all"
-                style={{
-                  color: customColor,
-                  backgroundColor: getAlphaColor(customColor, '20', 15),
-                  borderColor: getAlphaColor(customColor, '40', 25),
-                }}
-              >
-                {currentMode.toUpperCase()}
-              </span>
-            }
           />
 
-          <div className="grid grid-cols-3 gap-1.5 my-1">
+          <div className="grid grid-cols-3 gap-1.5 my-auto">
             {modes.map((m) => {
               const isActive = m === currentMode;
               return (
@@ -1173,213 +1474,59 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               );
             })}
           </div>
-
-          <div className="text-[9px] text-slate-500 font-mono text-center border-t border-slate-800/60 pt-1">
-            CLICK TO SELECT DRIVE MODE
-          </div>
         </div>
       );
     }
 
     case 'tirePressure': {
-      const fl = resolved.frontLeft || '35 PSI';
-      const fr = resolved.frontRight || '35 PSI';
-      const rl = resolved.rearLeft || '36 PSI';
-      const rr = resolved.rearRight || '36 PSI';
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.tirePressure;
-
       return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
-        >
-          <ComponentHeader
-            type="tirePressure"
-            label={headerLabel}
-            customColor={customColor}
-            rightElement={
-              <span className="text-[9px] text-slate-500 font-mono">4 TIRES</span>
-            }
-          />
-
-          <div className="grid grid-cols-2 gap-2 my-1 text-center">
-            <div className="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800">
-              <span className="text-[9px] text-slate-500 block font-mono">FL</span>
-              <span className="text-xs font-bold text-emerald-400 font-mono">{fl}</span>
-            </div>
-            <div className="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800">
-              <span className="text-[9px] text-slate-500 block font-mono">FR</span>
-              <span className="text-xs font-bold text-emerald-400 font-mono">{fr}</span>
-            </div>
-            <div className="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800">
-              <span className="text-[9px] text-slate-500 block font-mono">RL</span>
-              <span className="text-xs font-bold text-emerald-400 font-mono">{rl}</span>
-            </div>
-            <div className="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800">
-              <span className="text-[9px] text-slate-500 block font-mono">RR</span>
-              <span className="text-xs font-bold text-emerald-400 font-mono">{rr}</span>
-            </div>
-          </div>
-
-          <div className="text-[9px] text-slate-500 font-mono text-center">ALL TIRES NORMAL</div>
-        </div>
+        <TirePressureWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 
     case 'navHome': {
-      // Note: Real geocoding/routing integration deferred to live network API phase.
-      const address = resolved.address || component.staticProps?.address || '1234 Silicon Way, San Jose, CA 95134';
-      const coords = resolved.coords || component.staticProps?.coords || '37.3861° N, 122.0839° W';
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navHome;
-
       return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
-        >
-          <ComponentHeader
-            type="navHome"
-            label={headerLabel}
-            customColor={customColor}
-            rightElement={
-              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/60">
-                SAVED
-              </span>
-            }
-          />
-
-          <div className="my-2 space-y-1">
-            <div className="text-xs font-bold text-slate-100 flex items-start gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
-              <span className="line-clamp-2">{address}</span>
-            </div>
-            <div className="text-[10px] text-slate-400 font-mono pl-5">
-              Coordinates: <span className="text-slate-300">{coords}</span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => alert(`Starting route to Home: ${address}`)}
-            className="w-full py-1.5 px-2 rounded-xl bg-sky-500/20 hover:bg-sky-500 hover:text-slate-950 text-sky-300 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-sky-500/40"
-          >
-            <Navigation className="w-3.5 h-3.5" /> Navigate Home
-          </button>
-        </div>
+        <NavHomeWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 
     case 'navDestination': {
-      // Note: Real geocoding/routing integration deferred to live network API phase.
-      const primaryDest = resolved.destination || component.staticProps?.destination || 'Yosemite National Park Valley';
-      const initialWaypoints = component.staticProps?.waypoints
-        ? JSON.parse(component.staticProps.waypoints)
-        : ['Stop 1: EV Supercharger Bay (12 mins)', 'Stop 2: Scenic Overlook Rest Area'];
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navDestination;
-
       return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
-        >
-          <ComponentHeader
-            type="navDestination"
-            label={headerLabel}
-            customColor={customColor}
-            rightElement={
-              <span className="text-[9px] font-mono text-slate-400">{initialWaypoints.length + 1} STOPS</span>
-            }
-          />
-
-          <div className="my-1.5 space-y-1.5 overflow-y-auto max-h-[110px] pr-1">
-            <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-100 min-w-0">
-                <Flag className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="truncate">{primaryDest}</span>
-              </div>
-              <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/50 shrink-0 ml-1">
-                DEST
-              </span>
-            </div>
-
-            {initialWaypoints.map((wp: string, i: number) => (
-              <div key={i} className="p-1.5 rounded-lg bg-slate-950/40 border border-slate-800/60 flex items-center justify-between text-[11px] text-slate-300">
-                <div className="flex items-center gap-1.5 truncate">
-                  <span className="w-4 h-4 rounded-full bg-slate-800 text-[9px] font-bold font-mono flex items-center justify-center text-slate-400 shrink-0">
-                    {i + 1}
-                  </span>
-                  <span className="truncate">{wp}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
-            <button
-              onClick={() => alert(`Recalculating route to ${primaryDest}...`)}
-              className="flex-1 py-1.5 px-2 rounded-xl bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 text-amber-300 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1 cursor-pointer border border-amber-500/40"
-            >
-              <Navigation className="w-3.5 h-3.5" /> Start Guidance
-            </button>
-          </div>
-        </div>
+        <NavDestinationWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 
     case 'navSearch': {
-      // Note: Real geocoding/routing integration deferred to live network API phase.
-      const samplePOIs = [
-        { name: 'Tesla Supercharger - 250kW', status: '8/12 Open', dist: '1.2 mi' },
-        { name: 'Electrify America - 350kW', status: '4/6 Open', dist: '2.4 mi' },
-        { name: 'Starbucks Coffee Drive-thru', status: 'Open Now', dist: '0.8 mi' },
-      ];
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navSearch;
-
       return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
-        >
-          <ComponentHeader
-            type="navSearch"
-            label={headerLabel}
-            customColor={customColor}
-            rightElement={
-              <span className="text-[9px] font-mono text-slate-400">NEARBY</span>
-            }
-          />
-
-          <div className="my-1 relative">
-            <input
-              type="text"
-              placeholder="Search EV chargers, food, parking..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 pl-7 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/60 font-mono"
-              readOnly
-            />
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2 top-2" />
-          </div>
-
-          <div className="space-y-1 overflow-y-auto max-h-[90px] pr-1">
-            {samplePOIs.map((poi, idx) => (
-              <div
-                key={idx}
-                onClick={() => alert(`Selected POI: ${poi.name}`)}
-                className="p-1.5 rounded-lg bg-slate-950/50 hover:bg-slate-800/80 border border-slate-800/80 flex items-center justify-between cursor-pointer transition-colors"
-              >
-                <div className="min-w-0 pr-1">
-                  <div className="text-[11px] font-bold text-slate-200 truncate">{poi.name}</div>
-                  <div className="text-[9px] text-emerald-400 font-mono">{poi.status}</div>
-                </div>
-                <span className="text-[10px] font-mono text-slate-400 shrink-0 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
-                  {poi.dist}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-[9px] text-slate-500 font-mono text-center pt-1 border-t border-slate-800/60">
-            FILTERED SAMPLE POIS
-          </div>
-        </div>
+        <NavSearchWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 
@@ -1397,120 +1544,61 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       return (
         <div
           className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
+          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
             type="navTripEstimate"
             label={headerLabel}
             customColor={customColor}
-            rightElement={
-              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/60">
-                ESTIMATE
-              </span>
-            }
           />
 
-          <div className="grid grid-cols-2 gap-1.5 my-1">
+          <div className="grid grid-cols-2 gap-1.5 my-auto">
             <div className="bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
-              <span className="text-[9px] text-slate-400 block font-mono uppercase">Distance</span>
+              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase">Distance</span>
               <span className="text-xs font-bold text-slate-100 font-mono">{distance}</span>
             </div>
 
             <div className="bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
-              <span className="text-[9px] text-slate-400 block font-mono uppercase">Est. Time</span>
-              <span className="text-xs font-bold text-sky-400 font-mono">{duration}</span>
+              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase">Est. Time</span>
+              <span className="text-xs font-bold text-slate-100 font-mono">{duration}</span>
             </div>
 
             <div className="bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
-              <span className="text-[9px] text-slate-400 block font-mono uppercase">Energy Req.</span>
-              <span className="text-[11px] font-bold text-purple-300 font-mono">{energyEst}</span>
+              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase">Energy Req.</span>
+              <span className="text-[0.6875rem] font-bold text-slate-100 font-mono">{energyEst}</span>
             </div>
 
             <div className="bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
-              <span className="text-[9px] text-slate-400 block font-mono uppercase">Arrival Charge</span>
-              <span className="text-[11px] font-bold text-emerald-400 font-mono">{arrBattery}</span>
+              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase">Arrival Charge</span>
+              <span className="text-[0.6875rem] font-bold text-emerald-400 font-mono">{arrBattery}</span>
             </div>
-          </div>
-
-          <div className="text-[9px] text-slate-500 font-mono text-center border-t border-slate-800/60 pt-1">
-            HAVERSINE STRAIGHT-LINE CALCULATION
           </div>
         </div>
       );
     }
 
-    case 'subnav': {
-      const activeView = useMockpitStore.getState().activeView;
-      const screens = useMockpitStore.getState().screens;
-      const setActiveView = useMockpitStore.getState().setActiveView;
-
-      const currentScreen = screens.find((s) => s.id === activeView);
-      const targetParentId = currentScreen?.parentId ? currentScreen.parentId : currentScreen?.id;
-      const parentScreen = screens.find((s) => s.id === targetParentId);
-      const childScreens = screens.filter((s) => s.parentId === targetParentId);
-
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.subnav;
-
+    case 'overheadVisualization': {
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined }}
+          className={`w-full h-full rounded-2xl bg-slate-950 border border-slate-800 flex flex-col overflow-hidden shadow-xl ${baseOpacity}`}
+          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
-          <ComponentHeader
-            type="subnav"
-            label={headerLabel}
-            customColor={customColor}
-            rightElement={
-              parentScreen ? (
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/60 font-bold uppercase">
-                  {parentScreen.name}
-                </span>
-              ) : null
-            }
+          <OverheadDrivingVisualization
+            component={component}
+            vehicleState={vehicleState}
+            isSelected={isSelected}
+            isPresentation={isPresentation}
           />
-
-          {childScreens.length === 0 ? (
-            <div className="flex-1 my-1 flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950/50 border border-dashed border-slate-800 text-center">
-              <span className="text-xs font-mono font-bold text-slate-400">No Child Screens</span>
-              <span className="text-[10px] text-slate-500 font-mono mt-0.5 max-w-xs">
-                Add child screens under "{parentScreen?.name || 'this screen'}" via the screen hierarchy menu to populate tabs dynamically.
-              </span>
-            </div>
-          ) : (
-            <div className="flex-1 my-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar p-1">
-              {childScreens.map((child) => {
-                const isTabActive = activeView === child.id;
-                return (
-                  <button
-                    key={child.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveView(child.id);
-                    }}
-                    className={`flex-1 min-w-[85px] py-2 px-3 rounded-xl text-xs font-bold font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      isTabActive
-                        ? 'bg-sky-500/20 text-sky-300 border border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.3)] scale-102'
-                        : 'bg-slate-950/60 text-slate-400 border border-slate-800/80 hover:text-slate-200 hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span className="truncate">{child.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="text-[9px] text-slate-500 font-mono text-center pt-1 border-t border-slate-800/60 flex items-center justify-between">
-            <span>DYNAMIC SUB-NAV BAR</span>
-            <span className="text-sky-400/80 font-bold">{childScreens.length} TABS</span>
-          </div>
         </div>
       );
     }
 
     default:
       return (
-        <div className="w-full h-full rounded-2xl bg-slate-900 border border-slate-800 p-4 text-white">
+        <div
+          className={`w-full h-full rounded-2xl bg-slate-900 border border-slate-800 p-4 text-white ${baseOpacity}`}
+          style={{ opacity: styleOpacity }}
+        >
           {component.type}
         </div>
       );

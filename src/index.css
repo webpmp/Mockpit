@@ -1,2 +1,89 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
+
+:root {
+  --text-scale: 1;
+}
+
+/* Vehicle HMI Canvas Subtree - Scoped Text Scaling */
+.vehicle-hmi-canvas {
+  font-size: calc(1rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-xs {
+  font-size: calc(0.75rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-sm {
+  font-size: calc(0.875rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-base {
+  font-size: calc(1rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-lg {
+  font-size: calc(1.125rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-xl {
+  font-size: calc(1.25rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-2xl {
+  font-size: calc(1.5rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-3xl {
+  font-size: calc(1.875rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-4xl {
+  font-size: calc(2.25rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-5xl {
+  font-size: calc(3rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-6xl {
+  font-size: calc(3.75rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-7xl {
+  font-size: calc(4.5rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-8xl {
+  font-size: calc(6rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-9xl {
+  font-size: calc(8rem * var(--text-scale, 1));
+}
+
+/* Arbitrary pixel/rem font size classes used in vehicle HMI components */
+.vehicle-hmi-canvas .text-\[9px\],
+.vehicle-hmi-canvas .text-\[0\.5625rem\] {
+  font-size: calc(0.5625rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-\[10px\],
+.vehicle-hmi-canvas .text-\[0\.625rem\] {
+  font-size: calc(0.625rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-\[11px\],
+.vehicle-hmi-canvas .text-\[0\.6875rem\] {
+  font-size: calc(0.6875rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-\[13px\],
+.vehicle-hmi-canvas .text-\[0\.8125rem\] {
+  font-size: calc(0.8125rem * var(--text-scale, 1));
+}
+
+.vehicle-hmi-canvas .text-\[15px\],
+.vehicle-hmi-canvas .text-\[0\.9375rem\] {
+  font-size: calc(0.9375rem * var(--text-scale, 1));
+}

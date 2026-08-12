@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, X, Palette, Check, Info, Sparkles, RefreshCw, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2, Car } from 'lucide-react';
+import { Settings, X, Palette, Check, Info, Sparkles, RefreshCw, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2, Car, Keyboard, Type } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
-import { BUILTIN_PALETTES, PaletteConfig, PalettePresetId, VehicleBackgroundPosition } from '../types';
+import { BUILTIN_PALETTES, PaletteConfig, PalettePresetId, VehicleBackgroundPosition, KeyboardSlideDirection, TextScalePreset, TEXT_SCALE_FACTORS } from '../types';
 import { getAvailableVehicles } from '../utils/vehicleAssets';
 
 export const SettingsModal: React.FC = () => {
   const isSettingsOpen = useMockpitStore((s) => s.isSettingsOpen);
   const toggleSettingsModal = useMockpitStore((s) => s.toggleSettingsModal);
+  const setSettingsModalOpen = useMockpitStore((s) => s.setSettingsModalOpen);
+  const screenMode = useMockpitStore((s) => s.screenMode);
   const activePalette = useMockpitStore((s) => s.activePalette);
   const setPalette = useMockpitStore((s) => s.setPalette);
+
+  const textScale = useMockpitStore((s) => s.textScale);
+  const setTextScale = useMockpitStore((s) => s.setTextScale);
 
   const gridConfig = useMockpitStore((s) => s.gridConfig);
   const setGridConfig = useMockpitStore((s) => s.setGridConfig);
@@ -19,7 +24,20 @@ export const SettingsModal: React.FC = () => {
   const vehicleBackground = useMockpitStore((s) => s.vehicleBackground);
   const setVehicleBackground = useMockpitStore((s) => s.setVehicleBackground);
 
+  const keyboardSlideDirection = useMockpitStore((s) => s.keyboardSlideDirection);
+  const setKeyboardSlideDirection = useMockpitStore((s) => s.setKeyboardSlideDirection);
+
+  const egoVehicleType = useMockpitStore((s) => s.egoVehicleType);
+  const setEgoVehicleType = useMockpitStore((s) => s.setEgoVehicleType);
+
   const availableVehicles = getAvailableVehicles();
+
+  // Automatically close settings panel if switching to Presentation mode
+  useEffect(() => {
+    if (screenMode === 'presentation' && isSettingsOpen) {
+      setSettingsModalOpen(false);
+    }
+  }, [screenMode, isSettingsOpen, setSettingsModalOpen]);
 
   // Local state for custom color pickers
   const [customPrimary, setCustomPrimary] = useState(activePalette.primary || '#38bdf8');
@@ -40,7 +58,7 @@ export const SettingsModal: React.FC = () => {
     setCustomTertiary(activePalette.tertiary);
   }, [activePalette]);
 
-  if (!isSettingsOpen) return null;
+  if (!isSettingsOpen || screenMode === 'presentation') return null;
 
   const handleSelectPreset = (presetKey: Exclude<PalettePresetId, 'custom'>) => {
     const preset = BUILTIN_PALETTES[presetKey];
@@ -283,6 +301,86 @@ export const SettingsModal: React.FC = () => {
           </div>
         </div>
 
+        {/* Global Text Size Section */}
+        <div className="space-y-3.5 pt-4 border-t border-slate-800/80">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-200 font-mono">
+              <Type className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+              <span>GLOBAL TEXT SIZE</span>
+            </div>
+            <span className="text-[10px] font-mono text-sky-400 font-bold bg-sky-950/80 px-2 py-0.5 rounded border border-sky-800/60">
+              {textScale.toUpperCase()} ({Math.round((TEXT_SCALE_FACTORS[textScale] || 1) * 100)}%)
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3">
+            <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+              Scales typography proportionally across high-traffic surfaces (Music Player, Drive Simulator, Notifications, Controls) using root <code className="text-slate-200 bg-slate-900 px-1 py-0.5 rounded font-mono">--text-scale</code>.
+            </p>
+
+            {/* Scale Options Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {(
+                [
+                  { id: 'small', label: 'Small', percentage: '87.5%' },
+                  { id: 'medium', label: 'Medium', percentage: '100%' },
+                  { id: 'large', label: 'Large', percentage: '115%' },
+                  { id: 'xlarge', label: 'X-Large', percentage: '130%' },
+                ] as const
+              ).map((opt) => {
+                const isSelected = textScale === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setTextScale(opt.id as TextScalePreset)}
+                    className={`py-2 px-2 rounded-xl text-center transition-all cursor-pointer border flex flex-col items-center justify-center gap-0.5 group ${
+                      isSelected
+                        ? 'bg-slate-900 border-sky-500/80 text-slate-100 shadow-[0_0_12px_rgba(56,189,248,0.2)]'
+                        : 'bg-slate-950/80 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    }`}
+                    style={{
+                      borderColor: isSelected ? 'var(--color-primary)' : undefined,
+                    }}
+                  >
+                    <span
+                      className={`font-bold font-mono transition-transform ${
+                        isSelected ? 'scale-105' : 'group-hover:scale-105'
+                      }`}
+                      style={{
+                        fontSize: opt.id === 'small' ? '11px' : opt.id === 'medium' ? '12px' : opt.id === 'large' ? '14px' : '15px',
+                        color: isSelected ? 'var(--color-primary)' : undefined,
+                      }}
+                    >
+                      Aa
+                    </span>
+                    <span className="text-[10px] font-bold font-mono">
+                      {opt.label}
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-mono">
+                      {opt.percentage}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Live Interactive Text Preview Card */}
+            <div className="bg-slate-900/90 p-3 rounded-lg border border-slate-800 space-y-1">
+              <div className="text-[9px] font-mono text-slate-500 uppercase tracking-wider font-semibold">
+                Live Text Preview
+              </div>
+              <div
+                className="font-mono text-slate-200 font-semibold truncate transition-all"
+                style={{
+                  fontSize: `calc(0.75rem * var(--text-scale, ${TEXT_SCALE_FACTORS[textScale]}))`,
+                }}
+              >
+                Mockpit Automotive UI — Speed: 75 MPH | Media: Cyber Pulse
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Uniform Grid Section (Figma Model) */}
         <div className="space-y-3.5 pt-4 border-t border-slate-800/80">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -341,18 +439,10 @@ export const SettingsModal: React.FC = () => {
                     key={sz}
                     onClick={() => {
                       if (sz === gridConfig.size) return;
+                      setGridConfig({ size: sz });
+                      setLocalGridSize(sz);
                       if (gridConfig.snapToGrid) {
-                        const confirmed = window.confirm(
-                          `Re-snap all components on every screen to the new grid size (${sz}px)?\n\nThis will recalculate position (x, y) and size (width, height) for all components across all screens.`
-                        );
-                        if (confirmed) {
-                          setGridConfig({ size: sz });
-                          setLocalGridSize(sz);
-                          resnapAllComponentsToGrid(sz);
-                        }
-                      } else {
-                        setGridConfig({ size: sz });
-                        setLocalGridSize(sz);
+                        resnapAllComponentsToGrid(sz);
                       }
                     }}
                     className={`px-1.5 py-0.5 text-[10px] font-mono rounded border transition-colors cursor-pointer ${
@@ -749,6 +839,55 @@ export const SettingsModal: React.FC = () => {
           )}
         </div>
 
+        {/* Vehicle Model Binding Info */}
+        <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-400 flex items-start gap-2.5">
+          <Car className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold text-slate-200 block mb-0.5">Dual-Bound Vehicle Model</span>
+            <span>Selecting a Vehicle Model above drives both the subtle canvas background watermark and the Navigation Overhead Ego silhouette in real time.</span>
+          </div>
+        </div>
+
+        {/* Global Virtual Keyboard Section */}
+        <div className="space-y-3.5 pt-4 border-t border-slate-800/80">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-200 font-mono">
+            <Keyboard className="w-4 h-4 text-sky-400" />
+            <span>GLOBAL VIRTUAL KEYBOARD</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3">
+            <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-200 font-mono block">
+                  Default Slide Direction
+                </label>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  System Default
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['bottom', 'top', 'left', 'right'] as const).map((dir) => (
+                  <button
+                    key={dir}
+                    onClick={() => setKeyboardSlideDirection(dir)}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-mono font-bold capitalize transition-all cursor-pointer border text-center ${
+                      keyboardSlideDirection === dir
+                        ? 'bg-sky-500/20 border-sky-500/60 text-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.2)]'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {dir}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-500 font-mono leading-relaxed">
+                Automatically slides on-screen QWERTY keyboard into view when typing in canvas input fields.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Live Integration Info Callout */}
         <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-2 text-xs text-slate-300">
           <div className="flex items-center gap-2 font-bold font-mono text-slate-200">
@@ -759,19 +898,6 @@ export const SettingsModal: React.FC = () => {
             Changes apply live via <code className="text-slate-200 bg-slate-950 px-1 py-0.5 rounded">--color-primary</code>, <code className="text-slate-200 bg-slate-950 px-1 py-0.5 rounded">--color-secondary</code>, and <code className="text-slate-200 bg-slate-950 px-1 py-0.5 rounded">--color-tertiary</code> across main shared accent surfaces.
           </p>
         </div>
-      </div>
-
-      {/* Footer Actions */}
-      <div className="px-5 py-3 bg-slate-900/90 border-t border-slate-800 flex justify-end shrink-0">
-        <button
-          onClick={toggleSettingsModal}
-          className="px-4 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition-all cursor-pointer shadow-md"
-          style={{
-            backgroundColor: 'var(--color-primary)',
-          }}
-        >
-          Done
-        </button>
       </div>
     </div>
   );
