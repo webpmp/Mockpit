@@ -768,7 +768,7 @@ export const Inspector: React.FC = () => {
               </div>
             )}
 
-            {['navSearch', 'media', 'navHome', 'navDestination'].includes(selectedComp.type) && (
+            {['navSearch', 'media', 'navHome', 'navDestination', 'phoneContacts', 'phoneMessaging'].includes(selectedComp.type) && (
               <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
                 <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">
                   <span>Keyboard Slide Override</span>
@@ -784,6 +784,37 @@ export const Inspector: React.FC = () => {
                   <option value="top">Top Slide</option>
                   <option value="left">Left Slide</option>
                   <option value="right">Right Slide</option>
+                </select>
+              </div>
+            )}
+
+            {selectedComp.type === 'climateTemp' && (
+              <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">
+                  <span>Slider Orientation</span>
+                  <span className="text-[9px] text-sky-400 font-normal">Layout</span>
+                </label>
+                <select
+                  value={selectedComp.staticProps.orientation || 'vertical'}
+                  onChange={(e) => {
+                    const newOrient = e.target.value;
+                    const prevOrient = selectedComp.staticProps.orientation || 'vertical';
+                    handleStaticPropChange('orientation', newOrient);
+                    if (newOrient !== prevOrient) {
+                      const curW = selectedComp.width;
+                      const curH = selectedComp.height;
+                      if (
+                        (newOrient === 'horizontal' && curW < curH) ||
+                        (newOrient === 'vertical' && curW > curH)
+                      ) {
+                        updateComponentSize(selectedComp.id, curH, curW);
+                      }
+                    }
+                  }}
+                  className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                >
+                  <option value="vertical">Vertical Stalk</option>
+                  <option value="horizontal">Horizontal Scrubber</option>
                 </select>
               </div>
             )}

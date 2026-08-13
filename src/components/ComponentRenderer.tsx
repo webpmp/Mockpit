@@ -36,6 +36,12 @@ import L from 'leaflet';
 import { MusicMediaPlayer } from './MusicMediaPlayer';
 import { MockpitInput } from './MockpitInput';
 import { OverheadDrivingVisualization } from './OverheadDrivingVisualization';
+import { PhoneContactsWidget } from './phone/PhoneContactsWidget';
+import { PhoneDialPadWidget } from './phone/PhoneDialPadWidget';
+import { PhoneMessagingWidget } from './phone/PhoneMessagingWidget';
+import { ClimateVentWidget } from './climate/ClimateVentWidget';
+import { ClimateTempWidget } from './climate/ClimateTempWidget';
+import { ClimateSeatsWidget } from './climate/ClimateSeatsWidget';
 import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ComponentInstance, DriveModeState, VehicleState } from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
@@ -65,6 +71,12 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   navSearch: 'Navigation Search Component',
   navTripEstimate: 'Trip Estimate',
   overheadVisualization: 'Overhead Driving Visualization',
+  phoneContacts: 'Contacts',
+  phoneDialPad: 'Dial Pad',
+  phoneMessaging: 'Messaging',
+  climateVent: 'Vent Dashboard',
+  climateTemp: 'Temperature',
+  climateSeats: 'Seat Climate',
 };
 
 export const getAlphaColor = (color: string, hexAlpha: string, mixPercent: number = 25): string => {
@@ -1590,6 +1602,84 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             isPresentation={isPresentation}
           />
         </div>
+      );
+    }
+
+    case 'phoneContacts': {
+      return (
+        <PhoneContactsWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
+      );
+    }
+
+    case 'phoneDialPad': {
+      return (
+        <PhoneDialPadWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
+      );
+    }
+
+    case 'phoneMessaging': {
+      return (
+        <PhoneMessagingWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
+      );
+    }
+
+    case 'climateVent': {
+      return (
+        <ClimateVentWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
+      );
+    }
+
+    case 'climateTemp': {
+      return (
+        <ClimateTempWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
+      );
+    }
+
+    case 'climateSeats': {
+      return (
+        <ClimateSeatsWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 

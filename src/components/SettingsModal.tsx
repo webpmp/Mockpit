@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, X, Palette, Check, Info, Sparkles, RefreshCw, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2, Car, Keyboard, Type } from 'lucide-react';
+import { Settings, X, Palette, Check, Info, Sparkles, RefreshCw, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2, Car, Keyboard, Type, Thermometer } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { BUILTIN_PALETTES, PaletteConfig, PalettePresetId, VehicleBackgroundPosition, KeyboardSlideDirection, TextScalePreset, TEXT_SCALE_FACTORS } from '../types';
 import { getAvailableVehicles } from '../utils/vehicleAssets';
@@ -29,6 +29,8 @@ export const SettingsModal: React.FC = () => {
 
   const egoVehicleType = useMockpitStore((s) => s.egoVehicleType);
   const setEgoVehicleType = useMockpitStore((s) => s.setEgoVehicleType);
+  const tempGradientColors = useMockpitStore((s) => s.tempGradientColors);
+  const setTempGradientColors = useMockpitStore((s) => s.setTempGradientColors);
 
   const availableVehicles = getAvailableVehicles();
 
@@ -296,6 +298,78 @@ export const SettingsModal: React.FC = () => {
                     className="w-20 bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-sky-500"
                   />
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Temperature Gradient Section */}
+        <div className="space-y-3.5 pt-4 border-t border-slate-800/80">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-200 font-mono">
+              <Thermometer className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+              <span>TEMPERATURE GRADIENT</span>
+            </div>
+            <span className="text-[10px] font-mono text-slate-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+              GLOBAL SETTING
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+            Global thermal color mapping for all Temperature Slider components across cold, neutral (comfortable), and hot ranges.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {/* Cold Color */}
+            <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 space-y-1">
+              <label className="text-[10px] font-bold text-sky-400 font-mono block">Cold</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="color"
+                  value={tempGradientColors.cold}
+                  onChange={(e) => setTempGradientColors({ cold: e.target.value })}
+                  className="w-5 h-5 rounded border-0 bg-transparent cursor-pointer shrink-0"
+                />
+                <input
+                  type="text"
+                  value={tempGradientColors.cold}
+                  onChange={(e) => setTempGradientColors({ cold: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-slate-200 focus:outline-none focus:border-sky-500"
+                />
+              </div>
+            </div>
+            {/* Neutral Color */}
+            <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 space-y-1">
+              <label className="text-[10px] font-bold text-slate-300 font-mono block">Comfortable</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="color"
+                  value={tempGradientColors.neutral}
+                  onChange={(e) => setTempGradientColors({ neutral: e.target.value })}
+                  className="w-5 h-5 rounded border-0 bg-transparent cursor-pointer shrink-0"
+                />
+                <input
+                  type="text"
+                  value={tempGradientColors.neutral}
+                  onChange={(e) => setTempGradientColors({ neutral: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-slate-200 focus:outline-none focus:border-sky-500"
+                />
+              </div>
+            </div>
+            {/* Hot Color */}
+            <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 space-y-1">
+              <label className="text-[10px] font-bold text-red-400 font-mono block">Hot</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="color"
+                  value={tempGradientColors.hot}
+                  onChange={(e) => setTempGradientColors({ hot: e.target.value })}
+                  className="w-5 h-5 rounded border-0 bg-transparent cursor-pointer shrink-0"
+                />
+                <input
+                  type="text"
+                  value={tempGradientColors.hot}
+                  onChange={(e) => setTempGradientColors({ hot: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-slate-200 focus:outline-none focus:border-sky-500"
+                />
               </div>
             </div>
           </div>
@@ -656,9 +730,7 @@ export const SettingsModal: React.FC = () => {
                         : 'bg-slate-950 border-slate-800/80 hover:border-slate-700 text-slate-400'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded bg-slate-900/80 border border-slate-800 flex items-center justify-center text-xs font-mono font-bold text-slate-500">
-                      Ø
-                    </div>
+                    <div className="w-8 h-8 rounded bg-slate-900/80 border border-slate-800 flex items-center justify-center text-xs font-mono font-bold text-slate-500"></div>
                     <span className="text-[10px] font-mono truncate max-w-full text-center font-bold">
                       None
                     </span>

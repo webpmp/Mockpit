@@ -24,6 +24,11 @@ import {
   TEXT_SCALE_FACTORS,
 } from '../types';
 
+import {
+  TempGradientColors,
+  DEFAULT_TEMP_GRADIENT_COLORS,
+} from '../utils/tempGradient';
+
 const LOCAL_STORAGE_KEY = 'mockpit_components_v1';
 const LOCAL_STORAGE_KEY_V2 = 'mockpit_components_by_screen_v2';
 const LOCAL_STORAGE_NOTIFICATIONS_KEY = 'mockpit_notification_components_v1';
@@ -37,6 +42,22 @@ const LOCAL_STORAGE_GRID_KEY = 'mockpit_grid_config_v1';
 const LOCAL_STORAGE_VEHICLE_BG_KEY = 'mockpit_vehicle_bg_config_v1';
 const LOCAL_STORAGE_KEYBOARD_DIRECTION_KEY = 'mockpit_keyboard_slide_direction_v1';
 const LOCAL_STORAGE_EGO_VEHICLE_TYPE_KEY = 'mockpit_ego_vehicle_type_v1';
+const LOCAL_STORAGE_TEMP_GRADIENT_KEY = 'mockpit_temp_gradient_v1';
+
+const loadSavedTempGradientColors = (): TempGradientColors => {
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_TEMP_GRADIENT_KEY);
+    if (val) {
+      const parsed = JSON.parse(val);
+      if (parsed && parsed.cold && parsed.neutral && parsed.hot) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load temp gradient colors from localStorage', e);
+  }
+  return DEFAULT_TEMP_GRADIENT_COLORS;
+};
 
 const loadSavedEgoVehicleType = (): EgoVehicleType => {
   try {
@@ -289,6 +310,12 @@ export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number
   navSearch: { width: 380, height: 220, maxHeight: 1080 },
   navTripEstimate: { width: 380, height: 170, maxHeight: 1080 },
   overheadVisualization: { width: 780, height: 480, maxHeight: 1080 },
+  phoneContacts: { width: 420, height: 480, maxHeight: 1080 },
+  phoneDialPad: { width: 380, height: 480, maxHeight: 1080 },
+  phoneMessaging: { width: 440, height: 480, maxHeight: 1080 },
+  climateVent: { width: 460, height: 280, maxHeight: 1080 },
+  climateTemp: { width: 220, height: 380, maxHeight: 1080 },
+  climateSeats: { width: 380, height: 220, maxHeight: 1080 },
 };
 
 function sanitizeComponentList(list: ComponentInstance[]): ComponentInstance[] {
@@ -597,6 +624,8 @@ interface MockpitStore {
   setVehicleBackground: (config: Partial<VehicleBackgroundSettings>) => void;
   egoVehicleType: EgoVehicleType;
   setEgoVehicleType: (type: EgoVehicleType) => void;
+  tempGradientColors: TempGradientColors;
+  setTempGradientColors: (colors: Partial<TempGradientColors>) => void;
 
   // On-screen Virtual Keyboard
   keyboardSlideDirection: KeyboardSlideDirection;
@@ -872,6 +901,19 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       console.error('Failed to save ego vehicle type to localStorage', e);
     }
     set({ egoVehicleType: type });
+  },
+
+  tempGradientColors: loadSavedTempGradientColors(),
+  setTempGradientColors: (colors) => {
+    set((state) => {
+      const updated = { ...state.tempGradientColors, ...colors };
+      try {
+        localStorage.setItem(LOCAL_STORAGE_TEMP_GRADIENT_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save temp gradient colors', e);
+      }
+      return { tempGradientColors: updated };
+    });
   },
 
   keyboardSlideDirection: loadSavedKeyboardSlideDirection(),
@@ -1721,6 +1763,42 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           sensorColor: '#ef4444',
           sensorOpacity: '0.6',
         };
+        bindings = [];
+        break;
+      case 'phoneContacts':
+        width = 420;
+        height = 480;
+        staticProps = { label: 'Contacts' };
+        bindings = [];
+        break;
+      case 'phoneDialPad':
+        width = 380;
+        height = 480;
+        staticProps = { label: 'Dial Pad' };
+        bindings = [];
+        break;
+      case 'phoneMessaging':
+        width = 440;
+        height = 480;
+        staticProps = { label: 'Messaging' };
+        bindings = [];
+        break;
+      case 'climateVent':
+        width = 460;
+        height = 280;
+        staticProps = { label: 'Vent Dashboard' };
+        bindings = [];
+        break;
+      case 'climateTemp':
+        width = 220;
+        height = 380;
+        staticProps = { label: 'Temperature', temp: '72°F', minTemp: '60', maxTemp: '85' };
+        bindings = [];
+        break;
+      case 'climateSeats':
+        width = 380;
+        height = 220;
+        staticProps = { label: 'Seat Climate' };
         bindings = [];
         break;
     }

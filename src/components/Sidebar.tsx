@@ -17,6 +17,12 @@ import {
   AlertTriangle,
   LayoutGrid,
   Eye,
+  MessageSquare,
+  Wind,
+  Flame,
+  Snowflake,
+  Users,
+  Grid,
 } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ComponentType, NotificationStackPosition } from '../types';
@@ -180,18 +186,57 @@ const MEDIA_WIDGET_ITEMS: ComponentLibraryItem[] = [
 ];
 
 const PHONE_WIDGET_ITEMS: ComponentLibraryItem[] = [
-  ...(COMPONENT_FLAGS.phone
-    ? [
-        {
-          type: 'phone' as ComponentType,
-          title: 'Phone & Contacts',
-          description: 'Active phone call & contact display',
-          icon: Phone,
-          color: '#a855f7',
-          defaultBindingDesc: 'phone connection status shell',
-        },
-      ]
-    : []),
+  {
+    type: 'phoneContacts',
+    title: 'Contacts',
+    description: 'Search, favorites strip, A-Z index & call/message detail',
+    icon: Users,
+    color: '#a855f7',
+    defaultBindingDesc: 'Alphabetical contacts list with favorites rail',
+  },
+  {
+    type: 'phoneDialPad',
+    title: 'Dial Pad',
+    description: '3x4 keypad, contact lookup, hold-clear & in-call timer',
+    icon: Phone,
+    color: '#10b981',
+    defaultBindingDesc: 'Phone dialer keypad & recent call logs',
+  },
+  {
+    type: 'phoneMessaging',
+    title: 'Messaging',
+    description: 'Conversation threads, quick reply chips & voice mic',
+    icon: MessageSquare,
+    color: '#38bdf8',
+    defaultBindingDesc: 'SMS messaging inbox & thread view',
+  },
+];
+
+const CLIMATE_WIDGET_ITEMS: ComponentLibraryItem[] = [
+  {
+    type: 'climateVent',
+    title: 'Vent Dashboard',
+    description: 'Spatial vents with drag-to-aim 8-preset snapping & airflow',
+    icon: Wind,
+    color: '#06b6d4',
+    defaultBindingDesc: 'Dashboard vent direction & slat controls',
+  },
+  {
+    type: 'climateTemp',
+    title: 'Temperature',
+    description: 'Vertical slider with mercury fill gradient & color-shifting puck',
+    icon: Thermometer,
+    color: '#f97316',
+    defaultBindingDesc: 'Temperature slider control',
+  },
+  {
+    type: 'climateSeats',
+    title: 'Seat Climate',
+    description: 'Independent Heat/Cool controls per seat with stacked icons',
+    icon: Flame,
+    color: '#ef4444',
+    defaultBindingDesc: 'Driver & Passenger seat heating/cooling',
+  },
 ];
 
 const CATEGORIES = [
@@ -222,6 +267,13 @@ const CATEGORIES = [
     icon: Phone,
     iconColorClass: 'text-purple-400',
     items: PHONE_WIDGET_ITEMS,
+  },
+  {
+    key: 'climate',
+    title: 'Climate',
+    icon: Thermometer,
+    iconColorClass: 'text-orange-400',
+    items: CLIMATE_WIDGET_ITEMS,
   },
 ];
 

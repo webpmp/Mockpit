@@ -142,7 +142,13 @@ export type ComponentType =
   | 'navDestination'
   | 'navSearch'
   | 'navTripEstimate'
-  | 'overheadVisualization';
+  | 'overheadVisualization'
+  | 'phoneContacts'
+  | 'phoneDialPad'
+  | 'phoneMessaging'
+  | 'climateVent'
+  | 'climateTemp'
+  | 'climateSeats';
 
 export type ComponentInstance = {
   id: string;
@@ -202,6 +208,13 @@ export const APP_SCREEN_VIEWS: Record<string, string> = {
   map: 'navigation',
   media: 'media',
   phone: 'phone',
+  phoneContacts: 'phone',
+  phoneDialPad: 'phone',
+  phoneMessaging: 'phone',
+  climate: 'climate',
+  climateVent: 'climate',
+  climateTemp: 'climate',
+  climateSeats: 'climate',
 };
 
 export const isAppScreen = (type: ComponentType): boolean => {
