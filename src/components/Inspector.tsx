@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS } from '../store/useMockpitStore';
-import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState } from '../types';
-import { Plus, Trash2, Sliders, Layers, Sparkles, X, Copy, Clipboard, ArrowUp, ArrowDown, Layout, Settings } from 'lucide-react';
+import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType } from '../types';
+import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette } from 'lucide-react';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { LayersPanel } from './LayersPanel';
+import { NumericStepper } from './NumericStepper';
 
 const ScreenPropertiesPanel: React.FC = () => {
   const activeView = useMockpitStore((s) => s.activeView);
@@ -207,7 +208,7 @@ const ScreenPropertiesPanel: React.FC = () => {
 const VEHICLE_STATE_FIELDS: Array<{ field: keyof VehicleState; label: string; type: 'number' | 'boolean' | 'select' }> = [
   { field: 'gear', label: 'Gear (P/R/N/D)', type: 'select' },
   { field: 'driveMode', label: 'Drive Mode (Eco/Normal/Sport)', type: 'select' },
-  { field: 'speed', label: 'Speed (0-120)', type: 'number' },
+  { field: 'speed', label: 'Speed', type: 'number' },
   { field: 'batteryPercent', label: 'Battery % (0-100)', type: 'number' },
   { field: 'isCharging', label: 'Is Charging', type: 'boolean' },
   { field: 'doorOpen', label: 'Door Open', type: 'boolean' },
@@ -270,6 +271,7 @@ export const Inspector: React.FC = () => {
   const setNotificationStackPosition = useMockpitStore((s) => s.setNotificationStackPosition);
   const selectComponent = useMockpitStore((s) => s.selectComponent);
   const updateComponentStaticProps = useMockpitStore((s) => s.updateComponentStaticProps);
+  const updateComponentConnector = useMockpitStore((s) => s.updateComponentConnector);
   const updateComponentPosition = useMockpitStore((s) => s.updateComponentPosition);
   const updateComponentSize = useMockpitStore((s) => s.updateComponentSize);
   const updateComponentZIndex = useMockpitStore((s) => s.updateComponentZIndex);
@@ -281,9 +283,6 @@ export const Inspector: React.FC = () => {
   const updateBinding = useMockpitStore((s) => s.updateBinding);
   const removeBinding = useMockpitStore((s) => s.removeBinding);
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
-  const copiedComponent = useMockpitStore((s) => s.copiedComponent);
-  const copyComponent = useMockpitStore((s) => s.copyComponent);
-  const pasteComponent = useMockpitStore((s) => s.pasteComponent);
 
   const selectedComp =
     components.find((c) => c.id === selectedComponentId) ||
@@ -307,19 +306,34 @@ export const Inspector: React.FC = () => {
   });
 
   const [isAddingBinding, setIsAddingBinding] = useState(false);
-  const [justCopied, setJustCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'component' | 'screen' | 'layers'>('screen');
+
+  // Track expanded state of collapsible sections.
+  // Defaults: 'geometry', 'stacking', 'bindings' are collapsed (false).
+  // 'appearance' and other sections default to expanded (true).
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    geometry: true,
+    stacking: true,
+    bindings: true,
+  });
 
   useEffect(() => {
     if (selectedComponentId) {
       setActiveTab('component');
+      // Reset collapse state on component selection/reselection
+      setCollapsedSections({
+        geometry: true,
+        stacking: true,
+        bindings: true,
+      });
     }
   }, [selectedComponentId]);
 
-  const handleCopy = () => {
-    copyComponent();
-    setJustCopied(true);
-    setTimeout(() => setJustCopied(false), 1200);
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
   };
 
   const handleStaticPropChange = (key: string, value: string) => {
@@ -403,203 +417,202 @@ export const Inspector: React.FC = () => {
       )}
 
       {activeTab === 'component' && !selectedComp && (
-        <div className="flex-1 flex flex-col p-4">
-          <div className="p-3 border border-slate-800 rounded-xl bg-slate-950/60 mb-4">
-            <button
-              onClick={() => pasteComponent()}
-              disabled={!copiedComponent}
-              className={`w-full py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors border ${
-                copiedComponent
-                  ? 'bg-sky-500 hover:bg-sky-400 text-slate-950 border-sky-400 cursor-pointer shadow-md'
-                  : 'bg-slate-800/40 text-slate-600 border-slate-800 cursor-not-allowed'
-              }`}
-              title={copiedComponent ? `Paste copied component (${copiedComponent.component.type})` : 'Nothing copied'}
-            >
-              <Clipboard className="w-4 h-4" />
-              {copiedComponent ? `Paste Copied ${copiedComponent.component.type}` : 'Paste Component'}
-            </button>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
-            <Sliders className="w-10 h-10 mb-3 text-slate-700" />
-            <div className="text-xs font-bold text-slate-400 mb-1">No Component Selected</div>
-            <p className="text-[11px] font-mono">
-              Click any element on canvas to inspect properties and rules, or switch to the Screen tab.
-            </p>
-          </div>
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
+          <Sliders className="w-10 h-10 mb-3 text-slate-700" />
+          <div className="text-xs font-bold text-slate-400 mb-1">No Component Selected</div>
+          <p className="text-[11px] font-mono">
+            Click any element on canvas to inspect properties and rules, or switch to the Screen tab.
+          </p>
         </div>
       )}
 
       {activeTab === 'component' && selectedComp && (
         <div className="flex-1 flex flex-col overflow-y-auto">
           {/* Header */}
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
-        <div>
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-400">
-            Inspector Panel
-          </span>
-          <h2 className="text-sm font-bold text-slate-100">
-            {DEFAULT_COMPONENT_LABELS[selectedComp.type] || selectedComp.type}
-          </h2>
-        </div>
-        <button
-          onClick={() => selectComponent(null)}
-          className="p-1 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-          title="Deselect"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Clipboard Actions Bar */}
-      <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/60 flex flex-col gap-2">
-        <div className="flex items-center gap-2 w-full">
-          <button
-            onClick={handleCopy}
-            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
-              justCopied
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700/80 shadow-sm'
-            }`}
-            title="Copy selected component (Ctrl/Cmd+C)"
-          >
-            <Copy className="w-3.5 h-3.5 text-sky-400" />
-            {justCopied ? 'Copied!' : 'Copy'}
-          </button>
-
-          <button
-            onClick={() => pasteComponent()}
-            disabled={!copiedComponent}
-            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border ${
-              copiedComponent
-                ? 'bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-slate-950 border-sky-500/40 cursor-pointer shadow-sm'
-                : 'bg-slate-800/40 text-slate-600 border-slate-800 cursor-not-allowed'
-            }`}
-            title={
-              copiedComponent
-                ? `Paste copied ${DEFAULT_COMPONENT_LABELS[copiedComponent.component.type] || copiedComponent.component.type} component (Ctrl/Cmd+V)`
-                : 'Nothing in clipboard to paste'
-            }
-          >
-            <Clipboard className="w-3.5 h-3.5" />
-            Paste
-          </button>
-        </div>
-
-        {copiedComponent && (
-          <div className="text-[10px] text-slate-400 font-mono flex items-center justify-between pt-0.5">
-            <span>In Clipboard:</span>
-            <span className="text-sky-300 font-bold">{DEFAULT_COMPONENT_LABELS[copiedComponent.component.type] || copiedComponent.component.type}</span>
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-400">
+                Inspector Panel
+              </span>
+              <h2 className="text-sm font-bold text-slate-100">
+                {DEFAULT_COMPONENT_LABELS[selectedComp.type] || selectedComp.type}
+              </h2>
+            </div>
+            <button
+              onClick={() => selectComponent(null)}
+              className="p-1 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+              title="Deselect"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
-      </div>
 
-      <div className="p-4 space-y-6">
+          <div className="p-4 space-y-6">
         {/* Layout Geometry */}
-        <div>
-          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Sliders className="w-3.5 h-3.5 text-sky-400" />
-            Geometry {isNotifComp ? '(Width & Height)' : '(X, Y, W, H)'}
-          </h3>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {isNotifComp ? (
-              <div className="col-span-2 bg-slate-800/80 p-2 rounded-lg border border-slate-700/60">
-                <label className="text-[10px] text-slate-400 uppercase font-mono block">X, Y Position</label>
-                <span className="text-[11px] text-sky-400 font-mono font-semibold block py-0.5">Auto-Stacked</span>
-              </div>
-            ) : (
-              <>
-                <GeometryInput
-                  label="X Position"
-                  value={selectedComp.x}
-                  onChange={(val) => updateComponentPosition(selectedComp.id, val, selectedComp.y)}
-                />
-                <GeometryInput
-                  label="Y Position"
-                  value={selectedComp.y}
-                  onChange={(val) => updateComponentPosition(selectedComp.id, selectedComp.x, val)}
-                />
-              </>
-            )}
-            <GeometryInput
-              label="Width"
-              value={selectedComp.width}
-              min={100}
-              onChange={(val) => updateComponentSize(selectedComp.id, val, selectedComp.height)}
-            />
-            <GeometryInput
-              label="Height"
-              value={selectedComp.height}
-              min={60}
-              max={Math.max(60, 1080 - selectedComp.y)}
-              onChange={(val) => updateComponentSize(selectedComp.id, selectedComp.width, val)}
-            />
-          </div>
+        <div className="border-b border-slate-800/80 pb-4">
+          <button
+            type="button"
+            onClick={() => toggleSection('geometry')}
+            className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+          >
+            <div className="flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-sky-400" />
+              <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                Geometry {isNotifComp ? '(Width & Height)' : '(X, Y, W, H)'}
+              </span>
+            </div>
+            <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+              {collapsedSections.geometry ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </div>
+          </button>
 
-          {/* Stacking / Layering Section */}
-          {!isNotifComp && (
-            <div className="mt-3 pt-3 border-t border-slate-800/80">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold text-slate-300 uppercase font-mono">Stacking Layer</span>
-                <span className="text-[10px] font-mono text-slate-500">Z-Index: {selectedComp.zIndex ?? (selectedComp.type === 'map' ? 0 : 10)}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <button
-                  type="button"
-                  onClick={() => bringToFront(selectedComp.id)}
-                  className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                  title="Bring component to the front layer"
-                >
-                  <ArrowUp className="w-3.5 h-3.5 text-sky-400" />
-                  Bring to Front
-                </button>
-                <button
-                  type="button"
-                  onClick={() => sendToBack(selectedComp.id)}
-                  className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                  title="Send component to the back layer"
-                >
-                  <ArrowDown className="w-3.5 h-3.5 text-sky-400" />
-                  Send to Back
-                </button>
-              </div>
+          {!collapsedSections.geometry && (
+            <div className="grid grid-cols-2 gap-2 text-xs mt-2">
+              {isNotifComp ? (
+                <div className="col-span-2 bg-slate-800/80 p-2 rounded-lg border border-slate-700/60">
+                  <label className="text-[10px] text-slate-400 uppercase font-mono block">X, Y Position</label>
+                  <span className="text-[11px] text-sky-400 font-mono font-semibold block py-0.5">Auto-Stacked</span>
+                </div>
+              ) : (
+                <>
+                  <GeometryInput
+                    label="X Position"
+                    value={selectedComp.x}
+                    onChange={(val) => updateComponentPosition(selectedComp.id, val, selectedComp.y)}
+                  />
+                  <GeometryInput
+                    label="Y Position"
+                    value={selectedComp.y}
+                    onChange={(val) => updateComponentPosition(selectedComp.id, selectedComp.x, val)}
+                  />
+                </>
+              )}
               <GeometryInput
-                label="Explicit Z-Index (-10 to 100)"
-                value={selectedComp.zIndex ?? (selectedComp.type === 'map' ? 0 : 10)}
-                min={-10}
-                max={100}
-                onChange={(val) => updateComponentZIndex(selectedComp.id, val)}
+                label="Width"
+                value={selectedComp.width}
+                min={100}
+                onChange={(val) => updateComponentSize(selectedComp.id, val, selectedComp.height)}
+              />
+              <GeometryInput
+                label="Height"
+                value={selectedComp.height}
+                min={60}
+                max={Math.max(60, 1080 - selectedComp.y)}
+                onChange={(val) => updateComponentSize(selectedComp.id, selectedComp.width, val)}
               />
             </div>
           )}
-
-          {isNotifComp && (
-            <div className="mt-2.5 p-2.5 rounded-lg bg-sky-950/40 border border-sky-800/50 text-[11px] text-sky-300 flex flex-col gap-1.5">
-              <div className="font-semibold flex items-center justify-between">
-                <span>Stack Position:</span>
-                <select
-                  value={notificationStackPosition}
-                  onChange={(e) => setNotificationStackPosition(e.target.value as NotificationStackPosition)}
-                  className="bg-slate-900 text-sky-200 border border-sky-700/60 rounded px-1.5 py-0.5 text-xs font-mono font-bold focus:outline-none"
-                >
-                  <option value="top-center">Top Center</option>
-                  <option value="top-right">Top Right</option>
-                  <option value="bottom-center">Bottom Center</option>
-                </select>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-tight">
-                Position is computed automatically by the global notification stack layout in Presentation mode.
-              </p>
-            </div>
-          )}
         </div>
 
+        {/* Stacking / Layering Section */}
+        {!isNotifComp && (
+          <div className="border-b border-slate-800/80 pb-4">
+            <button
+              type="button"
+              onClick={() => toggleSection('stacking')}
+              className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+            >
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-sky-400" />
+                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  Stacking Layer
+                </span>
+              </div>
+              <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+                {collapsedSections.stacking ? (
+                  <ChevronRight className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </div>
+            </button>
+
+            {!collapsedSections.stacking && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-mono text-slate-400">Current Depth</span>
+                  <span className="text-[10px] font-mono text-slate-500">Z-Index: {selectedComp.zIndex ?? (selectedComp.type === 'map' ? 0 : 10)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => bringToFront(selectedComp.id)}
+                    className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                    title="Bring component to the front layer"
+                  >
+                    <ArrowUp className="w-3.5 h-3.5 text-sky-400" />
+                    Bring to Front
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendToBack(selectedComp.id)}
+                    className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                    title="Send component to the back layer"
+                  >
+                    <ArrowDown className="w-3.5 h-3.5 text-sky-400" />
+                    Send to Back
+                  </button>
+                </div>
+                <GeometryInput
+                  label="Explicit Z-Index (-10 to 100)"
+                  value={selectedComp.zIndex ?? (selectedComp.type === 'map' ? 0 : 10)}
+                  min={-10}
+                  max={100}
+                  onChange={(val) => updateComponentZIndex(selectedComp.id, val)}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {isNotifComp && (
+          <div className="p-2.5 rounded-lg bg-sky-950/40 border border-sky-800/50 text-[11px] text-sky-300 flex flex-col gap-1.5">
+            <div className="font-semibold flex items-center justify-between">
+              <span>Stack Position:</span>
+              <select
+                value={notificationStackPosition}
+                onChange={(e) => setNotificationStackPosition(e.target.value as NotificationStackPosition)}
+                className="bg-slate-900 text-sky-200 border border-sky-700/60 rounded px-1.5 py-0.5 text-xs font-mono font-bold focus:outline-none"
+              >
+                <option value="top-center">Top Center</option>
+                <option value="top-right">Top Right</option>
+                <option value="bottom-center">Bottom Center</option>
+              </select>
+            </div>
+            <p className="text-[10px] text-slate-400 leading-tight">
+              Position is computed automatically by the global notification stack layout in Presentation mode.
+            </p>
+          </div>
+        )}
+
         {/* Static Appearance Properties */}
-        <div>
-          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-            Static Appearance
-          </h3>
-          <div className="space-y-2 text-xs">
+        <div className="border-b border-slate-800/80 pb-4">
+          <button
+            type="button"
+            onClick={() => toggleSection('appearance')}
+            className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+          >
+            <div className="flex items-center gap-2">
+              <Palette className="w-4 h-4 text-sky-400" />
+              <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                Static Appearance
+              </span>
+            </div>
+            <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+              {collapsedSections.appearance ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </div>
+          </button>
+
+          {!collapsedSections.appearance && (
+          <div className="space-y-2 text-xs mt-2">
             {/* Header Label Field for ALL Component Types */}
             <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
               <span className="text-[11px] font-mono text-slate-400 font-bold uppercase">Header Label</span>
@@ -649,12 +662,13 @@ export const Inspector: React.FC = () => {
                 {(selectedComp.staticProps.displayStyle === 'radialGauge' || selectedComp.staticProps.displayStyle === 'arcGauge') && (
                   <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
                     <span className="text-[11px] font-mono text-slate-400 font-bold">Max Speed</span>
-                    <input
-                      type="number"
-                      value={selectedComp.staticProps.maxSpeed || '120'}
-                      onChange={(e) => handleStaticPropChange('maxSpeed', e.target.value)}
-                      className="w-24 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
-                      placeholder="120"
+                    <NumericStepper
+                      value={selectedComp.staticProps.maxSpeed || '140'}
+                      onChange={(val) => handleStaticPropChange('maxSpeed', val)}
+                      placeholder="140"
+                      min={10}
+                      max={300}
+                      step={10}
                     />
                   </div>
                 )}
@@ -696,58 +710,297 @@ export const Inspector: React.FC = () => {
               <>
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
                   <span className="text-[11px] font-mono text-slate-400 font-bold">Drain % / Interval</span>
-                  <input
-                    type="number"
+                  <NumericStepper
                     min={0.1}
                     step={0.5}
                     value={selectedComp.staticProps.drainPercentPerInterval ?? '1'}
-                    onChange={(e) => handleStaticPropChange('drainPercentPerInterval', e.target.value)}
-                    className="w-24 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right font-bold"
+                    onChange={(val) => handleStaticPropChange('drainPercentPerInterval', val)}
                     placeholder="1"
                   />
                 </div>
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
                   <span className="text-[11px] font-mono text-slate-400 font-bold">Drain Interval (sec)</span>
-                  <input
-                    type="number"
+                  <NumericStepper
                     min={1}
                     step={1}
                     value={selectedComp.staticProps.drainIntervalSeconds ?? '60'}
-                    onChange={(e) => handleStaticPropChange('drainIntervalSeconds', e.target.value)}
-                    className="w-24 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right font-bold"
+                    onChange={(val) => handleStaticPropChange('drainIntervalSeconds', val)}
                     placeholder="60"
+                  />
+                </div>
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-mono text-slate-400 font-bold">Target Charge %</span>
+                  <NumericStepper
+                    min={10}
+                    max={100}
+                    step={5}
+                    value={selectedComp.staticProps.targetChargePercent ?? '80'}
+                    onChange={(val) => handleStaticPropChange('targetChargePercent', val)}
+                    placeholder="80"
+                  />
+                </div>
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-mono text-slate-400 font-bold">Charge Rate (kW)</span>
+                  <NumericStepper
+                    min={1}
+                    step={10}
+                    value={selectedComp.staticProps.chargeRateKw ?? '350'}
+                    onChange={(val) => handleStaticPropChange('chargeRateKw', val)}
+                    placeholder="350"
                   />
                 </div>
               </>
             )}
 
-            {selectedComp.type === 'charging' && (
-              <>
-                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-mono text-slate-400 font-bold">Charge % / Interval</span>
-                  <input
-                    type="number"
-                    min={0.1}
-                    step={0.5}
-                    value={selectedComp.staticProps.chargePercentPerInterval ?? '5'}
-                    onChange={(e) => handleStaticPropChange('chargePercentPerInterval', e.target.value)}
-                    className="w-24 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right font-bold"
-                    placeholder="5"
-                  />
+            {selectedComp.type === 'navDestination' && (
+              <div className="space-y-2">
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                    Primary Destination
+                  </span>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-mono">Location Name</span>
+                    <input
+                      type="text"
+                      value={selectedComp.staticProps.destination || ''}
+                      onChange={(e) => handleStaticPropChange('destination', e.target.value)}
+                      placeholder="e.g. Yosemite Valley, CA"
+                      className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-mono">Latitude</span>
+                      <input
+                        type="text"
+                        value={selectedComp.staticProps.destLat || selectedComp.staticProps.lat || ''}
+                        onChange={(e) => {
+                          handleStaticPropChange('destLat', e.target.value);
+                          handleStaticPropChange('lat', e.target.value);
+                        }}
+                        placeholder="37.7456"
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-mono">Longitude</span>
+                      <input
+                        type="text"
+                        value={selectedComp.staticProps.destLng || selectedComp.staticProps.lng || ''}
+                        onChange={(e) => {
+                          handleStaticPropChange('destLng', e.target.value);
+                          handleStaticPropChange('lng', e.target.value);
+                        }}
+                        placeholder="-119.5936"
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-mono text-slate-400 font-bold">Charge Interval (sec)</span>
-                  <input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={selectedComp.staticProps.chargeIntervalSeconds ?? '60'}
-                    onChange={(e) => handleStaticPropChange('chargeIntervalSeconds', e.target.value)}
-                    className="w-24 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right font-bold"
-                    placeholder="60"
-                  />
+
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                      Waypoints / Stops (Lat/Long)
+                    </span>
+                    <button
+                      onClick={() => {
+                        let currentStops: Array<{ id: string; name: string; lat: string; lng: string }> = [];
+                        try {
+                          if (selectedComp.staticProps.tripStops) {
+                            currentStops = JSON.parse(selectedComp.staticProps.tripStops);
+                          } else if (selectedComp.staticProps.waypoints) {
+                            const wp = JSON.parse(selectedComp.staticProps.waypoints);
+                            currentStops = wp.map((w: any, idx: number) => ({
+                              id: `stop-${idx + 1}`,
+                              name: typeof w === 'string' ? w : w.name || `Stop ${idx + 1}`,
+                              lat: w.lat || '37.3022',
+                              lng: w.lng || '-120.4830',
+                            }));
+                          }
+                        } catch (e) {
+                          currentStops = [];
+                        }
+                        const newStops = [
+                          ...currentStops,
+                          {
+                            id: `stop-${Date.now()}`,
+                            name: `Stop ${currentStops.length + 1}`,
+                            lat: '37.5000',
+                            lng: '-120.0000',
+                          },
+                        ];
+                        handleStaticPropChange('tripStops', JSON.stringify(newStops));
+                      }}
+                      className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 border border-sky-500/40 cursor-pointer font-bold"
+                    >
+                      + Add Stop
+                    </button>
+                  </div>
+
+                  {(() => {
+                    let stops: Array<{ id: string; name: string; lat: string; lng: string }> = [];
+                    try {
+                      if (selectedComp.staticProps.tripStops) {
+                        stops = JSON.parse(selectedComp.staticProps.tripStops);
+                      } else if (selectedComp.staticProps.waypoints) {
+                        const wp = JSON.parse(selectedComp.staticProps.waypoints);
+                        stops = wp.map((w: any, idx: number) => ({
+                          id: `stop-${idx + 1}`,
+                          name: typeof w === 'string' ? w : w.name || `Stop ${idx + 1}`,
+                          lat: w.lat || (idx === 0 ? '37.3022' : '37.7158'),
+                          lng: w.lng || (idx === 0 ? '-120.4830' : '-119.6775'),
+                        }));
+                      } else {
+                        stops = [
+                          { id: 'stop-1', name: 'EV Supercharger Bay (Merced)', lat: '37.3022', lng: '-120.4830' },
+                          { id: 'stop-2', name: 'Scenic Overlook Rest Area', lat: '37.7158', lng: '-119.6775' },
+                        ];
+                      }
+                    } catch (e) {
+                      stops = [];
+                    }
+
+                    return (
+                      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                        {stops.map((stop, idx) => (
+                          <div key={stop.id || idx} className="p-2 rounded bg-slate-900/80 border border-slate-700/60 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold text-slate-300">Stop {idx + 1}</span>
+                              <button
+                                onClick={() => {
+                                  const updated = stops.filter((_, i) => i !== idx);
+                                  handleStaticPropChange('tripStops', JSON.stringify(updated));
+                                }}
+                                className="text-[10px] font-mono text-rose-400 hover:text-rose-300 cursor-pointer"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              value={stop.name}
+                              onChange={(e) => {
+                                const updated = [...stops];
+                                updated[idx] = { ...updated[idx], name: e.target.value };
+                                handleStaticPropChange('tripStops', JSON.stringify(updated));
+                              }}
+                              placeholder="Stop name"
+                              className="w-full bg-slate-950 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-800"
+                            />
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <input
+                                type="text"
+                                value={stop.lat}
+                                onChange={(e) => {
+                                  const updated = [...stops];
+                                  updated[idx] = { ...updated[idx], lat: e.target.value };
+                                  handleStaticPropChange('tripStops', JSON.stringify(updated));
+                                }}
+                                placeholder="Lat"
+                                className="w-full bg-slate-950 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-800"
+                              />
+                              <input
+                                type="text"
+                                value={stop.lng}
+                                onChange={(e) => {
+                                  const updated = [...stops];
+                                  updated[idx] = { ...updated[idx], lng: e.target.value };
+                                  handleStaticPropChange('tripStops', JSON.stringify(updated));
+                                }}
+                                placeholder="Lng"
+                                className="w-full bg-slate-950 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-800"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
-              </>
+              </div>
+            )}
+
+            {selectedComp.type === 'navTripEstimate' && (
+              <div className="space-y-2">
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                    Route Simulation Parameters
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-mono">Start Lat</span>
+                      <input
+                        type="text"
+                        value={selectedComp.staticProps.startLat || ''}
+                        onChange={(e) => handleStaticPropChange('startLat', e.target.value)}
+                        placeholder="37.3318"
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-mono">Start Lng</span>
+                      <input
+                        type="text"
+                        value={selectedComp.staticProps.startLng || ''}
+                        onChange={(e) => handleStaticPropChange('startLng', e.target.value)}
+                        placeholder="-122.0311"
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                  </div>
+                  <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-mono text-slate-400 capitalize">Consumption Rate</span>
+                    <input
+                      type="text"
+                      value={selectedComp.staticProps.consumptionRate || ''}
+                      onChange={(e) => handleStaticPropChange('consumptionRate', e.target.value)}
+                      placeholder="0.32"
+                      className="w-32 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
+                    />
+                  </div>
+                  <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-mono text-slate-400">Distance Label</span>
+                    <input
+                      type="text"
+                      value={selectedComp.staticProps.distanceLabel ?? 'Distance'}
+                      onChange={(e) => handleStaticPropChange('distanceLabel', e.target.value)}
+                      placeholder="Distance"
+                      className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
+                    />
+                  </div>
+                  <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-mono text-slate-400">Estimated Time Label</span>
+                    <input
+                      type="text"
+                      value={selectedComp.staticProps.estimatedTimeLabel ?? 'Estimated Time'}
+                      onChange={(e) => handleStaticPropChange('estimatedTimeLabel', e.target.value)}
+                      placeholder="Estimated Time"
+                      className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
+                    />
+                  </div>
+                  <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-mono text-slate-400">Energy Required Label</span>
+                    <input
+                      type="text"
+                      value={selectedComp.staticProps.energyRequiredLabel ?? 'Energy Required'}
+                      onChange={(e) => handleStaticPropChange('energyRequiredLabel', e.target.value)}
+                      placeholder="Energy Required"
+                      className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
+                    />
+                  </div>
+                  <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-mono text-slate-400">Arrival Charge Label</span>
+                    <input
+                      type="text"
+                      value={selectedComp.staticProps.arrivalChargeLabel ?? 'Arrival Charge'}
+                      onChange={(e) => handleStaticPropChange('arrivalChargeLabel', e.target.value)}
+                      placeholder="Arrival Charge"
+                      className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
+                    />
+                  </div>
+                </div>
+              </div>
             )}
 
             {selectedComp.type === 'media' && (
@@ -905,11 +1158,11 @@ export const Inspector: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[9px] text-slate-400 block font-mono">Same-Dir Vehicles</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="8"
+                      <label className="text-[9px] text-slate-400 block font-mono mb-1">Same-Dir Vehicles</label>
+                      <NumericStepper
+                        min={0}
+                        max={8}
+                        step={1}
                         value={
                           selectedComp.staticProps.sameDirCount !== undefined
                             ? selectedComp.staticProps.sameDirCount
@@ -919,8 +1172,7 @@ export const Inspector: React.FC = () => {
                             ? '3'
                             : '2'
                         }
-                        onChange={(e) => {
-                          const val = e.target.value;
+                        onChange={(val) => {
                           const currentOpp =
                             selectedComp.staticProps.opposingDirCount !== undefined
                               ? selectedComp.staticProps.opposingDirCount
@@ -939,15 +1191,14 @@ export const Inspector: React.FC = () => {
                             trafficDensity: density,
                           });
                         }}
-                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] text-slate-400 block font-mono">Opposing Vehicles</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="8"
+                      <label className="text-[9px] text-slate-400 block font-mono mb-1">Opposing Vehicles</label>
+                      <NumericStepper
+                        min={0}
+                        max={8}
+                        step={1}
                         value={
                           selectedComp.staticProps.opposingDirCount !== undefined
                             ? selectedComp.staticProps.opposingDirCount
@@ -957,8 +1208,7 @@ export const Inspector: React.FC = () => {
                             ? '3'
                             : '1'
                         }
-                        onChange={(e) => {
-                          const val = e.target.value;
+                        onChange={(val) => {
                           const currentSame =
                             selectedComp.staticProps.sameDirCount !== undefined
                               ? selectedComp.staticProps.sameDirCount
@@ -977,9 +1227,17 @@ export const Inspector: React.FC = () => {
                             trafficDensity: density,
                           });
                         }}
-                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
                       />
                     </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-700/40">
+                    <span className="text-[11px] text-slate-300 font-mono">Grayscale Traffic Vehicles</span>
+                    <input
+                      type="checkbox"
+                      checked={selectedComp.staticProps.grayscaleTraffic !== 'false'}
+                      onChange={(e) => handleStaticPropChange('grayscaleTraffic', e.target.checked ? 'true' : 'false')}
+                      className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                    />
                   </div>
                 </div>
 
@@ -1055,6 +1313,27 @@ export const Inspector: React.FC = () => {
                     </select>
                   </div>
                   <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-300 font-mono">Blind Spot Color</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={
+                          selectedComp.staticProps.blindSpotColor?.startsWith('#')
+                            ? selectedComp.staticProps.blindSpotColor
+                            : '#ef4444'
+                        }
+                        onChange={(e) => handleStaticPropChange('blindSpotColor', e.target.value)}
+                        className="w-6 h-6 rounded bg-transparent border-none cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={selectedComp.staticProps.blindSpotColor || '#ef4444'}
+                        onChange={(e) => handleStaticPropChange('blindSpotColor', e.target.value)}
+                        className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-700/40">
                     <span className="text-[11px] text-slate-300 font-mono">Proximity Sensor Arc</span>
                     <select
                       value={selectedComp.staticProps.sensorWarning || 'auto'}
@@ -1066,9 +1345,562 @@ export const Inspector: React.FC = () => {
                       <option value="false">Force OFF</option>
                     </select>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-300 font-mono">Proximity Sensor Color</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={
+                          selectedComp.staticProps.sensorColor?.startsWith('#')
+                            ? selectedComp.staticProps.sensorColor
+                            : '#ef4444'
+                        }
+                        onChange={(e) => handleStaticPropChange('sensorColor', e.target.value)}
+                        className="w-6 h-6 rounded bg-transparent border-none cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={selectedComp.staticProps.sensorColor || '#ef4444'}
+                        onChange={(e) => handleStaticPropChange('sensorColor', e.target.value)}
+                        className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
+
+            {/* Vehicle Exploded View Controls */}
+            {selectedComp.type === 'vehicleExplodedView' && (() => {
+              const removeBg = selectedComp.staticProps.removeBg !== 'false';
+              const tolerance = parseInt(selectedComp.staticProps.bgTolerance || '25', 10);
+
+              return (
+                <div className="space-y-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider">
+                      Exploded View Asset
+                    </span>
+                    {selectedComp.staticProps.imageUrl && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Custom Image
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-mono text-slate-400 block font-bold">
+                      Upload / Replace Image
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-mono font-bold cursor-pointer transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{selectedComp.staticProps.imageUrl ? 'Replace Image' : 'Upload Image'}</span>
+                        <input
+                          type="file"
+                          accept="image/*,.svg"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const result = event.target?.result as string;
+                                if (result) {
+                                  handleStaticPropChange('imageUrl', result);
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                      {selectedComp.staticProps.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleStaticPropChange('imageUrl', '')}
+                          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-700 text-xs font-mono flex items-center gap-1 transition-colors"
+                          title="Reset to default blueprint vehicle SVG"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Reset</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[9px] font-mono text-slate-500">
+                      Supports SVG, PNG, JPG, WebP. When replaced, all attached status callout connectors stay pinned to relative positions.
+                    </p>
+                  </div>
+
+                  {/* Background Removal Section */}
+                  <div className="pt-3 border-t border-slate-800 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] font-mono font-bold text-slate-200 block">
+                          Background Removal
+                        </span>
+                        <span className="text-[9px] font-mono text-slate-500 block">
+                          Auto-detects corner color &amp; keys to transparent
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleStaticPropChange('removeBg', removeBg ? 'false' : 'true')}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          removeBg ? 'bg-sky-500' : 'bg-slate-700'
+                        }`}
+                        title={removeBg ? 'Disable Background Removal' : 'Enable Background Removal'}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            removeBg ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Tolerance Slider (visible only when Background Removal is on) */}
+                    {removeBg && (
+                      <div className="space-y-1.5 pt-1.5 border-t border-slate-800/60">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-slate-300 font-bold">
+                            Tolerance
+                          </span>
+                          <span className="text-[10px] font-mono text-sky-400 font-bold">
+                            {tolerance}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={tolerance}
+                          onChange={(e) => handleStaticPropChange('bgTolerance', e.target.value)}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+                        />
+                        <div className="flex justify-between text-[8px] font-mono text-slate-500">
+                          <span>0% (Exact)</span>
+                          <span>25% (Default)</span>
+                          <span>100% (Aggressive)</span>
+                        </div>
+                        <p className="text-[9px] font-mono text-slate-500">
+                          Live adjustments key out background variations and subtle gradients.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Vehicle Status Callout Controls */}
+            {selectedComp.type === 'vehicleStatusCallout' && (() => {
+              const activeScreenComps = components;
+              const explodedViews = activeScreenComps.filter((c) => c.type === 'vehicleExplodedView');
+              const connector = selectedComp.connector;
+              const healthType = selectedComp.staticProps.healthType || 'rgy';
+              const healthValue = selectedComp.staticProps.healthValue || 'green';
+
+              const anchors: Array<{ id: ConnectorAnchor; label: string }> = [
+                { id: 'top-left', label: 'TL' },
+                { id: 'top-center', label: 'TC' },
+                { id: 'top-right', label: 'TR' },
+                { id: 'left-center', label: 'LC' },
+                { id: 'right-center', label: 'RC' },
+                { id: 'bottom-left', label: 'BL' },
+                { id: 'bottom-center', label: 'BC' },
+                { id: 'bottom-right', label: 'BR' },
+              ];
+
+              return (
+                <div className="space-y-3">
+                  {/* Card Content Settings */}
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
+                    <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                      Callout Content
+                    </span>
+
+                    <div>
+                      <label className="text-[10px] font-mono text-slate-400 block mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={selectedComp.staticProps.title || ''}
+                        onChange={(e) => handleStaticPropChange('title', e.target.value)}
+                        placeholder="e.g. Front Powertrain"
+                        className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-mono text-slate-400 block mb-1">Description</label>
+                      <input
+                        type="text"
+                        value={selectedComp.staticProps.description || ''}
+                        onChange={(e) => handleStaticPropChange('description', e.target.value)}
+                        placeholder="e.g. Primary electric drive unit"
+                        className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-1">
+                        <label className="text-[10px] font-mono text-slate-400 block mb-1">Status Code</label>
+                        <input
+                          type="text"
+                          value={selectedComp.staticProps.statusCode || ''}
+                          onChange={(e) => handleStaticPropChange('statusCode', e.target.value)}
+                          placeholder="e.g. 4101"
+                          className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-[10px] font-mono text-slate-400 block mb-1">Status Message</label>
+                        <input
+                          type="text"
+                          value={selectedComp.staticProps.statusMessage || ''}
+                          onChange={(e) => handleStaticPropChange('statusMessage', e.target.value)}
+                          placeholder="e.g. Normal thermal parameters"
+                          className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Health Indicator Mode */}
+                    <div className="pt-2 border-t border-slate-800/80">
+                      <label className="text-[10px] font-mono text-slate-400 block mb-1.5 font-bold">
+                        Health Indicator
+                      </label>
+                      <div className="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 mb-2">
+                        {(['none', 'percent', 'rgy'] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => {
+                              handleStaticPropChange('healthType', mode);
+                              if (mode === 'percent' && !selectedComp.staticProps.healthValue) {
+                                handleStaticPropChange('healthValue', '98');
+                              } else if (mode === 'rgy' && !['green', 'yellow', 'red'].includes(selectedComp.staticProps.healthValue)) {
+                                handleStaticPropChange('healthValue', 'green');
+                              }
+                            }}
+                            className={`py-1 text-[10px] font-mono font-bold rounded capitalize transition-colors ${
+                              healthType === mode
+                                ? 'bg-sky-500 text-slate-950 shadow'
+                                : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            {mode === 'rgy' ? 'R/Y/G' : mode}
+                          </button>
+                        ))}
+                      </div>
+
+                      {healthType === 'percent' && (
+                        <div className="flex items-center justify-between bg-slate-950 p-2 rounded-lg border border-slate-800">
+                          <span className="text-[11px] font-mono text-slate-300">Health %</span>
+                          <NumericStepper
+                            value={parseInt(healthValue, 10) || 100}
+                            min={0}
+                            max={100}
+                            step={1}
+                            unit="%"
+                            onChange={(val) => handleStaticPropChange('healthValue', String(val))}
+                          />
+                        </div>
+                      )}
+
+                      {healthType === 'rgy' && (
+                        <div className="space-y-1.5">
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {[
+                              { val: 'green', label: 'Green', color: 'bg-emerald-500', text: 'text-emerald-300', border: 'border-emerald-500/40' },
+                              { val: 'yellow', label: 'Yellow', color: 'bg-amber-500', text: 'text-amber-300', border: 'border-amber-500/40' },
+                              { val: 'red', label: 'Red', color: 'bg-rose-500', text: 'text-rose-300', border: 'border-rose-500/40' },
+                            ].map((item) => {
+                              const isSelected = healthValue === item.val;
+                              return (
+                                <button
+                                  key={item.val}
+                                  type="button"
+                                  onClick={() => handleStaticPropChange('healthValue', item.val)}
+                                  className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition-all ${
+                                    isSelected
+                                      ? `${item.border} bg-slate-800 ${item.text} ring-1 ring-offset-1 ring-offset-slate-950 ring-sky-400`
+                                      : 'border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200'
+                                  }`}
+                                >
+                                  <span className={`w-2 h-2 rounded-full ${item.color}`} />
+                                  <span>{item.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="text-[9px] font-mono text-slate-500">
+                            Automotive rule: Static indicator with no blinking/pulsing animation.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Exploded View Connector Settings */}
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Link2 className="w-3.5 h-3.5" />
+                        Exploded View Connector
+                      </span>
+                      {connector && (
+                        <button
+                          type="button"
+                          onClick={() => updateComponentConnector(selectedComp.id, null)}
+                          className="flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded border border-rose-500/30 transition-colors"
+                          title="Unlink Connector"
+                        >
+                          <Unlink className="w-2.5 h-2.5" />
+                          <span>Unlink</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-mono text-slate-400 block mb-1">
+                        Target Exploded View
+                      </label>
+                      <select
+                        value={connector?.targetComponentId || ''}
+                        onChange={(e) => {
+                          const targetId = e.target.value;
+                          if (!targetId) {
+                            updateComponentConnector(selectedComp.id, null);
+                          } else {
+                            updateComponentConnector(selectedComp.id, {
+                              sourceAnchor: connector?.sourceAnchor || 'left-center',
+                              targetComponentId: targetId,
+                              targetX: connector?.targetX ?? 0.5,
+                              targetY: connector?.targetY ?? 0.5,
+                            });
+                          }
+                        }}
+                        className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 font-bold cursor-pointer"
+                      >
+                        <option value="">-- None (Unlinked) --</option>
+                        {explodedViews.map((ev, idx) => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.staticProps.label || `Exploded View #${idx + 1}`} ({ev.id.slice(0, 10)})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {connector && (
+                      <>
+                        {/* 8-Anchor Source Selector */}
+                        <div>
+                          <label className="text-[10px] font-mono text-slate-400 block mb-1.5 font-bold">
+                            Source Anchor (Callout Edge)
+                          </label>
+                          <div className="grid grid-cols-4 gap-1">
+                            {anchors.map((anc) => {
+                              const isSelected = connector.sourceAnchor === anc.id;
+                              return (
+                                <button
+                                  key={anc.id}
+                                  type="button"
+                                  onClick={() =>
+                                    updateComponentConnector(selectedComp.id, {
+                                      ...connector,
+                                      sourceAnchor: anc.id,
+                                    })
+                                  }
+                                  className={`py-1 text-[9px] font-mono font-bold rounded border transition-colors ${
+                                    isSelected
+                                      ? 'bg-sky-500 text-slate-950 border-sky-400 font-extrabold shadow'
+                                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+                                  }`}
+                                  title={`Anchor: ${anc.id}`}
+                                >
+                                  {anc.id.replace('-', ' ').toUpperCase()}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Relative Target Coords */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-mono text-slate-400 block font-bold">
+                            Target Endpoint On Diagram (0% - 100%)
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
+                              <span className="text-[10px] font-mono text-slate-400">Target X</span>
+                              <NumericStepper
+                                value={Math.round(connector.targetX * 100)}
+                                min={0}
+                                max={100}
+                                step={1}
+                                unit="%"
+                                onChange={(val) =>
+                                  updateComponentConnector(selectedComp.id, {
+                                    ...connector,
+                                    targetX: Math.max(0, Math.min(1, val / 100)),
+                                  })
+                                }
+                              />
+                            </div>
+                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
+                              <span className="text-[10px] font-mono text-slate-400">Target Y</span>
+                              <NumericStepper
+                                value={Math.round(connector.targetY * 100)}
+                                min={0}
+                                max={100}
+                                step={1}
+                                unit="%"
+                                onChange={(val) =>
+                                  updateComponentConnector(selectedComp.id, {
+                                    ...connector,
+                                    targetY: Math.max(0, Math.min(1, val / 100)),
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+                          <p className="text-[9px] font-mono text-slate-500">
+                            Tip: You can also drag the glowing blue target dot directly on the canvas!
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Mini Nav Controls */}
+            {selectedComp.type === 'miniNav' && (() => {
+              const currentManeuverType = selectedComp.staticProps.maneuverType || 'straight';
+              const numLanes = parseInt(selectedComp.staticProps.laneCount || '3', 10);
+              const activeLane = parseInt(selectedComp.staticProps.activeLaneIndex || '1', 10);
+
+              const maneuverOptions: Array<{ id: ManeuverType; label: string }> = [
+                { id: 'straight', label: 'Straight' },
+                { id: 'slight-left', label: 'Slight Left' },
+                { id: 'slight-right', label: 'Slight Right' },
+                { id: 'left', label: 'Left Turn' },
+                { id: 'right', label: 'Right Turn' },
+                { id: 'arrive', label: 'Arrive' },
+              ];
+
+              return (
+                <div className="space-y-3">
+                  {/* Maneuver & Route Settings */}
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
+                    <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                      Maneuver Direction
+                    </span>
+
+                    {/* Maneuver Type Selector */}
+                    <div className="grid grid-cols-3 gap-1.5 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                      {maneuverOptions.map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            handleStaticPropChange('maneuverType', opt.id);
+                            // Also synchronize with the active journey store slice
+                            useMockpitStore.getState().setManeuverType(opt.id);
+                          }}
+                          className={`py-1.5 px-2 text-[10px] font-mono font-bold rounded capitalize transition-colors ${
+                            currentManeuverType === opt.id
+                              ? 'bg-sky-500 text-slate-950 shadow'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-mono text-slate-400 block mb-1">Highway Name / Route</label>
+                      <input
+                        type="text"
+                        value={selectedComp.staticProps.highwayName || ''}
+                        onChange={(e) => {
+                          handleStaticPropChange('highwayName', e.target.value);
+                          useMockpitStore.getState().setJourneyState({ currentHighwayName: e.target.value });
+                        }}
+                        placeholder="e.g. I-280 N"
+                        className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-mono text-slate-400 block mb-1">Upcoming Exit / Turn</label>
+                        <input
+                          type="text"
+                          value={selectedComp.staticProps.nextExit || ''}
+                          onChange={(e) => handleStaticPropChange('nextExit', e.target.value)}
+                          placeholder="e.g. Exit 12: Foothill Expwy"
+                          className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-mono text-slate-400 block mb-1">Distance to Maneuver</label>
+                        <input
+                          type="text"
+                          value={selectedComp.staticProps.distanceToManeuver || ''}
+                          onChange={(e) => handleStaticPropChange('distanceToManeuver', e.target.value)}
+                          placeholder="e.g. 0.8 mi"
+                          className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lane Guidance Configuration */}
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
+                    <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                      Lane Guidance
+                    </span>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Total Lanes</span>
+                        <NumericStepper
+                          value={numLanes}
+                          min={1}
+                          max={6}
+                          step={1}
+                          onChange={(val) => {
+                            handleStaticPropChange('laneCount', String(val));
+                            if (activeLane >= val) {
+                              handleStaticPropChange('activeLaneIndex', String(val - 1));
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Guide Lane</span>
+                        <NumericStepper
+                          value={activeLane + 1}
+                          min={1}
+                          max={numLanes}
+                          step={1}
+                          onChange={(val) => handleStaticPropChange('activeLaneIndex', String(val - 1))}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[9px] font-mono text-slate-500">
+                      Glanceable, read-only driver cue adhering to automotive safety standards.
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {Object.entries(selectedComp.staticProps)
               .filter(
@@ -1108,11 +1940,51 @@ export const Inspector: React.FC = () => {
                   key !== 'showCones' &&
                   key !== 'showConstruction' &&
                   key !== 'trafficData' &&
-                  key !== 'sceneObjectsData'
+                  key !== 'sceneObjectsData' &&
+                  key !== 'tripStops' &&
+                  key !== 'destination' &&
+                  key !== 'destLat' &&
+                  key !== 'destLng' &&
+                  key !== 'waypoints' &&
+                  key !== 'startLat' &&
+                  key !== 'startLng' &&
+                  key !== 'consumptionRate' &&
+                  key !== 'distanceLabel' &&
+                  key !== 'estimatedTimeLabel' &&
+                  key !== 'energyRequiredLabel' &&
+                  key !== 'arrivalChargeLabel' &&
+                  key !== 'imageUrl' &&
+                  key !== 'title' &&
+                  key !== 'description' &&
+                  key !== 'statusCode' &&
+                  key !== 'statusMessage' &&
+                  key !== 'healthType' &&
+                  key !== 'healthValue' &&
+                  key !== 'removeBg' &&
+                  key !== 'bgTolerance' &&
+                  key !== 'highwayName' &&
+                  key !== 'nextExit' &&
+                  key !== 'distanceToManeuver' &&
+                  key !== 'maneuverType' &&
+                  key !== 'laneCount' &&
+                  key !== 'activeLaneIndex'
               )
-              .map(([key, val]) => (
+              .map(([key, val]) => {
+                const getFieldLabel = (propKey: string) => {
+                  if (propKey === 'frontLeft') return 'Front Left';
+                  if (propKey === 'frontRight') return 'Front Right';
+                  if (propKey === 'rearLeft') return 'Rear Left';
+                  if (propKey === 'rearRight') return 'Rear Right';
+                  if (propKey === 'buttonLabel') return 'Button Label';
+                  if (propKey === 'reportTitle') return 'Report Title';
+                  return propKey;
+                };
+
+                const isCustomLabel = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight', 'buttonLabel', 'reportTitle'].includes(key);
+
+                return (
                 <div key={key} className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-mono text-slate-400 capitalize">{key}</span>
+                  <span className={`text-[11px] font-mono text-slate-400 ${isCustomLabel ? '' : 'capitalize'}`}>{getFieldLabel(key)}</span>
                   {key === 'color' ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -1186,226 +2058,251 @@ export const Inspector: React.FC = () => {
                     />
                   )}
                 </div>
-              ))}
+              );
+            })}
           </div>
+          )}
         </div>
 
         {/* Behavior Bindings */}
-        <div className="border-t border-slate-800 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                State Bindings ({selectedComp.bindings?.length || 0})
-              </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                Dynamic HMI logic rules that update styling when state changes.
-              </p>
-            </div>
+        <div className="border-b border-slate-800/80 pb-4">
+          <div className="flex items-center justify-between min-h-[44px]">
             <button
-              onClick={() => setIsAddingBinding(!isAddingBinding)}
-              className="p-1.5 rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-slate-950 transition-colors text-xs font-bold flex items-center gap-1 shrink-0"
+              type="button"
+              onClick={() => toggleSection('bindings')}
+              className="flex-1 flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  State Bindings ({selectedComp.bindings?.length || 0})
+                </span>
+              </div>
+              <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+                {collapsedSections.bindings ? (
+                  <ChevronRight className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                if (collapsedSections.bindings) {
+                  setCollapsedSections((prev) => ({ ...prev, bindings: false }));
+                }
+                setIsAddingBinding(!isAddingBinding);
+              }}
+              className="p-1.5 ml-2 rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-slate-950 transition-colors text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Rule
             </button>
           </div>
 
-          {/* List existing bindings */}
-          <div className="space-y-2.5">
-            {selectedComp.bindings?.length === 0 ? (
-              <div className="p-3 text-center border border-dashed border-slate-800 rounded-xl text-slate-500 text-xs font-mono">
-                No bindings configured yet. Click "+ Rule" to add one.
+          {!collapsedSections.bindings && (
+            <div className="mt-2 space-y-3">
+              <p className="text-[10px] text-slate-400">
+                Dynamic HMI logic rules that update styling when state changes.
+              </p>
+
+              {/* List existing bindings */}
+              <div className="space-y-2.5">
+                {selectedComp.bindings?.length === 0 ? (
+                  <div className="p-3 text-center border border-dashed border-slate-800 rounded-xl text-slate-500 text-xs font-mono">
+                    No bindings configured yet. Click "+ Rule" to add one.
+                  </div>
+                ) : (
+                  selectedComp.bindings.map((b) => (
+                    <div
+                      key={b.id}
+                      className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono space-y-2 relative group hover:border-slate-700 transition-colors"
+                    >
+                      <button
+                        onClick={() => removeBinding(selectedComp.id, b.id)}
+                        className="absolute top-2 right-2 text-slate-500 hover:text-rose-400 p-1 rounded transition-colors cursor-pointer"
+                        title="Delete Binding Rule"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <div className="text-[11px] text-slate-300 font-semibold pr-6 flex items-center gap-1">
+                        <span className="text-sky-400">IF</span>
+                        <span className="text-emerald-400">{b.stateField}</span>
+                        <span className="text-amber-400">{b.condition}</span>
+                        <span className="text-slate-100">{String(b.value)}</span>
+                      </div>
+
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1 pt-1 border-t border-slate-900">
+                        <span className="text-purple-400">THEN</span>
+                        <span className="text-slate-300">{b.targetProp}</span>
+                        <span>=</span>
+                        <span
+                          className="font-bold px-1.5 py-0.5 rounded bg-slate-900 text-slate-100 border border-slate-800 truncate"
+                          style={b.targetProp === 'color' ? { color: b.targetValue } : undefined}
+                        >
+                          {b.targetValue}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-            ) : (
-              selectedComp.bindings.map((b) => (
-                <div
-                  key={b.id}
-                  className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono space-y-2 relative group hover:border-slate-700 transition-colors"
+
+              {/* Add New Binding Form Drawer (v0.6.7 scroll bug fix) */}
+              {isAddingBinding && (
+                <form
+                  onSubmit={handleAddBindingSubmit}
+                  className="mt-4 rounded-xl bg-slate-800/95 border border-sky-500/40 text-xs shadow-2xl flex flex-col max-h-[70vh] overflow-hidden"
                 >
-                  <button
-                    onClick={() => removeBinding(selectedComp.id, b.id)}
-                    className="absolute top-2 right-2 text-slate-500 hover:text-rose-400 p-1 rounded transition-colors"
-                    title="Delete Binding Rule"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-
-                  <div className="text-[11px] text-slate-300 font-semibold pr-6 flex items-center gap-1">
-                    <span className="text-sky-400">IF</span>
-                    <span className="text-emerald-400">{b.stateField}</span>
-                    <span className="text-amber-400">{b.condition}</span>
-                    <span className="text-slate-100">{String(b.value)}</span>
+                  <div className="p-3 border-b border-slate-700/80 bg-slate-800 sticky top-0 z-10 flex items-center justify-between shrink-0">
+                    <h4 className="font-bold text-sky-400 text-xs">New Binding Rule</h4>
+                    <span className="text-[10px] text-slate-400 font-mono">Dynamic Rule Editor</span>
                   </div>
 
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1 pt-1 border-t border-slate-900">
-                    <span className="text-purple-400">THEN</span>
-                    <span className="text-slate-300">{b.targetProp}</span>
-                    <span>=</span>
-                    <span
-                      className="font-bold px-1.5 py-0.5 rounded bg-slate-900 text-slate-100 border border-slate-800 truncate"
-                      style={b.targetProp === 'color' ? { color: b.targetValue } : undefined}
-                    >
-                      {b.targetValue}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Add New Binding Form Drawer (v0.6.7 scroll bug fix) */}
-          {isAddingBinding && (
-            <form
-              onSubmit={handleAddBindingSubmit}
-              className="mt-4 rounded-xl bg-slate-800/95 border border-sky-500/40 text-xs shadow-2xl flex flex-col max-h-[70vh] overflow-hidden"
-            >
-              <div className="p-3 border-b border-slate-700/80 bg-slate-800 sticky top-0 z-10 flex items-center justify-between shrink-0">
-                <h4 className="font-bold text-sky-400 text-xs">New Binding Rule</h4>
-                <span className="text-[10px] text-slate-400 font-mono">Dynamic Rule Editor</span>
-              </div>
-
-              <div className="p-3 space-y-3 overflow-y-auto max-h-[70vh] flex-1">
-                <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">State Field</label>
-                  <select
-                    value={newBinding.stateField}
-                    onChange={(e) => setNewBinding({ ...newBinding, stateField: e.target.value as keyof VehicleState })}
-                    className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                  >
-                    {VEHICLE_STATE_FIELDS.map((f) => (
-                      <option key={f.field} value={f.field}>{f.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Condition</label>
-                    <select
-                      value={newBinding.condition}
-                      onChange={(e) => setNewBinding({ ...newBinding, condition: e.target.value as BindingCondition })}
-                      className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                    >
-                      {CONDITIONS.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Value</label>
-                    {newBinding.stateField === 'isCharging' ||
-                    newBinding.stateField === 'doorOpen' ||
-                    newBinding.stateField === 'cruiseControlActive' ? (
+                  <div className="p-3 space-y-3 overflow-y-auto max-h-[70vh] flex-1">
+                    <div>
+                      <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">State Field</label>
                       <select
-                        value={newBinding.value}
-                        onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}
+                        value={newBinding.stateField}
+                        onChange={(e) => setNewBinding({ ...newBinding, stateField: e.target.value as keyof VehicleState })}
                         className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
                       >
-                        <option value="true">true</option>
-                        <option value="false">false</option>
+                        {VEHICLE_STATE_FIELDS.map((f) => (
+                          <option key={f.field} value={f.field}>{f.label}</option>
+                        ))}
                       </select>
-                    ) : newBinding.stateField === 'gear' ? (
-                      <select
-                        value={newBinding.value}
-                        onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                      >
-                        <option value="P">P</option>
-                        <option value="R">R</option>
-                        <option value="N">N</option>
-                        <option value="D">D</option>
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={newBinding.value}
-                        onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                      />
-                    )}
-                  </div>
-                </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Target Property</label>
-                    <select
-                      value={newBinding.targetProp}
-                      onChange={(e) => setNewBinding({ ...newBinding, targetProp: e.target.value as TargetProp })}
-                      className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Condition</label>
+                        <select
+                          value={newBinding.condition}
+                          onChange={(e) => setNewBinding({ ...newBinding, condition: e.target.value as BindingCondition })}
+                          className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
+                        >
+                          {CONDITIONS.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Value</label>
+                        {newBinding.stateField === 'isCharging' ||
+                        newBinding.stateField === 'doorOpen' ||
+                        newBinding.stateField === 'cruiseControlActive' ? (
+                          <select
+                            value={newBinding.value}
+                            onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
+                          >
+                            <option value="true">true</option>
+                            <option value="false">false</option>
+                          </select>
+                        ) : newBinding.stateField === 'gear' ? (
+                          <select
+                            value={newBinding.value}
+                            onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
+                          >
+                            <option value="P">P</option>
+                            <option value="R">R</option>
+                            <option value="N">N</option>
+                            <option value="D">D</option>
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={newBinding.value}
+                            onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Target Property</label>
+                        <select
+                          value={newBinding.targetProp}
+                          onChange={(e) => setNewBinding({ ...newBinding, targetProp: e.target.value as TargetProp })}
+                          className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
+                        >
+                          {TARGET_PROPS.map((tp) => (
+                            <option key={tp} value={tp}>{tp}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">New Value</label>
+                        {newBinding.targetProp === 'severity' ? (
+                          <select
+                            value={newBinding.targetValue}
+                            onChange={(e) => setNewBinding({ ...newBinding, targetValue: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
+                          >
+                            <option value="critical">critical</option>
+                            <option value="warning">warning</option>
+                            <option value="info">info</option>
+                          </select>
+                        ) : newBinding.targetProp === 'icon' ? (
+                          <select
+                            value={newBinding.targetValue}
+                            onChange={(e) => setNewBinding({ ...newBinding, targetValue: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
+                          >
+                            <option value="alert-triangle">alert-triangle</option>
+                            <option value="door-open">door-open</option>
+                            <option value="battery-warning">battery-warning</option>
+                            <option value="thermometer">thermometer</option>
+                            <option value="tire">tire</option>
+                            <option value="zap">zap</option>
+                            <option value="gauge">gauge</option>
+                            <option value="bell">bell</option>
+                            <option value="shield-alert">shield-alert</option>
+                            <option value="wrench">wrench</option>
+                            <option value="lock">lock</option>
+                            <option value="key">key</option>
+                            <option value="info">info</option>
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={newBinding.targetValue}
+                            onChange={(e) => setNewBinding({ ...newBinding, targetValue: e.target.value })}
+                            placeholder="e.g. #ef4444, true, {speed}"
+                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 italic">
+                      Tip: Use <span className="text-sky-300">{'{speed}'}</span> or <span className="text-sky-300">{'{batteryPercent}'}</span> in new value for dynamic state text.
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-800 sticky bottom-0 z-10 border-t border-slate-700/80 flex gap-2 shrink-0">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold p-1.5 rounded transition-colors cursor-pointer"
                     >
-                      {TARGET_PROPS.map((tp) => (
-                        <option key={tp} value={tp}>{tp}</option>
-                      ))}
-                    </select>
+                      Save Rule
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingBinding(false)}
+                      className="bg-slate-700 hover:bg-slate-600 text-slate-200 p-1.5 rounded transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
                   </div>
-
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">New Value</label>
-                    {newBinding.targetProp === 'severity' ? (
-                      <select
-                        value={newBinding.targetValue}
-                        onChange={(e) => setNewBinding({ ...newBinding, targetValue: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
-                      >
-                        <option value="critical">critical</option>
-                        <option value="warning">warning</option>
-                        <option value="info">info</option>
-                      </select>
-                    ) : newBinding.targetProp === 'icon' ? (
-                      <select
-                        value={newBinding.targetValue}
-                        onChange={(e) => setNewBinding({ ...newBinding, targetValue: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
-                      >
-                        <option value="alert-triangle">alert-triangle</option>
-                        <option value="door-open">door-open</option>
-                        <option value="battery-warning">battery-warning</option>
-                        <option value="thermometer">thermometer</option>
-                        <option value="tire">tire</option>
-                        <option value="zap">zap</option>
-                        <option value="gauge">gauge</option>
-                        <option value="bell">bell</option>
-                        <option value="shield-alert">shield-alert</option>
-                        <option value="wrench">wrench</option>
-                        <option value="lock">lock</option>
-                        <option value="key">key</option>
-                        <option value="info">info</option>
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={newBinding.targetValue}
-                        onChange={(e) => setNewBinding({ ...newBinding, targetValue: e.target.value })}
-                        placeholder="e.g. #ef4444, true, {speed}"
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-[10px] text-slate-400 italic">
-                  Tip: Use <span className="text-sky-300">{'{speed}'}</span> or <span className="text-sky-300">{'{batteryPercent}'}</span> in new value for dynamic state text.
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-800 sticky bottom-0 z-10 border-t border-slate-700/80 flex gap-2 shrink-0">
-                <button
-                  type="submit"
-                  className="flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold p-1.5 rounded transition-colors cursor-pointer"
-                >
-                  Save Rule
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsAddingBinding(false)}
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 p-1.5 rounded transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+                </form>
+              )}
+            </div>
           )}
         </div>
 

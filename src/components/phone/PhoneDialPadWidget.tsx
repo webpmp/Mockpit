@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Phone, PhoneOff, Delete, Mic, MicOff, Volume2, ArrowUpRight, ArrowDownLeft, Clock, Grid } from 'lucide-react';
 import { CallLogItem, Contact, INITIAL_CALL_LOGS, INITIAL_CONTACTS } from '../../data/mockPhoneData';
-import { getAvatarColor, getInitials } from '../../utils/avatarHash';
+import { ContactAvatar } from '../ContactAvatar';
 import { ComponentHeader } from '../ComponentRenderer';
 import { INPUT_FIELD_HEIGHT_CLASS } from '../MockpitInput';
 
@@ -202,16 +202,18 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
         /* ACTIVE CALL STATE */
         <div className="flex-1 min-h-0 flex flex-col items-center justify-between py-2 text-center my-auto">
           <div className="flex flex-col items-center my-auto">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-slate-100 font-bold text-xl mb-2 shadow-xl border-2 border-slate-700/80 animate-pulse"
-              style={{
-                backgroundColor: matchedContact
-                  ? getAvatarColor(matchedContact.name)
-                  : '#3b82f6',
-              }}
-            >
-              {matchedContact ? getInitials(matchedContact.name) : <Phone className="w-8 h-8" />}
-            </div>
+            {matchedContact ? (
+              <ContactAvatar
+                name={matchedContact.name}
+                avatarUrl={matchedContact.avatarUrl}
+                className="w-16 h-16 mb-2 shadow-xl border-2 border-slate-700/80 animate-pulse"
+                fontSizeClassName="text-xl"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-slate-100 font-bold text-xl mb-2 shadow-xl border-2 border-slate-700/80 animate-pulse">
+                <Phone className="w-8 h-8" />
+              </div>
+            )}
             <h3 className="text-base font-black text-slate-100 tracking-tight">
               {matchedContact ? matchedContact.name : enteredNumber}
             </h3>
@@ -259,12 +261,12 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
             {/* Matched Contact Info */}
             {matchedContact ? (
               <div className="flex items-center gap-2 min-w-0 max-w-[45%]">
-                <div
-                  className="w-[clamp(22px,6cqw,38px)] h-[clamp(22px,6cqw,38px)] rounded-full flex items-center justify-center text-[clamp(10px,2.8cqw,16px)] font-bold text-white shrink-0"
-                  style={{ backgroundColor: getAvatarColor(matchedContact.name) }}
-                >
-                  {getInitials(matchedContact.name)}
-                </div>
+                <ContactAvatar
+                  name={matchedContact.name}
+                  avatarUrl={matchedContact.avatarUrl}
+                  className="w-[clamp(22px,6cqw,38px)] h-[clamp(22px,6cqw,38px)] shrink-0"
+                  fontSizeClassName="text-[clamp(10px,2.8cqw,16px)]"
+                />
                 <span className="text-[clamp(12px,3cqw,20px)] font-bold text-slate-200 truncate">
                   {matchedContact.name}
                 </span>
@@ -352,12 +354,12 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
               className="flex items-center justify-between p-2 rounded-xl bg-slate-950/40 border border-slate-800/60 hover:bg-slate-800/40 transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-slate-100 font-bold text-xs shrink-0"
-                  style={{ backgroundColor: getAvatarColor(log.name) }}
-                >
-                  {getInitials(log.name)}
-                </div>
+                <ContactAvatar
+                  name={log.name}
+                  avatarUrl={log.avatarUrl}
+                  className="w-8 h-8 shrink-0"
+                  fontSizeClassName="text-xs"
+                />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
                     <span

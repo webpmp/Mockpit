@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import {
   AlertTriangle,
   Battery,
@@ -6,27 +6,37 @@ import {
   Bell,
   Check,
   CircleDot,
+  Clock,
   Compass,
   DoorOpen,
+  Eye,
   Fan,
   Flag,
   Gauge,
+  Grid,
   Home,
   Info,
   Key,
   Layers,
   Lock,
   MapPin,
+  MessageSquare,
   Music,
   Navigation,
   Phone,
   Play,
   Plus,
+  Reply,
   Route,
   Search,
+  Send,
   ShieldAlert,
+  Sliders,
+  Sun,
   Thermometer,
   Trash2,
+  User,
+  Users,
   Wrench,
   X,
   Zap,
@@ -39,11 +49,18 @@ import { OverheadDrivingVisualization } from './OverheadDrivingVisualization';
 import { PhoneContactsWidget } from './phone/PhoneContactsWidget';
 import { PhoneDialPadWidget } from './phone/PhoneDialPadWidget';
 import { PhoneMessagingWidget } from './phone/PhoneMessagingWidget';
+import { ContactAvatar } from './ContactAvatar';
+import { COMPONENT_META } from '../config/componentMeta';
+import { getAvatarColor, getInitials } from '../utils/avatarHash';
 import { ClimateVentWidget } from './climate/ClimateVentWidget';
 import { ClimateTempWidget } from './climate/ClimateTempWidget';
 import { ClimateSeatsWidget } from './climate/ClimateSeatsWidget';
+import { VehicleExplodedViewWidget } from './vehicle/VehicleExplodedViewWidget';
+import { VehicleStatusCalloutWidget } from './vehicle/VehicleStatusCalloutWidget';
+import { SendToServiceWidget } from './vehicle/SendToServiceWidget';
+import { MiniNav } from './navigation/MiniNav';
 import { getResolvedProps } from '../lib/bindingEvaluator';
-import { ComponentInstance, DriveModeState, VehicleState } from '../types';
+import { ComponentInstance, ComponentType, DriveModeState, VehicleState } from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
 
 interface ComponentRendererProps {
@@ -59,7 +76,6 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   gear: 'Gear Select',
   speed: 'Speed Readout',
   warning: 'Warning Alert Overlay',
-  charging: 'Charging Status',
   map: 'Navigation Map',
   media: 'Music Media Player',
   climate: 'Climate Control',
@@ -67,16 +83,19 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   driveMode: 'Drive Mode Selector',
   tirePressure: 'Tire Pressure Monitor',
   navHome: 'Home Location',
-  navDestination: 'Trip Planner Component',
-  navSearch: 'Navigation Search Component',
+  navDestination: 'Trip Planner',
+  navSearch: 'Navigation Search',
   navTripEstimate: 'Trip Estimate',
   overheadVisualization: 'Overhead Driving Visualization',
+  miniNav: 'Mini Nav',
   phoneContacts: 'Contacts',
   phoneDialPad: 'Dial Pad',
   phoneMessaging: 'Messaging',
   climateVent: 'Vent Dashboard',
   climateTemp: 'Temperature',
   climateSeats: 'Seat Climate',
+  vehicleExplodedView: 'Vehicle Exploded View',
+  vehicleStatusCallout: 'Vehicle Status Callout',
 };
 
 export const getAlphaColor = (color: string, hexAlpha: string, mixPercent: number = 25): string => {
@@ -88,41 +107,12 @@ export const getAlphaColor = (color: string, hexAlpha: string, mixPercent: numbe
 };
 
 export const getComponentDefaultIcon = (type: string, customColor: string, iconKey?: string) => {
-  const className = 'w-3.5 h-3.5 shrink-0';
-  switch (type) {
-    case 'battery':
-      return <Battery className={className} style={{ color: customColor }} />;
-    case 'gear':
-      return <Gauge className={className} style={{ color: customColor }} />;
-    case 'speed':
-      return <Gauge className={className} style={{ color: customColor }} />;
-    case 'warning':
-      return renderNotificationIcon(iconKey || 'alert-triangle', className);
-    case 'charging':
-      return <Zap className={className} style={{ color: customColor }} />;
-    case 'map':
-      return <MapPin className={className} style={{ color: customColor }} />;
-    case 'media':
-      return <Music className={className} style={{ color: customColor }} />;
-    case 'climate':
-      return <Thermometer className={className} style={{ color: customColor }} />;
-    case 'phone':
-      return <Phone className={className} style={{ color: customColor }} />;
-    case 'driveMode':
-      return <Compass className={className} style={{ color: customColor }} />;
-    case 'tirePressure':
-      return <CircleDot className={className} style={{ color: customColor }} />;
-    case 'navHome':
-      return <Home className={className} style={{ color: customColor }} />;
-    case 'navDestination':
-      return <Route className={className} style={{ color: customColor }} />;
-    case 'navSearch':
-      return <Search className={className} style={{ color: customColor }} />;
-    case 'navTripEstimate':
-      return <Zap className={className} style={{ color: customColor }} />;
-    default:
-      return <Gauge className={className} style={{ color: customColor }} />;
+  const className = 'w-6 h-6 shrink-0';
+  if (type === 'warning' || iconKey) {
+    return renderNotificationIcon(iconKey || 'alert-triangle', className);
   }
+  const IconComp = COMPONENT_META[type as ComponentType]?.icon || Gauge;
+  return <IconComp className={className} style={{ color: customColor }} />;
 };
 
 interface ComponentHeaderProps {
@@ -143,12 +133,206 @@ export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex items-center justify-between text-[0.625rem] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1.5 border-b border-slate-800/60 ${className}`}>
-      <span className="flex items-center gap-1.5 min-w-0 truncate">
+    <div
+      className={`flex items-center justify-between h-9 min-h-[36px] max-h-[36px] text-[0.8125rem] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60 ${className}`}
+    >
+      <span className="flex items-center gap-2 min-w-0 truncate">
         {getComponentDefaultIcon(type, customColor, iconKey)}
         <span className="truncate">{label}</span>
       </span>
-      {rightElement && <div className="shrink-0 flex items-center gap-1 ml-2">{rightElement}</div>}
+      {rightElement && <div className="shrink-0 flex items-center gap-1.5 ml-2">{rightElement}</div>}
+    </div>
+  );
+};
+
+const MessageToastCard: React.FC<{
+  component: ComponentInstance;
+  headerLabel: string;
+  customColor: string;
+  iconKey: string;
+  message: string;
+  title?: string;
+  avatarName?: string;
+  threadId: string;
+  baseOpacity: string;
+  isVisible: boolean;
+  styleOpacity: number;
+  onMinimize?: () => void;
+}> = ({
+  component,
+  headerLabel,
+  customColor,
+  iconKey,
+  message,
+  title,
+  avatarName,
+  threadId,
+  baseOpacity,
+  isVisible,
+  styleOpacity,
+  onMinimize,
+}) => {
+  const [isReplying, setIsReplying] = React.useState(false);
+  const [replyText, setReplyText] = React.useState('');
+
+  const sendUserMessage = useMockpitStore((s) => s.sendUserMessage);
+  const markThreadAsRead = useMockpitStore((s) => s.markThreadAsRead);
+  const closeKeyboard = useMockpitStore((s) => s.closeKeyboard);
+  const clearTransientNotification = useMockpitStore((s) => s.clearTransientNotification);
+
+  const dismissToast = () => {
+    if (onMinimize) {
+      onMinimize();
+    } else {
+      clearTransientNotification(component.id);
+    }
+  };
+
+  const handleCardTap = () => {
+    if (isReplying) return;
+    setIsReplying(true);
+  };
+
+  const handleSendReply = (text: string) => {
+    const msgText = text.trim();
+    if (!msgText || !threadId) return;
+
+    sendUserMessage(threadId, msgText);
+    markThreadAsRead(threadId);
+
+    const activeInput = useMockpitStore.getState().activeInputState;
+    if (activeInput) {
+      useMockpitStore.setState({ activeInputState: { ...activeInput, onCancel: undefined } });
+    }
+
+    closeKeyboard();
+    dismissToast();
+  };
+
+  const handleCancelReply = () => {
+    markThreadAsRead(threadId);
+    closeKeyboard();
+    dismissToast();
+  };
+
+  const handleToggleReply = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isReplying) {
+      handleCancelReply();
+    } else {
+      setIsReplying(true);
+    }
+  };
+
+  const handleDismissClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isReplying) {
+      handleCancelReply();
+    } else {
+      dismissToast();
+    }
+  };
+
+  return (
+    <div
+      className={`w-full rounded-2xl bg-slate-950/95 border-2 p-3 flex flex-col justify-between shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+      style={{
+        borderColor: customColor,
+        boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
+        opacity: styleOpacity,
+      }}
+    >
+      <ComponentHeader
+        type="warning"
+        label={headerLabel}
+        customColor={customColor}
+        iconKey={iconKey}
+        rightElement={
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={handleToggleReply}
+              className={`p-1 rounded bg-slate-900/90 border transition-colors cursor-pointer shrink-0 ${
+                isReplying
+                  ? 'border-sky-400 text-sky-400 bg-sky-950/80'
+                  : 'border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Quick Reply"
+            >
+              <Reply className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleDismissClick}
+              className="p-1 rounded bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+              title="Dismiss Alert (X)"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        }
+      />
+
+      <div
+        onClick={handleCardTap}
+        className={`flex items-start gap-3 min-w-0 flex-1 pt-1.5 pb-1 ${
+          !isReplying ? 'cursor-pointer hover:opacity-90' : ''
+        }`}
+      >
+        {avatarName ? (
+          <ContactAvatar
+            name={avatarName}
+            className="w-9 h-9 border border-slate-700/80 shadow-md mt-0.5"
+            fontSizeClassName="text-xs font-extrabold"
+          />
+        ) : (
+          <div
+            className="p-2 rounded-xl shrink-0 flex items-center justify-center border mt-0.5"
+            style={{
+              backgroundColor: getAlphaColor(customColor, '25', 15),
+              borderColor: getAlphaColor(customColor, '50', 30),
+              color: customColor,
+            }}
+          >
+            <MessageSquare className="w-4 h-4" />
+          </div>
+        )}
+
+        <div className="flex flex-col min-w-0 flex-1">
+          {title && <span className="text-[11px] font-bold text-slate-400 font-mono">{title}</span>}
+          <p className="text-xs text-slate-100 font-medium leading-snug line-clamp-2 break-words mt-0.5">
+            {message}
+          </p>
+        </div>
+      </div>
+
+      {isReplying && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80 mt-1 shrink-0 animate-in fade-in slide-in-from-top-1"
+        >
+          <MockpitInput
+            value={replyText}
+            onChange={setReplyText}
+            onSubmit={(val) => handleSendReply(val)}
+            onCancel={handleCancelReply}
+            placeholder={`Reply to ${title || avatarName || 'message'}...`}
+            componentId={component.id}
+            wrapperClassName="flex-1 min-w-0"
+            autoFocus
+          />
+          <button
+            onClick={() => handleSendReply(replyText)}
+            disabled={!replyText.trim()}
+            className={`p-2 rounded-xl transition-all shrink-0 cursor-pointer ${
+              replyText.trim()
+                ? 'bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold shadow-md'
+                : 'bg-slate-800 text-slate-600 border border-slate-700/50 cursor-not-allowed'
+            }`}
+            title="Send reply"
+          >
+            <Send className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -195,6 +379,12 @@ export const renderNotificationIcon = (
       return <Info className={className} />;
     case 'fan':
       return <Fan className={className} />;
+    case 'message-square':
+    case 'message':
+    case 'text':
+    case 'chat':
+    case 'sms':
+      return <MessageSquare className={className} />;
     case 'alert-triangle':
     default:
       return <AlertTriangle className={className} />;
@@ -287,6 +477,13 @@ const NavHomeWidget: React.FC<{
   );
 };
 
+interface TripStop {
+  id: string;
+  name: string;
+  lat: string;
+  lng: string;
+}
+
 const NavDestinationWidget: React.FC<{
   component: ComponentInstance;
   resolved: Record<string, any>;
@@ -296,11 +493,70 @@ const NavDestinationWidget: React.FC<{
   styleOpacity?: number;
 }> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
   const initialPrimaryDest = resolved.destination || component.staticProps?.destination || 'Yosemite National Park Valley';
+  const initialDestLat = resolved.destLat || component.staticProps?.destLat || resolved.lat || component.staticProps?.lat || '37.7456';
+  const initialDestLng = resolved.destLng || component.staticProps?.destLng || resolved.lng || component.staticProps?.lng || '-119.5936';
+
   const [primaryDest, setPrimaryDest] = React.useState(initialPrimaryDest);
-  const initialWaypoints = component.staticProps?.waypoints
-    ? JSON.parse(component.staticProps.waypoints)
-    : ['Stop 1: EV Supercharger Bay (12 mins)', 'Stop 2: Scenic Overlook Rest Area'];
+  const [destLat, setDestLat] = React.useState(initialDestLat);
+  const [destLng, setDestLng] = React.useState(initialDestLng);
+
+  // Parse waypoints / stops
+  const parseInitialStops = (): TripStop[] => {
+    if (component.staticProps?.tripStops) {
+      try {
+        const parsed = JSON.parse(component.staticProps.tripStops);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        // fallback
+      }
+    }
+    if (component.staticProps?.waypoints) {
+      try {
+        const parsed = JSON.parse(component.staticProps.waypoints);
+        if (Array.isArray(parsed)) {
+          return parsed.map((wp: string, i: number) => ({
+            id: `stop-${i + 1}`,
+            name: typeof wp === 'string' ? wp : (wp as any).name || `Stop ${i + 1}`,
+            lat: (wp as any).lat || (i === 0 ? '37.3382' : '37.5512'),
+            lng: (wp as any).lng || (i === 0 ? '-120.4829' : '-119.8523'),
+          }));
+        }
+      } catch (e) {
+        // fallback
+      }
+    }
+    return [
+      { id: 'stop-1', name: 'EV Supercharger Bay (Merced)', lat: '37.3022', lng: '-120.4830' },
+      { id: 'stop-2', name: 'Scenic Overlook Rest Area', lat: '37.7158', lng: '-119.6775' },
+    ];
+  };
+
+  const [stops, setStops] = React.useState<TripStop[]>(parseInitialStops);
   const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navDestination;
+
+  const handleUpdateStop = (index: number, field: 'name' | 'lat' | 'lng', val: string) => {
+    setStops((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: val };
+      return updated;
+    });
+  };
+
+  const handleAddStop = () => {
+    setStops((prev) => [
+      ...prev,
+      {
+        id: `stop-${Date.now()}`,
+        name: `Stop ${prev.length + 1}`,
+        lat: '37.5000',
+        lng: '-120.0000',
+      },
+    ]);
+  };
+
+  const handleRemoveStop = (index: number) => {
+    setStops((prev) => prev.filter((_, i) => i !== index));
+  };
 
   return (
     <div
@@ -312,27 +568,113 @@ const NavDestinationWidget: React.FC<{
         label={headerLabel}
         customColor={customColor}
         rightElement={
-          <span className="text-[0.5625rem] font-mono text-slate-400">{initialWaypoints.length + 1} STOPS</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[0.5625rem] font-mono text-slate-400">{stops.length + 1} STOPS</span>
+            <button
+              onClick={handleAddStop}
+              className="p-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-700 transition-colors cursor-pointer"
+              title="Add Trip Stop"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
         }
       />
 
-      <div className="flex-1 min-h-0 my-1.5 space-y-1.5 overflow-y-auto pr-1 custom-scrollbar">
-        <MockpitInput
-          value={primaryDest}
-          onChange={setPrimaryDest}
-          placeholder="Primary Destination..."
-          componentId={component.id}
-          keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-          icon={<Flag className="w-3.5 h-3.5 text-slate-400" />}
-        />
+      <div className="flex-1 min-h-0 my-1.5 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+        {/* Primary Destination with Name and Lat / Long */}
+        <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-200 font-mono">
+              <Flag className="w-3.5 h-3.5 text-amber-400" />
+              <span>PRIMARY DESTINATION</span>
+            </div>
+            <span className="text-[0.5625rem] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
+              FINAL
+            </span>
+          </div>
+          <MockpitInput
+            value={primaryDest}
+            onChange={setPrimaryDest}
+            placeholder="Primary Destination name..."
+            componentId={component.id}
+            keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+          />
+          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+            <div className="space-y-0.5">
+              <span className="text-[0.5625rem] font-mono text-slate-400 block font-semibold">LATITUDE</span>
+              <MockpitInput
+                value={destLat}
+                onChange={setDestLat}
+                placeholder="e.g. 37.7456"
+                componentId={component.id}
+                keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+              />
+            </div>
+            <div className="space-y-0.5">
+              <span className="text-[0.5625rem] font-mono text-slate-400 block font-semibold">LONGITUDE</span>
+              <MockpitInput
+                value={destLng}
+                onChange={setDestLng}
+                placeholder="e.g. -119.5936"
+                componentId={component.id}
+                keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+              />
+            </div>
+          </div>
+        </div>
 
-        {initialWaypoints.map((wp: string, i: number) => (
-          <div key={i} className="p-1.5 rounded-lg bg-slate-950/40 border border-slate-800/60 flex items-center justify-between text-[0.6875rem] text-slate-300">
-            <div className="flex items-center gap-1.5 truncate">
-              <span className="w-4 h-4 rounded-full bg-slate-800 text-[0.5625rem] font-bold font-mono flex items-center justify-center text-slate-400 shrink-0">
-                {i + 1}
-              </span>
-              <span className="truncate">{wp}</span>
+        {/* Waypoint / Trip Stops with Lat & Long */}
+        {stops.map((stop, i) => (
+          <div
+            key={stop.id || i}
+            className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1.5 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-300 font-mono">
+                <span className="w-4 h-4 rounded-full bg-slate-800 text-[0.5625rem] font-bold font-mono flex items-center justify-center text-slate-300 shrink-0 border border-slate-700">
+                  {i + 1}
+                </span>
+                <span>STOP {i + 1}</span>
+              </div>
+              <button
+                onClick={() => handleRemoveStop(i)}
+                className="p-0.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-900"
+                title="Remove Stop"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+
+            <MockpitInput
+              value={stop.name}
+              onChange={(val) => handleUpdateStop(i, 'name', val)}
+              placeholder={`Stop ${i + 1} location name...`}
+              componentId={component.id}
+              keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+            />
+
+            <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+              <div className="space-y-0.5">
+                <span className="text-[0.5625rem] font-mono text-slate-400 block font-semibold">LATITUDE</span>
+                <MockpitInput
+                  value={stop.lat}
+                  onChange={(val) => handleUpdateStop(i, 'lat', val)}
+                  placeholder="e.g. 37.3022"
+                  componentId={component.id}
+                  keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+                />
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[0.5625rem] font-mono text-slate-400 block font-semibold">LONGITUDE</span>
+                <MockpitInput
+                  value={stop.lng}
+                  onChange={(val) => handleUpdateStop(i, 'lng', val)}
+                  placeholder="e.g. -120.4830"
+                  componentId={component.id}
+                  keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+                />
+              </div>
             </div>
           </div>
         ))}
@@ -340,7 +682,11 @@ const NavDestinationWidget: React.FC<{
 
       <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
         <button
-          onClick={() => alert(`Recalculating route to ${primaryDest}...`)}
+          onClick={() =>
+            alert(
+              `Starting Trip Guidance:\n${stops.map((s, idx) => `• Stop ${idx + 1}: ${s.name} (${s.lat}, ${s.lng})`).join('\n')}\n• Final: ${primaryDest} (${destLat}, ${destLng})`
+            )
+          }
           className="flex-1 py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1 cursor-pointer border border-slate-700"
         >
           <Navigation className="w-3.5 h-3.5 text-slate-400" /> Start Guidance
@@ -470,6 +816,47 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
   };
 
   const triggeredRef = useRef<Record<string, string>>({});
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const measureContainerRef = useRef<HTMLDivElement>(null);
+  const [useAbbreviation, setUseAbbreviation] = useState(false);
+
+  // Measure if the longest full label fits within the tile's available width
+  const checkFit = () => {
+    if (!gridContainerRef.current) return;
+    const gridWidth = gridContainerRef.current.clientWidth;
+    // Each column gets roughly (gridWidth - gap) / 2.
+    // Inside each tile: padding is px-2 (16px total) or p-2 (16px total).
+    // An optional warning indicator dot takes ~10px with gap.
+    // We measure the longest label ("Front Right" / "Front Left") in the hidden offscreen measure ref.
+    const tileWidth = (gridWidth - 8) / 2;
+    const availableTextWidth = tileWidth - 24; // 16px tile padding + 8px safety/dot margin
+
+    if (measureContainerRef.current) {
+      const neededWidth = measureContainerRef.current.scrollWidth;
+      setUseAbbreviation(neededWidth > availableTextWidth || availableTextWidth < 68);
+    } else {
+      setUseAbbreviation(tileWidth < 96);
+    }
+  };
+
+  useLayoutEffect(() => {
+    checkFit();
+  }, [component.width]);
+
+  useEffect(() => {
+    const el = gridContainerRef.current;
+    if (!el) return;
+
+    checkFit();
+    const observer = new ResizeObserver(() => {
+      checkFit();
+    });
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     tires.forEach((tire) => {
@@ -501,11 +888,23 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
         customColor={customColor}
       />
 
-      <div className="flex-1 min-h-0 grid grid-cols-2 gap-2 my-1 text-center items-center">
+      {/* Hidden offscreen measurement element to measure unconstrained width of full label */}
+      <div
+        ref={measureContainerRef}
+        aria-hidden="true"
+        className="absolute -top-9999 left-0 pointer-events-none opacity-0 invisible whitespace-nowrap text-[0.625rem] font-mono font-bold"
+      >
+        Front Right
+      </div>
+
+      <div
+        ref={gridContainerRef}
+        className="flex-1 min-h-0 grid grid-cols-2 gap-2 my-1 text-center items-center"
+      >
         {tires.map((tire) => {
           const status = getStatus(tire.psi);
-          let containerClasses = 'p-2 rounded-xl border transition-all duration-300 flex flex-col justify-center items-center';
-          let labelClasses = 'text-[0.625rem] block font-mono font-bold';
+          let containerClasses = 'p-2 rounded-xl border transition-all duration-300 flex flex-col justify-center items-center min-w-0';
+          let labelClasses = 'text-[0.625rem] block font-mono font-bold truncate whitespace-nowrap';
           let valClasses = 'text-xs font-black font-mono';
 
           if (status === 'critical') {
@@ -522,13 +921,17 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
             valClasses += ' text-slate-100';
           }
 
+          const displayedLabel = useAbbreviation ? tire.code : tire.label;
+
           return (
             <div key={tire.code} className={containerClasses}>
-              <div className="flex items-center gap-1 justify-center">
-                <span className={labelClasses}>{tire.code}</span>
+              <div className="flex items-center gap-1 justify-center max-w-full px-0.5">
+                <span className={labelClasses} title={tire.label}>
+                  {displayedLabel}
+                </span>
                 {status !== 'normal' && (
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                       status === 'critical' ? 'bg-red-500 animate-ping' : 'bg-amber-400'
                     }`}
                   />
@@ -552,40 +955,6 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 }) => {
   const setVehicleState = useMockpitStore((s) => s.setVehicleState);
   const resolved = getResolvedProps(component, vehicleState);
-
-  // Charging complete state tracking for 'charging' component type
-  const [isChargingComplete, setIsChargingComplete] = React.useState(false);
-  const [forceDismissCharging, setForceDismissCharging] = React.useState(false);
-  const chargingCompleteTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  React.useEffect(() => {
-    if (component.type !== 'charging') return;
-
-    const isCharging = vehicleState.isCharging;
-    const battery = vehicleState.batteryPercent;
-
-    if (!isCharging || battery < 100) {
-      if (isChargingComplete || forceDismissCharging) {
-        setIsChargingComplete(false);
-        setForceDismissCharging(false);
-        if (chargingCompleteTimerRef.current) {
-          clearTimeout(chargingCompleteTimerRef.current);
-          chargingCompleteTimerRef.current = null;
-        }
-      }
-      return;
-    }
-
-    if (isCharging && battery >= 100 && !isChargingComplete && !forceDismissCharging) {
-      setIsChargingComplete(true);
-      if (chargingCompleteTimerRef.current) {
-        clearTimeout(chargingCompleteTimerRef.current);
-      }
-      chargingCompleteTimerRef.current = setTimeout(() => {
-        setForceDismissCharging(true);
-      }, 60000);
-    }
-  }, [component.type, vehicleState.isCharging, vehicleState.batteryPercent, isChargingComplete, forceDismissCharging]);
 
   // Visibility logic
   const isVisible = resolved.visible !== 'false' && resolved.visible !== '0';
@@ -629,6 +998,22 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       const maxRangeMiles = Number(component.staticProps?.maxRange) || 350;
       const liveRange = Math.round((percent / 100) * maxRangeMiles);
 
+      const targetPercent = Math.min(100, Math.max(1, Number(component.staticProps?.targetChargePercent) || 80));
+      const chargeRateKw = Number(component.staticProps?.chargeRateKw) || 350;
+
+      let chargingInfoText = '';
+      if (vehicleState.isCharging) {
+        if (roundedPercent >= targetPercent) {
+          chargingInfoText = targetPercent === 100 ? 'Fully Charged' : `Target ${targetPercent}% Reached`;
+        } else {
+          const remainingPercent = targetPercent - roundedPercent;
+          const remainingKwh = (remainingPercent / 100) * 75;
+          const remainingHours = remainingKwh / chargeRateKw;
+          const remainingMins = Math.max(1, Math.round(remainingHours * 60));
+          chargingInfoText = `~${remainingMins} min${remainingMins === 1 ? '' : 's'} to ${targetPercent}%`;
+        }
+      }
+
       return (
         <div
           className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
@@ -646,7 +1031,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
                     CHARGING COMPLETE
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-emerald-400 font-bold animate-pulse text-[0.625rem] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="flex items-center gap-1 text-emerald-400 font-bold text-[0.625rem] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                     <Zap className="w-3 h-3 fill-emerald-400" />
                     CHARGING
                   </span>
@@ -665,7 +1050,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             </div>
             {vehicleState.isCharging && (
               <div className="text-xs text-slate-400 font-mono">
-                350 kW DC Fast
+                {chargingInfoText}
               </div>
             )}
           </div>
@@ -737,7 +1122,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       const speedVal = resolved.text || String(vehicleState.speed);
       const unitVal = resolved.unit || 'mph';
       const displayStyle = (resolved.displayStyle || component.staticProps?.displayStyle || 'numeric') as 'numeric' | 'radialGauge' | 'arcGauge';
-      const maxSpd = Math.max(1, Number(resolved.maxSpeed || component.staticProps?.maxSpeed || 120));
+      const maxSpd = Math.max(1, Number(resolved.maxSpeed || component.staticProps?.maxSpeed || 140));
       const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.speed;
 
       const parsedSpeed = parseFloat(speedVal);
@@ -1147,10 +1532,19 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
 
     case 'warning': {
-      const message = resolved.message || resolved.text || component.staticProps?.message || 'WARNING';
+      const message = component.staticProps?.body || resolved.message || resolved.text || component.staticProps?.message || 'WARNING';
+      const title = component.staticProps?.title;
+      const avatarName = component.staticProps?.avatarName || title;
+      const threadId = component.staticProps?.threadId;
+
+      const isMessageToast = !!threadId || !!avatarName;
 
       let iconKey = resolved.icon || component.staticProps?.icon;
-      if (!iconKey || iconKey === 'alert-triangle') {
+      if (isMessageToast) {
+        if (!iconKey || iconKey === 'alert-triangle') {
+          iconKey = 'message-square';
+        }
+      } else if (!iconKey || iconKey === 'alert-triangle') {
         const normMsg = message.toUpperCase();
         if (normMsg.includes('DOOR') || component.id.includes('door')) {
           iconKey = 'door-open';
@@ -1164,7 +1558,9 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       }
 
       let headerLabel = resolved.label || component.staticProps?.label;
-      if (!headerLabel || headerLabel === DEFAULT_COMPONENT_LABELS.warning) {
+      if (isMessageToast) {
+        headerLabel = 'TEXT MESSAGE';
+      } else if (!headerLabel || headerLabel === DEFAULT_COMPONENT_LABELS.warning) {
         const normMsg = message.toUpperCase();
         if (iconKey === 'door-open' || normMsg.includes('DOOR') || component.id.includes('door')) {
           headerLabel = 'DOOR ALERT';
@@ -1175,6 +1571,25 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         } else {
           headerLabel = DEFAULT_COMPONENT_LABELS.warning;
         }
+      }
+
+      if (threadId) {
+        return (
+          <MessageToastCard
+            component={component}
+            headerLabel={headerLabel}
+            customColor={customColor}
+            iconKey={iconKey}
+            message={message}
+            title={title}
+            avatarName={avatarName}
+            threadId={threadId}
+            baseOpacity={baseOpacity}
+            isVisible={isVisible}
+            styleOpacity={styleOpacity}
+            onMinimize={onMinimize}
+          />
+        );
       }
 
       return (
@@ -1223,85 +1638,6 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               <span className="text-sm font-extrabold tracking-tight truncate text-slate-100">
                 {message}
               </span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    case 'charging': {
-      if (forceDismissCharging && isPresentation) {
-        return null;
-      }
-
-      const roundedPercent = Math.round(vehicleState.batteryPercent);
-      const targetPercent = Math.min(100, Math.max(1, Number(component.staticProps?.targetChargePercent) || 80));
-      const chargeRateKw = Number(component.staticProps?.chargeRateKw) || 350;
-      const isComplete = isChargingComplete || roundedPercent >= 100;
-
-      const displayLabel = isComplete
-        ? 'CHARGING COMPLETE'
-        : (resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.charging);
-
-      const badgeColor = isComplete ? '#10b981' : customColor;
-
-      let timeString = '';
-      if (!vehicleState.isCharging) {
-        timeString = 'Not Charging';
-      } else if (roundedPercent >= targetPercent) {
-        timeString = targetPercent === 100 ? 'Fully Charged' : `Target ${targetPercent}% Reached`;
-      } else {
-        const remainingPercent = targetPercent - roundedPercent;
-        const remainingKwh = (remainingPercent / 100) * 75;
-        const remainingHours = remainingKwh / chargeRateKw;
-        const remainingMins = Math.max(1, Math.round(remainingHours * 60));
-        timeString = `~${remainingMins} min${remainingMins === 1 ? '' : 's'} to ${targetPercent}%`;
-      }
-
-      return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{
-            borderColor: badgeColor,
-            boxShadow: isVisible || isComplete ? `0 0 20px ${getAlphaColor(badgeColor, '30', 20)}` : undefined,
-            opacity: styleOpacity,
-          }}
-        >
-          <ComponentHeader
-            type="charging"
-            label={displayLabel}
-            customColor={badgeColor}
-          />
-
-          <div className="flex items-center gap-3.5 my-1">
-            <div
-              className="p-2.5 rounded-xl shrink-0 border flex items-center justify-center"
-              style={{
-                backgroundColor: getAlphaColor(badgeColor, '20', 15),
-                borderColor: getAlphaColor(badgeColor, '40', 25),
-                color: badgeColor,
-              }}
-            >
-              {isComplete ? (
-                <Check className="w-6 h-6 stroke-[2.5]" />
-              ) : (
-                <Zap className="w-6 h-6 fill-current animate-pulse" />
-              )}
-            </div>
-
-            <div className="flex flex-col min-w-0 flex-1">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black tracking-tight" style={{ color: badgeColor }}>
-                  {roundedPercent}%
-                </span>
-                <span className="text-xs font-mono font-semibold text-slate-300 truncate">
-                  {timeString}
-                </span>
-              </div>
-
-              <div className="text-[0.625rem] text-slate-400 font-mono mt-0.5">
-                {vehicleState.isCharging ? `${chargeRateKw} kW Charge Rate` : 'Plug in to start charging'}
-              </div>
             </div>
           </div>
         </div>
@@ -1546,16 +1882,24 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       // Note: Real geocoding/routing integration deferred to live network API phase.
       const distance = resolved.distance || component.staticProps?.distance || '142.5 miles';
       const duration = resolved.duration || component.staticProps?.duration || '2 hrs 15 mins';
-      const energyEstRaw = resolved.energy || component.staticProps?.energy || '38.2 kWh (27% Battery)';
+      const energyEstRaw = resolved.energy || component.staticProps?.energy || '38.2 kWh (27%)';
       const arrBatteryRaw = resolved.arrivalBattery || component.staticProps?.arrivalBattery || `${Math.max(0, Math.round(vehicleState.batteryPercent - 27))}% at Arrival`;
 
-      const energyEst = energyEstRaw.replace(/(\d+\.\d+)%/g, (_, num) => `${Math.round(parseFloat(num))}%`);
+      // Labels: customizable from staticProps / bindings, defaulting to full words
+      const distanceLabel = resolved.distanceLabel || component.staticProps?.distanceLabel || 'Distance';
+      const estimatedTimeLabel = resolved.estimatedTimeLabel || component.staticProps?.estimatedTimeLabel || 'Estimated Time';
+      const energyRequiredLabel = resolved.energyRequiredLabel || component.staticProps?.energyRequiredLabel || 'Energy Required';
+      const arrivalChargeLabel = resolved.arrivalChargeLabel || component.staticProps?.arrivalChargeLabel || 'Arrival Charge';
+
+      const energyEst = energyEstRaw
+        .replace(/\s*Battery\s*/gi, '')
+        .replace(/(\d+\.\d+)%/g, (_, num) => `${Math.round(parseFloat(num))}%`);
       const arrBattery = arrBatteryRaw.replace(/(\d+\.\d+)%/g, (_, num) => `${Math.round(parseFloat(num))}%`);
       const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navTripEstimate;
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+          className={`w-full min-h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -1564,25 +1908,33 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             customColor={customColor}
           />
 
-          <div className="grid grid-cols-2 gap-1.5 my-auto">
-            <div className="bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
-              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase">Distance</span>
-              <span className="text-xs font-bold text-slate-100 font-mono">{distance}</span>
+          <div className="grid grid-cols-2 gap-2 my-auto">
+            <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
+                {distanceLabel}
+              </span>
+              <span className="text-xs font-bold text-slate-100 font-mono leading-tight">{distance}</span>
             </div>
 
-            <div className="bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
-              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase">Est. Time</span>
-              <span className="text-xs font-bold text-slate-100 font-mono">{duration}</span>
+            <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
+                {estimatedTimeLabel}
+              </span>
+              <span className="text-xs font-bold text-slate-100 font-mono leading-tight">{duration}</span>
             </div>
 
-            <div className="bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
-              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase">Energy Req.</span>
-              <span className="text-[0.6875rem] font-bold text-slate-100 font-mono">{energyEst}</span>
+            <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
+                {energyRequiredLabel}
+              </span>
+              <span className="text-[0.6875rem] font-bold text-slate-100 font-mono leading-tight">{energyEst}</span>
             </div>
 
-            <div className="bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
-              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase">Arrival Charge</span>
-              <span className="text-[0.6875rem] font-bold text-emerald-400 font-mono">{arrBattery}</span>
+            <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
+                {arrivalChargeLabel}
+              </span>
+              <span className="text-[0.6875rem] font-bold text-emerald-400 font-mono leading-tight">{arrBattery}</span>
             </div>
           </div>
         </div>
@@ -1600,6 +1952,26 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             vehicleState={vehicleState}
             isSelected={isSelected}
             isPresentation={isPresentation}
+          />
+        </div>
+      );
+    }
+
+    case 'miniNav': {
+      return (
+        <div
+          className={`w-full h-full rounded-2xl overflow-hidden ${baseOpacity}`}
+          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
+        >
+          <MiniNav
+            highwayName={resolved.highwayName}
+            nextExit={resolved.nextExit}
+            distanceToManeuver={resolved.distanceToManeuver}
+            maneuverType={resolved.maneuverType as any}
+            laneCount={resolved.laneCount}
+            activeLaneIndex={resolved.activeLaneIndex}
+            width={component.width}
+            height={component.height}
           />
         </div>
       );
@@ -1676,6 +2048,69 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           component={component}
           resolved={resolved}
           isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
+      );
+    }
+
+    case 'vehicleExplodedView': {
+      return (
+        <VehicleExplodedViewWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          isPresentation={isPresentation}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
+      );
+    }
+
+    case 'vehicleStatusCallout': {
+      return (
+        <VehicleStatusCalloutWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          isPresentation={isPresentation}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+          onSelectAnchor={(anchor) => {
+            const currentConnector = component.connector;
+            if (currentConnector) {
+              useMockpitStore.getState().updateComponentConnector(component.id, {
+                ...currentConnector,
+                sourceAnchor: anchor,
+              });
+            } else {
+              // If there's an exploded view on the canvas, connect to the first one by default
+              const screenComponents = useMockpitStore.getState().components;
+              const exploded = screenComponents.find((c) => c.type === 'vehicleExplodedView');
+              if (exploded) {
+                useMockpitStore.getState().updateComponentConnector(component.id, {
+                  sourceAnchor: anchor,
+                  targetComponentId: exploded.id,
+                  targetX: 0.5,
+                  targetY: 0.5,
+                });
+              }
+            }
+          }}
+        />
+      );
+    }
+
+    case 'sendToServiceCenter': {
+      return (
+        <SendToServiceWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          isPresentation={isPresentation}
           customColor={customColor}
           baseOpacity={baseOpacity}
           styleOpacity={styleOpacity}

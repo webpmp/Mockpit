@@ -46,6 +46,20 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Listen globally for inbound message simulation events
+  useEffect(() => {
+    const handleInboundEvent = (e: CustomEvent<any>) => {
+      const { threadId, text } = e.detail || {};
+      if (threadId && text) {
+        useMockpitStore.getState().sendInboundMessage(threadId, text);
+      }
+    };
+    window.addEventListener('mockpit-inbound-message' as any, handleInboundEvent as any);
+    return () => {
+      window.removeEventListener('mockpit-inbound-message' as any, handleInboundEvent as any);
+    };
+  }, []);
+
   return (
     <div className="w-screen h-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans">
       {/* Header Bar */}

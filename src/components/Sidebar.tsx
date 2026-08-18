@@ -1,39 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Battery,
-  Gauge,
-  MapPin,
   Plus,
-  Zap,
-  Music,
-  Thermometer,
-  Phone,
-  Compass,
-  CircleDot,
-  Bell,
   ChevronDown,
   ChevronUp,
   Trash2,
-  AlertTriangle,
   LayoutGrid,
-  Eye,
-  MessageSquare,
-  Wind,
-  Flame,
-  Snowflake,
-  Users,
-  Grid,
+  Bell,
+  MapPin,
+  Music,
+  Phone,
+  Thermometer,
+  Car,
 } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ComponentType, NotificationStackPosition } from '../types';
 import { COMPONENT_FLAGS } from '../config/componentFlags';
+import { COMPONENT_META } from '../config/componentMeta';
 
 interface ComponentLibraryItem {
   type: ComponentType;
   title: string;
   description: string;
-  icon: React.ElementType;
-  color: string;
   defaultBindingDesc: string;
 }
 
@@ -42,8 +29,6 @@ const NOTIFICATION_LIBRARY_ITEMS: ComponentLibraryItem[] = [
     type: 'warning',
     title: 'Warning Alert Overlay',
     description: 'Pop-up warning overlay on critical event',
-    icon: AlertTriangle,
-    color: '#f59e0b',
     defaultBindingDesc: 'visible → true when speed > 85 mph',
   },
 ];
@@ -53,33 +38,19 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
     type: 'battery',
     title: 'Battery Indicator',
     description: 'High voltage EV battery level gauge',
-    icon: Battery,
-    color: '#22c55e',
     defaultBindingDesc: 'color → red when battery < 15%',
   },
   {
     type: 'gear',
     title: 'Gear Select',
     description: 'Drive mode gear selector (P/R/N/D)',
-    icon: Gauge,
-    color: '#f8fafc',
     defaultBindingDesc: 'text → current gear state (P/R/N/D)',
   },
   {
     type: 'speed',
     title: 'Speed Readout',
     description: 'Digital velocity display in mph or km/h',
-    icon: Gauge,
-    color: '#38bdf8',
     defaultBindingDesc: 'text → bound live to speed',
-  },
-  {
-    type: 'charging',
-    title: 'Charging Status',
-    description: 'Active EV charging status pill',
-    icon: Zap,
-    color: '#3b82f6',
-    defaultBindingDesc: 'visible → true when isCharging === true',
   },
   ...(COMPONENT_FLAGS.climate
     ? [
@@ -87,8 +58,6 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
           type: 'climate' as ComponentType,
           title: 'Climate Control',
           description: 'Cabin temp display & fan speed controls',
-          icon: Thermometer,
-          color: '#f97316',
           defaultBindingDesc: 'climate HVAC temperature shell',
         },
       ]
@@ -99,8 +68,6 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
           type: 'driveMode' as ComponentType,
           title: 'Drive Mode Selector',
           description: 'Vehicle dynamics mode (Eco/Normal/Sport)',
-          icon: Compass,
-          color: '#06b6d4',
           defaultBindingDesc: 'drive mode selection shell',
         },
       ]
@@ -111,8 +78,6 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
           type: 'tirePressure' as ComponentType,
           title: 'Tire Pressure Monitor',
           description: '4-wheel TPMS PSI pressure layout',
-          icon: CircleDot,
-          color: '#eab308',
           defaultBindingDesc: 'TPMS tire pressure monitor shell',
         },
       ]
@@ -124,49 +89,43 @@ const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [
     type: 'map',
     title: 'Navigation Map',
     description: 'Static center display map tile with pin',
-    icon: MapPin,
-    color: '#38bdf8',
     defaultBindingDesc: 'static geolocation map display',
   },
   {
     type: 'navHome',
     title: 'Home Location',
     description: 'Stored home location text & Lat/Lng coordinates',
-    icon: MapPin,
-    color: '#38bdf8',
     defaultBindingDesc: 'Stored text & lat-lng location card',
   },
   {
     type: 'navDestination',
-    title: 'Trip Planner Component',
+    title: 'Trip Planner',
     description: 'Destination input with ordered multi-stop trip list',
-    icon: Compass,
-    color: '#f59e0b',
     defaultBindingDesc: 'Multi-stop trip waypoint manager',
   },
   {
     type: 'navSearch',
-    title: 'Navigation Search Component',
+    title: 'Navigation Search',
     description: 'POIs, chargers & restaurant search with mock results',
-    icon: MapPin,
-    color: '#10b981',
     defaultBindingDesc: 'Filtered static sample POI/charger search',
   },
   {
     type: 'navTripEstimate',
     title: 'Trip Estimate',
     description: 'Straight-line Haversine mileage & battery consumption',
-    icon: Zap,
-    color: '#a855f7',
     defaultBindingDesc: 'Straight-line distance & battery estimate',
   },
   {
     type: 'overheadVisualization',
     title: 'Overhead Driving Visualization',
     description: 'Top-down ADAS driving environment & spatial visualization',
-    icon: Eye,
-    color: '#38bdf8',
     defaultBindingDesc: 'Spatial top-down ADAS road & traffic visualization',
+  },
+  {
+    type: 'miniNav',
+    title: 'Mini Nav',
+    description: 'First-person perspective road with bold glanceable maneuver arrow',
+    defaultBindingDesc: 'Perspective road maneuver guide linked to journey state',
   },
 ];
 
@@ -177,8 +136,6 @@ const MEDIA_WIDGET_ITEMS: ComponentLibraryItem[] = [
           type: 'media' as ComponentType,
           title: 'Music Media Player',
           description: 'Multi-service music player with library, search & playback',
-          icon: Music,
-          color: '#ec4899',
           defaultBindingDesc: 'Self-contained music player UI',
         },
       ]
@@ -190,24 +147,18 @@ const PHONE_WIDGET_ITEMS: ComponentLibraryItem[] = [
     type: 'phoneContacts',
     title: 'Contacts',
     description: 'Search, favorites strip, A-Z index & call/message detail',
-    icon: Users,
-    color: '#a855f7',
     defaultBindingDesc: 'Alphabetical contacts list with favorites rail',
   },
   {
     type: 'phoneDialPad',
     title: 'Dial Pad',
     description: '3x4 keypad, contact lookup, hold-clear & in-call timer',
-    icon: Phone,
-    color: '#10b981',
     defaultBindingDesc: 'Phone dialer keypad & recent call logs',
   },
   {
     type: 'phoneMessaging',
     title: 'Messaging',
     description: 'Conversation threads, quick reply chips & voice mic',
-    icon: MessageSquare,
-    color: '#38bdf8',
     defaultBindingDesc: 'SMS messaging inbox & thread view',
   },
 ];
@@ -217,25 +168,40 @@ const CLIMATE_WIDGET_ITEMS: ComponentLibraryItem[] = [
     type: 'climateVent',
     title: 'Vent Dashboard',
     description: 'Spatial vents with drag-to-aim 8-preset snapping & airflow',
-    icon: Wind,
-    color: '#06b6d4',
     defaultBindingDesc: 'Dashboard vent direction & slat controls',
   },
   {
     type: 'climateTemp',
     title: 'Temperature',
     description: 'Vertical slider with mercury fill gradient & color-shifting puck',
-    icon: Thermometer,
-    color: '#f97316',
     defaultBindingDesc: 'Temperature slider control',
   },
   {
     type: 'climateSeats',
     title: 'Seat Climate',
     description: 'Independent Heat/Cool controls per seat with stacked icons',
-    icon: Flame,
-    color: '#ef4444',
     defaultBindingDesc: 'Driver & Passenger seat heating/cooling',
+  },
+];
+
+const VEHICLE_WIDGET_ITEMS: ComponentLibraryItem[] = [
+  {
+    type: 'vehicleExplodedView',
+    title: 'Exploded View',
+    description: 'Interactive vehicle exploded chassis & component diagram',
+    defaultBindingDesc: 'Diagnostic vehicle exploded view layer',
+  },
+  {
+    type: 'vehicleStatusCallout',
+    title: 'Status Callout',
+    description: 'System health card with connector line to vehicle diagram',
+    defaultBindingDesc: 'Diagnostic callout & target anchor line',
+  },
+  {
+    type: 'sendToServiceCenter',
+    title: 'Send to Service Center',
+    description: 'Dispatches active diagnostic status & generates real exportable JSON report',
+    defaultBindingDesc: 'Simulated send & real JSON file export',
   },
 ];
 
@@ -253,6 +219,13 @@ const CATEGORIES = [
     icon: MapPin,
     iconColorClass: 'text-emerald-400',
     items: NAVIGATION_WIDGET_ITEMS,
+  },
+  {
+    key: 'vehicle',
+    title: 'Vehicle',
+    icon: Car,
+    iconColorClass: 'text-cyan-400',
+    items: VEHICLE_WIDGET_ITEMS,
   },
   {
     key: 'media',
@@ -288,30 +261,34 @@ export const Sidebar: React.FC = () => {
   const selectComponent = useMockpitStore((s) => s.selectComponent);
   const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
 
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(() => ({
-    notifications: false,
-    home: activeView === 'home',
-    navigation: activeView === 'navigation',
-    media: activeView === 'media',
-    phone: activeView === 'phone',
-  }));
+  const categoryHeaderRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const [activeCategory, setActiveCategory] = useState<string | null>(() => {
+    if (activeView === 'home') return 'home';
+    if (activeView === 'navigation') return 'navigation';
+    if (activeView === 'media') return 'media';
+    if (activeView === 'phone') return 'phone';
+    return null;
+  });
 
   // Default expand/collapse state follows the active screen view
   useEffect(() => {
-    setOpenCategories({
-      notifications: false,
-      home: activeView === 'home',
-      navigation: activeView === 'navigation',
-      media: activeView === 'media',
-      phone: activeView === 'phone',
-    });
+    if (activeView === 'home') setActiveCategory('home');
+    else if (activeView === 'navigation') setActiveCategory('navigation');
+    else if (activeView === 'media') setActiveCategory('media');
+    else if (activeView === 'phone') setActiveCategory('phone');
   }, [activeView]);
 
   const toggleCategory = (catKey: string) => {
-    setOpenCategories((prev) => ({
-      ...prev,
-      [catKey]: !prev[catKey],
-    }));
+    setActiveCategory((prev) => {
+      const next = prev === catKey ? null : catKey;
+      if (next) {
+        setTimeout(() => {
+          categoryHeaderRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
+      }
+      return next;
+    });
   };
 
   const handleDragStart = (e: React.DragEvent, type: ComponentType) => {
@@ -322,7 +299,10 @@ export const Sidebar: React.FC = () => {
   const handleAddNotification = () => {
     const id = addComponent('warning');
     selectComponent(id);
-    setOpenCategories((prev) => ({ ...prev, notifications: true }));
+    setActiveCategory('notifications');
+    setTimeout(() => {
+      categoryHeaderRefs.current['notifications']?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
   };
 
   const totalComponentsCount =
@@ -350,7 +330,10 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Notifications Category */}
-      <div className="border-b border-slate-800 shrink-0">
+      <div
+        ref={(el) => { categoryHeaderRefs.current['notifications'] = el; }}
+        className="border-b border-slate-800 shrink-0"
+      >
         <div
           onClick={() => toggleCategory('notifications')}
           className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors select-none bg-slate-900/90"
@@ -365,12 +348,12 @@ export const Sidebar: React.FC = () => {
           </div>
 
           <div className="text-slate-400 hover:text-slate-200 transition-colors">
-            {openCategories.notifications ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {activeCategory === 'notifications' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
         </div>
 
         {/* Notifications Expanded Content */}
-        {openCategories.notifications && (
+        {activeCategory === 'notifications' && (
           <div className="p-3 space-y-3 bg-slate-950/40 border-t border-slate-800/60">
             {/* Global Stack Position Selector */}
             <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
@@ -402,7 +385,8 @@ export const Sidebar: React.FC = () => {
 
             {/* Component Template Cards for Notifications */}
             {NOTIFICATION_LIBRARY_ITEMS.map((item) => {
-              const Icon = item.icon;
+              const Icon = COMPONENT_META[item.type]?.icon || LayoutGrid;
+              const color = COMPONENT_META[item.type]?.defaultColor || '#f59e0b';
               return (
                 <div
                   key={item.type}
@@ -414,7 +398,7 @@ export const Sidebar: React.FC = () => {
                     <div className="flex items-center gap-2.5">
                       <div
                         className="p-2 rounded-lg bg-slate-900 border border-slate-700/80 group-hover:scale-105 transition-transform"
-                        style={{ color: item.color }}
+                        style={{ color }}
                       >
                         <Icon className="w-5 h-5" />
                       </div>
@@ -435,12 +419,6 @@ export const Sidebar: React.FC = () => {
                     >
                       <Plus className="w-4 h-4" />
                     </button>
-                  </div>
-
-                  {/* Pre-wired Binding Hint */}
-                  <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center gap-1.5 text-[10px] text-slate-400 font-mono">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                    <span className="truncate">{item.defaultBindingDesc}</span>
                   </div>
                 </div>
               );
@@ -528,10 +506,14 @@ export const Sidebar: React.FC = () => {
       {/* Screen Widget Categories (All visible on every screen) */}
       {CATEGORIES.map((category) => {
         const CategoryIcon = category.icon;
-        const isOpen = !!openCategories[category.key];
+        const isOpen = activeCategory === category.key;
 
         return (
-          <div key={category.key} className="border-b border-slate-800 shrink-0">
+          <div
+            key={category.key}
+            ref={(el) => { categoryHeaderRefs.current[category.key] = el; }}
+            className="border-b border-slate-800 shrink-0"
+          >
             <div
               onClick={() => toggleCategory(category.key)}
               className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors select-none bg-slate-900/90"
@@ -557,7 +539,8 @@ export const Sidebar: React.FC = () => {
                   <p className="text-xs text-slate-500 italic px-1 py-1">No components available.</p>
                 ) : (
                   category.items.map((item) => {
-                    const Icon = item.icon;
+                    const Icon = COMPONENT_META[item.type]?.icon || LayoutGrid;
+                    const color = COMPONENT_META[item.type]?.defaultColor || '#38bdf8';
                     return (
                       <div
                         key={item.type}
@@ -569,7 +552,7 @@ export const Sidebar: React.FC = () => {
                           <div className="flex items-center gap-2.5">
                             <div
                               className="p-2 rounded-lg bg-slate-900 border border-slate-700/80 group-hover:scale-105 transition-transform"
-                              style={{ color: item.color }}
+                              style={{ color }}
                             >
                               <Icon className="w-5 h-5" />
                             </div>
@@ -590,12 +573,6 @@ export const Sidebar: React.FC = () => {
                           >
                             <Plus className="w-4 h-4" />
                           </button>
-                        </div>
-
-                        {/* Pre-wired Binding Hint */}
-                        <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center gap-1.5 text-[10px] text-slate-400 font-mono">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                          <span className="truncate">{item.defaultBindingDesc}</span>
                         </div>
                       </div>
                     );

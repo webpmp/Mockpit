@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ScreenDefinition } from '../types';
+import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import {
   Play,
   Edit3,
   RotateCcw,
   Settings,
+  Clipboard,
   LayoutGrid,
   MapPin,
   Music,
@@ -43,6 +45,8 @@ export const HeaderNav: React.FC = () => {
   const isSettingsOpen = useMockpitStore((s) => s.isSettingsOpen);
   const toggleSettingsModal = useMockpitStore((s) => s.toggleSettingsModal);
   const resetToSeedData = useMockpitStore((s) => s.resetToSeedData);
+  const copiedComponent = useMockpitStore((s) => s.copiedComponent);
+  const pasteComponent = useMockpitStore((s) => s.pasteComponent);
 
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -196,7 +200,7 @@ export const HeaderNav: React.FC = () => {
                     onClick={handleOpenAddTopLevelModal}
                     className="px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 hover:bg-sky-500 hover:text-slate-950 transition-all text-[0.6875rem] font-bold flex items-center gap-1 cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" /> + Add Screen
+                    <Plus className="w-3.5 h-3.5" /> Add Screen
                   </button>
                   <button
                     onClick={() => setIsMegaMenuOpen(false)}
@@ -401,6 +405,16 @@ export const HeaderNav: React.FC = () => {
       {/* Utility Action Icons */}
       {!isPresentation && (
         <div className="flex items-center gap-1.5 ml-auto">
+          {copiedComponent && (
+            <button
+              onClick={() => pasteComponent()}
+              className="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/20 hover:border-sky-500/50 shadow-[0_0_10px_rgba(56,189,248,0.2)] transition-all cursor-pointer"
+              title={`Paste: ${DEFAULT_COMPONENT_LABELS[copiedComponent.component.type] || copiedComponent.component.type} (Ctrl/Cmd+V)`}
+            >
+              <Clipboard className="w-4 h-4" />
+            </button>
+          )}
+
           <button
             onClick={toggleSettingsModal}
             className={`p-1.5 rounded-lg transition-all border cursor-pointer ${

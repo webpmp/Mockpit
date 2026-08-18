@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Search, Star, Phone, MessageSquare, ArrowLeft, X } from 'lucide-react';
 import { Contact, INITIAL_CONTACTS } from '../../data/mockPhoneData';
-import { getAvatarColor, getInitials } from '../../utils/avatarHash';
+import { ContactAvatar } from '../ContactAvatar';
 import { ComponentHeader } from '../ComponentRenderer';
 import { MockpitInput } from '../MockpitInput';
 
@@ -121,12 +121,12 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
         /* DETAIL VIEW */
         <div className="flex-1 min-h-0 flex flex-col items-center justify-center py-2 px-3 text-center my-auto">
           <div className="relative mb-3">
-            <div
-              className="w-20 h-20 rounded-full flex items-center justify-center text-slate-100 font-bold text-2xl shadow-xl border-2 border-slate-700/80"
-              style={{ backgroundColor: getAvatarColor(selectedContact.name) }}
-            >
-              {getInitials(selectedContact.name)}
-            </div>
+            <ContactAvatar
+              name={selectedContact.name}
+              avatarUrl={selectedContact.avatarUrl}
+              className="w-20 h-20 shadow-xl border-2 border-slate-700/80"
+              fontSizeClassName="text-2xl"
+            />
             {selectedContact.favorite && (
               <div className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 p-1.5 rounded-full shadow">
                 <Star className="w-3.5 h-3.5 fill-current" />
@@ -217,12 +217,12 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                     className="flex flex-col items-center shrink-0 group cursor-pointer"
                   >
                     <div className="relative">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-slate-100 font-bold text-xs border border-slate-700/80 shadow transition-transform group-hover:scale-105"
-                        style={{ backgroundColor: getAvatarColor(fav.name) }}
-                      >
-                        {getInitials(fav.name)}
-                      </div>
+                      <ContactAvatar
+                        name={fav.name}
+                        avatarUrl={fav.avatarUrl}
+                        className="w-10 h-10 border border-slate-700/80 shadow transition-transform group-hover:scale-105"
+                        fontSizeClassName="text-xs"
+                      />
                       <div className="absolute -bottom-0.5 -right-0.5 bg-amber-400 text-slate-950 p-0.5 rounded-full">
                         <Star className="w-2.5 h-2.5 fill-current" />
                       </div>
@@ -261,12 +261,12 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="relative shrink-0">
-                              <div
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-100 font-bold text-xs"
-                                style={{ backgroundColor: getAvatarColor(contact.name) }}
-                              >
-                                {getInitials(contact.name)}
-                              </div>
+                              <ContactAvatar
+                                name={contact.name}
+                                avatarUrl={contact.avatarUrl}
+                                className="w-8 h-8"
+                                fontSizeClassName="text-xs"
+                              />
                               {contact.favorite && (
                                 <div className="absolute -bottom-0.5 -right-0.5 bg-amber-400 text-slate-950 p-0.5 rounded-full">
                                   <Star className="w-2 h-2 fill-current" />

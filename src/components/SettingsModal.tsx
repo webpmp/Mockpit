@@ -161,7 +161,7 @@ export const SettingsModal: React.FC = () => {
                     onClick={() => handleSelectPreset(key)}
                     className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer group ${
                       isSelected
-                        ? 'bg-slate-900 border-sky-500/60 shadow-[0_0_12px_rgba(56,189,248,0.2)]'
+                        ? 'bg-slate-900 shadow-[0_0_12px_rgba(255,255,255,0.08)]'
                         : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/60'
                     }`}
                     style={{

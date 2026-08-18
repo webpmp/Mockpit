@@ -8,6 +8,9 @@ export type ActiveInputState = {
   placeholder?: string;
   keyboardSlideDirectionOverride?: KeyboardSlideDirection | 'default';
   onChange: (value: string) => void;
+  onSubmit?: (value: string) => void;
+  onCancel?: () => void;
+  onEnter?: () => void;
 } | null;
 
 export type GearState = 'P' | 'R' | 'N' | 'D';
@@ -126,12 +129,66 @@ export type Binding = {
   targetValue: string; // What to set targetProp to when condition is met
 };
 
+export type ManeuverType =
+  | 'straight'
+  | 'slight-left'
+  | 'slight-right'
+  | 'left'
+  | 'right'
+  // Follow-up extensions:
+  | 'sharp-left'
+  | 'sharp-right'
+  | 'u-turn-left'
+  | 'u-turn-right'
+  | 'merge-left'
+  | 'merge-right'
+  | 'roundabout'
+  | 'arrive';
+
+export interface ManeuverStep {
+  id: string;
+  maneuverType: ManeuverType;
+  instruction: string;
+  distanceToManeuver: number; // e.g. in miles or km
+  distanceUnit?: 'mi' | 'km';
+  streetName?: string;
+  highwayName?: string;
+  exitNumber?: string;
+}
+
+export interface JourneyState {
+  isActive: boolean;
+  currentHighwayName: string;
+  previousManeuver?: ManeuverStep | null;
+  currentManeuver: ManeuverStep;
+  nextManeuver?: ManeuverStep | null;
+  // Generic route legs and future-compatible segments
+  routeProgressPercent?: number;
+  destinationName?: string;
+}
+
+export type ConnectorAnchor =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'left-center'
+  | 'right-center'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
+
+export interface VehicleStatusConnector {
+  sourceAnchor: ConnectorAnchor;
+  targetComponentId: string; // id of the Vehicle Exploded View instance
+  targetX: number; // 0–1, relative to target component's bounding box
+  targetY: number; // 0–1, relative to target component's bounding box
+}
+
 export type ComponentType =
   | 'battery'
   | 'gear'
   | 'speed'
   | 'warning'
-  | 'charging'
   | 'map'
   | 'media'
   | 'climate'
@@ -143,12 +200,16 @@ export type ComponentType =
   | 'navSearch'
   | 'navTripEstimate'
   | 'overheadVisualization'
+  | 'miniNav'
   | 'phoneContacts'
   | 'phoneDialPad'
   | 'phoneMessaging'
   | 'climateVent'
   | 'climateTemp'
-  | 'climateSeats';
+  | 'climateSeats'
+  | 'vehicleExplodedView'
+  | 'vehicleStatusCallout'
+  | 'sendToServiceCenter';
 
 export type ComponentInstance = {
   id: string;
@@ -161,6 +222,7 @@ export type ComponentInstance = {
   bindings: Binding[];
   zIndex?: number;
   isTransient?: boolean;
+  connector?: VehicleStatusConnector | null;
 };
 
 export type Project = {

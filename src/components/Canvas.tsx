@@ -3,12 +3,14 @@ import { ComponentRenderer, renderNotificationIcon } from './ComponentRenderer';
 import { BottomDock } from './BottomDock';
 import { VehicleBackground } from './VehicleBackground';
 import { VirtualKeyboard } from './VirtualKeyboard';
+import { ConnectorLayer } from './vehicle/ConnectorLayer';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ActiveView, ComponentInstance, NotificationStackPosition, TransitionStyle, TEXT_SCALE_FACTORS } from '../types';
 import { COMPONENT_FLAGS } from '../config/componentFlags';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, FOCUSED_APP_RECT } from '../config/constants';
 import { getResolvedProps } from '../lib/bindingEvaluator';
-import { Move, Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout } from 'lucide-react';
+import { ContactAvatar } from './ContactAvatar';
+import { Move, Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare } from 'lucide-react';
 
 const getTransitionClasses = (style: TransitionStyle = 'fade', isActive: boolean) => {
   if (!isActive) {
@@ -38,6 +40,117 @@ const getTransitionClasses = (style: TransitionStyle = 'fade', isActive: boolean
     default:
       return 'opacity-100 scale-100 pointer-events-auto';
   }
+};
+
+interface FocusedAppScreenProps {
+  activeView: string;
+  screens: any[];
+  focusedAppComponents: ComponentInstance[];
+  vehicleState: any;
+}
+
+const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
+  activeView,
+  screens,
+  focusedAppComponents,
+  vehicleState,
+}) => {
+  const [isActive, setIsActive] = useState(false);
+  const activeScreenDef = screens.find((s) => s.id === activeView);
+  const transitionStyle = activeScreenDef?.transitionStyle || 'fade';
+  const isHomeScreen = activeView === 'home';
+
+  useEffect(() => {
+    // Initial mount is inactive (exit/entry state), then transition to resting active state on next frame
+    let animFrame2: number;
+    const animFrame1 = requestAnimationFrame(() => {
+      animFrame2 = requestAnimationFrame(() => {
+        setIsActive(true);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(animFrame1);
+      cancelAnimationFrame(animFrame2);
+    };
+  }, []);
+
+  const transitionClasses = getTransitionClasses(transitionStyle, isActive);
+
+  // Preserve Home screen's full canvas footprint (inset-x-0 top-0 bottom-[84px]) vs non-Home focused apps (FOCUSED_APP_RECT)
+  const containerStyle = isHomeScreen
+    ? {
+        left: 0,
+        top: 0,
+        width: CANVAS_WIDTH,
+        height: CANVAS_HEIGHT - 84,
+      }
+    : {
+        left: FOCUSED_APP_RECT.x,
+        top: FOCUSED_APP_RECT.y,
+        width: FOCUSED_APP_RECT.width,
+        height: FOCUSED_APP_RECT.height,
+      };
+
+  return (
+    <div
+      key={activeView}
+      className={`absolute transition-all duration-300 ease-out z-20 overflow-hidden ${transitionClasses}`}
+      style={containerStyle}
+    >
+      {focusedAppComponents.length > 0 ? (
+        <div className="relative w-full h-full overflow-hidden">
+          {[...focusedAppComponents]
+            .sort((a, b) => {
+              const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : 10);
+              const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : 10);
+              if (zA !== zB) return zA - zB;
+              return focusedAppComponents.indexOf(a) - focusedAppComponents.indexOf(b);
+            })
+            .map((comp) => {
+              const baseZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : 10);
+              return (
+                <div
+                  key={comp.id}
+                  className="absolute pointer-events-auto"
+                  style={{
+                    left: comp.x,
+                    top: comp.y,
+                    width: comp.width,
+                    height: comp.height,
+                    zIndex: baseZ,
+                  }}
+                >
+                  <ComponentRenderer
+                    component={comp}
+                    vehicleState={vehicleState}
+                    isSelected={false}
+                    isPresentation={true}
+                  />
+                </div>
+              );
+            })}
+        </div>
+      ) : (
+        /* Note: App screens start empty on reset until authored */
+        <div className="w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-md p-8 flex flex-col items-center justify-center text-slate-400">
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-sky-400 mb-3">
+            {activeView === 'navigation' && <MapPin className="w-10 h-10" />}
+            {activeView === 'media' && <Music className="w-10 h-10" />}
+            {activeView === 'phone' && <Phone className="w-10 h-10" />}
+            {activeView !== 'navigation' && activeView !== 'media' && activeView !== 'phone' && (
+              <Layout className="w-10 h-10" />
+            )}
+          </div>
+          <h3 className="text-base font-bold text-slate-200 tracking-wider uppercase font-mono">
+            {(activeScreenDef?.name || activeView).toUpperCase()} SCREEN IS EMPTY
+          </h3>
+          <p className="text-xs text-slate-500 max-w-sm text-center mt-1.5 font-mono">
+            This screen starts empty until authored. Switch to Editor Mode and select this screen tab to add components.
+          </p>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Default timeout for auto-minimizing full notification cards to small icons in header
@@ -98,6 +211,9 @@ export const Canvas: React.FC = () => {
   const activeView = useMockpitStore((s) => s.activeView);
   const gridConfig = useMockpitStore((s) => s.gridConfig);
   const textScale = useMockpitStore((s) => s.textScale);
+  const conversations = useMockpitStore((s) => s.conversations);
+
+  const totalUnread = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
 
   const selectComponent = useMockpitStore((s) => s.selectComponent);
   const setActiveView = useMockpitStore((s) => s.setActiveView);
@@ -173,10 +289,18 @@ export const Canvas: React.FC = () => {
 
       if (!isMinimized && !hasTimer) {
         autoMinimizeTimersRef.current[comp.id] = setTimeout(() => {
+          if (useMockpitStore.getState().isKeyboardVisible) {
+            delete autoMinimizeTimersRef.current[comp.id];
+            return;
+          }
           if (comp.staticProps?.triggerMode === 'event') {
             clearEventNotification(comp.id);
           } else if (comp.isTransient) {
-            clearTransientNotification(comp.id);
+            if (comp.staticProps?.showBadgeOnMinimize === 'true') {
+              setMinimizedNotifIds((prev) => ({ ...prev, [comp.id]: true }));
+            } else {
+              clearTransientNotification(comp.id);
+            }
           } else {
             setMinimizedNotifIds((prev) => ({ ...prev, [comp.id]: true }));
           }
@@ -195,7 +319,11 @@ export const Canvas: React.FC = () => {
     if (comp?.staticProps?.triggerMode === 'event') {
       clearEventNotification(id);
     } else if (comp?.isTransient) {
-      clearTransientNotification(id);
+      if (comp?.staticProps?.showBadgeOnMinimize === 'true') {
+        setMinimizedNotifIds((prev) => ({ ...prev, [id]: true }));
+      } else {
+        clearTransientNotification(id);
+      }
     } else {
       setMinimizedNotifIds((prev) => ({ ...prev, [id]: true }));
     }
@@ -409,7 +537,6 @@ export const Canvas: React.FC = () => {
   };
 
   // Determine active presentation app screen components
-  const isAppFocusedInPresentation = isPresentation && activeView !== 'home';
   const focusedAppComponents = componentsByScreen[activeView] || [];
 
   return (
@@ -424,16 +551,24 @@ export const Canvas: React.FC = () => {
       <div
         className="relative bg-slate-950 border-8 border-slate-900 rounded-[32px] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex-shrink-0 transition-all duration-300 overflow-hidden"
         style={{
-          width: CANVAS_WIDTH * scale,
-          height: CANVAS_HEIGHT * scale,
+          width: `${CANVAS_WIDTH * scale}px`,
+          height: `${CANVAS_HEIGHT * scale}px`,
+          minWidth: `${CANVAS_WIDTH * scale}px`,
+          maxWidth: `${CANVAS_WIDTH * scale}px`,
+          minHeight: `${CANVAS_HEIGHT * scale}px`,
+          maxHeight: `${CANVAS_HEIGHT * scale}px`,
         }}
       >
         {/* Scaled Inner Canvas */}
         <div
-          className="vehicle-hmi-canvas absolute inset-0 origin-top-left overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
+          className="vehicle-hmi-canvas canvas-coordinate-space absolute inset-0 origin-top-left overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
           style={{
-            width: CANVAS_WIDTH,
-            height: CANVAS_HEIGHT,
+            width: `${CANVAS_WIDTH}px`,
+            height: `${CANVAS_HEIGHT}px`,
+            minWidth: `${CANVAS_WIDTH}px`,
+            maxWidth: `${CANVAS_WIDTH}px`,
+            minHeight: `${CANVAS_HEIGHT}px`,
+            maxHeight: `${CANVAS_HEIGHT}px`,
             transform: `scale(${scale})`,
             '--text-scale': TEXT_SCALE_FACTORS[textScale] || 1,
           } as React.CSSProperties}
@@ -479,36 +614,58 @@ export const Canvas: React.FC = () => {
           })()}
 
           {/* Infotainment Dashboard Header Bar */}
-          <div className="absolute top-0 left-0 right-0 h-10 px-8 bg-slate-950/90 backdrop-blur border-b border-slate-800/60 flex items-center justify-between text-xs font-mono text-slate-400 z-30 pointer-events-auto">
+          <div className="absolute top-0 left-0 right-0 h-11 px-8 bg-slate-950/90 backdrop-blur border-b border-slate-800/60 flex items-center justify-between text-sm font-mono text-slate-400 z-30 pointer-events-auto">
             <div className="flex items-center gap-4">
               {/* Minimized Notifications Row */}
               {isPresentation && (() => {
                 const minimizedNotifs = sortNotificationsBySeverity(
                   activeNotifications.filter(
-                    (comp) => comp.staticProps?.triggerMode !== 'event' && !comp.isTransient && !!minimizedNotifIds[comp.id]
+                    (comp) =>
+                      comp.staticProps?.triggerMode !== 'event' &&
+                      (!comp.isTransient || comp.staticProps?.showBadgeOnMinimize === 'true') &&
+                      !!minimizedNotifIds[comp.id]
                   ),
                   vehicleState
                 );
                 if (minimizedNotifs.length === 0) return null;
 
                 return (
-                  <div className="flex items-center gap-2 pl-3 border-l border-slate-800">
+                  <div className="flex items-center gap-2">
                     {minimizedNotifs.map((comp) => {
                       const resolved = getResolvedProps(comp, vehicleState);
                       const iconKey = resolved.icon || comp.staticProps?.icon || 'alert-triangle';
                       const color = resolved.color || comp.staticProps?.color || '#f59e0b';
-                      const message = resolved.message || resolved.text || 'ALERT';
+                      const title = comp.staticProps?.title;
+                      const message = title || resolved.message || resolved.text || 'ALERT';
+                      const avatarName = comp.staticProps?.avatarName || title;
 
                       return (
                         <button
                           key={comp.id}
-                          onClick={() => handleExpandNotification(comp.id)}
+                          onClick={() => {
+                            if (comp.staticProps?.threadId) {
+                              useMockpitStore.getState().setActiveView('phone');
+                              window.dispatchEvent(
+                                new CustomEvent('mockpit-open-thread', { detail: { threadId: comp.staticProps.threadId } })
+                              );
+                            } else {
+                              handleExpandNotification(comp.id);
+                            }
+                          }}
                           className="px-2.5 py-0.5 rounded-full bg-slate-900 border hover:bg-slate-800 text-slate-100 transition-all flex items-center gap-1.5 cursor-pointer shadow-md group hover:scale-105 active:scale-95 pointer-events-auto"
                           style={{ borderColor: `${color}90` }}
-                          title={`Click to expand alert: ${message}`}
+                          title={`Click to view: ${message}`}
                         >
                           <span style={{ color }}>
-                            {renderNotificationIcon(iconKey, 'w-3.5 h-3.5')}
+                            {avatarName ? (
+                              <ContactAvatar
+                                name={avatarName}
+                                className="w-4 h-4"
+                                fontSizeClassName="text-[9px] font-extrabold"
+                              />
+                            ) : (
+                              renderNotificationIcon(iconKey, 'w-3.5 h-3.5')
+                            )}
                           </span>
                           <span className="text-[10px] font-bold tracking-tight truncate max-w-[120px]">
                             {message}
@@ -520,15 +677,29 @@ export const Canvas: React.FC = () => {
                 );
               })()}
             </div>
-            <div className="flex items-center gap-4 font-bold">
-              <span className="mr-3 font-normal text-slate-300">72°F</span>
+            <div className="flex items-center gap-8 font-bold shrink-0">
+              {/* Aggregate Unread Messages Header Icon */}
+              <button
+                onClick={() => setActiveView('phone')}
+                className="relative flex items-center justify-center p-1.5 rounded-full hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-all cursor-pointer pointer-events-auto"
+                title={`Messages (${totalUnread} unread)`}
+              >
+                <MessageSquare className="w-5 h-5" />
+                {totalUnread > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-mono font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center ring-2 ring-slate-950">
+                    {totalUnread > 99 ? '99+' : totalUnread}
+                  </span>
+                )}
+              </button>
+
+              <span className="font-normal text-slate-300">72°F</span>
               <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               {/* Animated 1-5 bar signal indicator (v0.11) */}
               <div
-                className="flex items-center gap-1.5 font-mono text-emerald-400"
+                className="flex items-center gap-1.5 font-mono text-emerald-400 pr-4 shrink-0"
                 title={`Signal: ${vehicleState.signalBars ?? 4}/5 bars`}
               >
-                <div className="flex items-end gap-0.5 h-3">
+                <div className="flex items-end gap-0.5 h-3.5">
                   {[1, 2, 3, 4, 5].map((bar) => {
                     const activeSignal = vehicleState.signalBars ?? 4;
                     const isActive = bar <= activeSignal;
@@ -543,7 +714,7 @@ export const Canvas: React.FC = () => {
                     );
                   })}
                 </div>
-                <span className="text-[10px] font-bold tracking-tight">5G</span>
+                <span className="text-xs font-bold tracking-tight">5G</span>
               </div>
             </div>
           </div>
@@ -578,13 +749,9 @@ export const Canvas: React.FC = () => {
             <BottomDock />
           </div>
 
-          {/* Editor Canvas for Screens or Home Screen Presentation Renderer */}
-          {!isPresentation || (isPresentation && activeView === 'home') ? (
-            <div
-              className={`absolute inset-x-0 top-0 z-10 ${
-                isPresentation ? 'bottom-[84px] overflow-hidden pointer-events-none' : 'bottom-0'
-              }`}
-            >
+          {/* Editor Canvas for Screens (Active strictly in Editor Mode) */}
+          {!isPresentation && (
+            <div className="absolute inset-x-0 top-0 bottom-0 z-10">
               {[...components]
                 .sort((a, b) => {
                   const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : 10);
@@ -593,7 +760,7 @@ export const Canvas: React.FC = () => {
                   return components.indexOf(a) - components.indexOf(b);
                 })
                 .map((comp) => {
-                  const isSelected = comp.id === selectedComponentId && !isPresentation;
+                  const isSelected = comp.id === selectedComponentId;
                   const baseZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : 10);
                   const effectiveZ = isSelected ? baseZ + 100 : baseZ;
 
@@ -613,13 +780,11 @@ export const Canvas: React.FC = () => {
                         zIndex: effectiveZ,
                       }}
                       onMouseDown={(e) => {
-                        if (!isPresentation) {
-                          handleMouseDown(e, comp.id, comp.x, comp.y);
-                        }
+                        handleMouseDown(e, comp.id, comp.x, comp.y);
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (!isPresentation) selectComponent(comp.id);
+                        selectComponent(comp.id);
                       }}
                     >
                     {/* Main Component Widget */}
@@ -627,7 +792,7 @@ export const Canvas: React.FC = () => {
                       component={comp}
                       vehicleState={vehicleState}
                       isSelected={isSelected}
-                      isPresentation={isPresentation}
+                      isPresentation={false}
                     />
 
                     {/* Editor Selection Box Overlay */}
@@ -665,71 +830,44 @@ export const Canvas: React.FC = () => {
                   </div>
                 );
               })}
+
+              {/* Status Callout & Exploded View Connector Lines in Editor Mode */}
+              <ConnectorLayer
+                components={components}
+                selectedComponentId={selectedComponentId}
+                isPresentation={false}
+                activeView={activeView}
+                onSelectComponent={selectComponent}
+              />
             </div>
-          ) : null}
+          )}
 
           {/* 
-            * Focused App Screen Container in Presentation Mode
-            * When an app is focused in Presentation mode, render that screen's own component list at full size.
-            * The screen container animates via the per-screen transitionStyle (slideUp/Down/Left/Right/fade).
+            * Presentation Mode Screen Container (Home and Focused Apps)
+            * Animates every screen transition via the per-screen transitionStyle (slideUp/Down/Left/Right/fade).
           */}
           {isPresentation && (() => {
-            const activeScreenDef = screens.find((s) => s.id === activeView);
-            const transitionStyle = activeScreenDef?.transitionStyle || 'fade';
-            const transitionClasses = getTransitionClasses(transitionStyle, isAppFocusedInPresentation);
+            const focusOffset = activeView !== 'home'
+              ? { x: FOCUSED_APP_RECT.x, y: FOCUSED_APP_RECT.y }
+              : { x: 0, y: 0 };
 
             return (
-              <div
-                className={`absolute transition-all duration-300 ease-out z-20 overflow-hidden ${transitionClasses}`}
-                style={{
-                  left: FOCUSED_APP_RECT.x,
-                  top: FOCUSED_APP_RECT.y,
-                  width: FOCUSED_APP_RECT.width,
-                  height: FOCUSED_APP_RECT.height,
-                }}
-              >
-                {focusedAppComponents.length > 0 ? (
-                  <div className="relative w-full h-full overflow-hidden">
-                    {focusedAppComponents.map((comp) => (
-                      <div
-                        key={comp.id}
-                        className="absolute"
-                        style={{
-                          left: comp.x,
-                          top: comp.y,
-                          width: comp.width,
-                          height: comp.height,
-                        }}
-                      >
-                        <ComponentRenderer
-                          component={comp}
-                          vehicleState={vehicleState}
-                          isSelected={false}
-                          isPresentation={true}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  /* Note: App screens start empty on reset until authored */
-                  <div className="w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-md p-8 flex flex-col items-center justify-center text-slate-400">
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-sky-400 mb-3">
-                      {activeView === 'navigation' && <MapPin className="w-10 h-10" />}
-                      {activeView === 'media' && <Music className="w-10 h-10" />}
-                      {activeView === 'phone' && <Phone className="w-10 h-10" />}
-                      {activeView !== 'navigation' && activeView !== 'media' && activeView !== 'phone' && (
-                        <Layout className="w-10 h-10" />
-                      )}
-                    </div>
-                    <h3 className="text-base font-bold text-slate-200 tracking-wider uppercase font-mono">
-                      {(activeScreenDef?.name || activeView).toUpperCase()} SCREEN IS EMPTY
-                    </h3>
-                    <p className="text-xs text-slate-500 max-w-sm text-center mt-1.5 font-mono">
-                      This screen starts empty until authored. Switch to Editor Mode and select this screen tab to add components.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <>
+                <FocusedAppScreen
+                  key={activeView}
+                  activeView={activeView}
+                  screens={screens}
+                  focusedAppComponents={activeView === 'home' ? components : focusedAppComponents}
+                  vehicleState={vehicleState}
+                />
+                <ConnectorLayer
+                  components={activeView === 'home' ? components : focusedAppComponents}
+                  selectedComponentId={null}
+                  isPresentation={true}
+                  activeView={activeView}
+                  offset={focusOffset}
+                />
+              </>
             );
           })()}
 

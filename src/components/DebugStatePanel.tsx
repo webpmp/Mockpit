@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMockpitStore, isPresetActive } from '../store/useMockpitStore';
 import { DriveModeState, GearState } from '../types';
-import { Zap, AlertTriangle, ChevronDown, ChevronUp, RotateCcw, Gauge, ShieldAlert, Eye, Sun, Car } from 'lucide-react';
+import { Zap, AlertTriangle, ChevronDown, ChevronUp, RotateCcw, Gauge, ShieldAlert, Eye, Sun, Car, MessageSquare } from 'lucide-react';
 
 const SteeringWheel: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
@@ -42,6 +42,29 @@ export const DebugStatePanel: React.FC = () => {
   const resetVehicleState = useMockpitStore((s) => s.resetVehicleState);
   const applyPresetScenario = useMockpitStore((s) => s.applyPresetScenario);
   const triggerNotification = useMockpitStore((s) => s.triggerNotification);
+  const componentsByScreen = useMockpitStore((s) => s.componentsByScreen);
+  const notificationComponents = useMockpitStore((s) => s.notificationComponents);
+  const components = useMockpitStore((s) => s.components);
+
+  const maxSpeedLimit = React.useMemo(() => {
+    const allComponents = [
+      ...(components || []),
+      ...Object.values(componentsByScreen || {}).flat(),
+      ...(notificationComponents || []),
+    ];
+    const speedComponent = allComponents.find((c) => c.type === 'speed');
+    if (speedComponent?.staticProps?.maxSpeed) {
+      const parsed = Number(speedComponent.staticProps.maxSpeed);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return 140;
+  }, [components, componentsByScreen, notificationComponents]);
+
+  React.useEffect(() => {
+    if (vehicleState.speed > maxSpeedLimit) {
+      setVehicleState({ speed: maxSpeedLimit });
+    }
+  }, [maxSpeedLimit, vehicleState.speed, setVehicleState]);
 
   const canCharge = vehicleState.gear === 'P' && vehicleState.speed === 0;
 
@@ -114,6 +137,24 @@ export const DebugStatePanel: React.FC = () => {
                 </button>
               );
             })}
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.dispatchEvent(
+                  new CustomEvent('mockpit-inbound-message', {
+                    detail: {
+                      threadId: 'm1',
+                      text: 'Are we still meeting at the charging station?',
+                    },
+                  })
+                );
+              }}
+              title="Simulate Inbound Message Toast"
+              className="px-2.5 py-1 rounded-lg border text-[10px] font-bold bg-slate-800/80 text-slate-400 border-slate-700/80 hover:bg-slate-700 hover:text-slate-200 transition-all cursor-pointer flex items-center gap-1 shadow-md"
+            >
+              <MessageSquare className="w-3 h-3" /> Text Message
+            </button>
           </div>
 
           <button
@@ -201,10 +242,10 @@ export const DebugStatePanel: React.FC = () => {
                       <input
                         type="range"
                         min={0}
-                        max={120}
+                        max={maxSpeedLimit}
                         disabled={isParked}
                         value={vehicleState.speed}
-                        onChange={(e) => setVehicleState({ speed: Number(e.target.value) })}
+                        onChange={(e) => setVehicleState({ speed: Math.min(maxSpeedLimit, Number(e.target.value)) })}
                         className={`w-full accent-sky-400 h-2 bg-slate-800 rounded-lg ${
                           isParked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
                         }`}
@@ -442,7 +483,7 @@ export const DebugStatePanel: React.FC = () => {
                       Blind Spot
                     </div>
                     <div className="text-[11px] font-bold text-slate-200 truncate">
-                      {vehicleState.blindSpotWarning ? 'Active Alert' : 'Clear'}
+                      {vehicleState.blindSpotWarning ? 'Active (Auto)' : 'Disabled'}
                     </div>
                   </div>
                 </div>
@@ -476,7 +517,7 @@ export const DebugStatePanel: React.FC = () => {
                       Proximity
                     </div>
                     <div className="text-[11px] font-bold text-slate-200 truncate">
-                      {vehicleState.proximityWarning ? 'Sensor Alert' : 'Clear'}
+                      {vehicleState.proximityWarning ? 'Active (Auto)' : 'Disabled'}
                     </div>
                   </div>
                 </div>

@@ -22,12 +22,18 @@ import {
   EgoVehicleType,
   TextScalePreset,
   TEXT_SCALE_FACTORS,
+  VehicleStatusConnector,
+  JourneyState,
+  ManeuverStep,
+  ManeuverType,
 } from '../types';
 
 import {
   TempGradientColors,
   DEFAULT_TEMP_GRADIENT_COLORS,
 } from '../utils/tempGradient';
+import { Conversation, INITIAL_CONVERSATIONS, CONTACT_PHOTO_MAP } from '../data/mockPhoneData';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants';
 
 const LOCAL_STORAGE_KEY = 'mockpit_components_v1';
 const LOCAL_STORAGE_KEY_V2 = 'mockpit_components_by_screen_v2';
@@ -71,6 +77,24 @@ const loadSavedEgoVehicleType = (): EgoVehicleType => {
   return 'midsizeSedan';
 };
 
+export const getSpeedReadoutMaxSpeed = (state: {
+  components?: ComponentInstance[];
+  componentsByScreen?: Record<string, ComponentInstance[]>;
+  notificationComponents?: ComponentInstance[];
+}): number => {
+  const allComponents = [
+    ...(state.components || []),
+    ...Object.values(state.componentsByScreen || {}).flat(),
+    ...(state.notificationComponents || []),
+  ];
+  const speedComponent = allComponents.find((c) => c.type === 'speed');
+  if (speedComponent?.staticProps?.maxSpeed) {
+    const parsed = Number(speedComponent.staticProps.maxSpeed);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  return 140;
+};
+
 const loadSavedKeyboardSlideDirection = (): KeyboardSlideDirection => {
   try {
     const val = localStorage.getItem(LOCAL_STORAGE_KEYBOARD_DIRECTION_KEY);
@@ -97,7 +121,7 @@ const DEFAULT_DOCK_ORDER: string[] = ['home', 'navigation', 'media', 'phone'];
 const INITIAL_VEHICLE_STATE: VehicleState = {
   gear: 'P',
   speed: 0,
-  batteryPercent: 82,
+  batteryPercent: 80,
   isCharging: false,
   doorOpen: false,
   driveMode: 'Normal',
@@ -106,8 +130,34 @@ const INITIAL_VEHICLE_STATE: VehicleState = {
   mapLat: 37.3318,
   mapLng: -122.0311,
   cruiseControlActive: false,
-  blindSpotWarning: false,
-  proximityWarning: false,
+  blindSpotWarning: true,
+  proximityWarning: true,
+};
+
+export const INITIAL_JOURNEY_STATE: JourneyState = {
+  isActive: true,
+  currentHighwayName: 'I-280 N',
+  previousManeuver: null,
+  currentManeuver: {
+    id: 'maneuver-1',
+    maneuverType: 'slight-right',
+    instruction: 'Take exit 12 for Foothill Expressway',
+    distanceToManeuver: 0.8,
+    distanceUnit: 'mi',
+    streetName: 'Foothill Expwy',
+    highwayName: 'I-280 N',
+    exitNumber: '12',
+  },
+  nextManeuver: {
+    id: 'maneuver-2',
+    maneuverType: 'right',
+    instruction: 'Turn right onto Foothill Blvd',
+    distanceToManeuver: 1.4,
+    distanceUnit: 'mi',
+    streetName: 'Foothill Blvd',
+  },
+  routeProgressPercent: 35,
+  destinationName: 'Apple Park, Cupertino',
 };
 
 // Remove warning components from home screen seed components since warning is in notificationComponents
@@ -224,67 +274,9 @@ const DEFAULT_NOTIFICATION_COMPONENTS: ComponentInstance[] = [
   },
 ];
 
-const NAVIGATION_SEED_COMPONENTS: ComponentInstance[] = [
-  {
-    id: 'comp-nav-map-1',
-    type: 'map',
-    x: 40,
-    y: 40,
-    width: 980,
-    height: 520,
-    staticProps: { lat: '37.3318', lng: '-122.0311', zoom: '12' },
-    bindings: [],
-  },
-  {
-    id: 'comp-nav-home-1',
-    type: 'navHome',
-    x: 1040,
-    y: 40,
-    width: 380,
-    height: 140,
-    staticProps: { address: '100 Infinite Loop, Cupertino, CA', lat: '37.3318', lng: '-122.0311', label: 'Home' },
-    bindings: [],
-  },
-  {
-    id: 'comp-nav-dest-1',
-    type: 'navDestination',
-    x: 1040,
-    y: 200,
-    width: 380,
-    height: 200,
-    staticProps: { destination: 'Yosemite Valley, CA', lat: '37.7456', lng: '-119.5936', stops: 'In-N-Out Merced|Tunnel View Overlook' },
-    bindings: [],
-  },
-  {
-    id: 'comp-nav-trip-1',
-    type: 'navTripEstimate',
-    x: 1040,
-    y: 420,
-    width: 380,
-    height: 160,
-    staticProps: { startLat: '37.3318', startLng: '-122.0311', destLat: '37.7456', destLng: '-119.5936', consumptionRate: '0.32' },
-    bindings: [],
-  },
-];
+const NAVIGATION_SEED_COMPONENTS: ComponentInstance[] = [];
 
-const MEDIA_SEED_COMPONENTS: ComponentInstance[] = [
-  {
-    id: 'comp-media-player-1',
-    type: 'media',
-    x: 40,
-    y: 40,
-    width: 900,
-    height: 520,
-    staticProps: {
-      service: 'Spotify',
-      title: 'Starboy',
-      artist: 'The Weeknd ft. Daft Punk',
-      album: 'Starboy',
-      label: 'Music Media Player',
-    },
-    bindings: [],
-  },
-];
+const MEDIA_SEED_COMPONENTS: ComponentInstance[] = [];
 
 const INITIAL_COMPONENTS_BY_SCREEN: Record<ActiveView, ComponentInstance[]> = {
   home: HOME_SEED_COMPONENTS,
@@ -298,7 +290,6 @@ export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number
   gear: { width: 200, height: 140, maxHeight: 1080 },
   speed: { width: 220, height: 160, maxHeight: 1080 },
   warning: { width: 380, height: 140, maxHeight: 1080 },
-  charging: { width: 340, height: 140, maxHeight: 1080 },
   map: { width: 440, height: 280, maxHeight: 1080 },
   media: { width: 720, height: 480, maxHeight: 1080 },
   climate: { width: 320, height: 150, maxHeight: 1080 },
@@ -306,16 +297,20 @@ export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number
   driveMode: { width: 320, height: 160, maxHeight: 1080 },
   tirePressure: { width: 380, height: 210, maxHeight: 1080 },
   navHome: { width: 380, height: 160, maxHeight: 1080 },
-  navDestination: { width: 380, height: 200, maxHeight: 1080 },
+  navDestination: { width: 380, height: 260, maxHeight: 1080 },
   navSearch: { width: 380, height: 220, maxHeight: 1080 },
-  navTripEstimate: { width: 380, height: 170, maxHeight: 1080 },
+  navTripEstimate: { width: 380, height: 200, maxHeight: 1080 },
   overheadVisualization: { width: 780, height: 480, maxHeight: 1080 },
+  miniNav: { width: 320, height: 510, maxHeight: 1080 },
   phoneContacts: { width: 420, height: 480, maxHeight: 1080 },
   phoneDialPad: { width: 380, height: 480, maxHeight: 1080 },
   phoneMessaging: { width: 440, height: 480, maxHeight: 1080 },
   climateVent: { width: 460, height: 280, maxHeight: 1080 },
   climateTemp: { width: 220, height: 380, maxHeight: 1080 },
   climateSeats: { width: 380, height: 220, maxHeight: 1080 },
+  vehicleExplodedView: { width: 640, height: 420, maxHeight: 1080 },
+  vehicleStatusCallout: { width: 320, height: 160, maxHeight: 1080 },
+  sendToServiceCenter: { width: 280, height: 100, maxHeight: 1080 },
 };
 
 function sanitizeComponentList(list: ComponentInstance[]): ComponentInstance[] {
@@ -555,7 +550,7 @@ function loadSavedGridConfig(): GridConfig {
 
 export const DEFAULT_VEHICLE_BACKGROUND: VehicleBackgroundSettings = {
   enabled: true,
-  vehicle: '/vehicles/processed/vehicle-01.png',
+  vehicle: null,
   opacity: 8,
   blur: 0,
   position: 'center',
@@ -569,9 +564,14 @@ function loadSavedVehicleBackground(): VehicleBackgroundSettings {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (typeof parsed === 'object' && parsed !== null) {
-        let vehiclePath = typeof parsed.vehicle === 'string' ? parsed.vehicle : '/vehicles/processed/vehicle-01.png';
-        if (vehiclePath.startsWith('/vehicles/') && !vehiclePath.includes('/processed/')) {
-          vehiclePath = vehiclePath.replace('/vehicles/', '/vehicles/processed/');
+        let vehiclePath: string | null = null;
+        if (typeof parsed.vehicle === 'string') {
+          vehiclePath = parsed.vehicle;
+          if (vehiclePath.startsWith('/vehicles/') && !vehiclePath.includes('/processed/')) {
+            vehiclePath = vehiclePath.replace('/vehicles/', '/vehicles/processed/');
+          }
+        } else if (parsed.vehicle === null) {
+          vehiclePath = null;
         }
         return {
           enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : true,
@@ -639,12 +639,32 @@ interface MockpitStore {
   backspaceKeyboardKey: () => void;
   clearKeyboardKey: () => void;
 
+  // Global Messaging State & Actions
+  conversations: Conversation[];
+  selectedMessagingThreadId: string | null;
+  queuedMessageToasts: Array<{
+    threadId: string;
+    text: string;
+    title: string;
+  }>;
+  setSelectedMessagingThreadId: (id: string | null) => void;
+  markThreadAsRead: (threadId: string) => void;
+  sendInboundMessage: (threadId: string, text: string) => void;
+  sendUserMessage: (threadId: string, text: string) => void;
+  createMessagingThread: (contact: { id: string; name: string; number: string; avatarUrl?: string }) => void;
+
   // Dynamic Screen Management
   addScreen: (name: string, transitionStyle?: TransitionStyle, parentId?: string | null) => string;
   updateScreen: (id: string, updates: Partial<Omit<ScreenDefinition, 'id'>>) => void;
   deleteScreen: (id: string) => void;
   reorderScreens: (newScreens: ScreenDefinition[]) => void;
   moveScreen: (id: string, direction: 'up' | 'down' | 'left' | 'right') => void;
+
+  // Shared Journey State & Actions
+  journey: JourneyState;
+  setJourneyState: (partial: Partial<JourneyState>) => void;
+  updateCurrentManeuver: (partial: Partial<ManeuverStep>) => void;
+  setManeuverType: (type: ManeuverType) => void;
 
   // Ambient Simulation
   ambientTick: () => void;
@@ -657,7 +677,17 @@ interface MockpitStore {
   // Notifications
   triggerEventNotification: (eventName: string) => void;
   clearEventNotification: (id: string) => void;
-  triggerNotification: (notif: { message: string; icon?: string; color?: string; severity?: string }) => void;
+  triggerNotification: (notif: {
+    message: string;
+    icon?: string;
+    color?: string;
+    severity?: string;
+    title?: string;
+    body?: string;
+    avatarName?: string;
+    threadId?: string;
+    showBadgeOnMinimize?: string;
+  }) => void;
   clearTransientNotification: (id: string) => void;
 
   // Screen / UI Actions
@@ -677,6 +707,7 @@ interface MockpitStore {
   updateComponentPosition: (id: string, x: number, y: number) => void;
   updateComponentSize: (id: string, width: number, height: number) => void;
   updateComponentStaticProps: (id: string, staticProps: Record<string, string>) => void;
+  updateComponentConnector: (id: string, connector: VehicleStatusConnector | null) => void;
   updateComponentZIndex: (id: string, zIndex: number) => void;
   bringToFront: (id: string) => void;
   sendToBack: (id: string) => void;
@@ -747,6 +778,21 @@ function startNeutralCoastingIfNeeded(storeGet: () => any) {
   }, 50);
 }
 
+type Rect = { x: number; y: number; width: number; height: number };
+
+function hasMinGap(a: Rect, b: Rect, gap: number): boolean {
+  return (
+    a.x + a.width + gap <= b.x ||
+    b.x + b.width + gap <= a.x ||
+    a.y + a.height + gap <= b.y ||
+    b.y + b.height + gap <= a.y
+  );
+}
+
+function hasSufficientSpacing(candidate: Rect, existing: Rect[], gap: number): boolean {
+  return existing.every((c) => hasMinGap(candidate, c, gap));
+}
+
 export const useMockpitStore = create<MockpitStore>((set, get) => ({
   vehicleState: loadSavedVehicleState(),
   screens: initialScreensList,
@@ -756,13 +802,45 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   activeEventNotifIds: [],
   notificationStackPosition: loadSavedStackPosition(),
   components: initialScreens.home || [],
-  selectedComponentId: 'comp-speed-1',
+  selectedComponentId: null,
   screenMode: 'editor',
   activeView: 'home',
   isDebugOpen: false,
   debugPanelHeight: 45,
   dockOrder: loadSavedDockOrder(initialScreensList),
   copiedComponent: null,
+
+  journey: INITIAL_JOURNEY_STATE,
+  setJourneyState: (partial) => {
+    set((state) => ({
+      journey: {
+        ...state.journey,
+        ...partial,
+      },
+    }));
+  },
+  updateCurrentManeuver: (partial) => {
+    set((state) => ({
+      journey: {
+        ...state.journey,
+        currentManeuver: {
+          ...state.journey.currentManeuver,
+          ...partial,
+        },
+      },
+    }));
+  },
+  setManeuverType: (type) => {
+    set((state) => ({
+      journey: {
+        ...state.journey,
+        currentManeuver: {
+          ...state.journey.currentManeuver,
+          maneuverType: type,
+        },
+      },
+    }));
+  },
 
   isSettingsOpen: false,
   toggleSettingsModal: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
@@ -929,6 +1007,156 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   activeInputState: null,
   isKeyboardVisible: false,
 
+  // Global Messaging State & Actions
+  conversations: INITIAL_CONVERSATIONS,
+  selectedMessagingThreadId: null,
+  queuedMessageToasts: [],
+
+  setSelectedMessagingThreadId: (id) => {
+    set((state) => ({
+      selectedMessagingThreadId: id,
+      conversations: state.conversations.map((c) =>
+        c.id === id ? { ...c, unreadCount: 0 } : c
+      ),
+    }));
+  },
+
+  markThreadAsRead: (threadId) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === threadId ? { ...c, unreadCount: 0 } : c
+      ),
+    }));
+  },
+
+  sendInboundMessage: (threadId, text) => {
+    const state = get();
+
+    // Find target conversation details
+    const targetConv = state.conversations.find((c) => c.id === threadId);
+    const targetName = targetConv ? targetConv.name : 'Incoming Message';
+
+    // Check if thread is currently open AND user is on Phone view
+    const isThreadOpen = state.activeView === 'phone' && state.selectedMessagingThreadId === threadId;
+
+    // Update conversations model in store
+    const updatedConversations = state.conversations.map((c) => {
+      if (c.id === threadId) {
+        return {
+          ...c,
+          lastMessage: text,
+          lastTimestamp: 'Just now',
+          unreadCount: isThreadOpen ? 0 : c.unreadCount + 1,
+          messages: [
+            ...c.messages,
+            {
+              id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+              sender: 'contact' as const,
+              text,
+              timestamp: 'Just now',
+            },
+          ],
+        };
+      }
+      return c;
+    });
+
+    set({ conversations: updatedConversations });
+
+    // Trigger or queue notification unconditionally (except keyboard suppression)
+    if (state.isKeyboardVisible) {
+      // Queue toast while keyboard is open
+      set((s) => {
+        const existingIdx = s.queuedMessageToasts.findIndex((q) => q.threadId === threadId);
+        const newItem = {
+          threadId,
+          text,
+          title: targetName,
+        };
+        if (existingIdx >= 0) {
+          const nextQ = [...s.queuedMessageToasts];
+          nextQ[existingIdx] = newItem;
+          return { queuedMessageToasts: nextQ };
+        } else {
+          return { queuedMessageToasts: [...s.queuedMessageToasts, newItem] };
+        }
+      });
+    } else {
+      // Fire notification immediately
+      get().triggerNotification({
+        title: targetName,
+        body: text,
+        message: text,
+        avatarName: targetName,
+        threadId,
+        severity: 'info',
+        color: '#38bdf8',
+      });
+    }
+  },
+
+  sendUserMessage: (threadId, text) => {
+    const msgText = text.trim();
+    if (!msgText) return;
+
+    const newMsg = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      sender: 'user' as const,
+      text: msgText,
+      timestamp: 'Just now',
+    };
+
+    set((state) => ({
+      conversations: state.conversations.map((c) => {
+        if (c.id === threadId) {
+          return {
+            ...c,
+            lastMessage: msgText,
+            lastTimestamp: 'Just now',
+            messages: [...c.messages, newMsg],
+          };
+        }
+        return c;
+      }),
+    }));
+
+    // Auto-reply after 3 seconds
+    setTimeout(() => {
+      const autoReplies = [
+        'Sounds good, see you soon!',
+        'Got it, thanks for updating me!',
+        'Driving now, talk to you shortly.',
+        'Perfect, thanks!',
+      ];
+      const randomReply = autoReplies[Math.floor(Math.random() * autoReplies.length)];
+      get().sendInboundMessage(threadId, randomReply);
+    }, 3000);
+  },
+
+  createMessagingThread: (contact) => {
+    const state = get();
+    let existing = state.conversations.find((c) => c.contactId === contact.id || c.name === contact.name);
+    if (existing) {
+      set({ selectedMessagingThreadId: existing.id });
+    } else {
+      const newConv: Conversation = {
+        id: `m-${Date.now()}`,
+        contactId: contact.id,
+        name: contact.name,
+        number: contact.number,
+        unreadCount: 0,
+        lastMessage: 'Started a message thread',
+        lastTimestamp: 'Just now',
+        avatarUrl: contact.avatarUrl || CONTACT_PHOTO_MAP[contact.name],
+        messages: [],
+      };
+      set((s) => ({
+        conversations: [newConv, ...s.conversations],
+        selectedMessagingThreadId: newConv.id,
+      }));
+    }
+  },
+
   openKeyboard: (inputState) => {
     set({
       activeInputState: inputState,
@@ -937,10 +1165,32 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   },
 
   closeKeyboard: () => {
+    const activeInput = get().activeInputState;
+    const queued = get().queuedMessageToasts;
+
     set({
       isKeyboardVisible: false,
       activeInputState: null,
+      queuedMessageToasts: [],
     });
+
+    if (activeInput?.onCancel) {
+      activeInput.onCancel();
+    }
+
+    if (queued.length > 0) {
+      queued.forEach((item) => {
+        get().triggerNotification({
+          title: item.title,
+          body: item.text,
+          message: item.text,
+          avatarName: item.title,
+          threadId: item.threadId,
+          severity: 'info',
+          color: '#38bdf8',
+        });
+      });
+    }
   },
 
   updateActiveInputValue: (val) => {
@@ -1173,7 +1423,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     } else if (currentVs.gear === 'D' || currentVs.gear === 'R') {
       const dir = Math.random() > 0.48 ? 1 : -1;
       const delta = dir * (1 + Math.floor(Math.random() * speedDriftCeiling));
-      newVs.speed = Math.max(0, Math.min(120, currentVs.speed + delta));
+      const maxSpeedCap = getSpeedReadoutMaxSpeed(state);
+      newVs.speed = Math.max(0, Math.min(maxSpeedCap, currentVs.speed + delta));
     }
 
     const effectiveSpeed = newVs.speed !== undefined ? newVs.speed : currentVs.speed;
@@ -1203,12 +1454,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       const di = parseFloat(batteryComp.staticProps.drainIntervalSeconds);
       if (!isNaN(dp) && dp > 0) drainPercent = dp;
       if (!isNaN(di) && di > 0) drainIntervalSec = di;
-    }
 
-    const chargingComp = allComps.find((c) => c.type === 'charging');
-    if (chargingComp?.staticProps) {
-      const cp = parseFloat(chargingComp.staticProps.chargePercentPerInterval);
-      const ci = parseFloat(chargingComp.staticProps.chargeIntervalSeconds);
+      const cp = parseFloat(batteryComp.staticProps.chargePercentPerInterval);
+      const ci = parseFloat(batteryComp.staticProps.chargeIntervalSeconds);
       if (!isNaN(cp) && cp > 0) chargePercent = cp;
       if (!isNaN(ci) && ci > 0) chargeIntervalSec = ci;
     }
@@ -1396,31 +1644,57 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     const color =
       notif.color ||
       (severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f59e0b' : '#38bdf8');
+
+    const threadId = notif.threadId || '';
+    const newNotifId = threadId
+      ? `transient-notif-thread-${threadId}-${Date.now()}`
+      : `transient-notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+
+    const isMessageToast = !!threadId || !!notif.avatarName;
+    const toastWidth = isMessageToast ? 450 : 380;
+    const toastHeight = isMessageToast ? 125 : 110;
+
     const newNotif: ComponentInstance = {
-      id: `transient-notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: newNotifId,
       type: 'warning',
       x: 0,
       y: 0,
-      width: 380,
-      height: 120,
+      width: toastWidth,
+      height: toastHeight,
+      isTransient: true,
       staticProps: {
-        label:
-          severity === 'critical'
-            ? 'CRITICAL ALERT'
-            : severity === 'warning'
-            ? 'TIRE ALERT'
-            : 'NOTIFICATION',
-        icon: notif.icon || 'alert-triangle',
+        label: isMessageToast
+          ? 'TEXT MESSAGE'
+          : notif.title ||
+            (severity === 'critical'
+              ? 'CRITICAL ALERT'
+              : severity === 'warning'
+              ? 'TIRE ALERT'
+              : 'NOTIFICATION'),
+        title: notif.title || '',
+        body: notif.body || notif.message,
+        icon: isMessageToast ? 'message-square' : notif.icon || 'alert-triangle',
         message: notif.message,
         visible: 'true',
         color,
         severity,
+        avatarName: notif.avatarName || '',
+        threadId,
       },
       bindings: [],
     };
-    set((state) => ({
-      transientNotifications: [newNotif, ...state.transientNotifications.slice(0, 4)],
-    }));
+
+    set((state) => {
+      let existingFiltered = state.transientNotifications;
+      if (threadId) {
+        existingFiltered = state.transientNotifications.filter(
+          (c) => c.staticProps?.threadId !== threadId
+        );
+      }
+      return {
+        transientNotifications: [newNotif, ...existingFiltered.slice(0, 4)],
+      };
+    });
   },
 
   clearTransientNotification: (id) => {
@@ -1578,7 +1852,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           unit: 'mph',
           color: '#38bdf8',
           displayStyle: 'numeric',
-          maxSpeed: '120',
+          maxSpeed: '140',
           arcStop1Color: '#10b981',
           arcStop2Color: '#06b6d4',
           arcStop3Color: '#38bdf8',
@@ -1620,29 +1894,6 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           {
             id: `bind-${Date.now()}-2`,
             stateField: 'doorOpen',
-            condition: '=',
-            value: false,
-            targetProp: 'visible',
-            targetValue: 'false',
-          },
-        ];
-        break;
-      case 'charging':
-        width = 340;
-        height = 120;
-        staticProps = { icon: 'zap', label: 'CHARGING', visible: 'false', color: '#3b82f6', chargePercentPerInterval: '5', chargeIntervalSeconds: '60' };
-        bindings = [
-          {
-            id: `bind-${Date.now()}-1`,
-            stateField: 'isCharging',
-            condition: '=',
-            value: true,
-            targetProp: 'visible',
-            targetValue: 'true',
-          },
-          {
-            id: `bind-${Date.now()}-2`,
-            stateField: 'isCharging',
             condition: '=',
             value: false,
             targetProp: 'visible',
@@ -1717,8 +1968,18 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         break;
       case 'navDestination':
         width = 380;
-        height = 200;
-        staticProps = { destination: 'Yosemite Valley, CA', lat: '37.7456', lng: '-119.5936', stops: 'In-N-Out Merced|Tunnel View Overlook' };
+        height = 260;
+        staticProps = {
+          destination: 'Yosemite Valley, CA',
+          destLat: '37.7456',
+          destLng: '-119.5936',
+          lat: '37.7456',
+          lng: '-119.5936',
+          tripStops: JSON.stringify([
+            { id: 'stop-1', name: 'EV Supercharger Bay (Merced)', lat: '37.3022', lng: '-120.4830' },
+            { id: 'stop-2', name: 'Scenic Overlook Rest Area', lat: '37.7158', lng: '-119.6775' },
+          ]),
+        };
         bindings = [];
         break;
       case 'navSearch':
@@ -1729,8 +1990,18 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         break;
       case 'navTripEstimate':
         width = 380;
-        height = 170;
-        staticProps = { startLat: '37.3318', startLng: '-122.0311', destLat: '37.7456', destLng: '-119.5936', consumptionRate: '0.32' };
+        height = 200;
+        staticProps = {
+          startLat: '37.3318',
+          startLng: '-122.0311',
+          destLat: '37.7456',
+          destLng: '-119.5936',
+          consumptionRate: '0.32',
+          distanceLabel: 'Distance',
+          estimatedTimeLabel: 'Estimated Time',
+          energyRequiredLabel: 'Energy Required',
+          arrivalChargeLabel: 'Arrival Charge',
+        };
         bindings = [];
         break;
       case 'overheadVisualization':
@@ -1762,6 +2033,20 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           sensorWarning: 'auto',
           sensorColor: '#ef4444',
           sensorOpacity: '0.6',
+        };
+        bindings = [];
+        break;
+      case 'miniNav':
+        width = 320;
+        height = 510;
+        staticProps = {
+          label: 'Mini Nav',
+          highwayName: 'I-280 N',
+          nextExit: 'Exit 12: Foothill Expwy',
+          distanceToManeuver: '0.8 mi',
+          maneuverType: 'slight-right',
+          laneCount: '3',
+          activeLaneIndex: '2',
         };
         bindings = [];
         break;
@@ -1799,6 +2084,41 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         width = 380;
         height = 220;
         staticProps = { label: 'Seat Climate' };
+        bindings = [];
+        break;
+      case 'vehicleExplodedView':
+        width = 640;
+        height = 420;
+        staticProps = {
+          label: 'Vehicle Exploded View',
+          imageUrl: '',
+          removeBg: 'true',
+          bgTolerance: '25',
+        };
+        bindings = [];
+        break;
+      case 'vehicleStatusCallout':
+        width = 320;
+        height = 160;
+        staticProps = {
+          label: 'Vehicle Status Callout',
+          title: 'Front Powertrain',
+          description: 'Primary electric drive unit & inverter',
+          statusCode: '4101',
+          statusMessage: 'Operating within normal thermal parameters',
+          healthType: 'rgy',
+          healthValue: 'green',
+        };
+        bindings = [];
+        break;
+      case 'sendToServiceCenter':
+        width = 280;
+        height = 100;
+        staticProps = {
+          label: 'Send to Service Center',
+          buttonLabel: 'Send to Service Center',
+          reportTitle: 'Vehicle Diagnostic Report',
+        };
         bindings = [];
         break;
     }
@@ -1992,6 +2312,30 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     });
   },
 
+  updateComponentConnector: (id, connector) => {
+    set((state) => {
+      const activeScreen = state.activeView;
+      const currentList = state.componentsByScreen[activeScreen] || [];
+      const updatedList = currentList.map((c) =>
+        c.id === id ? { ...c, connector } : c
+      );
+      const updatedScreens = {
+        ...state.componentsByScreen,
+        [activeScreen]: updatedList,
+      };
+
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+      } catch (e) {
+        console.error('Failed to save connector', e);
+      }
+      return {
+        componentsByScreen: updatedScreens,
+        components: updatedList,
+      };
+    });
+  },
+
   updateComponentZIndex: (id, zIndex) => {
     const clampedZ = Math.max(-10, Math.min(100, Math.round(zIndex)));
     set((state) => {
@@ -2092,11 +2436,32 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
       const activeScreen = state.activeView;
       const currentList = state.componentsByScreen[activeScreen] || [];
-      const updatedList = currentList.filter((c) => c.id !== id);
-      const updatedScreens = {
-        ...state.componentsByScreen,
-        [activeScreen]: updatedList,
-      };
+      // Filter out deleted component and clear connector on any callout that pointed to the deleted component
+      const updatedList = currentList
+        .filter((c) => c.id !== id)
+        .map((c) => {
+          if (c.connector && c.connector.targetComponentId === id) {
+            return { ...c, connector: null };
+          }
+          return c;
+        });
+
+      // Also clean up references across all screens in componentsByScreen
+      const updatedScreens: Record<string, ComponentInstance[]> = {};
+      for (const [screenKey, screenComps] of Object.entries(state.componentsByScreen)) {
+        if (screenKey === activeScreen) {
+          updatedScreens[screenKey] = updatedList;
+        } else {
+          updatedScreens[screenKey] = (screenComps || [])
+            .filter((c) => c.id !== id)
+            .map((c) => {
+              if (c.connector && c.connector.targetComponentId === id) {
+                return { ...c, connector: null };
+              }
+              return c;
+            });
+        }
+      }
 
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
@@ -2150,7 +2515,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   },
 
   pasteComponent: () => {
-    const { copiedComponent, activeView } = get();
+    const { copiedComponent, activeView, gridConfig } = get();
     if (!copiedComponent) return null;
 
     const { component, sourceScreen } = copiedComponent;
@@ -2165,16 +2530,56 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       id: `bind-${timestamp}-${idx}-${Math.floor(Math.random() * 1000)}`,
     }));
 
-    // Same-screen paste offsets +20px x/y. Different-screen paste uses original x/y.
+    const gridSize = gridConfig?.size || 22;
+    const spacing = gridSize;
+
+    // Base offset strategy:
+    // If pasting onto the SAME screen: add offset from current location
+    // If pasting to a DIFFERENT screen: start at original relative coordinates
     const isSameScreen = isNotif || sourceScreen === activeView;
-    const newX = isSameScreen ? component.x + 20 : component.x;
-    const newY = isSameScreen ? component.y + 20 : component.y;
+    const baseOffset = isSameScreen ? gridSize : 0;
+
+    let targetX = component.x + baseOffset;
+    let targetY = component.y + baseOffset;
+
+    // Safety bounds clamp
+    if (targetX + component.width > CANVAS_WIDTH) {
+      targetX = Math.max(0, CANVAS_WIDTH - component.width - 20);
+    }
+    if (targetY + component.height > CANVAS_HEIGHT) {
+      targetY = Math.max(0, CANVAS_HEIGHT - component.height - 20);
+    }
+
+    const existingList: Rect[] = isNotif
+      ? get().notificationComponents
+      : (get().componentsByScreen[activeView] || []);
+
+    const candidateRect = (x: number, y: number): Rect => ({
+      x,
+      y,
+      width: component.width,
+      height: component.height,
+    });
+
+    let attempts = 0;
+    const maxAttempts = 50;
+    while (!hasSufficientSpacing(candidateRect(targetX, targetY), existingList, spacing) && attempts < maxAttempts) {
+      targetX += gridSize;
+      targetY += gridSize;
+      if (targetX + component.width > CANVAS_WIDTH) {
+        targetX = Math.max(0, CANVAS_WIDTH - component.width - 20);
+      }
+      if (targetY + component.height > CANVAS_HEIGHT) {
+        targetY = Math.max(0, CANVAS_HEIGHT - component.height - 20);
+      }
+      attempts++;
+    }
 
     const newComponent: ComponentInstance = {
       id: newId,
       type: component.type,
-      x: newX,
-      y: newY,
+      x: targetX,
+      y: targetY,
       width: component.width,
       height: component.height,
       staticProps: JSON.parse(JSON.stringify(component.staticProps || {})),
@@ -2184,8 +2589,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     const updatedCopiedState: CopiedComponentState = {
       component: {
         ...component,
-        x: newX,
-        y: newY,
+        x: targetX,
+        y: targetY,
       },
       sourceScreen: activeView,
     };
@@ -2373,6 +2778,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         localStorage.setItem(LOCAL_STORAGE_STACK_POS_KEY, 'top-center');
         localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(INITIAL_VEHICLE_STATE));
         localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(DEFAULT_DOCK_ORDER));
+        localStorage.setItem(LOCAL_STORAGE_VEHICLE_BG_KEY, JSON.stringify(DEFAULT_VEHICLE_BACKGROUND));
       } catch (e) {
         console.error('Failed to reset store data', e);
       }
@@ -2384,8 +2790,12 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         components: HOME_SEED_COMPONENTS,
         vehicleState: INITIAL_VEHICLE_STATE,
         dockOrder: DEFAULT_DOCK_ORDER,
-        selectedComponentId: 'comp-speed-1',
+        selectedComponentId: null,
         activeView: 'home',
+        vehicleBackground: DEFAULT_VEHICLE_BACKGROUND,
+        conversations: INITIAL_CONVERSATIONS,
+        selectedMessagingThreadId: null,
+        queuedMessageToasts: [],
       };
     });
   },

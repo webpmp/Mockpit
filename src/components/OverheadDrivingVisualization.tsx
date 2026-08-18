@@ -422,6 +422,7 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
   // Component configuration props
   const props = component.staticProps || {};
   const customAccentColor = props.color || '#38bdf8';
+  const isGrayscale = props.grayscaleTraffic !== 'false';
 
   // Speed Limit settings & Non-pulsating Edge-Triggered Flash State
   const speedLimitRaw = props.speedLimitValue || '65';
@@ -457,13 +458,49 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
     }
   }, [currentSpeed, speedLimitVal]);
 
-  // ADAS Warning States
-  const isBlindSpotWarningActive =
-    vehicleState?.blindSpotWarning ??
-    (props.blindSpotWarning === 'true' || props.leftBlindSpot === 'true' || props.rightBlindSpot === 'true');
+  // Polygon definition for Left & Right Blind Spot Zones (Ego local coordinates)
+const LEFT_BLIND_SPOT_POLYGON = [
+  { x: -28, y: 11.5 },
+  { x: -230, y: 207 },
+  { x: -175, y: 280 },
+  { x: -120, y: 335 },
+  { x: -70, y: 368 },
+];
 
-  const isProximityWarningActive =
-    vehicleState?.proximityWarning ?? (props.sensorWarning === 'true');
+const RIGHT_BLIND_SPOT_POLYGON = [
+  { x: 28, y: 11.5 },
+  { x: 230, y: 207 },
+  { x: 175, y: 280 },
+  { x: 120, y: 335 },
+  { x: 70, y: 368 },
+];
+
+function isPointInPolygon(point: { x: number; y: number }, polygon: Array<{ x: number; y: number }>): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x, yi = polygon[i].y;
+    const xj = polygon[j].x, yj = polygon[j].y;
+    const intersect = ((yi > point.y) !== (yj > point.y)) &&
+      (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function isVehicleInPolygon(relX: number, relY: number, length: number, polygon: Array<{ x: number; y: number }>): boolean {
+  const pointsToTest = [
+    { x: relX, y: relY },
+    { x: relX, y: relY - length * 0.35 },
+    { x: relX, y: relY + length * 0.35 },
+  ];
+  return pointsToTest.some((p) => isPointInPolygon(p, polygon));
+}
+  // ADAS Warning Props & Custom Styling
+  const isBlindSpotEnabled =
+    props.blindSpotWarning !== 'false' && (vehicleState?.blindSpotWarning ?? true);
+
+  const isProximityEnabled =
+    props.sensorWarning !== 'false' && (vehicleState?.proximityWarning ?? true);
 
   const blindSpotColor = props.blindSpotColor || '#ef4444';
   const blindSpotOpacity = parseFloat(props.blindSpotOpacity || '0.65');
@@ -532,7 +569,8 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
   const { w: egoW, l: egoL } = getEgoDims(activeEgoType);
 
   // Anchor Ego Vehicle in Ego Lane 1 (Inner Ego Lane) near lower-middle of viewport
-  const absEgoX = 648.2;
+  const [egoLane, setEgoLane] = useState<number>(1);
+  const absEgoX = getLaneX(egoLane);
   const absEgoY = viewH * 0.68;
 
   // Vehicle Dimensions Helper Function (Strict 2.1-3.2 length-to-width ratios)
@@ -606,11 +644,11 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
 
     // Same-direction initial positions (Ego is at lane 1, y = 0)
     const sameConfigs = [
-      { lane: 2, y: -viewH * 0.42, speed: 64, type: 'suv' as VehicleType, color: '#64748b' },
-      { lane: 1, y: -viewH * 0.68, speed: 62, type: 'sedan' as VehicleType, color: '#cbd5e1' },
-      { lane: 2, y: viewH * 0.22, speed: 58, type: 'pickup' as VehicleType, color: '#1e293b' },
-      { lane: 1, y: viewH * 0.38, speed: 56, type: 'van' as VehicleType, color: '#1e3a8a' },
-      { lane: 2, y: -viewH * 0.85, speed: 68, type: 'sedan' as VehicleType, color: '#991b1b' },
+      { lane: 2, y: -viewH * 0.42, speed: speedLimitVal - 1, type: 'suv' as VehicleType, color: '#64748b' },
+      { lane: 1, y: -viewH * 0.68, speed: speedLimitVal - 3, type: 'sedan' as VehicleType, color: '#cbd5e1' },
+      { lane: 2, y: viewH * 0.22, speed: speedLimitVal - 7, type: 'pickup' as VehicleType, color: '#1e293b' },
+      { lane: 1, y: viewH * 0.38, speed: speedLimitVal - 9, type: 'van' as VehicleType, color: '#1e3a8a' },
+      { lane: 2, y: -viewH * 0.85, speed: speedLimitVal + 3, type: 'sedan' as VehicleType, color: '#991b1b' },
     ];
 
     for (let i = 0; i < Math.min(targetSameCount, sameConfigs.length); i++) {
@@ -676,9 +714,123 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
     setSceneObjects(baseObjects);
   }, [baseObjects]);
 
+  // Live Occupancy Detection for Left/Right Blind Spot Zones & Proximity Sensor
+  const { isLeftOccupied, isRightOccupied, isProximityOccupied } = useMemo(() => {
+    let left = false;
+    let right = false;
+    let proximity = false;
+
+    const PROXIMITY_RADIUS = egoL * 0.92; // 105.8
+    const proxRadiusSq = PROXIMITY_RADIUS * PROXIMITY_RADIUS;
+
+    for (const v of traffic) {
+      const absX = getLaneX(v.lane);
+      const relX = absX - absEgoX;
+      const relY = v.y;
+      const dims = getVehicleDims(v.type);
+
+      if (!left && isVehicleInPolygon(relX, relY, dims.l, LEFT_BLIND_SPOT_POLYGON)) {
+        left = true;
+      }
+      if (!right && isVehicleInPolygon(relX, relY, dims.l, RIGHT_BLIND_SPOT_POLYGON)) {
+        right = true;
+      }
+
+      if (!proximity) {
+        const halfL = dims.l * 0.5;
+        const halfW = dims.w * 0.5;
+        const dx = Math.max(0, Math.abs(relX) - halfW);
+        const dy = Math.max(0, Math.abs(relY) - halfL);
+        if (dx * dx + dy * dy <= proxRadiusSq) {
+          proximity = true;
+        }
+      }
+
+      if (left && right && proximity) break;
+    }
+
+    return { isLeftOccupied: left, isRightOccupied: right, isProximityOccupied: proximity };
+  }, [traffic, absEgoX, egoL]);
+
+  const isLeftZoneActive =
+    isBlindSpotEnabled && (props.leftBlindSpot === 'true' || isLeftOccupied);
+
+  const isRightZoneActive =
+    isBlindSpotEnabled && (props.rightBlindSpot === 'true' || isRightOccupied);
+
+  const isProximityZoneActive =
+    isProximityEnabled && (props.sensorWarning === 'true' || isProximityOccupied);
+
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(performance.now());
   const spawnTimerRef = useRef<number>(1.5); // Spawn delay timer
+
+  const egoLaneRef = useRef<number>(1);
+  const sustainedProximityRef = useRef<{
+    time: number;
+    vehicleId: string | null;
+  }>({
+    time: 0,
+    vehicleId: null,
+  });
+
+  const egoManeuverRef = useRef<{
+    phase: 'changing_right' | 'passing' | 'returning';
+    targetVehicleId: string;
+  } | null>(null);
+
+  const pendingFlashTriggerRef = useRef<boolean>(false);
+  const headlightFlashRef = useRef<{
+    lastState: boolean;
+    firstToggleTime: number | null;
+    initialState: boolean | null;
+  }>({
+    lastState: isHeadlightsOn,
+    firstToggleTime: null,
+    initialState: null,
+  });
+
+  const flashYieldManeuverRef = useRef<{
+    vehicleId: string;
+    originalSpeed: number;
+    phase: 'evaluating' | 'accelerating_and_waiting' | 'changing_lane' | 'accelerating_no_lane';
+    targetLane: number | null;
+  } | null>(null);
+
+  useEffect(() => {
+    const now = performance.now();
+    const prevHeadlightState = headlightFlashRef.current.lastState;
+
+    if (prevHeadlightState !== isHeadlightsOn) {
+      headlightFlashRef.current.lastState = isHeadlightsOn;
+
+      // Ignore headlight toggles while a flash yield maneuver is active
+      if (flashYieldManeuverRef.current !== null) {
+        return;
+      }
+
+      const { firstToggleTime, initialState } = headlightFlashRef.current;
+
+      if (firstToggleTime !== null && initialState !== null) {
+        const elapsed = (now - firstToggleTime) / 1000;
+
+        if (elapsed <= 1.5 && isHeadlightsOn === initialState) {
+          // Headlight flash gesture detected! (Two toggles within 1.5s returning to initial state)
+          headlightFlashRef.current.firstToggleTime = null;
+          headlightFlashRef.current.initialState = null;
+          pendingFlashTriggerRef.current = true;
+        } else {
+          // Timed out (>1.5s) or state mismatch: reset current toggle as new first toggle
+          headlightFlashRef.current.firstToggleTime = now;
+          headlightFlashRef.current.initialState = prevHeadlightState;
+        }
+      } else {
+        // First toggle of potential flash sequence
+        headlightFlashRef.current.firstToggleTime = now;
+        headlightFlashRef.current.initialState = prevHeadlightState;
+      }
+    }
+  }, [isHeadlightsOn]);
 
   // =========================================================================
   // AUTHORITATIVE HIGHWAY TRAFFIC & SPATIAL SPACING PHYSICS ENGINE
@@ -722,12 +874,283 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
       setTraffic((prevTraffic) => {
         let updatedList = prevTraffic.map((v) => ({ ...v }));
 
-        // A. Move each vehicle according to its relative direction & speed
+        // Detect sustained proximity on a vehicle in Ego's current lane directly ahead
+        const currentEgoLaneInt = Math.round(egoLaneRef.current);
+        const currentAbsEgoX = getLaneX(egoLaneRef.current);
+
+        // Headlight Flash Gesture Trigger Processing
+        if (pendingFlashTriggerRef.current) {
+          pendingFlashTriggerRef.current = false;
+
+          if (flashYieldManeuverRef.current === null) {
+            let leadVehicle: TrafficVehicle | null = null;
+            let nearestY = -Infinity; // nearest ahead (y < 0)
+
+            for (const v of updatedList) {
+              if (!v.isOpposing && Math.round(v.lane) === currentEgoLaneInt && v.y < 0 && v.y > -350) {
+                if (v.y > nearestY) {
+                  nearestY = v.y;
+                  leadVehicle = v;
+                }
+              }
+            }
+
+            if (leadVehicle) {
+              sustainedProximityRef.current.time = 0; // Reset automatic 10s countdown
+              const leadDims = getVehicleDims(leadVehicle.type);
+              const leadLane = Math.round(leadVehicle.lane);
+
+              // Same-direction driving lanes are 1 and 2
+              const candidateLanes: number[] = [];
+              if (leadLane === 1) {
+                candidateLanes.push(2);
+              } else if (leadLane === 2) {
+                candidateLanes.push(1);
+              }
+
+              const isLaneClearForLead = (candLane: number, checkY: number, targetLen: number) => {
+                return !updatedList.some((other) => {
+                  if (other.id === leadVehicle!.id) return false;
+                  if (Math.round(other.lane) !== candLane) return false;
+                  const otherLen = getVehicleDims(other.type).l;
+                  const requiredGap = (targetLen + otherLen) / 2 + 35;
+                  return Math.abs(other.y - checkY) < requiredGap;
+                });
+              };
+
+              const origSpd = leadVehicle.targetSpeed || leadVehicle.speed;
+
+              if (candidateLanes.length === 0) {
+                // Decision 1: Edge lane with no adjacent lane -> Accelerate and stay in lane until pulling away
+                leadVehicle.speed = Math.max(leadVehicle.speed + 12, currentSpeed + 12);
+                flashYieldManeuverRef.current = {
+                  vehicleId: leadVehicle.id,
+                  originalSpeed: origSpd,
+                  phase: 'accelerating_no_lane',
+                  targetLane: null,
+                };
+              } else {
+                let selectedLane: number | null = null;
+                for (const cLane of candidateLanes) {
+                  if (isLaneClearForLead(cLane, leadVehicle.y, leadDims.l)) {
+                    selectedLane = cLane;
+                    break;
+                  }
+                }
+
+                if (selectedLane !== null) {
+                  leadVehicle.targetLane = selectedLane;
+                  flashYieldManeuverRef.current = {
+                    vehicleId: leadVehicle.id,
+                    originalSpeed: origSpd,
+                    phase: 'changing_lane',
+                    targetLane: selectedLane,
+                  };
+                } else {
+                  leadVehicle.speed = Math.max(leadVehicle.speed + 10, currentSpeed + 10);
+                  flashYieldManeuverRef.current = {
+                    vehicleId: leadVehicle.id,
+                    originalSpeed: origSpd,
+                    phase: 'accelerating_and_waiting',
+                    targetLane: candidateLanes[0],
+                  };
+                }
+              }
+            }
+          }
+        }
+
+        // Active Headlight Flash Yield Maneuver Progress Update
+        if (flashYieldManeuverRef.current) {
+          const m = flashYieldManeuverRef.current;
+          const targetV = updatedList.find((v) => v.id === m.vehicleId);
+
+          if (!targetV) {
+            flashYieldManeuverRef.current = null;
+          } else {
+            const targetDims = getVehicleDims(targetV.type);
+
+            if (m.phase === 'accelerating_no_lane') {
+              targetV.speed = Math.max(targetV.speed, currentSpeed + 12);
+              if (targetV.y < -400) {
+                targetV.speed = m.originalSpeed;
+                targetV.targetSpeed = m.originalSpeed;
+                flashYieldManeuverRef.current = null;
+              }
+            } else if (m.phase === 'accelerating_and_waiting') {
+              targetV.speed = Math.max(targetV.speed, currentSpeed + 10);
+
+              const targetLaneInt = Math.round(targetV.lane);
+              const candLane = targetLaneInt === 1 ? 2 : (targetLaneInt === 2 ? 1 : m.targetLane || 2);
+
+              const isClear = !updatedList.some((other) => {
+                if (other.id === targetV.id) return false;
+                if (Math.round(other.lane) !== candLane) return false;
+                const otherLen = getVehicleDims(other.type).l;
+                const requiredGap = (targetDims.l + otherLen) / 2 + 35;
+                return Math.abs(other.y - targetV.y) < requiredGap;
+              });
+
+              if (isClear) {
+                targetV.targetLane = candLane;
+                targetV.speed = m.originalSpeed;
+                targetV.targetSpeed = m.originalSpeed;
+                m.phase = 'changing_lane';
+                m.targetLane = candLane;
+              } else if (targetV.y < -450) {
+                targetV.speed = m.originalSpeed;
+                targetV.targetSpeed = m.originalSpeed;
+                flashYieldManeuverRef.current = null;
+              }
+            } else if (m.phase === 'changing_lane') {
+              if (m.targetLane !== null && Math.abs(targetV.lane - m.targetLane) < 0.02) {
+                targetV.lane = m.targetLane;
+                targetV.speed = m.originalSpeed;
+                targetV.targetSpeed = m.originalSpeed;
+                flashYieldManeuverRef.current = null;
+              }
+            }
+          }
+        }
+
+        let proxTargetVehicle: TrafficVehicle | null = null;
+        const PROXIMITY_RADIUS = egoL * 0.92; // 105.8
+        const proxRadiusSq = PROXIMITY_RADIUS * PROXIMITY_RADIUS;
+
+        for (const v of updatedList) {
+          if (Math.round(v.lane) === currentEgoLaneInt && v.y < 0 && v.y > -350) {
+            const absX = getLaneX(v.lane);
+            const relX = absX - currentAbsEgoX;
+            const relY = v.y;
+            const dims = getVehicleDims(v.type);
+
+            const halfL = dims.l * 0.5;
+            const halfW = dims.w * 0.5;
+            const dx = Math.max(0, Math.abs(relX) - halfW);
+            const dy = Math.max(0, Math.abs(relY) - halfL);
+
+            if (dx * dx + dy * dy <= proxRadiusSq) {
+              proxTargetVehicle = v;
+              break;
+            }
+          }
+        }
+
+        // Track continuous proximity alert duration
+        if (proxTargetVehicle && isProximityEnabled) {
+          if (sustainedProximityRef.current.vehicleId === proxTargetVehicle.id) {
+            sustainedProximityRef.current.time += dt;
+          } else {
+            sustainedProximityRef.current.vehicleId = proxTargetVehicle.id;
+            sustainedProximityRef.current.time = dt;
+          }
+        } else {
+          sustainedProximityRef.current.time = 0;
+          sustainedProximityRef.current.vehicleId = null;
+        }
+
+        // Trigger avoidance resolution after 10 seconds of continuous proximity alert
+        if (
+          sustainedProximityRef.current.time >= 10.0 &&
+          proxTargetVehicle &&
+          egoManeuverRef.current === null
+        ) {
+          const proxTargetDims = getVehicleDims(proxTargetVehicle.type);
+
+          // Blind Spot Clearance Check for EGO Lane Changes
+          const isTargetLaneClearForEgo = (targetLane: number) => {
+            const currentEgoLaneVal = Math.round(egoLaneRef.current);
+            const isTargetToRight = targetLane > currentEgoLaneVal;
+            const polygon = isTargetToRight ? RIGHT_BLIND_SPOT_POLYGON : LEFT_BLIND_SPOT_POLYGON;
+
+            return !updatedList.some((v) => {
+              const vCurrentLane = Math.round(v.lane);
+              const vTargetLane = Math.round(v.targetLane);
+              if (vCurrentLane !== targetLane && vTargetLane !== targetLane) {
+                return false;
+              }
+
+              const absX = getLaneX(v.lane);
+              const relX = absX - currentAbsEgoX;
+              const relY = v.y;
+              const dims = getVehicleDims(v.type);
+
+              // 1. Blind spot polygon check (detects vehicles in rear quarter & blind spot cone)
+              if (isVehicleInPolygon(relX, relY, dims.l, polygon)) {
+                return true;
+              }
+
+              // 2. Longitudinal gap check (ensures safe margin ahead and behind Ego in target lane)
+              const minSafeGap = (egoL + dims.l) / 2 + 35;
+              if (Math.abs(relY) < minSafeGap) {
+                return true;
+              }
+
+              return false;
+            });
+          };
+
+          // Check if Lane 2 is clear around a given Y position for a vehicle of targetLen
+          const isLane2ClearAt = (checkY: number, targetLen: number = 130) => {
+            return !updatedList.some((other) => {
+              if (Math.round(other.lane) !== 2) return false;
+              const otherLen = getVehicleDims(other.type).l;
+              const requiredGap = (targetLen + otherLen) / 2 + 25;
+              return Math.abs(other.y - checkY) < requiredGap;
+            });
+          };
+
+          // 80/20 Weighted Random Choice (80% traffic yields, 20% ego passes)
+          const choice = Math.random() < 0.8 ? 'traffic_yield' : 'ego_pass';
+
+          let maneuverStarted = false;
+
+          if (choice === 'traffic_yield') {
+            if (isLane2ClearAt(proxTargetVehicle.y, proxTargetDims.l)) {
+              proxTargetVehicle.targetLane = 2;
+              maneuverStarted = true;
+            } else if (isTargetLaneClearForEgo(2)) {
+              egoManeuverRef.current = {
+                phase: 'changing_right',
+                targetVehicleId: proxTargetVehicle.id,
+              };
+              maneuverStarted = true;
+            }
+          } else {
+            // choice === 'ego_pass'
+            if (isTargetLaneClearForEgo(2)) {
+              egoManeuverRef.current = {
+                phase: 'changing_right',
+                targetVehicleId: proxTargetVehicle.id,
+              };
+              maneuverStarted = true;
+            } else if (isLane2ClearAt(proxTargetVehicle.y, proxTargetDims.l)) {
+              proxTargetVehicle.targetLane = 2;
+              maneuverStarted = true;
+            }
+          }
+
+          if (maneuverStarted) {
+            sustainedProximityRef.current.time = 0;
+          } else {
+            // Retain time at 10.0s to retry every frame until a clear gap opens in Lane 2
+            sustainedProximityRef.current.time = 10.0;
+          }
+        }
+
+        // A. Move each vehicle according to its relative direction & speed + lateral interpolation
         for (let i = 0; i < updatedList.length; i++) {
           const v = updatedList[i];
 
-          // Keep vehicle strictly in its assigned lane
-          v.lane = v.targetLane;
+          // Interpolate lane position smoothly over time
+          if (v.lane !== v.targetLane) {
+            const laneChangeRate = dt * 0.8; // ~1.25s per lane change
+            if (v.lane < v.targetLane) {
+              v.lane = Math.min(v.targetLane, v.lane + laneChangeRate);
+            } else if (v.lane > v.targetLane) {
+              v.lane = Math.max(v.targetLane, v.lane - laneChangeRate);
+            }
+          }
 
           if (v.isOpposing) {
             // Opposing traffic relative motion: travels downward in view
@@ -735,19 +1158,23 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
             v.y += dirSign * dt * relativeSpeed * 2.2;
           } else {
             // Same-direction traffic relative motion
-            // If v.speed > currentSpeed: moves UP ahead of Ego
-            // If v.speed < currentSpeed: drops DOWN behind Ego
+            if (
+              egoManeuverRef.current &&
+              egoManeuverRef.current.targetVehicleId === v.id &&
+              (egoManeuverRef.current.phase === 'passing' || egoManeuverRef.current.phase === 'changing_right')
+            ) {
+              v.speed = Math.min(v.speed, Math.max(18, currentSpeed - 18));
+            }
+
             const speedDiff = currentSpeed - v.speed;
             v.y += dirSign * dt * speedDiff * 2.2;
           }
         }
 
         // B. Enforce Longitudinal Separation & Anti-Overlap Physics
-        // Lanes to inspect: [-2, -1, 1, 2]
         const lanes = [-2, -1, 1, 2];
 
         for (const lane of lanes) {
-          // Collect vehicles in this lane
           interface SpatialRef {
             id: string;
             y: number;
@@ -758,7 +1185,7 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
           }
 
           const laneVehicles: SpatialRef[] = updatedList
-            .filter((v) => v.lane === lane)
+            .filter((v) => Math.round(v.lane) === lane)
             .map((v) => ({
               id: v.id,
               y: v.y,
@@ -767,8 +1194,8 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
               vehicleRef: v,
             }));
 
-          // Include Ego Vehicle in Ego Lane 1 (lane === 1) as physical boundary at y = 0
-          if (lane === 1) {
+          // Include Ego Vehicle in Ego's currently occupied lane
+          if (lane === currentEgoLaneInt) {
             laneVehicles.push({
               id: 'ego-vehicle',
               y: 0,
@@ -799,9 +1226,7 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
                 if (B.vehicleRef) {
                   B.vehicleRef.y = A.y + overlapMinCenter;
                 } else if (A.vehicleRef && B.isEgo) {
-                  // If B is Ego and A is ahead of Ego, push A ahead so Ego never overlaps A
                   A.vehicleRef.y = B.y - overlapMinCenter;
-                  A.vehicleRef.speed = Math.max(A.vehicleRef.speed, currentSpeed + 4);
                 }
               }
 
@@ -810,8 +1235,20 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
                 B.vehicleRef.speed = Math.min(B.vehicleRef.speed, Math.max(20, A.speed - 2));
               }
               if (A.vehicleRef && B.isEgo && A.y < 0) {
-                // Vehicle ahead of Ego accelerates slightly to keep safe buffer
-                A.vehicleRef.speed = Math.max(A.vehicleRef.speed, currentSpeed + 3);
+                // Keep target vehicle in proximity zone until avoidance or flash maneuver fires
+                if (
+                  flashYieldManeuverRef.current &&
+                  flashYieldManeuverRef.current.vehicleId === A.vehicleRef.id
+                ) {
+                  // Flash yield maneuver controls vehicle speed
+                } else if (
+                  sustainedProximityRef.current.vehicleId === A.vehicleRef.id &&
+                  sustainedProximityRef.current.time < 10.0
+                ) {
+                  A.vehicleRef.speed = currentSpeed - 1;
+                } else {
+                  A.vehicleRef.speed = A.vehicleRef.targetSpeed || A.vehicleRef.speed;
+                }
               }
             }
           }
@@ -854,19 +1291,17 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
             const newType = RANDOM_VEHICLE_TYPES[Math.floor(Math.random() * RANDOM_VEHICLE_TYPES.length)];
             const newColor = AUTOMOTIVE_PALETTE[Math.floor(Math.random() * AUTOMOTIVE_PALETTE.length)];
 
-            // Randomize relative speed and entry boundary
-            const isFaster = Math.random() > 0.35;
+            // Fixed independent traffic speed assigned at spawn (speed limit ± 5 MPH)
+            const speedOffset = -5 + Math.floor(Math.random() * 11); // -5 to +5 MPH
             const newSpeed = isOpp
               ? 52 + Math.floor(Math.random() * 16)
-              : isFaster
-              ? Math.max(currentSpeed + 8, 58 + Math.floor(Math.random() * 14))
-              : Math.max(25, currentSpeed - 12 - Math.floor(Math.random() * 10));
+              : speedLimitVal + speedOffset;
 
             const spawnY = isOpp
               ? exitBoundTop - 80
-              : isFaster
-              ? exitBoundBottom + 80
-              : exitBoundTop - 80;
+              : newSpeed < currentSpeed
+              ? exitBoundTop - 80
+              : exitBoundBottom + 80;
 
             for (const laneCandidate of candidateLanes) {
               const existingInCandidate = remainingTraffic.filter((v) => v.lane === laneCandidate);
@@ -909,6 +1344,56 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
         return remainingTraffic;
       });
 
+      // 4. Ego Lane Change Maneuver Execution
+      if (egoManeuverRef.current) {
+        const maneuver = egoManeuverRef.current;
+
+        if (maneuver.phase === 'changing_right') {
+          egoLaneRef.current = Math.min(2, egoLaneRef.current + dt * 0.8);
+          if (egoLaneRef.current >= 2) {
+            egoLaneRef.current = 2;
+            maneuver.phase = 'passing';
+          }
+        } else if (maneuver.phase === 'passing') {
+          setTraffic((latestTraffic) => {
+            const targetVeh = latestTraffic.find((v) => v.id === maneuver.targetVehicleId);
+            if (!targetVeh || targetVeh.y > 100) {
+              // Ensure Lane 1 is clear of blind spot vehicles before returning
+              const isLane1Clear = !latestTraffic.some((v) => {
+                const vCurrentLane = Math.round(v.lane);
+                const vTargetLane = Math.round(v.targetLane);
+                if (vCurrentLane !== 1 && vTargetLane !== 1) return false;
+
+                const absX = getLaneX(v.lane);
+                const relX = absX - getLaneX(egoLaneRef.current);
+                const relY = v.y;
+                const dims = getVehicleDims(v.type);
+
+                if (isVehicleInPolygon(relX, relY, dims.l, LEFT_BLIND_SPOT_POLYGON)) return true;
+                const minSafeGap = (egoL + dims.l) / 2 + 35;
+                if (Math.abs(relY) < minSafeGap) return true;
+                return false;
+              });
+
+              if (isLane1Clear) {
+                maneuver.phase = 'returning';
+              }
+            }
+            return latestTraffic;
+          });
+        } else if (maneuver.phase === 'returning') {
+          egoLaneRef.current = Math.max(1, egoLaneRef.current - dt * 0.8);
+          if (egoLaneRef.current <= 1) {
+            egoLaneRef.current = 1;
+            egoManeuverRef.current = null;
+          }
+        }
+      }
+
+      if (egoLaneRef.current !== egoLane) {
+        setEgoLane(egoLaneRef.current);
+      }
+
       animFrameRef.current = requestAnimationFrame(animate);
     };
 
@@ -927,6 +1412,8 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
     targetOpposingCount,
     AUTOMOTIVE_PALETTE,
     RANDOM_VEHICLE_TYPES,
+    egoLane,
+    isProximityEnabled,
   ]);
 
   return (
@@ -944,8 +1431,6 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
           {/* Asphalt Surface Pattern */}
           <pattern id="asphalt-pattern" width="24" height="24" patternUnits="userSpaceOnUse">
             <rect width="24" height="24" fill="#090d16" />
-            <circle cx="6" cy="6" r="1.2" fill="#1e293b" opacity="0.65" />
-            <circle cx="18" cy="14" r="0.9" fill="#1e293b" opacity="0.55" />
           </pattern>
 
           {/* Ego Vehicle Glowing Halo Filter */}
@@ -978,8 +1463,8 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
           {/* Median High-Mast Street Light Ambient Pool */}
           <radialGradient id="median-light-pool" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.70" />
-            <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+            <stop offset="40%" stopColor="#38bdf8" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
           </radialGradient>
         </defs>
 
@@ -1062,25 +1547,12 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
           strokeWidth="3"
         />
 
-        {/* Neutral Slate Diagonal Median Hatching */}
-        <g opacity="0.30">
-          {Array.from({ length: Math.ceil(viewH / 40) + 2 }).map((_, i) => (
-            <line
-              key={`med-stripe-${i}`}
-              x1={408}
-              y1={i * 40 - 20}
-              x2={558}
-              y2={i * 40 + 10}
-              stroke="#94a3b8"
-              strokeWidth="2"
-            />
-          ))}
-        </g>
 
         {/* HIGH-MAST MEDIAN STREET LIGHT FIXTURE (Centered at x=483.0 in median, scrolling smoothly) */}
         <g id="median-light-fixture" transform={`translate(483, ${medianLightY})`}>
           {/* Ambient Ground Light Pool beneath lamp */}
-          <ellipse cx="0" cy="18" rx="92" ry="40" fill="url(#median-light-pool)" opacity="0.45" />
+          <ellipse cx="0" cy="18" rx="130" ry="150" fill="url(#median-light-pool)" opacity="0.25" />
+          <ellipse cx="0" cy="18" rx="70" ry="90" fill="url(#median-light-pool)" opacity="0.4" />
 
           {/* Pole Concrete Base Flange on Median */}
           <circle cx="0" cy="38" r="7" fill="#0f172a" stroke="#475569" strokeWidth="2" />
@@ -1169,6 +1641,7 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
             <g
               key={v.id}
               transform={`translate(${absX}, ${absY}) rotate(${headingAngle})`}
+              style={isGrayscale ? { filter: 'grayscale(1) brightness(0.65)' } : undefined}
             >
               <VehicleGraphic
                 type={v.type}
@@ -1192,29 +1665,33 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
           )}
 
           {/* ADAS Blind Spot Warning Cones */}
-          {isBlindSpotWarningActive && (
+          {(isLeftZoneActive || isRightZoneActive) && (
             <g id="blind-spot-spatial-zone">
-              <path
-                d={`M -${egoW * 0.5} ${egoL * 0.1} L -${egoW * 3.2} ${egoL * 1.8} A 90 90 0 0 1 -${egoW * 0.8} ${egoL * 3.2} Z`}
-                fill={blindSpotColor}
-                fillOpacity={blindSpotOpacity}
-                filter="url(#hazard-glow-red)"
-                stroke={blindSpotColor}
-                strokeWidth="2.5"
-              />
-              <path
-                d={`M ${egoW * 0.5} ${egoL * 0.1} L ${egoW * 3.2} ${egoL * 1.8} A 90 90 0 0 0 ${egoW * 0.8} ${egoL * 3.2} Z`}
-                fill={blindSpotColor}
-                fillOpacity={blindSpotOpacity}
-                filter="url(#hazard-glow-red)"
-                stroke={blindSpotColor}
-                strokeWidth="2.5"
-              />
+              {isLeftZoneActive && (
+                <path
+                  d="M -28 11.5 L -230 207 A 100 100 0 0 1 -70 368 Z"
+                  fill={blindSpotColor}
+                  fillOpacity={blindSpotOpacity}
+                  filter="url(#hazard-glow-red)"
+                  stroke={blindSpotColor}
+                  strokeWidth="2.5"
+                />
+              )}
+              {isRightZoneActive && (
+                <path
+                  d="M 28 11.5 L 230 207 A 100 100 0 0 0 70 368 Z"
+                  fill={blindSpotColor}
+                  fillOpacity={blindSpotOpacity}
+                  filter="url(#hazard-glow-red)"
+                  stroke={blindSpotColor}
+                  strokeWidth="2.5"
+                />
+              )}
             </g>
           )}
 
           {/* ADAS Proximity Sensor Arcs */}
-          {isProximityWarningActive && (
+          {isProximityZoneActive && (
             <g id="proximity-sensor-spatial-zone">
               <circle
                 cx="0"

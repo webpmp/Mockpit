@@ -107,6 +107,17 @@ export const VirtualKeyboard: React.FC = () => {
   };
 
   // Physical keyboard passthrough & pressed key state tracking
+  const handleEnterCommit = () => {
+    const active = useMockpitStore.getState().activeInputState;
+    if (active?.onSubmit) {
+      active.onSubmit(active.value);
+    } else if (active?.onEnter) {
+      active.onEnter();
+    } else {
+      closeKeyboard();
+    }
+  };
+
   useEffect(() => {
     if (!isKeyboardVisible) return;
 
@@ -124,9 +135,15 @@ export const VirtualKeyboard: React.FC = () => {
         return next;
       });
 
-      if (key === 'Escape' || key === 'Enter') {
+      if (key === 'Escape') {
         e.preventDefault();
         closeKeyboard();
+        return;
+      }
+
+      if (key === 'Enter') {
+        e.preventDefault();
+        handleEnterCommit();
         return;
       }
 
@@ -461,7 +478,7 @@ export const VirtualKeyboard: React.FC = () => {
 
             {/* Sole Enter Commit Action Button */}
             <button
-              onClick={closeKeyboard}
+              onClick={handleEnterCommit}
               className={`px-4 sm:px-6 h-14 sm:h-16 rounded-xl font-mono text-xs sm:text-sm font-bold flex items-center justify-center transition-all cursor-pointer shadow-sm border ${
                 isKeyPressed('enter')
                   ? 'bg-sky-500/40 border-sky-400 text-sky-100'

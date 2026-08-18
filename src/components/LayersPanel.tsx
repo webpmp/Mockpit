@@ -4,88 +4,13 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
-  Gauge,
-  Battery,
-  MapPin,
-  Zap,
-  Music,
-  Thermometer,
-  Phone,
-  Compass,
-  CircleDot,
-  AlertTriangle,
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ComponentInstance, ComponentType } from '../types';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
-
-const getComponentIcon = (type: ComponentType) => {
-  switch (type) {
-    case 'speed':
-    case 'gear':
-      return Gauge;
-    case 'battery':
-      return Battery;
-    case 'map':
-    case 'navHome':
-    case 'navDestination':
-    case 'navSearch':
-      return MapPin;
-    case 'charging':
-    case 'navTripEstimate':
-      return Zap;
-    case 'media':
-      return Music;
-    case 'climate':
-      return Thermometer;
-    case 'phone':
-      return Phone;
-    case 'driveMode':
-      return Compass;
-    case 'tirePressure':
-      return CircleDot;
-    case 'warning':
-      return AlertTriangle;
-    default:
-      return Layers;
-  }
-};
-
-const getComponentColor = (type: ComponentType, customColor?: string) => {
-  if (customColor && customColor.startsWith('#')) return customColor;
-  switch (type) {
-    case 'battery':
-      return '#22c55e';
-    case 'speed':
-    case 'map':
-    case 'navHome':
-      return '#38bdf8';
-    case 'gear':
-      return '#f8fafc';
-    case 'charging':
-      return '#3b82f6';
-    case 'warning':
-    case 'navDestination':
-      return '#f59e0b';
-    case 'media':
-      return '#ec4899';
-    case 'climate':
-      return '#f97316';
-    case 'phone':
-    case 'navTripEstimate':
-      return '#a855f7';
-    case 'driveMode':
-      return '#06b6d4';
-    case 'tirePressure':
-      return '#eab308';
-    case 'navSearch':
-      return '#10b981';
-    default:
-      return '#94a3b8';
-  }
-};
+import { getComponentIcon, getComponentColor } from '../config/componentMeta';
 
 interface LayersPanelProps {
   className?: string;

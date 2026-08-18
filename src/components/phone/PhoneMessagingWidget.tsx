@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Mic, ArrowLeft, Check, CheckCheck, MessageSquare } from 'lucide-react';
-import { Conversation, INITIAL_CONVERSATIONS, QUICK_REPLY_CHIPS } from '../../data/mockPhoneData';
-import { getAvatarColor, getInitials } from '../../utils/avatarHash';
+import { Conversation, QUICK_REPLY_CHIPS } from '../../data/mockPhoneData';
+import { ContactAvatar } from '../ContactAvatar';
 import { ComponentHeader } from '../ComponentRenderer';
 import { MockpitInput } from '../MockpitInput';
+import { useMockpitStore } from '../../store/useMockpitStore';
 
 interface PhoneMessagingWidgetProps {
   component: any;
@@ -22,77 +23,61 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
   baseOpacity,
   styleOpacity,
 }) => {
-  const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const conversations = useMockpitStore((s) => s.conversations);
+  const selectedThreadId = useMockpitStore((s) => s.selectedMessagingThreadId);
+  const setSelectedThreadId = useMockpitStore((s) => s.setSelectedMessagingThreadId);
+  const sendUserMessage = useMockpitStore((s) => s.sendUserMessage);
+  const createMessagingThread = useMockpitStore((s) => s.createMessagingThread);
+
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const headerLabel = resolved.label || component.staticProps?.label || 'Messaging';
-
   const activeThread = conversations.find((c) => c.id === selectedThreadId);
+
+  // Listen for open thread event from toast tap
+  useEffect(() => {
+    const handleOpenThread = (e: CustomEvent<any>) => {
+      const threadId = e.detail?.threadId;
+      if (threadId) {
+        setSelectedThreadId(threadId);
+      }
+    };
+    window.addEventListener('mockpit-open-thread' as any, handleOpenThread as any);
+    return () => {
+      window.removeEventListener('mockpit-open-thread' as any, handleOpenThread as any);
+    };
+  }, [setSelectedThreadId]);
 
   // Listen for message handoff event
   useEffect(() => {
     const handleMessageEvent = (e: CustomEvent<any>) => {
       const contact = e.detail;
       if (contact) {
-        let existing = conversations.find((c) => c.contactId === contact.id || c.name === contact.name);
-        if (existing) {
-          setSelectedThreadId(existing.id);
-        } else {
-          // Create new conversation thread
-          const newConv: Conversation = {
-            id: `m-${Date.now()}`,
-            contactId: contact.id,
-            name: contact.name,
-            number: contact.number,
-            unreadCount: 0,
-            lastMessage: 'Started a message thread',
-            lastTimestamp: 'Just now',
-            messages: [],
-          };
-          setConversations((prev) => [newConv, ...prev]);
-          setSelectedThreadId(newConv.id);
-        }
+        createMessagingThread(contact);
       }
     };
     window.addEventListener('mockpit-message-contact' as any, handleMessageEvent as any);
     return () => {
       window.removeEventListener('mockpit-message-contact' as any, handleMessageEvent as any);
     };
-  }, [conversations]);
+  }, [createMessagingThread]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeThread?.messages]);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [activeThread?.messages, selectedThreadId]);
+
+  const closeKeyboard = useMockpitStore((s) => s.closeKeyboard);
 
   const handleSendMessage = (textToSend?: string) => {
-    const msgText = (textToSend || inputText).trim();
+    const msgText = (textToSend !== undefined ? textToSend : inputText).trim();
     if (!msgText || !selectedThreadId) return;
-
-    const newMsg = {
-      id: `msg-${Date.now()}`,
-      sender: 'user' as const,
-      text: msgText,
-      timestamp: 'Just now',
-    };
-
-    setConversations((prev) =>
-      prev.map((c) => {
-        if (c.id === selectedThreadId) {
-          return {
-            ...c,
-            lastMessage: msgText,
-            lastTimestamp: 'Just now',
-            messages: [...c.messages, newMsg],
-          };
-        }
-        return c;
-      })
-    );
-
+    sendUserMessage(selectedThreadId, msgText);
     setInputText('');
+    closeKeyboard();
   };
 
   const handleMicClick = () => {
@@ -107,12 +92,6 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
 
   const selectConversation = (conv: Conversation) => {
     setSelectedThreadId(conv.id);
-    // Clear unread count
-    if (conv.unreadCount > 0) {
-      setConversations((prev) =>
-        prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c))
-      );
-    }
   };
 
   return (
@@ -140,13 +119,13 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
         /* THREAD VIEW */
         <div className="flex-1 min-h-0 flex flex-col justify-between mt-1">
           {/* Thread Header Info */}
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80 shrink-0">
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-100 font-bold text-xs shrink-0"
-              style={{ backgroundColor: getAvatarColor(activeThread.name) }}
-            >
-              {getInitials(activeThread.name)}
-            </div>
+          <div className="flex items-center gap-2 h-9 min-h-[36px] max-h-[36px] pb-1.5 border-b border-slate-800/80 shrink-0">
+            <ContactAvatar
+              name={activeThread.name}
+              avatarUrl={activeThread.avatarUrl}
+              className="w-7 h-7"
+              fontSizeClassName="text-xs"
+            />
             <div className="min-w-0">
               <div className="text-xs font-bold text-slate-100 truncate">{activeThread.name}</div>
               <div className="text-[9px] font-mono text-slate-400 truncate">
@@ -156,7 +135,7 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
           </div>
 
           {/* Messages Bubbles List */}
-          <div className="flex-1 min-h-0 overflow-y-auto py-2 space-y-2 no-scrollbar pr-1">
+          <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto py-2 space-y-2 no-scrollbar pr-1">
             {activeThread.messages.length === 0 ? (
               <div className="text-center py-6 text-xs font-mono text-slate-500">
                 No messages yet. Send a quick reply below.
@@ -193,7 +172,6 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
                 );
               })
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Quick-Reply Chips (Automotive Low-Distraction) */}
@@ -226,7 +204,7 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
             <MockpitInput
               value={inputText}
               onChange={setInputText}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              onSubmit={(val) => handleSendMessage(val)}
               placeholder={isListening ? 'Listening...' : 'Type message...'}
               componentId={component.id}
               keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
@@ -262,12 +240,12 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="relative shrink-0">
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-slate-100 font-bold text-xs"
-                      style={{ backgroundColor: getAvatarColor(conv.name) }}
-                    >
-                      {getInitials(conv.name)}
-                    </div>
+                    <ContactAvatar
+                      name={conv.name}
+                      avatarUrl={conv.avatarUrl}
+                      className="w-9 h-9"
+                      fontSizeClassName="text-xs"
+                    />
                     {conv.unreadCount > 0 && (
                       <div className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-mono font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-slate-900">
                         {conv.unreadCount}
