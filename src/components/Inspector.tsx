@@ -1789,7 +1789,6 @@ export const Inspector: React.FC = () => {
                 { id: 'slight-right', label: 'Slight Right' },
                 { id: 'left', label: 'Left Turn' },
                 { id: 'right', label: 'Right Turn' },
-                { id: 'arrive', label: 'Arrive' },
               ];
 
               return (
@@ -1836,7 +1835,7 @@ export const Inspector: React.FC = () => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-2">
                       <div>
                         <label className="text-[10px] font-mono text-slate-400 block mb-1">Upcoming Exit / Turn</label>
                         <input
@@ -1894,9 +1893,45 @@ export const Inspector: React.FC = () => {
                         />
                       </div>
                     </div>
-                    <p className="text-[9px] font-mono text-slate-500">
-                      Glanceable, read-only driver cue adhering to automotive safety standards.
-                    </p>
+                  </div>
+
+                  {/* Appearance Configuration (Arrow & Horizon Colors) */}
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
+                    <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                      Appearance
+                    </span>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Arrow Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.arrowColor || '#f59e0b'}
+                            onChange={(e) => handleStaticPropChange('arrowColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.arrowColor || '#f59e0b'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Horizon Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.horizonColor || '#f59e0b'}
+                            onChange={(e) => handleStaticPropChange('horizonColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.horizonColor || '#f59e0b'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -1967,7 +2002,9 @@ export const Inspector: React.FC = () => {
                   key !== 'distanceToManeuver' &&
                   key !== 'maneuverType' &&
                   key !== 'laneCount' &&
-                  key !== 'activeLaneIndex'
+                  key !== 'activeLaneIndex' &&
+                  key !== 'arrowColor' &&
+                  key !== 'horizonColor'
               )
               .map(([key, val]) => {
                 const getFieldLabel = (propKey: string) => {

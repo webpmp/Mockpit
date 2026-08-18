@@ -703,7 +703,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
 
   const [traffic, setTraffic] = useState<TrafficVehicle[]>(baseTraffic);
   const [sceneObjects, setSceneObjects] = useState<SceneObject[]>(baseObjects);
-  const [roadDashOffset, setRoadDashOffset] = useState<number>(0);
+  const journeyRoadOffset = useMockpitStore((s) => s.journey?.roadOffset ?? 0);
   const [medianLightY, setMedianLightY] = useState<number>(-140);
 
   useEffect(() => {
@@ -851,7 +851,10 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
 
       // 1. Road Dash Markings Flow
       if (currentSpeed > 0) {
-        setRoadDashOffset((prev) => (prev - dirSign * dt * currentSpeed * 3.5) % 40);
+        const deltaOffset = -dirSign * dt * currentSpeed * 3.5;
+        const currentStoredOffset = useMockpitStore.getState().journey?.roadOffset ?? 0;
+        const nextRoadOffset = (currentStoredOffset + deltaOffset) % 10000;
+        useMockpitStore.getState().setJourneyState({ roadOffset: nextRoadOffset });
       }
 
       // 2. High-Mast Median Lighting Scrolling (Guaranteed single fixture on screen)
@@ -1516,7 +1519,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           stroke="#64748b"
           strokeWidth="2.5"
           strokeDasharray="18, 22"
-          strokeDashoffset={-roadDashOffset}
+          strokeDashoffset={-journeyRoadOffset}
           opacity="0.8"
         />
 
@@ -1586,7 +1589,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           stroke="#e2e8f0"
           strokeWidth="2.5"
           strokeDasharray="18, 22"
-          strokeDashoffset={roadDashOffset}
+          strokeDashoffset={journeyRoadOffset}
           opacity="0.85"
         />
 

@@ -165,6 +165,7 @@ export interface JourneyState {
   // Generic route legs and future-compatible segments
   routeProgressPercent?: number;
   destinationName?: string;
+  roadOffset?: number; // Shared continuous distance/offset driving lane divider animations
 }
 
 export type ConnectorAnchor =

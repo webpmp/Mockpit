@@ -158,6 +158,7 @@ export const INITIAL_JOURNEY_STATE: JourneyState = {
   },
   routeProgressPercent: 35,
   destinationName: 'Apple Park, Cupertino',
+  roadOffset: 0,
 };
 
 // Remove warning components from home screen seed components since warning is in notificationComponents

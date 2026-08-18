@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { ManeuverType } from '../../types';
 import { ManeuverGlyph } from './ManeuverGlyph';
@@ -10,14 +10,17 @@ interface MiniNavProps {
   maneuverType?: ManeuverType;
   laneCount?: number | string;
   activeLaneIndex?: number | string;
+  arrowColor?: string;
+  horizonColor?: string;
   width?: number;
   height?: number;
 }
 
 /**
  * Mini Nav Component
- * A compact, portrait-oriented SVG component (base 320x510px) that renders
- * a stylized first-person road perspective with a prominent directional maneuver arrow.
+ * A compact, portrait-oriented SVG component that dynamically measures
+ * its container and renders a stylized first-person road perspective with
+ * a prominent directional maneuver arrow.
  *
  * Design Constraints:
  * - Read-only, glanceable (no tap targets or button links).
@@ -33,11 +36,41 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   maneuverType: propManeuverType,
   laneCount: propLaneCount,
   activeLaneIndex: propActiveLaneIndex,
+  arrowColor: propArrowColor,
+  horizonColor: propHorizonColor,
   width,
   height,
 }) => {
   const journey = useMockpitStore((s) => s.journey);
   const activePalette = useMockpitStore((s) => s.activePalette);
+
+  // Viewport container measurement for 1:1 responsive scene rendering
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [viewportSize, setViewportSize] = useState<{ width: number; height: number }>({
+    width: 320,
+    height: 390,
+  });
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width: w, height: h } = entry.contentRect;
+        if (w > 0 && h > 0) {
+          setViewportSize({ width: Math.round(w), height: Math.round(h) });
+        }
+      }
+    });
+
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Derived colors
+  const arrowColor = propArrowColor || '#f59e0b';
+  const horizonColor = propHorizonColor || '#f59e0b';
 
   // Derived values favoring prop override or store journey state
   const currentManeuver = journey?.currentManeuver;
@@ -69,38 +102,79 @@ export const MiniNav: React.FC<MiniNavProps> = ({
     return 'Exit 12: Foothill Expwy';
   }, [propNextExit, currentManeuver]);
 
-  // Maneuver instruction subtitle (e.g. "Stay in right 2 lanes")
+  // Maneuver instruction short action-only phrases lookup structure
   const maneuverInstruction = useMemo(() => {
-    switch (maneuverType) {
-      case 'slight-right':
-        return 'Take exit on right';
-      case 'slight-left':
-        return 'Keep left at fork';
-      case 'right':
-        return 'Turn right onto ramp';
-      case 'left':
-        return 'Turn left onto ramp';
-      case 'arrive':
-        return 'Arriving at destination';
-      case 'straight':
-      default:
-        return 'Continue straight';
-    }
+    const actionPhrases: Record<ManeuverType, string> = {
+      'straight': 'Continue Straight',
+      'slight-left': 'Bear Left',
+      'slight-right': 'Keep Right',
+      'left': 'Turn Left',
+      'right': 'Turn Right',
+      'arrive': 'Arrive',
+      'sharp-left': 'Sharp Left',
+      'sharp-right': 'Sharp Right',
+      'u-turn-left': 'U-Turn',
+      'u-turn-right': 'U-Turn',
+      'merge-left': 'Merge Left',
+      'merge-right': 'Merge Right',
+      'roundabout': 'Enter Roundabout',
+    };
+
+    return actionPhrases[maneuverType] || actionPhrases['straight'];
   }, [maneuverType]);
 
   const numLanes = Number(propLaneCount) || 3;
-  const activeLane = Number(propActiveLaneIndex) || (maneuverType === 'slight-right' || maneuverType === 'right' ? numLanes - 1 : 1);
+  const activeLane = Number(propActiveLaneIndex) !== undefined && !isNaN(Number(propActiveLaneIndex))
+    ? Math.min(Math.max(0, Number(propActiveLaneIndex)), numLanes - 1)
+    : (maneuverType === 'slight-right' || maneuverType === 'right' ? numLanes - 1 : 1);
 
-  // SVG dimensions
-  const viewBoxW = 320;
-  const viewBoxH = 510;
+  // Dynamic SVG dimensions from measured viewport container
+  const W = viewportSize.width || 320;
+  const H = viewportSize.height || 390;
 
-  // Vanishing perspective geometry
-  // Road extends from bottom (y=380, x=30 to 290) to vanishing point (y=110, x=135 to 185)
-  const roadBottomLeft = { x: 24, y: 380 };
-  const roadBottomRight = { x: 296, y: 380 };
-  const roadTopLeft = { x: 138, y: 120 };
-  const roadTopRight = { x: 182, y: 120 };
+  // Vanishing perspective geometry derived proportionally from base 320x390 design
+  // Ratios:
+  // roadTopLeftX_r    = 138/320, roadTopRightX_r   = 182/320
+  // roadBottomLeftX_r = 24/320,  roadBottomRightX_r= 296/320
+  // horizonLineY_r    = 120/390, roadBottomY_r     = 380/390
+  // skyTopY_r         = 20/390
+  const roadTopLeft = { x: W * (138 / 320), y: H * (120 / 390) };
+  const roadTopRight = { x: W * (182 / 320), y: H * (120 / 390) };
+  const roadBottomLeft = { x: W * (24 / 320), y: H * (380 / 390) };
+  const roadBottomRight = { x: W * (296 / 320), y: H * (380 / 390) };
+
+  const horizonLineY = H * (120 / 390);
+  const skyTopY = H * (20 / 390);
+  const glowBottomY = H * (160 / 390);
+  const horizonGlowHeight = glowBottomY - skyTopY;
+
+  // Arrow uniform scale factor preserving 1:1 aspect ratio proportions
+  const arrowScale = Math.min(W / 320, H / 390);
+  // Centered over dynamic road center (W * 0.5) and proportional vertical horizon offset
+  const arrowTranslateX = (W - 320 * arrowScale) / 2;
+  const arrowTranslateY = (horizonLineY - 120 * arrowScale) + (10 * arrowScale);
+
+  // Programmatic calculation of Guide Lane Highlight Path Strip
+  // Insets inward proportionally to lane width (default insetRatio = 0.28)
+  const guideLanePolygonPoints = useMemo(() => {
+    const L = activeLane + 1; // 1-indexed lane (1 to numLanes)
+    const N = numLanes;
+    const topLeftX = roadTopLeft.x + (roadTopRight.x - roadTopLeft.x) * ((L - 1) / N);
+    const topRightX = roadTopLeft.x + (roadTopRight.x - roadTopLeft.x) * (L / N);
+    const bottomLeftX = roadBottomLeft.x + (roadBottomRight.x - roadBottomLeft.x) * ((L - 1) / N);
+    const bottomRightX = roadBottomLeft.x + (roadBottomRight.x - roadBottomLeft.x) * (L / N);
+
+    const laneTopWidth = topRightX - topLeftX;
+    const laneBottomWidth = bottomRightX - bottomLeftX;
+    const insetRatio = 0.28;
+
+    const insetTopLeftX = topLeftX + laneTopWidth * insetRatio;
+    const insetTopRightX = topRightX - laneTopWidth * insetRatio;
+    const insetBottomLeftX = bottomLeftX + laneBottomWidth * insetRatio;
+    const insetBottomRightX = bottomRightX - laneBottomWidth * insetRatio;
+
+    return `${insetTopLeftX.toFixed(2)},${roadTopLeft.y.toFixed(2)} ${insetTopRightX.toFixed(2)},${roadTopLeft.y.toFixed(2)} ${insetBottomRightX.toFixed(2)},${roadBottomLeft.y.toFixed(2)} ${insetBottomLeftX.toFixed(2)},${roadBottomLeft.y.toFixed(2)}`;
+  }, [activeLane, numLanes, roadTopLeft.x, roadTopLeft.y, roadTopRight.x, roadBottomLeft.x, roadBottomLeft.y, roadBottomRight.x]);
 
   return (
     <div
@@ -157,41 +231,54 @@ export const MiniNav: React.FC<MiniNavProps> = ({
       </div>
 
       {/* Center 3D Perspective Road & Directional Maneuver SVG */}
-      <div id="mini-nav-viewport" className="relative flex-1 w-full flex items-center justify-center p-2">
+      <div
+        id="mini-nav-viewport"
+        ref={viewportRef}
+        className="relative flex-1 w-full flex items-center justify-center p-0 overflow-hidden"
+      >
         <svg
-          viewBox={`0 0 ${viewBoxW} ${viewBoxH - 120}`}
-          className="w-full h-full max-h-[360px]"
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full h-full"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
             {/* Perspective Road Surface Gradient */}
-            <linearGradient id="roadGrad" x1="160" y1="120" x2="160" y2="380" gradientUnits="userSpaceOnUse">
+            <linearGradient id="roadGrad" x1={W * 0.5} y1={horizonLineY} x2={W * 0.5} y2={roadBottomLeft.y} gradientUnits="userSpaceOnUse">
               <stop offset="0%" stopColor="#0f172a" stopOpacity="0.4" />
               <stop offset="60%" stopColor="#1e293b" stopOpacity="0.8" />
               <stop offset="100%" stopColor="#334155" stopOpacity="0.95" />
             </linearGradient>
 
-            {/* Horizon Glow Gradient */}
-            <linearGradient id="horizonGlow" x1="160" y1="100" x2="160" y2="150" gradientUnits="userSpaceOnUse">
+            {/* Horizon Glow Gradient: Dual fade spanning from skyTopY (sky), peaking at horizonLineY (horizon line), dissolving into glowBottomY (road) */}
+            <linearGradient id="horizonGlow" x1={W * 0.5} y1={skyTopY} x2={W * 0.5} y2={glowBottomY} gradientUnits="userSpaceOnUse">
               <stop
                 offset="0%"
-                stopColor={activePalette?.primary || '#38bdf8'}
-                stopOpacity="0.25"
+                stopColor={horizonColor}
+                stopOpacity="0"
               />
-              <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
+              <stop
+                offset={`${(((horizonLineY - skyTopY) / (glowBottomY - skyTopY)) * 100).toFixed(1)}%`}
+                stopColor={horizonColor}
+                stopOpacity="0.3"
+              />
+              <stop
+                offset="100%"
+                stopColor={horizonColor}
+                stopOpacity="0"
+              />
             </linearGradient>
 
             {/* Maneuver Arrow Primary Gradient */}
             <linearGradient id="arrowGrad" x1="160" y1="130" x2="160" y2="300" gradientUnits="userSpaceOnUse">
               <stop
                 offset="0%"
-                stopColor={activePalette?.primary || '#38bdf8'}
+                stopColor={arrowColor}
                 stopOpacity="1"
               />
               <stop
                 offset="100%"
-                stopColor={activePalette?.secondary || '#0284c7'}
+                stopColor={`color-mix(in srgb, ${arrowColor} 65%, #000)`}
                 stopOpacity="0.85"
               />
             </linearGradient>
@@ -202,11 +289,11 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             </filter>
           </defs>
 
-          {/* Horizon Background Mesh */}
-          <rect x="0" y="80" width={viewBoxW} height="70" fill="url(#horizonGlow)" />
+          {/* Horizon Background Mesh: Fills full width, spans from skyTopY to glowBottomY */}
+          <rect x="0" y={skyTopY} width={W} height={horizonGlowHeight} fill="url(#horizonGlow)" />
 
           {/* Perspective Horizon Ground Lines */}
-          <line x1="0" y1="120" x2={viewBoxW} y2="120" stroke="#334155" strokeWidth="1" strokeOpacity="0.5" />
+          <line x1="0" y1={horizonLineY} x2={W} y2={horizonLineY} stroke="#334155" strokeWidth="1" strokeOpacity="0.5" />
 
           {/* 3D Road Bed Polygon */}
           <polygon
@@ -241,6 +328,11 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             const ratio = (i + 1) / numLanes;
             const topX = roadTopLeft.x + (roadTopRight.x - roadTopLeft.x) * ratio;
             const botX = roadBottomLeft.x + (roadBottomRight.x - roadBottomLeft.x) * ratio;
+            const dx = botX - topX;
+            const dy = roadBottomLeft.y - roadTopLeft.y;
+            const lineLength = Math.sqrt(dx * dx + dy * dy);
+            // Scale offset proportionally to lane length in MiniNav vs ODV viewport (approx 260px / 400px = 0.65)
+            const scaledOffset = (journey?.roadOffset ?? 0) * (lineLength / 400);
 
             return (
               <line
@@ -252,24 +344,24 @@ export const MiniNav: React.FC<MiniNavProps> = ({
                 stroke="#64748b"
                 strokeWidth="1.5"
                 strokeDasharray="14 12"
+                strokeDashoffset={scaledOffset}
                 strokeOpacity="0.6"
               />
             );
           })}
 
-          {/* Recommended Path Ribbon (Underlay behind arrow) */}
+          {/* Recommended Path Ribbon (Underlay behind arrow) - Accurately aligned to guide lane boundaries */}
           <polygon
-            points={`150,${roadTopLeft.y} 170,${roadTopLeft.y} ${
-              roadBottomLeft.x + (roadBottomRight.x - roadBottomLeft.x) * ((activeLane + 0.8) / numLanes)
-            },${roadBottomLeft.y} ${
-              roadBottomLeft.x + (roadBottomRight.x - roadBottomLeft.x) * ((activeLane + 0.2) / numLanes)
-            },${roadBottomLeft.y}`}
-            fill={activePalette?.primary || '#38bdf8'}
-            fillOpacity="0.12"
+            points={guideLanePolygonPoints}
+            fill={arrowColor}
+            fillOpacity="0.16"
           />
 
-          {/* Perspective Maneuver Arrow Glyph (Bold, High Contrast, Automotive Realism) */}
-          <g id="maneuver-arrow-projection" transform="translate(0, 10)">
+          {/* Perspective Maneuver Arrow Glyph (Uniformly scaled and centered over the road) */}
+          <g
+            id="maneuver-arrow-projection"
+            transform={`translate(${arrowTranslateX.toFixed(2)}, ${arrowTranslateY.toFixed(2)}) scale(${arrowScale.toFixed(4)})`}
+          >
             {/* Arrow Base Drop Shadow */}
             <g opacity="0.4" transform="translate(0, 4)">
               <ManeuverGlyph type={maneuverType} color="#020617" />
@@ -285,13 +377,13 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             <g opacity="0.6">
               <ManeuverGlyph
                 type={maneuverType}
-                color={activePalette?.primary || '#38bdf8'}
+                color={arrowColor}
               />
             </g>
           </g>
 
           {/* Road Bottom Hood Gradient Cutoff */}
-          <rect x="0" y="360" width={viewBoxW} height="30" fill="url(#roadGrad)" opacity="0.5" />
+          <rect x="0" y={roadBottomLeft.y - 20 * arrowScale} width={W} height={30 * arrowScale} fill="url(#roadGrad)" opacity="0.5" />
         </svg>
       </div>
 
@@ -312,14 +404,15 @@ export const MiniNav: React.FC<MiniNavProps> = ({
                 key={`lane-pill-${idx}`}
                 className={`flex items-center justify-center w-6 h-6 rounded-md text-[11px] font-mono font-bold transition-all ${
                   isGuideLane
-                    ? 'bg-sky-500/20 text-sky-300 border border-sky-500/60'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60'
                     : 'bg-slate-800/80 text-slate-500 border border-slate-700/40'
                 }`}
                 style={
                   isGuideLane
                     ? {
-                        borderColor: `var(--color-primary, #38bdf8)`,
-                        color: `var(--color-primary, #38bdf8)`,
+                        borderColor: arrowColor,
+                        color: arrowColor,
+                        backgroundColor: `color-mix(in srgb, ${arrowColor} 20%, transparent)`,
                       }
                     : undefined
                 }

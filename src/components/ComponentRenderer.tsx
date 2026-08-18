@@ -1970,6 +1970,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             maneuverType={resolved.maneuverType as any}
             laneCount={resolved.laneCount}
             activeLaneIndex={resolved.activeLaneIndex}
+            arrowColor={resolved.arrowColor || component.staticProps?.arrowColor}
+            horizonColor={resolved.horizonColor || component.staticProps?.horizonColor}
             width={component.width}
             height={component.height}
           />
