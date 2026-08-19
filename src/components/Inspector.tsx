@@ -5,6 +5,7 @@ import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, Layout,
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { LayersPanel } from './LayersPanel';
 import { NumericStepper } from './NumericStepper';
+import { ManeuverGlyph } from './navigation/ManeuverGlyph';
 
 const ScreenPropertiesPanel: React.FC = () => {
   const activeView = useMockpitStore((s) => s.activeView);
@@ -268,6 +269,7 @@ export const Inspector: React.FC = () => {
   const components = useMockpitStore((s) => s.components);
   const notificationComponents = useMockpitStore((s) => s.notificationComponents);
   const notificationStackPosition = useMockpitStore((s) => s.notificationStackPosition);
+  const activePalette = useMockpitStore((s) => s.activePalette);
   const setNotificationStackPosition = useMockpitStore((s) => s.setNotificationStackPosition);
   const selectComponent = useMockpitStore((s) => s.selectComponent);
   const updateComponentStaticProps = useMockpitStore((s) => s.updateComponentStaticProps);
@@ -1781,7 +1783,6 @@ export const Inspector: React.FC = () => {
             {selectedComp.type === 'miniNav' && (() => {
               const currentManeuverType = selectedComp.staticProps.maneuverType || 'straight';
               const numLanes = parseInt(selectedComp.staticProps.laneCount || '3', 10);
-              const activeLane = parseInt(selectedComp.staticProps.activeLaneIndex || '1', 10);
 
               const maneuverOptions: Array<{ id: ManeuverType; label: string }> = [
                 { id: 'straight', label: 'Straight' },
@@ -1810,13 +1811,22 @@ export const Inspector: React.FC = () => {
                             // Also synchronize with the active journey store slice
                             useMockpitStore.getState().setManeuverType(opt.id);
                           }}
-                          className={`py-1.5 px-2 text-[10px] font-mono font-bold rounded capitalize transition-colors ${
+                          className={`flex flex-col items-center justify-center gap-1 py-1.5 px-2 text-[10px] font-mono font-bold rounded capitalize transition-colors ${
                             currentManeuverType === opt.id
                               ? 'bg-sky-500 text-slate-950 shadow'
                               : 'text-slate-400 hover:text-slate-200'
                           }`}
                         >
-                          {opt.label}
+                          <svg
+                            width="16"
+                            height="19"
+                            viewBox="80 120 160 190"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <ManeuverGlyph type={opt.id} />
+                          </svg>
+                          <span>{opt.label}</span>
                         </button>
                       ))}
                     </div>
@@ -1875,27 +1885,13 @@ export const Inspector: React.FC = () => {
                           step={1}
                           onChange={(val) => {
                             handleStaticPropChange('laneCount', String(val));
-                            if (activeLane >= val) {
-                              handleStaticPropChange('activeLaneIndex', String(val - 1));
-                            }
                           }}
-                        />
-                      </div>
-
-                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
-                        <span className="text-[11px] font-mono text-slate-300 font-medium">Guide Lane</span>
-                        <NumericStepper
-                          value={activeLane + 1}
-                          min={1}
-                          max={numLanes}
-                          step={1}
-                          onChange={(val) => handleStaticPropChange('activeLaneIndex', String(val - 1))}
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Appearance Configuration (Arrow & Horizon Colors) */}
+                  {/* Appearance Configuration (Arrow, Horizon & Guide Lane Colors) */}
                   <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
                     <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
                       Appearance
@@ -1928,6 +1924,36 @@ export const Inspector: React.FC = () => {
                           />
                           <span className="text-[10px] font-mono text-slate-400">
                             {selectedComp.staticProps.horizonColor || '#f59e0b'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Guide Lane Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.guideLaneColor || selectedComp.staticProps.arrowColor || '#f59e0b'}
+                            onChange={(e) => handleStaticPropChange('guideLaneColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.guideLaneColor || selectedComp.staticProps.arrowColor || '#f59e0b'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Highway Badge Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.highwayBadgeColor || activePalette?.primary || '#38bdf8'}
+                            onChange={(e) => handleStaticPropChange('highwayBadgeColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.highwayBadgeColor || activePalette?.primary || '#38bdf8'}
                           </span>
                         </div>
                       </div>
@@ -2004,7 +2030,9 @@ export const Inspector: React.FC = () => {
                   key !== 'laneCount' &&
                   key !== 'activeLaneIndex' &&
                   key !== 'arrowColor' &&
-                  key !== 'horizonColor'
+                  key !== 'horizonColor' &&
+                  key !== 'guideLaneColor' &&
+                  key !== 'highwayBadgeColor'
               )
               .map(([key, val]) => {
                 const getFieldLabel = (propKey: string) => {

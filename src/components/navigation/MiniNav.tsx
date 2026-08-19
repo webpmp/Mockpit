@@ -9,9 +9,12 @@ interface MiniNavProps {
   distanceToManeuver?: string;
   maneuverType?: ManeuverType;
   laneCount?: number | string;
-  activeLaneIndex?: number | string;
+  showManeuverDirection?: boolean;
+  showGuideLane?: boolean;
   arrowColor?: string;
   horizonColor?: string;
+  guideLaneColor?: string;
+  highwayBadgeColor?: string;
   width?: number;
   height?: number;
 }
@@ -35,9 +38,12 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   distanceToManeuver: propDistance,
   maneuverType: propManeuverType,
   laneCount: propLaneCount,
-  activeLaneIndex: propActiveLaneIndex,
+  showManeuverDirection = true,
+  showGuideLane = true,
   arrowColor: propArrowColor,
   horizonColor: propHorizonColor,
+  guideLaneColor: propGuideLaneColor,
+  highwayBadgeColor: propHighwayBadgeColor,
   width,
   height,
 }) => {
@@ -71,6 +77,8 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   // Derived colors
   const arrowColor = propArrowColor || '#f59e0b';
   const horizonColor = propHorizonColor || '#f59e0b';
+  const guideLaneColor = propGuideLaneColor || arrowColor;
+  const highwayBadgeColor = propHighwayBadgeColor;
 
   // Derived values favoring prop override or store journey state
   const currentManeuver = journey?.currentManeuver;
@@ -124,9 +132,15 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   }, [maneuverType]);
 
   const numLanes = Number(propLaneCount) || 3;
-  const activeLane = Number(propActiveLaneIndex) !== undefined && !isNaN(Number(propActiveLaneIndex))
-    ? Math.min(Math.max(0, Number(propActiveLaneIndex)), numLanes - 1)
-    : (maneuverType === 'slight-right' || maneuverType === 'right' ? numLanes - 1 : 1);
+
+  function getRecommendedLaneIndex(type: ManeuverType, lanes: number): number | null {
+    if (type === 'slight-left' || type === 'left') return 0;
+    if (type === 'slight-right' || type === 'right') return lanes - 1;
+    // 'straight' and any unmapped type: no single-lane emphasis (per v1 B1)
+    return null;
+  }
+
+  const activeLane = getRecommendedLaneIndex(maneuverType, numLanes);
 
   // Dynamic SVG dimensions from measured viewport container
   const W = viewportSize.width || 320;
@@ -148,15 +162,10 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   const glowBottomY = H * (160 / 390);
   const horizonGlowHeight = glowBottomY - skyTopY;
 
-  // Arrow uniform scale factor preserving 1:1 aspect ratio proportions
-  const arrowScale = Math.min(W / 320, H / 390);
-  // Centered over dynamic road center (W * 0.5) and proportional vertical horizon offset
-  const arrowTranslateX = (W - 320 * arrowScale) / 2;
-  const arrowTranslateY = (horizonLineY - 120 * arrowScale) + (10 * arrowScale);
-
   // Programmatic calculation of Guide Lane Highlight Path Strip
   // Insets inward proportionally to lane width (default insetRatio = 0.28)
   const guideLanePolygonPoints = useMemo(() => {
+    if (activeLane === null) return '';
     const L = activeLane + 1; // 1-indexed lane (1 to numLanes)
     const N = numLanes;
     const topLeftX = roadTopLeft.x + (roadTopRight.x - roadTopLeft.x) * ((L - 1) / N);
@@ -188,46 +197,60 @@ export const MiniNav: React.FC<MiniNavProps> = ({
       {/* Top Header: Current Highway & Maneuver Distance */}
       <div
         id="mini-nav-header"
-        className="w-full px-5 pt-4 pb-2 z-10 flex flex-col items-start justify-start border-b border-slate-800/50 bg-gradient-to-b from-slate-900/90 to-transparent"
+        className="w-full px-5 pt-5 pb-4 z-10 flex flex-col items-start justify-start bg-gradient-to-b from-slate-900/90 to-transparent"
       >
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <span
               id="mini-nav-highway-badge"
-              className="px-2 py-0.5 rounded text-[11px] font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400"
+              className="px-2.5 py-1 rounded text-sm font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400"
               style={{
-                borderColor: `color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)`,
-                backgroundColor: `color-mix(in srgb, var(--color-primary, #38bdf8) 15%, transparent)`,
-                color: `var(--color-primary, #38bdf8)`,
+                borderColor: `color-mix(in srgb, ${highwayBadgeColor || 'var(--color-primary, #38bdf8)'} 40%, transparent)`,
+                backgroundColor: `color-mix(in srgb, ${highwayBadgeColor || 'var(--color-primary, #38bdf8)'} 15%, transparent)`,
+                color: highwayBadgeColor || 'var(--color-primary, #38bdf8)',
               }}
             >
               {currentHighway}
             </span>
           </div>
 
-          <span
-            id="mini-nav-distance-text"
-            className="text-xl font-bold font-mono tracking-tight text-slate-100"
-          >
-            {distanceFormatted}
-          </span>
+          {/* Wrap distance + icon together so both sit on the right */}
+          <div className="flex items-center gap-2">
+            {showManeuverDirection && (
+              <svg
+                width="44"
+                height="52"
+                viewBox="80 120 160 190"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <ManeuverGlyph type={maneuverType} color={arrowColor} />
+              </svg>
+            )}
+            <span
+              id="mini-nav-distance-text"
+              className="text-xl font-bold font-mono tracking-tight text-slate-100"
+            >
+              {distanceFormatted}
+            </span>
+          </div>
         </div>
 
-        <div className="mt-1 w-full flex items-baseline justify-between gap-2">
-          <h3
-            id="mini-nav-street-title"
-            className="text-sm font-semibold text-slate-200 tracking-tight truncate max-w-[200px]"
-            title={exitOrStreetName}
-          >
-            {exitOrStreetName}
-          </h3>
+        <h3
+          id="mini-nav-street-title"
+          className="mt-2 w-full text-lg font-semibold text-slate-200 tracking-tight leading-snug"
+        >
+          {exitOrStreetName}
+        </h3>
+
+        {maneuverType !== 'straight' && (
           <span
             id="mini-nav-instruction-sub"
-            className="text-[11px] font-mono text-slate-400 whitespace-nowrap"
+            className="mt-1 text-[11px] font-mono text-slate-400"
           >
             {maneuverInstruction}
           </span>
-        </div>
+        )}
       </div>
 
       {/* Center 3D Perspective Road & Directional Maneuver SVG */}
@@ -266,20 +289,6 @@ export const MiniNav: React.FC<MiniNavProps> = ({
                 offset="100%"
                 stopColor={horizonColor}
                 stopOpacity="0"
-              />
-            </linearGradient>
-
-            {/* Maneuver Arrow Primary Gradient */}
-            <linearGradient id="arrowGrad" x1="160" y1="130" x2="160" y2="300" gradientUnits="userSpaceOnUse">
-              <stop
-                offset="0%"
-                stopColor={arrowColor}
-                stopOpacity="1"
-              />
-              <stop
-                offset="100%"
-                stopColor={`color-mix(in srgb, ${arrowColor} 65%, #000)`}
-                stopOpacity="0.85"
               />
             </linearGradient>
 
@@ -350,82 +359,15 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             );
           })}
 
-          {/* Recommended Path Ribbon (Underlay behind arrow) - Accurately aligned to guide lane boundaries */}
-          <polygon
-            points={guideLanePolygonPoints}
-            fill={arrowColor}
-            fillOpacity="0.16"
-          />
-
-          {/* Perspective Maneuver Arrow Glyph (Uniformly scaled and centered over the road) */}
-          <g
-            id="maneuver-arrow-projection"
-            transform={`translate(${arrowTranslateX.toFixed(2)}, ${arrowTranslateY.toFixed(2)}) scale(${arrowScale.toFixed(4)})`}
-          >
-            {/* Arrow Base Drop Shadow */}
-            <g opacity="0.4" transform="translate(0, 4)">
-              <ManeuverGlyph type={maneuverType} color="#020617" />
-            </g>
-            
-            {/* Main Arrow */}
-            <ManeuverGlyph
-              type={maneuverType}
-              color="url(#arrowGrad)"
+          {/* Recommended Path Ribbon - Accurately aligned to guide lane boundaries */}
+          {activeLane !== null && showGuideLane && (
+            <polygon
+              points={guideLanePolygonPoints}
+              fill={guideLaneColor}
+              fillOpacity="0.16"
             />
-
-            {/* Crisp Inner Highlighting */}
-            <g opacity="0.6">
-              <ManeuverGlyph
-                type={maneuverType}
-                color={arrowColor}
-              />
-            </g>
-          </g>
-
-          {/* Road Bottom Hood Gradient Cutoff */}
-          <rect x="0" y={roadBottomLeft.y - 20 * arrowScale} width={W} height={30 * arrowScale} fill="url(#roadGrad)" opacity="0.5" />
+          )}
         </svg>
-      </div>
-
-      {/* Bottom Lane Guidance Indicators */}
-      <div
-        id="mini-nav-lane-guidance"
-        className="w-full px-5 py-2.5 z-10 flex items-center justify-between border-t border-slate-800/60 bg-slate-900/60"
-      >
-        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-          Lanes
-        </span>
-
-        <div className="flex items-center gap-1.5" id="mini-nav-lanes-strip">
-          {Array.from({ length: numLanes }).map((_, idx) => {
-            const isGuideLane = idx === activeLane;
-            return (
-              <div
-                key={`lane-pill-${idx}`}
-                className={`flex items-center justify-center w-6 h-6 rounded-md text-[11px] font-mono font-bold transition-all ${
-                  isGuideLane
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60'
-                    : 'bg-slate-800/80 text-slate-500 border border-slate-700/40'
-                }`}
-                style={
-                  isGuideLane
-                    ? {
-                        borderColor: arrowColor,
-                        color: arrowColor,
-                        backgroundColor: `color-mix(in srgb, ${arrowColor} 20%, transparent)`,
-                      }
-                    : undefined
-                }
-              >
-                {isGuideLane ? '▲' : '·'}
-              </div>
-            );
-          })}
-        </div>
-
-        <span className="text-[10px] font-mono text-slate-400">
-          Lane {activeLane + 1} of {numLanes}
-        </span>
       </div>
     </div>
   );

@@ -1426,14 +1426,14 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     >
       {/* SVG Canvas for Overhead Vector Driving Environment */}
       <svg
-        className="w-full h-full absolute inset-0 z-0"
+        className="w-full absolute top-0 left-0 h-[calc(100%-15px)] z-0"
         viewBox={`0 0 966 ${viewH}`}
         preserveAspectRatio="xMidYMid slice"
       >
         <defs>
           {/* Asphalt Surface Pattern */}
           <pattern id="asphalt-pattern" width="24" height="24" patternUnits="userSpaceOnUse">
-            <rect width="24" height="24" fill="#090d16" />
+            <rect width="24" height="24" fill="#334155" />
           </pattern>
 
           {/* Ego Vehicle Glowing Halo Filter */}
@@ -1529,7 +1529,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           y={0}
           width={165.2}
           height={viewH}
-          fill="#1e293b"
+          fill="#64748b"
         />
 
         {/* Concrete Curb Borders */}
@@ -1538,7 +1538,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           y1={0}
           x2={400.4}
           y2={viewH}
-          stroke="#64748b"
+          stroke="#334155"
           strokeWidth="3"
         />
         <line
@@ -1546,7 +1546,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           y1={0}
           x2={565.6}
           y2={viewH}
-          stroke="#64748b"
+          stroke="#334155"
           strokeWidth="3"
         />
 
@@ -1586,7 +1586,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           y1={0}
           x2={730.8}
           y2={viewH}
-          stroke="#e2e8f0"
+          stroke="#64748b"
           strokeWidth="2.5"
           strokeDasharray="18, 22"
           strokeDashoffset={journeyRoadOffset}
