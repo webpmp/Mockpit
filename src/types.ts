@@ -114,6 +114,7 @@ export type VehicleState = {
   cruiseSetSpeed?: number;
   blindSpotWarning?: boolean;
   proximityWarning?: boolean;
+  tirePressureWarning?: boolean;
 };
 
 export type BindingCondition = '<' | '>' | '=' | '!=' | '>=' | '<=';

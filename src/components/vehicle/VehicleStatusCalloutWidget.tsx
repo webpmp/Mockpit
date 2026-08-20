@@ -103,72 +103,58 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
       style={{ opacity: styleOpacity }}
     >
       {/* Top Header Row */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ backgroundColor: customColor }}
-            />
-            <h4 className="text-xs font-bold text-slate-100 truncate tracking-tight">
-              {title}
-            </h4>
-          </div>
-          {description && (
-            <p className="text-[11px] text-slate-400 line-clamp-1 leading-tight font-normal">
-              {description}
-            </p>
-          )}
-        </div>
-
-        {/* Health Indicator (Mutually Exclusive: None | Percent | RGY) */}
-        {healthType === 'rgy' && (
-          <div
-            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold shrink-0 ${rgyConfig.bg} ${rgyConfig.border} ${rgyConfig.text}`}
-          >
-            {/* STATIC colored dot - NO PULSING ANIMATION */}
-            <span className={`w-2 h-2 rounded-full shrink-0 ${rgyConfig.dot}`} />
-            <span>{rgyConfig.label}</span>
-          </div>
-        )}
-
-        {healthType === 'percent' && (
-          <div className="flex flex-col items-end gap-0.5 shrink-0">
-            <div className="flex items-baseline gap-0.5">
-              <span className="text-xs font-mono font-extrabold text-sky-400">{percentVal}</span>
-              <span className="text-[9px] font-mono text-slate-400 font-bold">%</span>
-            </div>
-            <div className="w-14 h-1.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/60">
-              <div
-                className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 rounded-full transition-all duration-300"
-                style={{ width: `${percentVal}%` }}
-              />
-            </div>
-          </div>
-        )}
+      <div className="flex items-center h-9 min-h-[36px] max-h-[36px] text-[0.8125rem] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60">
+        <span className="flex items-center gap-2 min-w-0 truncate">
+          <span
+            className="w-1.5 h-1.5 rounded-full shrink-0"
+            style={{ backgroundColor: customColor }}
+          />
+          <span className="truncate">{title}</span>
+        </span>
       </div>
 
-      {/* Status Code & Message Block */}
-      {(Boolean(statusCode) || Boolean(statusMessage)) && (
-        <div className="my-1.5 p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 flex flex-col gap-1">
-          {Boolean(statusCode) && (
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] font-mono text-slate-500 uppercase font-bold">CODE</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[10px] font-bold border border-slate-700">
-                  {statusCode}
-                </span>
-              </div>
-            </div>
-          )}
+      {/* Status Detail & Message Block */}
+      <div className="my-1.5 p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 flex flex-col gap-1.5">
+        {/* Variant 1: RGY Badge + CODE chip */}
+        {healthType === 'rgy' && (
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold shrink-0 ${rgyConfig.bg} ${rgyConfig.border} ${rgyConfig.text}`}
+            >
+              {rgyConfig.label}
+            </span>
+            {Boolean(statusCode) && (
+              <span className="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[10px] font-bold border border-slate-700">
+                {statusCode}
+              </span>
+            )}
+          </div>
+        )}
 
-          {Boolean(statusMessage) && (
-            <p className="text-[10px] text-slate-300/90 font-mono leading-relaxed line-clamp-2">
-              {statusMessage}
-            </p>
-          )}
-        </div>
-      )}
+        {/* Variant 2: Bare Percentage Value (Fixed sky blue) */}
+        {healthType === 'percent' && (
+          <div className="flex items-center">
+            <span className="text-xs font-black font-mono text-sky-400">
+              {percentVal}%
+            </span>
+          </div>
+        )}
+
+        {/* Code chip fallback if healthType is 'none' but code exists */}
+        {healthType === 'none' && Boolean(statusCode) && (
+          <div className="flex items-center">
+            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[10px] font-bold border border-slate-700">
+              {statusCode}
+            </span>
+          </div>
+        )}
+
+        {Boolean(statusMessage) && (
+          <p className="text-[10px] text-slate-300/90 font-mono leading-relaxed line-clamp-2">
+            {statusMessage}
+          </p>
+        )}
+      </div>
 
       {/* 8 Source Anchor Interactive Handles (Visible when selected in Editor mode) */}
       {!isPresentation && isSelected && (

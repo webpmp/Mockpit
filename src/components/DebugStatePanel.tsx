@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMockpitStore, isPresetActive } from '../store/useMockpitStore';
 import { DriveModeState, GearState } from '../types';
-import { Zap, AlertTriangle, ChevronDown, ChevronUp, RotateCcw, Gauge, ShieldAlert, Eye, Sun, Car, MessageSquare } from 'lucide-react';
+import { Zap, AlertTriangle, ChevronDown, ChevronUp, RotateCcw, Gauge, ShieldAlert, Eye, Sun, Car, MessageSquare, CircleDot } from 'lucide-react';
 
 const SteeringWheel: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
@@ -32,6 +32,7 @@ const PRESET_SCENARIOS = [
   { id: 'highway_cruise', label: '75 MPH Highway' },
   { id: 'charging_station', label: 'Charging' },
   { id: 'door_alert', label: 'Door Ajar' },
+  { id: 'tire_warning', label: 'Tire Pressure' },
 ] as const;
 
 export const DebugStatePanel: React.FC = () => {
@@ -531,6 +532,40 @@ export const DebugStatePanel: React.FC = () => {
                   <div
                     className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
                       vehicleState.proximityWarning ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Tire Pressure Warning Toggle */}
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0 pr-1">
+                  <div
+                    className={`p-2 rounded-xl shrink-0 ${
+                      vehicleState.tirePressureWarning ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    <CircleDot className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider truncate">
+                      Tire Pressure
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-200 truncate">
+                      {vehicleState.tirePressureWarning ? 'Low Pressure' : 'Normal'}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setVehicleState({ tirePressureWarning: !vehicleState.tirePressureWarning })}
+                  className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
+                    vehicleState.tirePressureWarning ? 'bg-amber-500' : 'bg-slate-800'
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                      vehicleState.tirePressureWarning ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>

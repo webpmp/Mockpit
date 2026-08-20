@@ -214,6 +214,7 @@ const VEHICLE_STATE_FIELDS: Array<{ field: keyof VehicleState; label: string; ty
   { field: 'isCharging', label: 'Is Charging', type: 'boolean' },
   { field: 'doorOpen', label: 'Door Open', type: 'boolean' },
   { field: 'cruiseControlActive', label: 'Cruise Control Active', type: 'boolean' },
+  { field: 'tirePressureWarning', label: 'Tire Pressure Warning', type: 'boolean' },
 ];
 
 const CONDITIONS: BindingCondition[] = ['<', '>', '=', '!=', '>='];
@@ -350,7 +351,8 @@ export const Inspector: React.FC = () => {
     if (
       newBinding.stateField === 'isCharging' ||
       newBinding.stateField === 'doorOpen' ||
-      newBinding.stateField === 'cruiseControlActive'
+      newBinding.stateField === 'cruiseControlActive' ||
+      newBinding.stateField === 'tirePressureWarning'
     ) {
       typedValue = newBinding.value === 'true';
     } else if (newBinding.stateField === 'speed' || newBinding.stateField === 'batteryPercent') {
@@ -2032,7 +2034,10 @@ export const Inspector: React.FC = () => {
                   key !== 'arrowColor' &&
                   key !== 'horizonColor' &&
                   key !== 'guideLaneColor' &&
-                  key !== 'highwayBadgeColor'
+                  key !== 'highwayBadgeColor' &&
+                  key !== 'trafficDensity' &&
+                  key !== 'grayscaleTraffic' &&
+                  !(selectedComp.type === 'overheadVisualization' && key === 'color')
               )
               .map(([key, val]) => {
                 const getFieldLabel = (propKey: string) => {
@@ -2042,10 +2047,11 @@ export const Inspector: React.FC = () => {
                   if (propKey === 'rearRight') return 'Rear Right';
                   if (propKey === 'buttonLabel') return 'Button Label';
                   if (propKey === 'reportTitle') return 'Report Title';
+                  if (propKey === 'details') return 'Resolution Details';
                   return propKey;
                 };
 
-                const isCustomLabel = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight', 'buttonLabel', 'reportTitle'].includes(key);
+                const isCustomLabel = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight', 'buttonLabel', 'reportTitle', 'details'].includes(key);
 
                 return (
                 <div key={key} className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
@@ -2065,6 +2071,14 @@ export const Inspector: React.FC = () => {
                         className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
                       />
                     </div>
+                  ) : key === 'details' ? (
+                    <textarea
+                      value={val}
+                      onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                      placeholder="Optional resolution instructions"
+                      rows={2}
+                      className="w-44 bg-slate-900 px-2 py-1 rounded text-slate-200 font-sans text-xs focus:outline-none border border-slate-700 resize-none"
+                    />
                   ) : key === 'severity' ? (
                     <select
                       value={val}
@@ -2256,7 +2270,8 @@ export const Inspector: React.FC = () => {
                         <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Value</label>
                         {newBinding.stateField === 'isCharging' ||
                         newBinding.stateField === 'doorOpen' ||
-                        newBinding.stateField === 'cruiseControlActive' ? (
+                        newBinding.stateField === 'cruiseControlActive' ||
+                        newBinding.stateField === 'tirePressureWarning' ? (
                           <select
                             value={newBinding.value}
                             onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}

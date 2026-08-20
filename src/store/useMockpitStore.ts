@@ -132,6 +132,7 @@ const INITIAL_VEHICLE_STATE: VehicleState = {
   cruiseControlActive: false,
   blindSpotWarning: true,
   proximityWarning: true,
+  tirePressureWarning: false,
 };
 
 export const INITIAL_JOURNEY_STATE: JourneyState = {
@@ -176,6 +177,7 @@ const DEFAULT_NOTIFICATION_COMPONENTS: ComponentInstance[] = [
       label: 'DOOR ALERT',
       icon: 'door-open',
       message: 'DRIVER DOOR AJAR',
+      details: 'Check and securely close all doors.',
       visible: 'false',
       color: '#f59e0b',
       severity: 'warning',
@@ -211,6 +213,7 @@ const DEFAULT_NOTIFICATION_COMPONENTS: ComponentInstance[] = [
       label: 'BATTERY ALERT',
       icon: 'battery-warning',
       message: 'LOW BATTERY',
+      details: 'Recharge soon to maintain optimal vehicle systems and range.',
       visible: 'false',
       color: '#ef4444',
       severity: 'critical',
@@ -230,6 +233,41 @@ const DEFAULT_NOTIFICATION_COMPONENTS: ComponentInstance[] = [
         stateField: 'batteryPercent',
         condition: '>',
         value: 20,
+        targetProp: 'visible',
+        targetValue: 'false',
+      },
+    ],
+  },
+  {
+    id: 'comp-warning-tpms-1',
+    type: 'warning',
+    x: 0,
+    y: 0,
+    width: 380,
+    height: 120,
+    staticProps: {
+      label: 'TIRE PRESSURE ALERT',
+      icon: 'tire',
+      message: 'LOW TIRE PRESSURE',
+      visible: 'false',
+      color: '#f59e0b',
+      severity: 'warning',
+      triggerMode: 'condition',
+    },
+    bindings: [
+      {
+        id: 'bind-tpms-1',
+        stateField: 'tirePressureWarning',
+        condition: '=',
+        value: true,
+        targetProp: 'visible',
+        targetValue: 'true',
+      },
+      {
+        id: 'bind-tpms-2',
+        stateField: 'tirePressureWarning',
+        condition: '=',
+        value: false,
         targetProp: 'visible',
         targetValue: 'false',
       },
@@ -403,6 +441,7 @@ function loadSavedNotificationComponents(): ComponentInstance[] {
               staticProps: {
                 ...defaultComp.staticProps,
                 ...c.staticProps,
+                details: c.staticProps?.details !== undefined ? c.staticProps.details : defaultComp.staticProps.details,
                 label: c.staticProps?.label || defaultComp.staticProps.label,
                 icon: c.staticProps?.icon || defaultComp.staticProps.icon,
                 triggerMode: c.staticProps?.triggerMode || defaultComp.staticProps.triggerMode,
@@ -673,7 +712,7 @@ interface MockpitStore {
   // Vehicle State Actions
   setVehicleState: (partial: Partial<VehicleState>) => void;
   resetVehicleState: () => void;
-  applyPresetScenario: (scenario: 'low_battery' | 'highway_cruise' | 'charging_station' | 'door_alert' | 'parked') => void;
+  applyPresetScenario: (scenario: 'low_battery' | 'highway_cruise' | 'charging_station' | 'door_alert' | 'tire_warning' | 'parked') => void;
 
   // Notifications
   triggerEventNotification: (eventName: string) => void;
@@ -735,6 +774,8 @@ export const isPresetActive = (scenario: string, vs: VehicleState): boolean => {
       return vs.isCharging === true;
     case 'door_alert':
       return vs.doorOpen === true;
+    case 'tire_warning':
+      return vs.tirePressureWarning === true;
     default:
       return false;
   }
@@ -1530,6 +1571,12 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         isCharging = false;
       }
 
+      // If charging is being toggled/turned on, ensure LOW BATTERY preset state is deactivated
+      // (LOW BATTERY is active when batteryPercent <= 15; deactivating it sets batteryPercent to 70)
+      if (isCharging && !prevVs.isCharging && rawUpdated.batteryPercent <= 15) {
+        rawUpdated.batteryPercent = 70;
+      }
+
       const updated = { ...rawUpdated, isCharging };
 
       // Stop neutral coasting if not in N or speed is 0
@@ -1610,6 +1657,12 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         });
         break;
 
+      case 'tire_warning':
+        get().setVehicleState({
+          tirePressureWarning: !currentlyActive,
+        });
+        break;
+
       default:
         break;
     }
@@ -1664,14 +1717,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       height: toastHeight,
       isTransient: true,
       staticProps: {
-        label: isMessageToast
-          ? 'TEXT MESSAGE'
-          : notif.title ||
-            (severity === 'critical'
-              ? 'CRITICAL ALERT'
-              : severity === 'warning'
-              ? 'TIRE ALERT'
-              : 'NOTIFICATION'),
+        label: isMessageToast ? 'TEXT MESSAGE' : notif.title || '',
         title: notif.title || '',
         body: notif.body || notif.message,
         icon: isMessageToast ? 'message-square' : notif.icon || 'alert-triangle',
@@ -1810,7 +1856,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       case 'battery':
         width = 340;
         height = 130;
-        staticProps = { label: '80%', color: '#22c55e', icon: 'battery', drainPercentPerInterval: '1', drainIntervalSeconds: '60' };
+        staticProps = { label: 'Battery', color: '#22c55e', icon: 'battery', drainPercentPerInterval: '1', drainIntervalSeconds: '60' };
         bindings = [
           {
             id: `bind-${Date.now()}-1`,
@@ -1833,7 +1879,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       case 'gear':
         width = 200;
         height = 140;
-        staticProps = { label: 'P', color: '#f8fafc' };
+        staticProps = { label: 'Gear', color: '#f8fafc' };
         bindings = [
           {
             id: `bind-${Date.now()}-1`,
@@ -1849,7 +1895,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         width = 220;
         height = 150;
         staticProps = {
-          label: '0',
+          label: 'Speedometer',
           unit: 'mph',
           color: '#38bdf8',
           displayStyle: 'numeric',

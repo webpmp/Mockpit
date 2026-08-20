@@ -667,7 +667,7 @@ export const Canvas: React.FC = () => {
                               renderNotificationIcon(iconKey, 'w-3.5 h-3.5')
                             )}
                           </span>
-                          <span className="text-[10px] font-bold tracking-tight truncate max-w-[120px]">
+                          <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">
                             {message}
                           </span>
                         </button>

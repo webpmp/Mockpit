@@ -72,9 +72,9 @@ interface ComponentRendererProps {
 }
 
 export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
-  battery: 'Battery Indicator',
-  gear: 'Gear Select',
-  speed: 'Speed Readout',
+  battery: 'Battery',
+  gear: 'Gear',
+  speed: 'Speedometer',
   warning: 'Warning Alert Overlay',
   map: 'Navigation Map',
   media: 'Music Media Player',
@@ -132,6 +132,18 @@ export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
   rightElement,
   className = '',
 }) => {
+  const isNotification = type === 'warning';
+
+  if (isNotification) {
+    return (
+      <div
+        className={`flex items-center justify-end absolute top-3 right-3 z-20 select-none ${className}`}
+      >
+        {rightElement && <div className="shrink-0 flex items-center gap-1.5">{rightElement}</div>}
+      </div>
+    );
+  }
+
   return (
     <div
       className={`flex items-center justify-between h-9 min-h-[36px] max-h-[36px] text-[0.8125rem] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60 ${className}`}
@@ -273,19 +285,19 @@ const MessageToastCard: React.FC<{
 
       <div
         onClick={handleCardTap}
-        className={`flex items-start gap-3 min-w-0 flex-1 pt-1.5 pb-1 ${
+        className={`flex items-center gap-3 min-w-0 w-full pr-16 my-auto ${
           !isReplying ? 'cursor-pointer hover:opacity-90' : ''
         }`}
       >
         {avatarName ? (
           <ContactAvatar
             name={avatarName}
-            className="w-9 h-9 border border-slate-700/80 shadow-md mt-0.5"
+            className="w-9 h-9 border border-slate-700/80 shadow-md shrink-0"
             fontSizeClassName="text-xs font-extrabold"
           />
         ) : (
           <div
-            className="p-2 rounded-xl shrink-0 flex items-center justify-center border mt-0.5"
+            className="p-2 rounded-xl shrink-0 flex items-center justify-center border"
             style={{
               backgroundColor: getAlphaColor(customColor, '25', 15),
               borderColor: getAlphaColor(customColor, '50', 30),
@@ -296,7 +308,7 @@ const MessageToastCard: React.FC<{
           </div>
         )}
 
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className="flex flex-col justify-center min-w-0 flex-1">
           {title && <span className="text-[11px] font-bold text-slate-400 font-mono">{title}</span>}
           <p className="text-xs text-slate-100 font-medium leading-snug line-clamp-2 break-words mt-0.5">
             {message}
@@ -345,10 +357,10 @@ export const renderNotificationIcon = (
   switch (norm) {
     case 'door-open':
     case 'door':
-      return <DoorOpen className={className} />;
+      return <AlertTriangle className={className} />;
     case 'battery-warning':
     case 'battery':
-      return <BatteryWarning className={className} />;
+      return <Battery className={className} />;
     case 'thermometer':
     case 'temp':
     case 'temperature':
@@ -1533,6 +1545,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
     case 'warning': {
       const message = component.staticProps?.body || resolved.message || resolved.text || component.staticProps?.message || 'WARNING';
+      const details = resolved.details || component.staticProps?.details || '';
       const title = component.staticProps?.title;
       const avatarName = component.staticProps?.avatarName || title;
       const threadId = component.staticProps?.threadId;
@@ -1552,6 +1565,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           iconKey = 'battery-warning';
         } else if (normMsg.includes('CRUISE') || component.id.includes('cruise')) {
           iconKey = 'gauge';
+        } else if (normMsg.includes('TIRE') || component.id.includes('tpms') || component.id.includes('tire')) {
+          iconKey = 'tire';
         } else {
           iconKey = iconKey || 'alert-triangle';
         }
@@ -1568,6 +1583,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           headerLabel = 'BATTERY ALERT';
         } else if (iconKey === 'gauge' || normMsg.includes('CRUISE') || component.id.includes('cruise')) {
           headerLabel = 'CRUISE CONTROL';
+        } else if (iconKey === 'tire' || normMsg.includes('TIRE') || component.id.includes('tpms') || component.id.includes('tire')) {
+          headerLabel = 'TIRE PRESSURE ALERT';
         } else {
           headerLabel = DEFAULT_COMPONENT_LABELS.warning;
         }
@@ -1594,7 +1611,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-950/95 border-2 p-3.5 flex flex-col justify-between shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-slate-950/95 border-2 p-3.5 flex flex-col justify-center shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
           style={{
             borderColor: customColor,
             boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
@@ -1622,7 +1639,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             }
           />
 
-          <div className="flex items-center gap-3.5 min-w-0 flex-1 pt-1.5 pb-2.5">
+          <div className="flex items-center gap-3.5 min-w-0 w-full pr-8">
             <div
               className="p-2.5 rounded-xl shrink-0 flex items-center justify-center border"
               style={{
@@ -1634,10 +1651,18 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               {renderNotificationIcon(iconKey, 'w-5 h-5')}
             </div>
 
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-sm font-extrabold tracking-tight truncate text-slate-100">
+            <div className="flex flex-col justify-center min-w-0 flex-1">
+              <span className="text-sm font-extrabold tracking-tight text-slate-100 leading-snug">
                 {message}
               </span>
+              {details ? (
+                <>
+                  <div className="w-full h-px bg-slate-800 my-1.5" />
+                  <span className="text-xs text-slate-300 font-normal leading-relaxed">
+                    {details}
+                  </span>
+                </>
+              ) : null}
             </div>
           </div>
         </div>

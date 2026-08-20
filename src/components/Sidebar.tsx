@@ -42,13 +42,13 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
   },
   {
     type: 'gear',
-    title: 'Gear Select',
+    title: 'Gear Indicator',
     description: 'Drive mode gear selector (P/R/N/D)',
     defaultBindingDesc: 'text → current gear state (P/R/N/D)',
   },
   {
     type: 'speed',
-    title: 'Speed Readout',
+    title: 'Speedometer',
     description: 'Digital velocity display in mph or km/h',
     defaultBindingDesc: 'text → bound live to speed',
   },
