@@ -23,6 +23,7 @@ import {
   CornerDownRight,
   FolderTree,
   Trash2,
+  CloudSun,
 } from 'lucide-react';
 
 const getScreenIcon = (id: string) => {
@@ -30,6 +31,7 @@ const getScreenIcon = (id: string) => {
   if (id === 'navigation' || id === 'favorites') return MapPin;
   if (id === 'media' || id === 'playlists') return Music;
   if (id === 'phone') return Phone;
+  if (id === 'weather') return CloudSun;
   return Layout;
 };
 
@@ -139,18 +141,28 @@ export const HeaderNav: React.FC = () => {
   const ActiveIcon = activeScreenDef ? getScreenIcon(activeScreenDef.id) : Layout;
 
   return (
-    <header className="h-11 bg-slate-950 border-b border-slate-900 px-4 flex items-center justify-between shrink-0 select-none relative z-50">
+    <header className="h-16 bg-slate-950 border-b border-slate-900 px-4 flex items-center justify-between shrink-0 select-none relative z-50">
       {/* App Branding */}
       {!isPresentation && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <img
+            id="mockpit-header-logo"
+            src="/logo/logo-mockpit-white.png"
+            alt="Mockpit"
+            width={48}
+            height={52}
+            className="w-[48px] h-[52px] min-w-[48px] min-h-[52px] object-contain select-none grayscale"
+            referrerPolicy="no-referrer"
+          />
           <span
-            className="text-xs font-black tracking-widest font-mono uppercase"
-            style={{ color: 'var(--color-primary)' }}
+            id="mockpit-header-title"
+            className="text-[15px] font-black uppercase text-slate-100 select-none leading-none tracking-widest"
+            style={{
+              fontFamily: "'Montserrat', 'Proxima Nova', -apple-system, BlinkMacSystemFont, sans-serif",
+              letterSpacing: '0.08em', // Kerning: +80
+            }}
           >
             MOCKPIT
-          </span>
-          <span className="text-[0.625rem] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
-            v0.12
           </span>
         </div>
       )}

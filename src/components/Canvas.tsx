@@ -10,6 +10,8 @@ import { COMPONENT_FLAGS } from '../config/componentFlags';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, FOCUSED_APP_RECT } from '../config/constants';
 import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ContactAvatar } from './ContactAvatar';
+import { WeatherForecastScreen } from './weather/WeatherForecastScreen';
+import { useWeatherStore } from '../store/useWeatherStore';
 import { Move, Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare } from 'lucide-react';
 
 const getTransitionClasses = (style: TransitionStyle = 'fade', isActive: boolean) => {
@@ -75,6 +77,7 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
   }, []);
 
   const transitionClasses = getTransitionClasses(transitionStyle, isActive);
+  const setActiveView = useMockpitStore((s) => s.setActiveView);
 
   // Preserve Home screen's full canvas footprint (inset-x-0 top-0 bottom-[84px]) vs non-Home focused apps (FOCUSED_APP_RECT)
   const containerStyle = isHomeScreen
@@ -90,6 +93,23 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
         width: FOCUSED_APP_RECT.width,
         height: FOCUSED_APP_RECT.height,
       };
+
+  if (activeView === 'weather') {
+    return (
+      <div
+        key={activeView}
+        className={`absolute transition-all duration-300 ease-out z-20 overflow-hidden ${transitionClasses}`}
+        style={containerStyle}
+      >
+        <WeatherForecastScreen
+          onBack={() => {
+            const prev = useMockpitStore.getState().previousView;
+            setActiveView(prev && prev !== 'weather' ? prev : 'home');
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -212,6 +232,8 @@ export const Canvas: React.FC = () => {
   const gridConfig = useMockpitStore((s) => s.gridConfig);
   const textScale = useMockpitStore((s) => s.textScale);
   const conversations = useMockpitStore((s) => s.conversations);
+  const weatherCurrent = useWeatherStore((s) => s.current);
+  const weatherUnit = useWeatherStore((s) => s.unit);
 
   const totalUnread = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
 
@@ -692,7 +714,16 @@ export const Canvas: React.FC = () => {
                 )}
               </button>
 
-              <span className="font-normal text-slate-300">72°F</span>
+              <button
+                id="header-weather-temp-btn"
+                onClick={() => setActiveView('weather')}
+                className="font-normal text-slate-300 cursor-pointer pointer-events-auto hover:text-slate-100 transition-colors"
+                title="Open Weather Forecast"
+              >
+                {weatherCurrent?.temperature !== undefined
+                  ? `${Math.round(weatherCurrent.temperature)}°${weatherUnit}`
+                  : '72°F'}
+              </button>
               <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               {/* Animated 1-5 bar signal indicator (v0.11) */}
               <div
@@ -719,8 +750,28 @@ export const Canvas: React.FC = () => {
             </div>
           </div>
 
+          {/* Weather Screen Full Takeover in Editor Mode */}
+          {!isPresentation && activeView === 'weather' && (
+            <div
+              className="absolute z-20 overflow-hidden pointer-events-auto"
+              style={{
+                left: FOCUSED_APP_RECT.x,
+                top: FOCUSED_APP_RECT.y,
+                width: FOCUSED_APP_RECT.width,
+                height: FOCUSED_APP_RECT.height,
+              }}
+            >
+              <WeatherForecastScreen
+                onBack={() => {
+                  const prev = useMockpitStore.getState().previousView;
+                  setActiveView(prev && prev !== 'weather' ? prev : 'home');
+                }}
+              />
+            </div>
+          )}
+
           {/* Empty Canvas Overlay in Editor Mode for Screen Views */}
-          {!isPresentation && components.length === 0 && (
+          {!isPresentation && activeView !== 'weather' && components.length === 0 && (
             <div className="absolute inset-x-16 inset-y-20 z-10 border-2 border-dashed border-slate-800/80 rounded-3xl flex flex-col items-center justify-center text-slate-500 bg-slate-900/20 pointer-events-none">
               <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 mb-3 text-sky-400">
                 {activeView === 'navigation' && <MapPin className="w-8 h-8" />}

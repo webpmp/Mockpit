@@ -114,6 +114,7 @@ export const DEFAULT_SCREENS: ScreenDefinition[] = [
   { id: 'phone', name: 'Phone', order: 3, transitionStyle: 'fade', parentId: null },
   { id: 'playlists', name: 'Playlists', order: 4, transitionStyle: 'fade', parentId: 'media' },
   { id: 'favorites', name: 'Favorites', order: 5, transitionStyle: 'fade', parentId: 'navigation' },
+  { id: 'weather', name: 'Weather', order: 6, transitionStyle: 'fade', parentId: null },
 ];
 
 const DEFAULT_DOCK_ORDER: string[] = ['home', 'navigation', 'media', 'phone'];
@@ -375,7 +376,10 @@ function loadSavedScreens(): ScreenDefinition[] {
         if (hasHome) {
           const homeItem = parsed.find((s: ScreenDefinition) => s.id === 'home')!;
           const rest = parsed.filter((s: ScreenDefinition) => s.id !== 'home');
-          return [{ ...homeItem, name: 'Home', order: 0, parentId: null }, ...rest].map((s, idx) => ({
+          const combined = [{ ...homeItem, name: 'Home', order: 0, parentId: null }, ...rest];
+          const existingIds = new Set(combined.map((s) => s.id));
+          const missingDefaults = DEFAULT_SCREENS.filter((def) => !existingIds.has(def.id));
+          return [...combined, ...missingDefaults].map((s, idx) => ({
             ...s,
             order: idx,
             parentId: s.parentId ?? null,
@@ -496,13 +500,15 @@ function loadSavedDockOrder(screens: ScreenDefinition[]): string[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        const topLevelScreens = screens.filter((s) => s.parentId === null).map((s) => s.id);
+        const missing = topLevelScreens.filter((id) => !parsed.includes(id));
+        return [...parsed, ...missing];
       }
     }
   } catch (e) {
     console.error('Failed to load dock order from localStorage', e);
   }
-  return screens.map((s) => s.id);
+  return screens.filter((s) => s.parentId === null).map((s) => s.id);
 }
 
 export function applyCssVariables(palette: PaletteConfig) {
@@ -732,6 +738,8 @@ interface MockpitStore {
 
   // Screen / UI Actions
   setScreenMode: (mode: ScreenMode) => void;
+  previousView: string | null;
+  setPreviousView: (view: string | null) => void;
   setActiveView: (view: ActiveView) => void;
   setNotificationStackPosition: (position: NotificationStackPosition) => void;
   reorderNotificationComponent: (id: string, direction: 'up' | 'down') => void;
@@ -846,6 +854,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   components: initialScreens.home || [],
   selectedComponentId: null,
   screenMode: 'editor',
+  previousView: 'home',
   activeView: 'home',
   isDebugOpen: false,
   debugPanelHeight: 45,
@@ -1758,9 +1767,12 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
   setActiveView: (view) =>
     set((state) => ({
+      previousView: state.activeView !== view ? state.activeView : state.previousView,
       activeView: view,
       components: state.componentsByScreen[view] || [],
     })),
+
+  setPreviousView: (view) => set({ previousView: view }),
 
   setNotificationStackPosition: (position) => {
     try {

@@ -264,9 +264,9 @@ export const VirtualKeyboard: React.FC = () => {
 
   return (
     <>
-      {/* Backdrop with transition */}
+      {/* Backdrop with transition (without backdrop-blur to ensure active inputs stay crystal-clear) */}
       <div
-        className={`absolute inset-0 z-40 bg-black/40 backdrop-blur-[1px] transition-opacity duration-300 ${
+        className={`absolute inset-0 z-40 bg-black/30 transition-opacity duration-300 ${
           animateIn ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={closeKeyboard}

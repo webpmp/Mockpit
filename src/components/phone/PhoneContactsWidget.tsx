@@ -236,11 +236,11 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
             </div>
           )}
 
-          {/* Full List with A-Z Index Rail */}
+          {/* Full List */}
           <div className="flex-1 min-h-0 flex relative overflow-hidden">
             <div
               ref={listRef}
-              className="flex-1 min-h-0 overflow-y-auto pr-5 space-y-2 no-scrollbar"
+              className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2 no-scrollbar"
             >
               {availableLetters.length === 0 ? (
                 <div className="text-center py-8 text-xs font-mono text-slate-500">
@@ -302,26 +302,6 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                   </div>
                 ))
               )}
-            </div>
-
-            {/* Thin A-Z Index Rail */}
-            <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-between py-1 text-[8px] font-mono font-bold text-slate-500 select-none">
-              {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((char) => {
-                const isAvailable = availableLetters.includes(char);
-                return (
-                  <button
-                    key={char}
-                    onClick={() => isAvailable && scrollToLetter(char)}
-                    className={`px-1 transition-colors ${
-                      isAvailable
-                        ? 'text-slate-400 hover:text-sky-400 cursor-pointer font-bold'
-                        : 'text-slate-800 cursor-default'
-                    }`}
-                  >
-                    {char}
-                  </button>
-                );
-              })}
             </div>
           </div>
         </div>

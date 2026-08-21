@@ -146,13 +146,13 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
     setEnteredNumber('');
   };
 
-  // Dynamic font size scaling for long numbers
+  // Dynamic font size scaling for long numbers (stable line-height within fixed header)
   const getFontSizeClass = () => {
     const len = enteredNumber.length;
-    if (len <= 8) return 'text-[clamp(22px,8.5cqw,60px)]';
-    if (len <= 12) return 'text-[clamp(18px,7cqw,46px)]';
-    if (len <= 16) return 'text-[clamp(15px,5.5cqw,36px)]';
-    return 'text-[clamp(12px,4cqw,28px)]';
+    if (len <= 8) return 'text-[clamp(18px,5.5cqw,32px)]';
+    if (len <= 12) return 'text-[clamp(15px,4.5cqw,26px)]';
+    if (len <= 16) return 'text-[clamp(12px,3.8cqw,20px)]';
+    return 'text-[clamp(11px,3.2cqw,16px)]';
   };
 
   const formatDuration = (secs: number) => {
@@ -256,18 +256,18 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
       ) : activeTab === 'keypad' ? (
         /* KEYPAD TAB */
         <div className="flex-1 min-h-0 flex flex-col justify-between mt-1">
-          {/* Display & Matched Contact (Plain Typography directly above Keypad) */}
-          <div className="flex items-center justify-between min-h-[clamp(44px,11cqh,80px)] px-2 py-1 relative w-full overflow-hidden my-1">
+          {/* Display & Matched Contact (Plain Typography directly above Keypad with fixed height) */}
+          <div className="shrink-0 h-[clamp(32px,8cqh,52px)] flex items-center justify-between px-2 relative w-full overflow-hidden">
             {/* Matched Contact Info */}
             {matchedContact ? (
               <div className="flex items-center gap-2 min-w-0 max-w-[45%]">
                 <ContactAvatar
                   name={matchedContact.name}
                   avatarUrl={matchedContact.avatarUrl}
-                  className="w-[clamp(22px,6cqw,38px)] h-[clamp(22px,6cqw,38px)] shrink-0"
-                  fontSizeClassName="text-[clamp(10px,2.8cqw,16px)]"
+                  className="w-[clamp(20px,5.4cqw,34px)] h-[clamp(20px,5.4cqw,34px)] shrink-0"
+                  fontSizeClassName="text-[clamp(9px,2.5cqw,14px)]"
                 />
-                <span className="text-[clamp(12px,3cqw,20px)] font-bold text-slate-200 truncate">
+                <span className="text-[clamp(11px,2.7cqw,18px)] font-bold text-slate-200 truncate">
                   {matchedContact.name}
                 </span>
               </div>
@@ -276,69 +276,77 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
             )}
 
             {/* Number Readout with Blinking Cursor */}
-            <div className="flex items-center text-right font-mono font-bold text-slate-100 tracking-wider ml-auto">
-              <span className={`${getFontSizeClass()} truncate max-w-full`}>
+            <div className="flex items-center text-right font-mono font-bold text-slate-100 tracking-wider ml-auto h-full">
+              <span className={`${getFontSizeClass()} truncate max-w-full leading-none`}>
                 {enteredNumber}
               </span>
-              <span className="w-0.5 h-[clamp(22px,8.5cqw,60px)] bg-sky-400 ml-1 animate-pulse shrink-0" />
+              <span className="w-0.5 h-[clamp(16px,5cqw,28px)] bg-sky-400 ml-1 animate-pulse shrink-0" />
             </div>
           </div>
 
-          {/* 3x4 Keypad Grid */}
-          <div className="grid grid-cols-3 gap-[clamp(6px,2cqw,24px)] my-[clamp(6px,1.8cqh,20px)]">
+          {/* 3x4 Keypad Grid (Scaled down by 10%) */}
+          <div className="grid grid-cols-3 gap-[clamp(5px,1.8cqw,20px)] my-auto py-1">
             {KEYPAD_KEYS.map((k) => (
               <button
                 key={k.num}
                 onClick={() => handleKeyPress(k.num)}
-                className="bg-slate-800/80 hover:bg-slate-700/90 active:scale-95 border border-slate-700/50 rounded-[clamp(10px,2.5cqw,22px)] py-[clamp(8px,2.5cqh,28px)] px-[clamp(4px,1.8cqw,18px)] flex flex-col items-center justify-center transition-all cursor-pointer group select-none"
+                className="bg-slate-800/80 hover:bg-slate-700/90 active:scale-95 border border-slate-700/50 rounded-[clamp(9px,2.25cqw,20px)] py-[clamp(6px,2.25cqh,25px)] px-[clamp(3.5px,1.6cqw,16px)] flex flex-col items-center justify-center transition-all cursor-pointer group select-none"
               >
-                <span className="text-[clamp(18px,7.5cqw,58px)] font-black text-slate-100 leading-none group-active:text-sky-300">
+                <span className="text-[clamp(16px,6.75cqw,52px)] font-black text-slate-100 leading-none group-active:text-sky-300">
                   {k.num}
                 </span>
                 {k.letters ? (
-                  <span className="text-[clamp(8px,2.8cqw,20px)] font-mono font-semibold text-slate-400 leading-none mt-[clamp(2px,0.8cqh,8px)]">
+                  <span className="text-[clamp(7px,2.5cqw,18px)] font-mono font-semibold text-slate-400 leading-none mt-[clamp(1.5px,0.7cqh,7px)]">
                     {k.letters}
                   </span>
                 ) : (
-                  <span className="h-[clamp(8px,2.8cqw,20px)] mt-[clamp(2px,0.8cqh,8px)]" />
+                  <span className="h-[clamp(7px,2.5cqw,18px)] mt-[clamp(1.5px,0.7cqh,7px)]" />
                 )}
               </button>
             ))}
           </div>
 
-          {/* Bottom Action Row: Call Button & Backspace */}
-          <div className="flex items-center justify-center relative min-h-[clamp(48px,12cqh,96px)] my-1">
+          {/* Bottom Action Row: Centered Call Button with Delete Button close to its right (no overlap) */}
+          <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center w-full min-h-[clamp(42px,10cqh,84px)] py-1 mt-auto">
+            {/* Column 1: Left Spacer to keep Call Button perfectly centered */}
+            <div />
+
+            {/* Column 2: Call Button (Centered under 0) */}
             <button
               onClick={handleStartCall}
               disabled={!enteredNumber}
-              className={`w-[clamp(42px,12cqw,84px)] h-[clamp(42px,12cqw,84px)] rounded-full flex items-center justify-center shadow-lg transition-all active:scale-90 cursor-pointer ${
+              className={`w-[clamp(38px,11cqw,76px)] h-[clamp(38px,11cqw,76px)] rounded-full shrink-0 flex items-center justify-center shadow-lg transition-all active:scale-90 cursor-pointer ${
                 enteredNumber
                   ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
                   : 'bg-slate-800 text-slate-600 border border-slate-700/50 cursor-not-allowed'
               }`}
             >
-              <Phone className="w-[clamp(18px,5.5cqw,38px)] h-[clamp(18px,5.5cqw,38px)] fill-current" />
+              <Phone className="w-[clamp(16px,5cqw,34px)] h-[clamp(16px,5cqw,34px)] fill-current" />
             </button>
 
-            {enteredNumber.length > 0 && (
-              <button
-                onMouseDown={startHoldClear}
-                onMouseUp={stopHoldClear}
-                onMouseLeave={stopHoldClear}
-                onTouchStart={startHoldClear}
-                onTouchEnd={stopHoldClear}
-                className="absolute right-2.5 p-[clamp(8px,2.5cqw,18px)] rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 active:scale-90 transition-all cursor-pointer relative overflow-hidden"
-              >
-                {/* Hold Progress Bar */}
-                {holdProgress > 0 && (
-                  <div
-                    className="absolute inset-0 bg-red-500/40 transition-all"
-                    style={{ width: `${holdProgress}%` }}
-                  />
-                )}
-                <Delete className="w-[clamp(16px,4.5cqw,32px)] h-[clamp(16px,4.5cqw,32px)] relative z-10" />
-              </button>
-            )}
+            {/* Column 3: Delete Button placed close to the Call button with a clean gap */}
+            <div className="flex items-center justify-start pl-[clamp(8px,2.5cqw,18px)]">
+              {enteredNumber.length > 0 && (
+                <button
+                  onMouseDown={startHoldClear}
+                  onMouseUp={stopHoldClear}
+                  onMouseLeave={stopHoldClear}
+                  onTouchStart={startHoldClear}
+                  onTouchEnd={stopHoldClear}
+                  className="p-[clamp(7px,2.2cqw,16px)] rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 active:scale-90 transition-all cursor-pointer relative overflow-hidden shrink-0 flex items-center justify-center"
+                  title="Delete (Hold to clear)"
+                >
+                  {/* Hold Progress Bar */}
+                  {holdProgress > 0 && (
+                    <div
+                      className="absolute inset-0 bg-red-500/40 transition-all"
+                      style={{ width: `${holdProgress}%` }}
+                    />
+                  )}
+                  <Delete className="w-[clamp(15px,4cqw,28px)] h-[clamp(15px,4cqw,28px)] relative z-10" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       ) : (

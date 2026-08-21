@@ -1,11 +1,359 @@
 import React, { useState, useEffect } from 'react';
 import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS } from '../store/useMockpitStore';
+import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
 import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType } from '../types';
-import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette } from 'lucide-react';
+import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check } from 'lucide-react';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { LayersPanel } from './LayersPanel';
 import { NumericStepper } from './NumericStepper';
 import { ManeuverGlyph } from './navigation/ManeuverGlyph';
+import { WeatherIcon } from './weather/WeatherIcon';
+
+const REFERENCE_ICONS: Array<{ key: WeatherConditionKey; label: string }> = [
+  { key: 'clear-day', label: 'Clear' },
+  { key: 'clear-night', label: 'Clear Night' },
+  { key: 'partly-cloudy-day', label: 'Partly Cloudy' },
+  { key: 'partly-cloudy-night', label: 'Partly Cloudy (Night)' },
+  { key: 'cloudy', label: 'Overcast' },
+  { key: 'fog', label: 'Fog' },
+  { key: 'drizzle', label: 'Drizzle' },
+  { key: 'rain', label: 'Rain' },
+  { key: 'rain-night', label: 'Rain (Night)' },
+  { key: 'thunderstorm', label: 'Thunderstorm' },
+  { key: 'snow', label: 'Snow' },
+  { key: 'snow-showers', label: 'Snow Showers' },
+  { key: 'sleet', label: 'Sleet' },
+  { key: 'windy', label: 'Windy' },
+];
+
+const WeatherPropertiesSection: React.FC = () => {
+  const locationInput = useWeatherStore((s) => s.locationInput);
+  const resolvedLocation = useWeatherStore((s) => s.resolvedLocation);
+  const setLocationInput = useWeatherStore((s) => s.setLocationInput);
+  const unit = useWeatherStore((s) => s.unit);
+  const setUnit = useWeatherStore((s) => s.setUnit);
+  const displayScale = useWeatherStore((s) => s.displayScale);
+  const setDisplayScale = useWeatherStore((s) => s.setDisplayScale);
+  const status = useWeatherStore((s) => s.status);
+  const fetchWeather = useWeatherStore((s) => s.fetchWeather);
+  const lastFetchedAt = useWeatherStore((s) => s.lastFetchedAt);
+
+  const [localInput, setLocalInput] = useState(locationInput);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isIconCatalogOpen, setIsIconCatalogOpen] = useState(false);
+
+  useEffect(() => {
+    setLocalInput(locationInput);
+    setHasUnsavedChanges(false);
+  }, [locationInput]);
+
+  const handleLocationSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = localInput.trim();
+    if (!trimmed) return;
+    setLocationInput(trimmed);
+    fetchWeather();
+    setHasUnsavedChanges(false);
+  };
+
+  return (
+    <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
+      <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div className="flex items-center gap-2 text-sky-400 font-bold font-mono">
+          <CloudSun className="w-4 h-4" />
+          <span>Weather System Configuration</span>
+        </div>
+        {status === 'loading' && (
+          <span className="text-[10px] font-mono text-sky-400">Fetching...</span>
+        )}
+        {status === 'error' && (
+          <span className="text-[10px] font-mono text-amber-400">Offline / Stale</span>
+        )}
+        {status === 'success' && (
+          <span className="text-[10px] font-mono text-emerald-400">Live</span>
+        )}
+      </div>
+
+      {/* City or Zip Input */}
+      <div>
+        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1.5 font-bold">
+          City or Zip Code
+        </label>
+        <form onSubmit={handleLocationSubmit} className="flex gap-1.5">
+          <input
+            id="inspector-weather-location-input"
+            type="text"
+            value={localInput}
+            onChange={(e) => {
+              setLocalInput(e.target.value);
+              setHasUnsavedChanges(true);
+            }}
+            placeholder="e.g. San Mateo, CA or 94401"
+            className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-sky-500 transition-colors"
+          />
+          <button
+            type="submit"
+            disabled={status === 'loading'}
+            className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+              hasUnsavedChanges
+                ? 'bg-sky-500 text-white shadow-md hover:bg-sky-400'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+            }`}
+            title="Submit location to fetch weather"
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>Set</span>
+          </button>
+        </form>
+        {resolvedLocation && (
+          <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-mono text-slate-400">
+            <MapPin className="w-3 h-3 text-sky-400 shrink-0" />
+            <span className="truncate">Resolved: {resolvedLocation.name}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Temperature Unit Toggle */}
+      <div>
+        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1.5 font-bold">
+          Temperature Unit (Refetches API)
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            id="inspector-weather-unit-f"
+            type="button"
+            onClick={() => setUnit('F')}
+            className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              unit === 'F'
+                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <span>Fahrenheit (°F)</span>
+          </button>
+          <button
+            id="inspector-weather-unit-c"
+            type="button"
+            onClick={() => setUnit('C')}
+            className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              unit === 'C'
+                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <span>Celsius (°C)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Display Size / Font Scaling Control (Fix 6) */}
+      <div>
+        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1.5 font-bold">
+          Display Size
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            id="inspector-weather-scale-sm"
+            type="button"
+            onClick={() => setDisplayScale('sm')}
+            className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              displayScale === 'sm'
+                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <span>Small</span>
+          </button>
+          <button
+            id="inspector-weather-scale-md"
+            type="button"
+            onClick={() => setDisplayScale('md')}
+            className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              displayScale === 'md'
+                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <span>Medium</span>
+          </button>
+          <button
+            id="inspector-weather-scale-lg"
+            type="button"
+            onClick={() => setDisplayScale('lg')}
+            className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              displayScale === 'lg'
+                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <span>Large</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Refresh Action */}
+      <button
+        type="button"
+        onClick={() => fetchWeather()}
+        disabled={status === 'loading'}
+        className="w-full py-2 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white transition-all text-xs font-mono font-bold flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <RotateCcw className={`w-3.5 h-3.5 ${status === 'loading' ? 'animate-spin' : ''}`} />
+        <span>Refresh Weather Data</span>
+      </button>
+
+      {/* Collapsible Condition Icon Reference (Fix 5) */}
+      <div className="border-t border-slate-800/80 pt-3">
+        <button
+          type="button"
+          onClick={() => setIsIconCatalogOpen(!isIconCatalogOpen)}
+          className="w-full flex items-center justify-between text-xs font-mono font-bold text-slate-300 hover:text-white cursor-pointer py-1"
+        >
+          <span className="flex items-center gap-2">
+            <span>Condition Icon Reference</span>
+            <span className="text-[10px] text-slate-500 font-normal">({REFERENCE_ICONS.length})</span>
+          </span>
+          {isIconCatalogOpen ? (
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-slate-400" />
+          )}
+        </button>
+
+        {isIconCatalogOpen && (
+          <div className="mt-3 space-y-2">
+            {/* TODO: icon swap not yet implemented */}
+            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+              {REFERENCE_ICONS.map((item) => (
+                <div
+                  key={item.key}
+                  className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/90 border border-slate-800/80"
+                >
+                  <div className="p-1 rounded-lg bg-slate-950/80 border border-slate-800/60 shrink-0">
+                    <WeatherIcon condition={item.key} size={24} />
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-300 font-bold truncate">
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {lastFetchedAt && (
+        <div className="text-[9px] font-mono text-slate-500 text-center">
+          Last synchronized: {new Date(lastFetchedAt).toLocaleTimeString()}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const WeatherRadarPropertiesSection: React.FC = () => {
+  const radarZoom = useWeatherStore((s) => s.radarZoom);
+  const setRadarZoom = useWeatherStore((s) => s.setRadarZoom);
+  const radarRefreshInterval = useWeatherStore((s) => s.radarRefreshInterval);
+  const setRadarRefreshInterval = useWeatherStore((s) => s.setRadarRefreshInterval);
+  const radarLabel = useWeatherStore((s) => s.radarLabel);
+  const setRadarLabel = useWeatherStore((s) => s.setRadarLabel);
+
+  return (
+    <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
+      <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div className="flex items-center gap-2 text-sky-400 font-bold font-mono">
+          <Layers className="w-4 h-4" />
+          <span>Weather Radar Configuration</span>
+        </div>
+        <span className="text-[10px] font-mono text-slate-400">RainViewer API</span>
+      </div>
+
+      {/* Radar Card Label (Editable text) */}
+      <div>
+        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1.5 font-bold">
+          Radar Card Label
+        </label>
+        <input
+          id="inspector-weather-radar-label-input"
+          type="text"
+          value={radarLabel}
+          onChange={(e) => setRadarLabel(e.target.value)}
+          placeholder="e.g. LOCAL RADAR"
+          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-sky-500 transition-colors font-bold uppercase"
+        />
+      </div>
+
+      {/* Zoom Level Control (Clamped 0..7) */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+            Radar Zoom Level (Clamped 0–7)
+          </label>
+          <span className="text-xs font-mono text-sky-400 font-bold">
+            {radarZoom} / 7
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            id="inspector-weather-radar-zoom-slider"
+            type="range"
+            min={0}
+            max={7}
+            step={1}
+            value={radarZoom}
+            onChange={(e) => setRadarZoom(Number(e.target.value))}
+            className="flex-1 accent-sky-500 cursor-pointer"
+          />
+          <div className="flex gap-1">
+            {[3, 5, 6, 7].map((z) => (
+              <button
+                key={z}
+                type="button"
+                id={`inspector-weather-radar-zoom-preset-${z}`}
+                onClick={() => setRadarZoom(z)}
+                className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold cursor-pointer transition-colors ${
+                  radarZoom === z
+                    ? 'bg-sky-500 text-white'
+                    : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {z}x
+              </button>
+            ))}
+          </div>
+        </div>
+        <span className="text-[10px] text-slate-500 font-mono mt-1 block">
+          RainViewer free public radar imagery is capped at zoom level 7.
+        </span>
+      </div>
+
+      {/* Refresh Interval */}
+      <div>
+        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1.5 font-bold">
+          Tile Frame Refresh Interval
+        </label>
+        <div className="grid grid-cols-4 gap-1.5">
+          {[1, 2, 5, 10].map((mins) => (
+            <button
+              key={mins}
+              type="button"
+              id={`inspector-weather-radar-refresh-${mins}m`}
+              onClick={() => setRadarRefreshInterval(mins)}
+              className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center cursor-pointer ${
+                radarRefreshInterval === mins
+                  ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                  : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <span>{mins} min</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ScreenPropertiesPanel: React.FC = () => {
   const activeView = useMockpitStore((s) => s.activeView);
@@ -125,6 +473,12 @@ const ScreenPropertiesPanel: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* Weather Properties Section */}
+      <WeatherPropertiesSection />
+
+      {/* Weather Radar Configuration Section */}
+      <WeatherRadarPropertiesSection />
 
       {/* Reorder Dock Note */}
       <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-[10px] text-slate-400 font-mono space-y-1">
