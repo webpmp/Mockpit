@@ -5,6 +5,7 @@ export type ActiveInputState = {
   inputId: string;
   componentId?: string;
   value: string;
+  initialValue?: string;
   placeholder?: string;
   keyboardSlideDirectionOverride?: KeyboardSlideDirection | 'default';
   onChange: (value: string) => void;

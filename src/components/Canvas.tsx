@@ -11,6 +11,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT, FOCUSED_APP_RECT } from '../config/constan
 import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ContactAvatar } from './ContactAvatar';
 import { WeatherForecastScreen } from './weather/WeatherForecastScreen';
+import { WeatherRadarScreen } from './weather/WeatherRadarScreen';
 import { useWeatherStore } from '../store/useWeatherStore';
 import { Move, Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare } from 'lucide-react';
 
@@ -105,6 +106,22 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
           onBack={() => {
             const prev = useMockpitStore.getState().previousView;
             setActiveView(prev && prev !== 'weather' ? prev : 'home');
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (activeView === 'weather-radar') {
+    return (
+      <div
+        key={activeView}
+        className={`absolute transition-all duration-300 ease-out z-20 overflow-hidden ${transitionClasses}`}
+        style={containerStyle}
+      >
+        <WeatherRadarScreen
+          onBack={() => {
+            setActiveView('weather');
           }}
         />
       </div>
@@ -770,8 +787,27 @@ export const Canvas: React.FC = () => {
             </div>
           )}
 
+          {/* Weather Radar Child Screen Full Takeover in Editor Mode */}
+          {!isPresentation && activeView === 'weather-radar' && (
+            <div
+              className="absolute z-20 overflow-hidden pointer-events-auto"
+              style={{
+                left: FOCUSED_APP_RECT.x,
+                top: FOCUSED_APP_RECT.y,
+                width: FOCUSED_APP_RECT.width,
+                height: FOCUSED_APP_RECT.height,
+              }}
+            >
+              <WeatherRadarScreen
+                onBack={() => {
+                  setActiveView('weather');
+                }}
+              />
+            </div>
+          )}
+
           {/* Empty Canvas Overlay in Editor Mode for Screen Views */}
-          {!isPresentation && activeView !== 'weather' && components.length === 0 && (
+          {!isPresentation && !['weather', 'weather-radar'].includes(activeView) && components.length === 0 && (
             <div className="absolute inset-x-16 inset-y-20 z-10 border-2 border-dashed border-slate-800/80 rounded-3xl flex flex-col items-center justify-center text-slate-500 bg-slate-900/20 pointer-events-none">
               <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 mb-3 text-sky-400">
                 {activeView === 'navigation' && <MapPin className="w-8 h-8" />}

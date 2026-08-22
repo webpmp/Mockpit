@@ -1,39 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useMockpitStore } from '../store/useMockpitStore';
+import { useMockpitStore, REQUIRED_DOCK_SCREEN_IDS } from '../store/useMockpitStore';
 import { ScreenDefinition } from '../types';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
+import { getScreenIcon, SCREEN_ICON_OPTIONS } from '../config/screenIcons';
 import {
   Play,
   Edit3,
   RotateCcw,
   Settings,
   Clipboard,
-  LayoutGrid,
-  MapPin,
-  Music,
-  Phone,
-  Layout,
   Plus,
   ChevronDown,
   X,
-  ArrowLeft,
-  ArrowRight,
   ArrowUp,
   ArrowDown,
   CornerDownRight,
   FolderTree,
   Trash2,
-  CloudSun,
 } from 'lucide-react';
-
-const getScreenIcon = (id: string) => {
-  if (id === 'home') return LayoutGrid;
-  if (id === 'navigation' || id === 'favorites') return MapPin;
-  if (id === 'media' || id === 'playlists') return Music;
-  if (id === 'phone') return Phone;
-  if (id === 'weather') return CloudSun;
-  return Layout;
-};
 
 export const HeaderNav: React.FC = () => {
   const screenMode = useMockpitStore((s) => s.screenMode);
@@ -42,6 +26,7 @@ export const HeaderNav: React.FC = () => {
   const setActiveView = useMockpitStore((s) => s.setActiveView);
   const screens = useMockpitStore((s) => s.screens);
   const addScreen = useMockpitStore((s) => s.addScreen);
+  const updateScreen = useMockpitStore((s) => s.updateScreen);
   const deleteScreen = useMockpitStore((s) => s.deleteScreen);
   const moveScreen = useMockpitStore((s) => s.moveScreen);
   const isSettingsOpen = useMockpitStore((s) => s.isSettingsOpen);
@@ -49,9 +34,13 @@ export const HeaderNav: React.FC = () => {
   const resetToSeedData = useMockpitStore((s) => s.resetToSeedData);
   const copiedComponent = useMockpitStore((s) => s.copiedComponent);
   const pasteComponent = useMockpitStore((s) => s.pasteComponent);
+  const dockOrder = useMockpitStore((s) => s.dockOrder);
+  const toggleDockMembership = useMockpitStore((s) => s.toggleDockMembership);
 
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const iconPickerRef = useRef<HTMLDivElement>(null);
+  const [iconPickerOpenFor, setIconPickerOpenFor] = useState<string | null>(null);
 
   // Modal State for Adding Screens (replaces blocked window.prompt)
   const [addScreenModal, setAddScreenModal] = useState<{
@@ -93,6 +82,7 @@ export const HeaderNav: React.FC = () => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setIsMegaMenuOpen(false);
+        setIconPickerOpenFor(null);
       }
     };
     if (isMegaMenuOpen) {
@@ -102,6 +92,28 @@ export const HeaderNav: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isMegaMenuOpen]);
+
+  // Close icon picker on outside click or Escape
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (iconPickerRef.current && !iconPickerRef.current.contains(e.target as Node)) {
+        setIconPickerOpenFor(null);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIconPickerOpenFor(null);
+      }
+    };
+    if (iconPickerOpenFor) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [iconPickerOpenFor]);
 
   const handleOpenAddTopLevelModal = () => {
     const defaultName = `Screen ${topLevelScreens.length + 1}`;
@@ -138,7 +150,7 @@ export const HeaderNav: React.FC = () => {
     setShowResetConfirmModal(true);
   };
 
-  const ActiveIcon = activeScreenDef ? getScreenIcon(activeScreenDef.id) : Layout;
+  const ActiveIcon = getScreenIcon(activeScreenDef);
 
   return (
     <header className="h-16 bg-slate-950 border-b border-slate-900 px-4 flex items-center justify-between shrink-0 select-none relative z-50">
@@ -226,10 +238,12 @@ export const HeaderNav: React.FC = () => {
               {/* Columns Grid of Parent Screens */}
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 max-h-[65vh] overflow-y-auto">
                 {topLevelScreens.map((parentScreen) => {
-                  const ParentIcon = getScreenIcon(parentScreen.id);
+                  const ParentIcon = getScreenIcon(parentScreen);
                   const isParentActive = activeView === parentScreen.id;
                   const childScreens = screens.filter((s) => s.parentId === parentScreen.id);
                   const isHome = parentScreen.id === 'home';
+                  const isRequired = REQUIRED_DOCK_SCREEN_IDS.includes(parentScreen.id);
+                  const isInDock = dockOrder.includes(parentScreen.id);
 
                   return (
                     <div
@@ -241,58 +255,99 @@ export const HeaderNav: React.FC = () => {
                       }`}
                     >
                       {/* Parent Column Header */}
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-800/80 mb-2">
-                        <button
-                          onClick={() => {
-                            setActiveView(parentScreen.id);
-                            setIsMegaMenuOpen(false);
-                          }}
-                          className={`flex items-center gap-1.5 text-xs font-bold font-mono transition-colors text-left cursor-pointer ${
-                            isParentActive ? 'text-sky-400' : 'text-slate-200 hover:text-sky-300'
-                          }`}
-                        >
-                          <ParentIcon className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">{parentScreen.name}</span>
-                          {isParentActive && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_6px_#38bdf8]" />
-                          )}
-                        </button>
+                      <div className="pb-2 border-b border-slate-800/80 mb-2 space-y-1.5">
+                        {/* Row 1: Icon + Name (full width, no truncation competition, no active dot) */}
+                        <div className="flex items-center gap-1.5 w-full">
+                          <div className="relative shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIconPickerOpenFor(iconPickerOpenFor === parentScreen.id ? null : parentScreen.id);
+                              }}
+                              className="p-1 -m-1 rounded hover:bg-slate-800 text-slate-300 hover:text-sky-400 transition-colors cursor-pointer min-w-[28px] min-h-[28px] flex items-center justify-center"
+                              title="Change icon"
+                            >
+                              <ParentIcon className="w-3.5 h-3.5 shrink-0" />
+                            </button>
 
-                        {/* Top-Level Reorder Left / Right and Delete */}
-                        {!isHome && (
-                          <div className="flex items-center gap-0.5 opacity-60 hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveScreen(parentScreen.id, 'left');
-                              }}
-                              className="p-0.5 text-slate-400 hover:text-sky-300 hover:bg-slate-800 rounded transition-colors cursor-pointer"
-                              title="Move screen left"
-                            >
-                              <ArrowLeft className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveScreen(parentScreen.id, 'right');
-                              }}
-                              className="p-0.5 text-slate-400 hover:text-sky-300 hover:bg-slate-800 rounded transition-colors cursor-pointer"
-                              title="Move screen right"
-                            >
-                              <ArrowRight className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteTargetScreen(parentScreen);
-                              }}
-                              className="p-0.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors cursor-pointer ml-1"
-                              title="Delete screen"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            {iconPickerOpenFor === parentScreen.id && (
+                              <div
+                                ref={iconPickerRef}
+                                className="absolute top-full left-0 z-50 mt-1.5 p-2 grid grid-cols-5 gap-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-[190px]"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {SCREEN_ICON_OPTIONS.map((opt) => (
+                                  <button
+                                    key={opt.key}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateScreen(parentScreen.id, { icon: opt.key });
+                                      setIconPickerOpenFor(null);
+                                    }}
+                                    className={`p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center ${
+                                      parentScreen.icon === opt.key
+                                        ? 'bg-sky-500/25 text-sky-300 border border-sky-500/50'
+                                        : 'text-slate-300 hover:text-sky-400'
+                                    }`}
+                                    title={opt.label}
+                                  >
+                                    <opt.icon className="w-4 h-4" />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
+
+                          <button
+                            onClick={() => {
+                              setActiveView(parentScreen.id);
+                              setIsMegaMenuOpen(false);
+                            }}
+                            className={`flex items-center gap-1.5 text-xs font-bold font-mono transition-colors text-left cursor-pointer truncate flex-1 min-w-0 ${
+                              isParentActive ? 'text-sky-400' : 'text-slate-200 hover:text-sky-300'
+                            }`}
+                          >
+                            <span className="truncate">{parentScreen.name}</span>
+                          </button>
+                        </div>
+
+                        {/* Row 2: DOCK checkbox + Delete */}
+                        <div className="flex items-center justify-between">
+                          <label
+                            className={`flex items-center gap-1 text-[10px] font-mono select-none px-1.5 py-1 rounded min-h-[32px] sm:min-h-[44px] ${
+                              isRequired
+                                ? 'opacity-60 cursor-not-allowed text-slate-400'
+                                : 'cursor-pointer text-slate-400 hover:text-slate-200'
+                            }`}
+                            title={isRequired ? `${parentScreen.name} is required in the dock` : 'Show in dock'}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isInDock}
+                              disabled={isRequired}
+                              onChange={() => !isRequired && toggleDockMembership(parentScreen.id)}
+                              className="w-3.5 h-3.5 accent-sky-500 cursor-pointer disabled:cursor-not-allowed"
+                            />
+                            <span className="text-[9px] font-bold tracking-wider">DOCK</span>
+                          </label>
+
+                          {!isHome && (
+                            <div className="flex items-center opacity-60 hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteTargetScreen(parentScreen);
+                                }}
+                                className="p-0.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                                title="Delete screen"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Child Screens Column List */}
@@ -303,7 +358,7 @@ export const HeaderNav: React.FC = () => {
                           </div>
                         ) : (
                           childScreens.map((childScreen) => {
-                            const ChildIcon = getScreenIcon(childScreen.id);
+                            const ChildIcon = getScreenIcon(childScreen);
                             const isChildActive = activeView === childScreen.id;
 
                             return (
@@ -315,17 +370,60 @@ export const HeaderNav: React.FC = () => {
                                     : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
                                 }`}
                               >
-                                <button
-                                  onClick={() => {
-                                    setActiveView(childScreen.id);
-                                    setIsMegaMenuOpen(false);
-                                  }}
-                                  className="flex items-center gap-1.5 flex-1 text-left cursor-pointer truncate"
-                                >
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                   <CornerDownRight className="w-3 h-3 text-slate-500 shrink-0" />
-                                  <ChildIcon className="w-3 h-3 shrink-0" />
-                                  <span className="truncate">{childScreen.name}</span>
-                                </button>
+                                  <div className="relative shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIconPickerOpenFor(iconPickerOpenFor === childScreen.id ? null : childScreen.id);
+                                      }}
+                                      className="p-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-sky-300 transition-colors cursor-pointer flex items-center justify-center"
+                                      title="Change icon"
+                                    >
+                                      <ChildIcon className="w-3 h-3 shrink-0" />
+                                    </button>
+
+                                    {iconPickerOpenFor === childScreen.id && (
+                                      <div
+                                        ref={iconPickerRef}
+                                        className="absolute top-full left-0 z-50 mt-1.5 p-2 grid grid-cols-5 gap-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-[190px]"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {SCREEN_ICON_OPTIONS.map((opt) => (
+                                          <button
+                                            key={opt.key}
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateScreen(childScreen.id, { icon: opt.key });
+                                              setIconPickerOpenFor(null);
+                                            }}
+                                            className={`p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center ${
+                                              childScreen.icon === opt.key
+                                                ? 'bg-sky-500/25 text-sky-300 border border-sky-500/50'
+                                                : 'text-slate-300 hover:text-sky-400'
+                                            }`}
+                                            title={opt.label}
+                                          >
+                                            <opt.icon className="w-4 h-4" />
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <button
+                                    onClick={() => {
+                                      setActiveView(childScreen.id);
+                                      setIsMegaMenuOpen(false);
+                                    }}
+                                    className="text-left cursor-pointer truncate flex-1 min-w-0"
+                                  >
+                                    <span className="truncate">{childScreen.name}</span>
+                                  </button>
+                                </div>
 
                                 {/* Child Screen Reorder Up / Down & Delete */}
                                 <div className="flex items-center gap-0.5 opacity-0 group-hover/child:opacity-100 transition-opacity">

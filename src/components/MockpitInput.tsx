@@ -49,10 +49,14 @@ export const MockpitInput: React.FC<MockpitInputProps> = ({
   }, [props.autoFocus]);
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const currentActive = useMockpitStore.getState().activeInputState;
+    const isCurrentActive = currentActive?.inputId === inputId;
+
     openKeyboard({
       inputId,
       componentId,
       value,
+      initialValue: isCurrentActive && currentActive?.initialValue !== undefined ? currentActive.initialValue : value,
       placeholder,
       keyboardSlideDirectionOverride: keyboardSlideDirection as KeyboardSlideDirection | 'default',
       onChange,
@@ -77,10 +81,12 @@ export const MockpitInput: React.FC<MockpitInputProps> = ({
       e.preventDefault();
       if (onSubmit) {
         onSubmit(value);
+        closeKeyboard({ isCancelled: false });
       } else if (onEnter) {
         onEnter();
+        closeKeyboard({ isCancelled: false });
       } else {
-        closeKeyboard();
+        closeKeyboard({ isCancelled: false });
       }
     }
     if (props.onKeyDown) {

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useWeatherStore, WeatherDayData, WeatherConditionKey } from '../../store/useWeatherStore';
 import { useMockpitStore } from '../../store/useMockpitStore';
-import { MockpitInput } from '../MockpitInput';
 import { MiniWeatherView } from './MiniWeatherView';
 import { ForecastDayCard } from './ForecastDayCard';
 import { WeatherRadarCard } from './WeatherRadarCard';
+import { WeatherLocationControl } from './WeatherLocationControl';
 import { WeatherIcon } from './WeatherIcon';
 import { isCurrentlyAM } from '../../utils/timeOfDay';
 import { ChevronLeft, RotateCcw, AlertCircle } from 'lucide-react';
@@ -36,17 +36,13 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
   const status = useWeatherStore((s) => s.status);
   const lastFetchedAt = useWeatherStore((s) => s.lastFetchedAt);
   const locationInput = useWeatherStore((s) => s.locationInput);
-  const setLocationInput = useWeatherStore((s) => s.setLocationInput);
   const fetchWeather = useWeatherStore((s) => s.fetchWeather);
   const radarZoom = useWeatherStore((s) => s.radarZoom);
   const radarRefreshInterval = useWeatherStore((s) => s.radarRefreshInterval);
   const radarLabel = useWeatherStore((s) => s.radarLabel);
 
-  const openKeyboard = useMockpitStore((s) => s.openKeyboard);
   const closeKeyboard = useMockpitStore((s) => s.closeKeyboard);
-
-  const [isEditingLocation, setIsEditingLocation] = useState(false);
-  const [editInput, setEditInput] = useState(locationInput);
+  const setActiveView = useMockpitStore((s) => s.setActiveView);
 
   const [, forceTick] = useState(0);
   useEffect(() => {
@@ -59,65 +55,9 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
     fetchWeather();
   }, [fetchWeather]);
 
-  useEffect(() => {
-    setEditInput(locationInput);
-  }, [locationInput]);
-
-  useEffect(() => {
-    return () => {
-      if (useMockpitStore.getState().activeInputState?.inputId === 'weather-inline-location-input') {
-        useMockpitStore.getState().closeKeyboard();
-      }
-    };
-  }, []);
-
-  const locationDisplayName = (resolvedLocation?.name || locationInput || 'San Mateo, CA').toUpperCase();
   const hasCachedData = current !== null && forecast.length > 0;
   const isErrorWithCache = status === 'error' && lastFetchedAt !== null;
   const isHardError = status === 'error' && !hasCachedData;
-
-  const commitLocation = (valueToCommit: string) => {
-    const trimmed = valueToCommit.trim();
-    if (trimmed) {
-      setLocationInput(trimmed);
-      fetchWeather();
-    }
-    setIsEditingLocation(false);
-    closeKeyboard();
-  };
-
-  const handleLocationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    commitLocation(editInput);
-  };
-
-  const handleOpenLocationKeyboard = () => {
-    const currentVal = locationInput || resolvedLocation?.name || 'San Mateo, CA';
-    setEditInput(currentVal);
-    setIsEditingLocation(true);
-
-    openKeyboard({
-      inputId: 'weather-inline-location-input',
-      value: currentVal,
-      placeholder: 'City, State, or Zip Code...',
-      keyboardSlideDirectionOverride: 'bottom',
-      onChange: (val: string) => {
-        setEditInput(val);
-      },
-      onSubmit: (val: string) => {
-        commitLocation(val);
-      },
-      onCancel: () => {
-        setEditInput(locationInput);
-        setIsEditingLocation(false);
-        closeKeyboard();
-      },
-      onEnter: () => {
-        const activeVal = useMockpitStore.getState().activeInputState?.value ?? editInput;
-        commitLocation(activeVal);
-      },
-    });
-  };
 
   const handleBack = () => {
     closeKeyboard();
@@ -128,10 +68,10 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
     <div
       id="weather-forecast-screen"
       style={{ '--weather-font-scale': SCALE_MULTIPLIERS[displayScale] } as React.CSSProperties}
-      className={`w-full h-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none p-6 md:p-8 ${className}`}
+      className={`w-full h-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none p-5 md:p-6 ${className}`}
     >
       {/* Top Header Row with >=44x44px Back Control and Location Readout */}
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-5 mb-6 shrink-0 relative z-50">
+      <div className="flex items-center justify-between border-b border-slate-800/80 pb-3.5 mb-3.5 shrink-0 relative z-50">
         <div className="flex items-center gap-4">
           {/* Back Control (min 44x44px tap target, top-left) */}
           <button
@@ -145,56 +85,7 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
           </button>
 
           {/* Location: Tappable inline edit and on-screen keyboard trigger */}
-          <div className="relative z-50">
-            {isEditingLocation ? (
-              <form onSubmit={handleLocationSubmit} className="flex items-center gap-2 min-h-[44px] relative z-50">
-                <MockpitInput
-                  id="weather-inline-location-input"
-                  autoFocus
-                  value={editInput}
-                  onChange={(val) => setEditInput(val)}
-                  onSubmit={(val) => commitLocation(val)}
-                  placeholder="City, State, or Zip..."
-                  wrapperClassName="z-50 relative"
-                  className="bg-slate-900 border border-sky-500 rounded-xl px-3 py-2 text-base font-mono text-slate-100 uppercase font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 min-w-[240px]"
-                />
-                <button
-                  id="weather-inline-save-btn"
-                  type="submit"
-                  className="px-3.5 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-mono font-bold transition-all cursor-pointer shadow-md flex items-center justify-center"
-                >
-                  Save
-                </button>
-                <button
-                  id="weather-inline-cancel-btn"
-                  type="button"
-                  onClick={() => {
-                    setEditInput(locationInput);
-                    setIsEditingLocation(false);
-                    closeKeyboard();
-                  }}
-                  className="px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center"
-                >
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <button
-                id="weather-location-heading-btn"
-                type="button"
-                onClick={handleOpenLocationKeyboard}
-                className="min-h-[44px] min-w-[44px] flex items-center gap-2.5 text-left group cursor-pointer rounded-xl px-2 py-1 -ml-2 hover:bg-slate-900/80 transition-colors"
-                title="Click to edit location"
-              >
-                <h1
-                  id="weather-location-heading"
-                  className="text-xl md:text-2xl font-black font-mono tracking-tight text-slate-100 uppercase group-hover:text-sky-400 transition-colors"
-                >
-                  {locationDisplayName}
-                </h1>
-              </button>
-            )}
-          </div>
+          <WeatherLocationControl headingClassName="text-xl md:text-2xl" />
         </div>
 
         {/* Right Header Status & Controls */}
@@ -328,6 +219,8 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
                 label={radarLabel}
                 refreshIntervalMinutes={radarRefreshInterval}
                 className="w-full"
+                onExpand={() => setActiveView('weather-radar')}
+                variant="compact"
               />
             </div>
           </div>

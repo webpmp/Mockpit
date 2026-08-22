@@ -474,11 +474,13 @@ const ScreenPropertiesPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Weather Properties Section */}
-      <WeatherPropertiesSection />
-
-      {/* Weather Radar Configuration Section */}
-      <WeatherRadarPropertiesSection />
+      {/* Weather Properties & Radar Configuration (Scoped exclusively to Weather screen) */}
+      {activeScreen.id === 'weather' && (
+        <>
+          <WeatherPropertiesSection />
+          <WeatherRadarPropertiesSection />
+        </>
+      )}
 
       {/* Reorder Dock Note */}
       <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-[10px] text-slate-400 font-mono space-y-1">

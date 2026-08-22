@@ -1,28 +1,25 @@
 import React, { useState } from 'react';
-import { LayoutGrid, MapPin, Music, Phone, ChevronLeft, ChevronRight, GripVertical, Layout } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
-
-const getDockIcon = (id: string) => {
-  if (id === 'home') return LayoutGrid;
-  if (id === 'navigation' || id === 'favorites') return MapPin;
-  if (id === 'media' || id === 'playlists') return Music;
-  if (id === 'phone') return Phone;
-  return Layout;
-};
+import { ScreenDefinition } from '../types';
+import { getScreenIcon } from '../config/screenIcons';
 
 export const BottomDock: React.FC = () => {
   const activeView = useMockpitStore((s) => s.activeView);
   const setActiveView = useMockpitStore((s) => s.setActiveView);
   const screenMode = useMockpitStore((s) => s.screenMode);
   const screens = useMockpitStore((s) => s.screens);
-  const moveScreen = useMockpitStore((s) => s.moveScreen);
-  const reorderScreens = useMockpitStore((s) => s.reorderScreens);
+  const dockOrder = useMockpitStore((s) => s.dockOrder);
+  const moveDockItem = useMockpitStore((s) => s.moveDockItem);
+  const setDockOrder = useMockpitStore((s) => s.setDockOrder);
 
   const isEditor = screenMode === 'editor';
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
-  // Requirement: Presentation dock ONLY shows top-level screens (parentId === null)
-  const topLevelScreens = screens.filter((s) => !s.parentId);
+  // Requirement: Presentation dock ONLY shows top-level screens in dockOrder
+  const topLevelScreens = dockOrder
+    .map((id) => screens.find((s) => s.id === id))
+    .filter((s): s is ScreenDefinition => Boolean(s));
   const activeScreenDef = screens.find((s) => s.id === activeView);
 
   const handleSelectView = (id: string) => {
@@ -31,7 +28,7 @@ export const BottomDock: React.FC = () => {
   };
 
   const handleMove = (id: string, direction: 'left' | 'right') => {
-    moveScreen(id, direction);
+    moveDockItem(id, direction);
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -57,28 +54,10 @@ export const BottomDock: React.FC = () => {
     const targetIdx = topLevelScreens.findIndex((s) => s.id === targetId);
 
     if (sourceIdx > 0 && targetIdx > 0) {
-      const newTopLevel = [...topLevelScreens];
-      const [moved] = newTopLevel.splice(sourceIdx, 1);
-      newTopLevel.splice(targetIdx, 0, moved);
-
-      // Reconstruct screens array maintaining children under their parents
-      const childrenByParent: Record<string, typeof screens> = {};
-      screens.forEach((s) => {
-        if (s.parentId) {
-          childrenByParent[s.parentId] = childrenByParent[s.parentId] || [];
-          childrenByParent[s.parentId].push(s);
-        }
-      });
-
-      const reorderedAllScreens: typeof screens = [];
-      newTopLevel.forEach((parent) => {
-        reorderedAllScreens.push(parent);
-        if (childrenByParent[parent.id]) {
-          reorderedAllScreens.push(...childrenByParent[parent.id]);
-        }
-      });
-
-      reorderScreens(reorderedAllScreens);
+      const newTopLevelIds = topLevelScreens.map((s) => s.id);
+      const [moved] = newTopLevelIds.splice(sourceIdx, 1);
+      newTopLevelIds.splice(targetIdx, 0, moved);
+      setDockOrder(newTopLevelIds);
     }
     setDraggedId(null);
   };
@@ -92,7 +71,7 @@ export const BottomDock: React.FC = () => {
       }`}
     >
       {topLevelScreens.map((item, index) => {
-        const Icon = getDockIcon(item.id);
+        const Icon = getScreenIcon(item);
         const isActive = activeView === item.id || activeScreenDef?.parentId === item.id;
         const isHome = item.id === 'home';
         const isDragging = draggedId === item.id;

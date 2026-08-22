@@ -111,10 +111,12 @@ export const VirtualKeyboard: React.FC = () => {
     const active = useMockpitStore.getState().activeInputState;
     if (active?.onSubmit) {
       active.onSubmit(active.value);
+      closeKeyboard({ isCancelled: false });
     } else if (active?.onEnter) {
       active.onEnter();
+      closeKeyboard({ isCancelled: false });
     } else {
-      closeKeyboard();
+      closeKeyboard({ isCancelled: false });
     }
   };
 

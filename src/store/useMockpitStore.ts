@@ -115,9 +115,11 @@ export const DEFAULT_SCREENS: ScreenDefinition[] = [
   { id: 'playlists', name: 'Playlists', order: 4, transitionStyle: 'fade', parentId: 'media' },
   { id: 'favorites', name: 'Favorites', order: 5, transitionStyle: 'fade', parentId: 'navigation' },
   { id: 'weather', name: 'Weather', order: 6, transitionStyle: 'fade', parentId: null },
+  { id: 'weather-radar', name: 'Radar', order: 7, transitionStyle: 'fade', parentId: 'weather' },
 ];
 
-const DEFAULT_DOCK_ORDER: string[] = ['home', 'navigation', 'media', 'phone'];
+export const REQUIRED_DOCK_SCREEN_IDS: string[] = ['home', 'navigation', 'media', 'phone'];
+export const DEFAULT_DOCK_ORDER: string[] = ['home', 'navigation', 'media', 'phone'];
 
 const INITIAL_VEHICLE_STATE: VehicleState = {
   gear: 'P',
@@ -500,15 +502,19 @@ function loadSavedDockOrder(screens: ScreenDefinition[]): string[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const topLevelScreens = screens.filter((s) => s.parentId === null).map((s) => s.id);
-        const missing = topLevelScreens.filter((id) => !parsed.includes(id));
-        return [...parsed, ...missing];
+        const validTopLevelIds = new Set(screens.filter((s) => s.parentId === null).map((s) => s.id));
+        // Drop any saved ids for screens that no longer exist
+        const cleaned = parsed.filter((id: string) => validTopLevelIds.has(id));
+        // Only force-include required screens if somehow missing; do NOT re-add other optional screens
+        const missingRequired = REQUIRED_DOCK_SCREEN_IDS.filter((id) => validTopLevelIds.has(id) && !cleaned.includes(id));
+        return [...cleaned, ...missingRequired];
       }
     }
   } catch (e) {
     console.error('Failed to load dock order from localStorage', e);
   }
-  return screens.filter((s) => s.parentId === null).map((s) => s.id);
+  // First-ever load / no saved data: fall back to required screens only, not all top-level screens
+  return REQUIRED_DOCK_SCREEN_IDS.filter((id) => screens.some((s) => s.id === id));
 }
 
 export function applyCssVariables(palette: PaletteConfig) {
@@ -679,7 +685,7 @@ interface MockpitStore {
   activeInputState: ActiveInputState;
   isKeyboardVisible: boolean;
   openKeyboard: (inputState: NonNullable<ActiveInputState>) => void;
-  closeKeyboard: () => void;
+  closeKeyboard: (options?: { isCancelled?: boolean }) => void;
   updateActiveInputValue: (val: string) => void;
   typeKeyboardKey: (char: string) => void;
   backspaceKeyboardKey: () => void;
@@ -749,6 +755,7 @@ interface MockpitStore {
   selectComponent: (id: string | null) => void;
   setDockOrder: (newOrder: string[]) => void;
   moveDockItem: (id: string, direction: 'left' | 'right') => void;
+  toggleDockMembership: (id: string) => void;
 
   // Component Actions
   addComponent: (type: ComponentType, x?: number, y?: number) => string;
@@ -1209,15 +1216,35 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   },
 
   openKeyboard: (inputState) => {
+    const current = get().activeInputState;
+
+    // Capture the initial non-cleared previous value so we can restore it if cancelled
+    const initialVal =
+      inputState.initialValue !== undefined
+        ? inputState.initialValue
+        : current && current.inputId === inputState.inputId && current.initialValue !== undefined
+        ? current.initialValue
+        : inputState.value;
+
+    // Clear the input text field so the user does not have to manually delete text before adding new text
+    if (inputState.value !== '') {
+      inputState.onChange('');
+    }
+
     set({
-      activeInputState: inputState,
+      activeInputState: {
+        ...inputState,
+        value: '',
+        initialValue: initialVal,
+      },
       isKeyboardVisible: true,
     });
   },
 
-  closeKeyboard: () => {
+  closeKeyboard: (options?: { isCancelled?: boolean }) => {
     const activeInput = get().activeInputState;
     const queued = get().queuedMessageToasts;
+    const isCancelled = options?.isCancelled ?? true;
 
     set({
       isKeyboardVisible: false,
@@ -1225,8 +1252,12 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       queuedMessageToasts: [],
     });
 
-    if (activeInput?.onCancel) {
-      activeInput.onCancel();
+    if (isCancelled && activeInput) {
+      if (activeInput.onCancel) {
+        activeInput.onCancel();
+      } else if (activeInput.initialValue !== undefined) {
+        activeInput.onChange(activeInput.initialValue);
+      }
     }
 
     if (queued.length > 0) {
@@ -1314,12 +1345,10 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       ...state.componentsByScreen,
       [newId]: [],
     };
-    const updatedDockOrder = state.dockOrder.includes(newId) ? state.dockOrder : [...state.dockOrder, newId];
 
     try {
       localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(updatedScreens));
       localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedComponentsByScreen));
-      localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(updatedDockOrder));
     } catch (e) {
       console.error('Failed to save added screen', e);
     }
@@ -1327,7 +1356,6 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     set({
       screens: updatedScreens,
       componentsByScreen: updatedComponentsByScreen,
-      dockOrder: updatedDockOrder,
       activeView: newId,
       components: [],
       selectedComponentId: null,
@@ -1845,6 +1873,22 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         console.error('Failed to save moved dock item order', e);
       }
       return { dockOrder: currentOrder };
+    });
+  },
+
+  toggleDockMembership: (id: string) => {
+    if (REQUIRED_DOCK_SCREEN_IDS.includes(id)) return; // defensive guard, required screens can't be removed
+    set((state) => {
+      const isIn = state.dockOrder.includes(id);
+      const newOrder = isIn
+        ? state.dockOrder.filter((d) => d !== id)
+        : [...state.dockOrder, id];
+      try {
+        localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(newOrder));
+      } catch (e) {
+        console.error('Failed to save toggled dock membership', e);
+      }
+      return { dockOrder: newOrder };
     });
   },
 
