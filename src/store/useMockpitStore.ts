@@ -252,10 +252,12 @@ const DEFAULT_NOTIFICATION_COMPONENTS: ComponentInstance[] = [
       label: 'TIRE PRESSURE ALERT',
       icon: 'tire',
       message: 'LOW TIRE PRESSURE',
+      details: 'Check tire pressures and inspect for punctures.',
       visible: 'false',
       color: '#f59e0b',
       severity: 'warning',
       triggerMode: 'condition',
+      showBadgeOnMinimize: 'true',
     },
     bindings: [
       {
@@ -433,6 +435,55 @@ function loadSavedComponentsByScreen(): Record<string, ComponentInstance[]> {
   return INITIAL_COMPONENTS_BY_SCREEN;
 }
 
+export function evaluateAllTirePressureWarnings(
+  componentsByScreen: Record<string, ComponentInstance[]>,
+  currentComponents: ComponentInstance[]
+): { hasWarning: boolean; critical: boolean; message: string; lowTires: string[] } {
+  const allScreensComps = [
+    ...currentComponents,
+    ...Object.values(componentsByScreen).flat(),
+  ];
+
+  const lowTires: string[] = [];
+  let isCrit = false;
+
+  for (const comp of allScreensComps) {
+    if (comp.type === 'tirePressure') {
+      const props = comp.staticProps || {};
+      const fl = parseFloat(String(props.frontLeft || '35').replace(/[^0-9.]/g, '')) || 35;
+      const fr = parseFloat(String(props.frontRight || '35').replace(/[^0-9.]/g, '')) || 35;
+      const rl = parseFloat(String(props.rearLeft || '36').replace(/[^0-9.]/g, '')) || 36;
+      const rr = parseFloat(String(props.rearRight || '36').replace(/[^0-9.]/g, '')) || 36;
+      const warn = Number(props.warningThreshold) || 31;
+      const crit = Number(props.criticalThreshold) || 27;
+
+      if (fl <= warn) {
+        lowTires.push(`FL (${fl} PSI)`);
+        if (fl <= crit) isCrit = true;
+      }
+      if (fr <= warn) {
+        lowTires.push(`FR (${fr} PSI)`);
+        if (fr <= crit) isCrit = true;
+      }
+      if (rl <= warn) {
+        lowTires.push(`RL (${rl} PSI)`);
+        if (rl <= crit) isCrit = true;
+      }
+      if (rr <= warn) {
+        lowTires.push(`RR (${rr} PSI)`);
+        if (rr <= crit) isCrit = true;
+      }
+    }
+  }
+
+  const hasWarning = lowTires.length > 0;
+  const message = hasWarning
+    ? `${isCrit ? 'CRITICAL' : 'LOW'} TIRE PRESSURE: ${lowTires.join(', ')}`
+    : 'TIRE PRESSURE NORMAL';
+
+  return { hasWarning, critical: isCrit, message, lowTires };
+}
+
 function loadSavedNotificationComponents(): ComponentInstance[] {
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_NOTIFICATIONS_KEY);
@@ -452,7 +503,9 @@ function loadSavedNotificationComponents(): ComponentInstance[] {
                 icon: c.staticProps?.icon || defaultComp.staticProps.icon,
                 triggerMode: c.staticProps?.triggerMode || defaultComp.staticProps.triggerMode,
                 triggerEvent: c.staticProps?.triggerEvent || defaultComp.staticProps.triggerEvent,
+                showBadgeOnMinimize: 'true',
               },
+              bindings: c.bindings && c.bindings.length > 0 ? c.bindings : defaultComp.bindings,
             };
           }
           return c;
@@ -1571,6 +1624,12 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       newVs.signalBars = Math.max(1, Math.min(5, currentSignal + signalDir));
     }
 
+    // Global tire pressure check across all screens
+    const tireCheck = evaluateAllTirePressureWarnings(state.componentsByScreen, state.components);
+    if (tireCheck.hasWarning !== currentVs.tirePressureWarning) {
+      newVs.tirePressureWarning = tireCheck.hasWarning;
+    }
+
     if (Object.keys(newVs).length > 0) {
       state.setVehicleState(newVs);
     }
@@ -1764,6 +1823,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         severity,
         avatarName: notif.avatarName || '',
         threadId,
+        showBadgeOnMinimize: 'true',
       },
       bindings: [],
     };
@@ -2218,9 +2278,13 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         width = 280;
         height = 100;
         staticProps = {
-          label: 'Send to Service Center',
-          buttonLabel: 'Send to Service Center',
+          label: 'Send Vehicle Diagnostics',
+          buttonLabel: 'Send Vehicle Diagnostics',
           reportTitle: 'Vehicle Diagnostic Report',
+          confirmLabel: 'Confirm Send',
+          cancelLabel: 'Cancel',
+          sendingLabel: 'Generating & Sending Report...',
+          successLabel: 'Report Dispatched & Downloaded',
         };
         bindings = [];
         break;
@@ -2408,6 +2472,15 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       } catch (e) {
         console.error('Failed to save staticProps', e);
       }
+
+      // Check all tire pressures across screens to keep tirePressureWarning in sync globally
+      const tireCheck = evaluateAllTirePressureWarnings(updatedScreens, updatedList);
+      if (tireCheck.hasWarning !== state.vehicleState.tirePressureWarning) {
+        setTimeout(() => {
+          get().setVehicleState({ tirePressureWarning: tireCheck.hasWarning });
+        }, 0);
+      }
+
       return {
         componentsByScreen: updatedScreens,
         components: updatedList,

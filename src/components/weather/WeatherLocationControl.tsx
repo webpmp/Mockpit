@@ -33,7 +33,7 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
     };
   }, []);
 
-  const locationDisplayName = (resolvedLocation?.name || locationInput || 'San Mateo, CA').toUpperCase();
+  const locationDisplayName = (resolvedLocation?.name || locationInput || 'San Mateo, California').toUpperCase();
 
   const commitLocation = (valueToCommit: string) => {
     const trimmed = valueToCommit.trim();
@@ -41,7 +41,7 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
       setLocationInput(trimmed);
       fetchWeather();
     } else {
-      const fallbackVal = locationInput || resolvedLocation?.name || 'San Mateo, CA';
+      const fallbackVal = locationInput || resolvedLocation?.name || 'San Mateo, California';
       setEditInput(fallbackVal);
     }
     setIsEditingLocation(false);
@@ -54,7 +54,7 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
   };
 
   const handleOpenLocationKeyboard = () => {
-    const currentVal = locationInput || resolvedLocation?.name || 'San Mateo, CA';
+    const currentVal = locationInput || resolvedLocation?.name || 'San Mateo, California';
     setEditInput('');
     setIsEditingLocation(true);
 
@@ -107,7 +107,7 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
             id="weather-inline-cancel-btn"
             type="button"
             onClick={() => {
-              const fallbackVal = locationInput || resolvedLocation?.name || 'San Mateo, CA';
+              const fallbackVal = locationInput || resolvedLocation?.name || 'San Mateo, California';
               setEditInput(fallbackVal);
               setIsEditingLocation(false);
               closeKeyboard({ isCancelled: true });

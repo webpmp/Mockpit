@@ -96,6 +96,7 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   climateSeats: 'Seat Climate',
   vehicleExplodedView: 'Vehicle Exploded View',
   vehicleStatusCallout: 'Vehicle Status Callout',
+  sendToServiceCenter: 'Send Vehicle Diagnostics',
 };
 
 export const getAlphaColor = (color: string, hexAlpha: string, mixPercent: number = 25): string => {
@@ -405,7 +406,7 @@ export const renderNotificationIcon = (
 
 const customPinIcon = L.divIcon({
   className: 'custom-map-pin',
-  html: `<div style="background-color: #38bdf8; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #0f172a; box-shadow: 0 0 10px #38bdf8;"></div>`,
+  html: `<div style="background-color: var(--color-primary, #38bdf8); width: 14px; height: 14px; border-radius: 50%; border: 3px solid #0f172a; box-shadow: 0 0 10px var(--color-primary, #38bdf8);"></div>`,
   iconSize: [14, 14],
   iconAnchor: [7, 7],
 });
@@ -871,22 +872,30 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
   }, []);
 
   useEffect(() => {
+    let hasAbnormal = false;
     tires.forEach((tire) => {
       const status = getStatus(tire.psi);
       const prevStatus = triggeredRef.current[tire.code];
 
+      if (status !== 'normal') {
+        hasAbnormal = true;
+      }
+
       if (status !== 'normal' && status !== prevStatus) {
         triggeredRef.current[tire.code] = status;
-        useMockpitStore.getState().triggerNotification({
-          message: `${status === 'critical' ? 'CRITICAL' : 'LOW'} TIRE PRESSURE: ${tire.code} (${tire.psi} PSI)`,
-          icon: 'alert-triangle',
-          color: status === 'critical' ? '#ef4444' : '#f59e0b',
-          severity: status,
-        });
+        const store = useMockpitStore.getState();
+        store.setVehicleState({ tirePressureWarning: true });
       } else if (status === 'normal' && prevStatus) {
         delete triggeredRef.current[tire.code];
       }
     });
+
+    if (!hasAbnormal && Object.keys(triggeredRef.current).length === 0) {
+      const vs = useMockpitStore.getState().vehicleState;
+      if (vs.tirePressureWarning) {
+        useMockpitStore.getState().setVehicleState({ tirePressureWarning: false });
+      }
+    }
   }, [flStr, frStr, rlStr, rrStr, warningThresh, criticalThresh]);
 
   return (
@@ -966,6 +975,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   onMinimize,
 }) => {
   const setVehicleState = useMockpitStore((s) => s.setVehicleState);
+  const activePalette = useMockpitStore((s) => s.activePalette);
+  const primaryColor = activePalette?.primary || '#38bdf8';
   const resolved = getResolvedProps(component, vehicleState);
 
   // Visibility logic
@@ -996,7 +1007,15 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     : 1;
 
   const baseOpacity = 'opacity-100';
-  const customColor = resolved.color || 'var(--color-primary)';
+  // If color is not customized or is set to default/palette placeholder, use active theme palette primary color
+  const defaultTypeColor = COMPONENT_META[component.type]?.defaultColor;
+  const isDefaultOrPresetColor = !resolved.color || 
+    resolved.color === 'var(--color-primary)' || 
+    resolved.color === '#38bdf8' || 
+    resolved.color === defaultTypeColor ||
+    ['#22c55e', '#f8fafc', '#06b6d4', '#eab308', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#f97316', '#ef4444'].includes(resolved.color);
+
+  const customColor = isDefaultOrPresetColor ? primaryColor : resolved.color;
 
   switch (component.type) {
     case 'battery': {
@@ -1300,7 +1319,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       if (displayStyle === 'arcGauge') {
         const stop1 = resolved.arcStop1Color || component.staticProps?.arcStop1Color || '#10b981';
         const stop2 = resolved.arcStop2Color || component.staticProps?.arcStop2Color || '#06b6d4';
-        const stop3 = resolved.arcStop3Color || component.staticProps?.arcStop3Color || '#38bdf8';
+        const stop3 = resolved.arcStop3Color || component.staticProps?.arcStop3Color || customColor;
         const stop4 = resolved.arcStop4Color || component.staticProps?.arcStop4Color || '#f59e0b';
         const stop5 = resolved.arcStop5Color || component.staticProps?.arcStop5Color || '#ef4444';
 

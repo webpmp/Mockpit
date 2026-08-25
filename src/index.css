@@ -2,6 +2,9 @@
 @import "leaflet/dist/leaflet.css";
 
 :root {
+  --color-primary: #38bdf8;
+  --color-secondary: #3b82f6;
+  --color-tertiary: #10b981;
   --text-scale: 1;
 }
 

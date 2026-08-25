@@ -199,7 +199,7 @@ const VEHICLE_WIDGET_ITEMS: ComponentLibraryItem[] = [
   },
   {
     type: 'sendToServiceCenter',
-    title: 'Send to Service Center',
+    title: 'Send Vehicle Diagnostics',
     description: 'Dispatches active diagnostic status & generates real exportable JSON report',
     defaultBindingDesc: 'Simulated send & real JSON file export',
   },

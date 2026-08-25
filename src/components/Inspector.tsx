@@ -2321,6 +2321,84 @@ export const Inspector: React.FC = () => {
               );
             })()}
 
+            {/* Send Vehicle Diagnostics Content Controls */}
+            {selectedComp.type === 'sendToServiceCenter' && (
+              <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
+                <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                  Send Vehicle Diagnostics Content
+                </span>
+
+                <div>
+                  <label className="text-[10px] font-mono text-slate-400 block mb-1">Button Label</label>
+                  <input
+                    type="text"
+                    value={selectedComp.staticProps.buttonLabel ?? ''}
+                    onChange={(e) => handleStaticPropChange('buttonLabel', e.target.value)}
+                    placeholder="e.g. Send Vehicle Diagnostics"
+                    className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono text-slate-400 block mb-1">
+                    Report Title <span className="text-slate-500 font-normal">(Leave blank for none)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedComp.staticProps.reportTitle ?? ''}
+                    onChange={(e) => handleStaticPropChange('reportTitle', e.target.value)}
+                    placeholder="e.g. Vehicle Diagnostic Report"
+                    className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-mono text-slate-400 block mb-1">Confirm Button</label>
+                    <input
+                      type="text"
+                      value={selectedComp.staticProps.confirmLabel ?? ''}
+                      onChange={(e) => handleStaticPropChange('confirmLabel', e.target.value)}
+                      placeholder="e.g. Confirm Send"
+                      className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono text-slate-400 block mb-1">Cancel Button</label>
+                    <input
+                      type="text"
+                      value={selectedComp.staticProps.cancelLabel ?? ''}
+                      onChange={(e) => handleStaticPropChange('cancelLabel', e.target.value)}
+                      placeholder="e.g. Cancel"
+                      className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono text-slate-400 block mb-1">Sending Status Message</label>
+                  <input
+                    type="text"
+                    value={selectedComp.staticProps.sendingLabel ?? ''}
+                    onChange={(e) => handleStaticPropChange('sendingLabel', e.target.value)}
+                    placeholder="e.g. Generating & Sending Report..."
+                    className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono text-slate-400 block mb-1">Success Status Message</label>
+                  <input
+                    type="text"
+                    value={selectedComp.staticProps.successLabel ?? ''}
+                    onChange={(e) => handleStaticPropChange('successLabel', e.target.value)}
+                    placeholder="e.g. Report Dispatched & Downloaded"
+                    className="w-full bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500"
+                  />
+                </div>
+              </div>
+            )}
+
             {Object.entries(selectedComp.staticProps)
               .filter(
                 ([key]) =>
@@ -2393,6 +2471,12 @@ export const Inspector: React.FC = () => {
                   key !== 'highwayBadgeColor' &&
                   key !== 'trafficDensity' &&
                   key !== 'grayscaleTraffic' &&
+                  key !== 'buttonLabel' &&
+                  key !== 'reportTitle' &&
+                  key !== 'confirmLabel' &&
+                  key !== 'cancelLabel' &&
+                  key !== 'sendingLabel' &&
+                  key !== 'successLabel' &&
                   !(selectedComp.type === 'overheadVisualization' && key === 'color')
               )
               .map(([key, val]) => {

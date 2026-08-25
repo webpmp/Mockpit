@@ -7,7 +7,7 @@ export interface WeatherIconProps {
   className?: string;
 }
 
-export const WeatherIcon: React.FC<WeatherIconProps> = ({ condition, size = 'sm', className = '' }) => {
+export const WeatherIcon: React.FC<WeatherIconProps> = ({ condition: rawCondition, size = 'sm', className = '' }) => {
   let dimension = 48;
   if (size === 'sm') {
     dimension = 52;
@@ -16,6 +16,35 @@ export const WeatherIcon: React.FC<WeatherIconProps> = ({ condition, size = 'sm'
   } else if (typeof size === 'number') {
     dimension = size;
   }
+
+  // Normalize incoming condition string to handle any format (e.g. "partly cloudy", "partly-cloud", "mostly-sunny")
+  const condition = (() => {
+    if (!rawCondition) return 'partly-cloudy-day';
+    const c = String(rawCondition).toLowerCase().replace(/_/g, '-').trim();
+    if (c.includes('thunder') || c.includes('storm')) return 'thunderstorm';
+    if (c.includes('snow') || c.includes('blizzard') || c.includes('flurr')) return 'snow';
+    if (c.includes('sleet') || c.includes('freez') || c.includes('ice') || c.includes('hail')) return 'sleet';
+    if (c.includes('drizzle')) return 'drizzle';
+    if (c.includes('rain') || c.includes('shower')) return c.includes('night') ? 'rain-night' : 'rain';
+    if (c.includes('fog') || c.includes('haze') || c.includes('mist') || c.includes('smoke')) return 'fog';
+    if (c.includes('wind')) return 'windy';
+    if (
+      c.includes('partly') ||
+      c.includes('mostly-sun') ||
+      c.includes('mostly sun') ||
+      c.includes('mostly-cloud') ||
+      c.includes('mostly cloud') ||
+      c.includes('scattered') ||
+      c.includes('broken')
+    ) {
+      return c.includes('night') ? 'partly-cloudy-night' : 'partly-cloudy-day';
+    }
+    if (c.includes('overcast') || c.includes('cloud')) return 'cloudy';
+    if (c.includes('clear') || c.includes('sun') || c.includes('fair')) {
+      return c.includes('night') ? 'clear-night' : 'clear-day';
+    }
+    return (rawCondition as WeatherConditionKey) || 'partly-cloudy-day';
+  })();
 
   // Common SVG gradient / defs IDs to keep things scoped
   const sunGradId = 'weather-sun-gradient';
@@ -115,22 +144,24 @@ export const WeatherIcon: React.FC<WeatherIconProps> = ({ condition, size = 'sm'
         </g>
       )}
 
-      {condition === 'partly-cloudy-day' && (
+      {(condition === 'partly-cloudy-day' || (condition as string) === 'mostly-sunny') && (
         <g>
-          {/* Sun Behind Cloud */}
-          <g transform="translate(4, -4)">
-            <g stroke="#f59e0b" strokeWidth="2" strokeLinecap="round">
-              <line x1="28" y1="8" x2="28" y2="13" />
-              <line x1="14" y1="14" x2="17.5" y2="17.5" />
-              <line x1="8" y1="28" x2="13" y2="28" />
-              <line x1="42" y1="14" x2="38.5" y2="17.5" />
-              <line x1="48" y1="28" x2="43" y2="28" />
+          {/* Golden Radiant Sun with Starburst Rays */}
+          <g>
+            <g stroke="var(--weather-sun-ray, #f59e0b)" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="22" y1="4" x2="22" y2="10" />
+              <line x1="6" y1="20" x2="12" y2="20" />
+              <line x1="9.5" y1="7.5" x2="14" y2="12" />
+              <line x1="34.5" y1="7.5" x2="30" y2="12" />
+              <line x1="39" y1="20" x2="33" y2="20" />
             </g>
-            <circle cx="28" cy="28" r="12" fill={`url(#${sunGradId})`} stroke="#d97706" strokeWidth="1.2" />
+            {/* Sun Disc */}
+            <circle cx="22" cy="20" r="13" fill={`url(#${sunGradId})`} stroke="#d97706" strokeWidth="1.5" />
+            <circle cx="18" cy="16" r="3.5" fill="#ffffff" opacity="0.4" />
           </g>
-          {/* Front Cloud */}
+          {/* Front Volumetric Cloud with Crisp Drop Shadow */}
           <path
-            d="M20 48H46C51.5 48 56 43.5 56 38C56 32.8 52 28.5 47 28.1C45.8 21.2 39.8 16 32.5 16C26.5 16 21.2 19.8 19.2 25.2C14.6 26.2 11 30.2 11 35C11 42.2 15 48 20 48Z"
+            d="M20 50H48C53.5 50 58 45.5 58 40C58 34.8 54 30.5 49 30.1C47.8 23.2 41.8 18 34.5 18C28.5 18 23.2 21.8 21.2 27.2C16.6 28.2 13 32.2 13 37C13 44.2 17 50 20 50Z"
             fill={`url(#${cloudGradId})`}
             stroke="#94a3b8"
             strokeWidth="1.5"

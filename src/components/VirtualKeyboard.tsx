@@ -259,9 +259,9 @@ export const VirtualKeyboard: React.FC = () => {
   const getKeyStyle = (keyIdentifier: string) => {
     const active = isKeyPressed(keyIdentifier);
     if (active) {
-      return 'bg-sky-500/40 border-sky-400 text-sky-100 scale-95 shadow-[0_0_12px_rgba(56,189,248,0.5)]';
+      return 'bg-slate-800 border-[var(--color-primary,#38bdf8)] text-slate-100 scale-95 shadow-[0_0_12px_color-mix(in_srgb,var(--color-primary,#38bdf8)_40%,transparent)]';
     }
-    return 'bg-slate-900 hover:bg-slate-800 active:bg-sky-500/30 border-slate-800/80 text-slate-100 shadow-sm active:scale-95';
+    return 'bg-slate-900 hover:bg-slate-800 active:bg-slate-700 border-slate-800/80 text-slate-100 shadow-sm active:scale-95';
   };
 
   return (

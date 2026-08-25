@@ -98,7 +98,7 @@ export const SettingsModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-11 right-0 bottom-[42px] z-40 w-80 sm:w-96 bg-slate-950/95 border-l border-slate-800 shadow-2xl flex flex-col transition-all duration-300 animate-in slide-in-from-right overflow-hidden">
+    <div className="fixed top-16 right-0 bottom-[42px] z-40 w-80 sm:w-96 bg-slate-950/95 border-l border-slate-800 shadow-2xl flex flex-col transition-all duration-300 animate-in slide-in-from-right overflow-hidden">
       {/* Header Bar */}
       <div className="px-5 py-3.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">

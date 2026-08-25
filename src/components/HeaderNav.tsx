@@ -3,6 +3,7 @@ import { useMockpitStore, REQUIRED_DOCK_SCREEN_IDS } from '../store/useMockpitSt
 import { ScreenDefinition } from '../types';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { getScreenIcon, SCREEN_ICON_OPTIONS } from '../config/screenIcons';
+import { MockpitLogo } from './MockpitLogo';
 import {
   Play,
   Edit3,
@@ -157,14 +158,11 @@ export const HeaderNav: React.FC = () => {
       {/* App Branding */}
       {!isPresentation && (
         <div className="flex items-center gap-2.5">
-          <img
+          <MockpitLogo
             id="mockpit-header-logo"
-            src="/logo/logo-mockpit-white.png"
-            alt="Mockpit"
-            width={48}
-            height={52}
-            className="w-[48px] h-[52px] min-w-[48px] min-h-[52px] object-contain select-none grayscale"
-            referrerPolicy="no-referrer"
+            width={40}
+            height={40}
+            className="w-[40px] h-[40px] min-w-[40px] min-h-[40px] object-contain select-none"
           />
           <span
             id="mockpit-header-title"
@@ -488,9 +486,12 @@ export const HeaderNav: React.FC = () => {
             onClick={() => setScreenMode('editor')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               !isPresentation
-                ? 'bg-slate-800 text-sky-400 shadow-sm border border-slate-700/60'
+                ? 'bg-slate-800 shadow-sm border border-slate-700/60'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
+            style={{
+              color: !isPresentation ? 'var(--color-primary)' : undefined,
+            }}
             title="Editor Mode"
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -529,9 +530,18 @@ export const HeaderNav: React.FC = () => {
             onClick={toggleSettingsModal}
             className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
               isSettingsOpen
-                ? 'bg-sky-500/10 border-sky-500/30 text-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+                ? 'bg-slate-900 border'
                 : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
             }`}
+            style={
+              isSettingsOpen
+                ? {
+                    borderColor: 'var(--color-primary)',
+                    color: 'var(--color-primary)',
+                    boxShadow: '0 0 10px color-mix(in srgb, var(--color-primary) 30%, transparent)',
+                  }
+                : undefined
+            }
             title="Settings (Palette System)"
           >
             <Settings className="w-4 h-4" />

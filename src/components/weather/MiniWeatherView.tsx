@@ -33,18 +33,18 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
   return (
     <div
       id="mini-weather-view"
-      className={`bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-3xl p-6 flex flex-col items-center justify-between shadow-2xl transition-all duration-300 text-slate-100 ${className}`}
+      className={`bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-3 flex flex-col items-center justify-between shadow-xl transition-all duration-300 text-slate-100 ${className}`}
     >
       {/* Main Condition Icon Display */}
-      <div className="my-3 flex items-center justify-center p-3 rounded-full bg-slate-950/40 border border-slate-800/60 shadow-inner">
-        <WeatherIcon condition={icon} size="lg" />
+      <div className="my-1 flex items-center justify-center p-2 rounded-full bg-slate-950/40 border border-slate-800/60 shadow-inner">
+        <WeatherIcon condition={icon} size={96} />
       </div>
 
       {/* Primary Temperature Readout */}
       <div className="flex flex-col items-center">
         <div
           id="mini-weather-temperature"
-          className="text-[max(3.5rem,calc(3.75rem*var(--weather-font-scale,1)))] font-black tracking-tighter text-slate-100 font-mono leading-none"
+          className="text-[max(2.25rem,calc(2.5rem*var(--weather-font-scale,1)))] font-black tracking-tighter text-slate-100 font-mono leading-none"
         >
           {Math.round(temperature)}°{unit}
         </div>
@@ -52,16 +52,16 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
         {/* High / Low Temperature Pills */}
         <div
           id="mini-weather-high-low"
-          className="mt-3 flex items-center gap-3 font-mono font-bold"
+          className="mt-1.5 flex items-center gap-2 font-mono font-bold"
         >
           <span
-            className="px-3 py-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-amber-400 text-[max(1.125rem,calc(1.125rem*var(--weather-font-scale,1)))] font-bold"
+            className="px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-amber-400 text-[max(1.25rem,calc(1.25rem*var(--weather-font-scale,1)))] font-bold leading-none"
             aria-label="High temperature"
           >
             {Math.round(high)}°
           </span>
           <span
-            className="px-3 py-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-sky-400 text-[max(1.125rem,calc(1.125rem*var(--weather-font-scale,1)))] font-bold"
+            className="px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-sky-400 text-[max(1.25rem,calc(1.25rem*var(--weather-font-scale,1)))] font-bold leading-none"
             aria-label="Low temperature"
           >
             {Math.round(low)}°
@@ -69,32 +69,32 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
         </div>
       </div>
 
-      {/* Details 3-Column Grid: Wind, Humidity, Precip */}
+      {/* Details 3-Column Grid: Wind, Humidity, Precipitation */}
       <div
         id="mini-weather-details"
-        className="mt-4 pt-3 border-t border-slate-800/80 w-full grid grid-cols-3 gap-3 font-mono"
+        className="mt-2 pt-1.5 border-t border-slate-800/80 w-full grid grid-cols-3 gap-1 font-mono text-center"
       >
-        <div id="mini-weather-wind" className="flex flex-col items-center gap-1">
-          <span className="text-[max(0.6875rem,calc(0.6875rem*var(--weather-font-scale,1)))] text-slate-500 uppercase tracking-wide">
+        <div id="mini-weather-wind" className="flex flex-col items-center gap-0.5">
+          <span className="text-[max(0.75rem,calc(0.75rem*var(--weather-font-scale,1)))] text-slate-400 font-bold uppercase tracking-tight">
             Wind
           </span>
-          <span className="text-[max(0.9375rem,calc(1rem*var(--weather-font-scale,1)))] text-slate-200 font-bold">
-            {wind ? `${wind.direction} ${Math.round(wind.speed)} ${wind.unit.toUpperCase()}` : '—'}
+          <span className="text-[max(1.125rem,calc(1.125rem*var(--weather-font-scale,1)))] text-slate-100 font-bold whitespace-nowrap">
+            {wind ? `${wind.direction} ${Math.round(wind.speed)}` : '—'}
           </span>
         </div>
-        <div id="mini-weather-humidity" className="flex flex-col items-center gap-1">
-          <span className="text-[max(0.6875rem,calc(0.6875rem*var(--weather-font-scale,1)))] text-slate-500 uppercase tracking-wide">
+        <div id="mini-weather-humidity" className="flex flex-col items-center gap-0.5">
+          <span className="text-[max(0.75rem,calc(0.75rem*var(--weather-font-scale,1)))] text-slate-400 font-bold uppercase tracking-tight">
             Humidity
           </span>
-          <span className="text-[max(0.9375rem,calc(1rem*var(--weather-font-scale,1)))] text-slate-200 font-bold">
+          <span className="text-[max(1.125rem,calc(1.125rem*var(--weather-font-scale,1)))] text-slate-100 font-bold whitespace-nowrap">
             {humidity !== undefined ? `${Math.round(humidity)}%` : '—'}
           </span>
         </div>
-        <div id="mini-weather-precip" className="flex flex-col items-center gap-1">
-          <span className="text-[max(0.6875rem,calc(0.6875rem*var(--weather-font-scale,1)))] text-slate-500 uppercase tracking-wide">
-            Precip
+        <div id="mini-weather-precip" className="flex flex-col items-center gap-0.5">
+          <span className="text-[max(0.75rem,calc(0.75rem*var(--weather-font-scale,1)))] text-slate-400 font-bold uppercase tracking-tight">
+            Precipitation
           </span>
-          <span className="text-[max(0.9375rem,calc(1rem*var(--weather-font-scale,1)))] text-slate-200 font-bold">
+          <span className="text-[max(1.125rem,calc(1.125rem*var(--weather-font-scale,1)))] text-slate-100 font-bold whitespace-nowrap">
             {precipitationChance !== undefined ? `${Math.round(precipitationChance)}%` : '—'}
           </span>
         </div>

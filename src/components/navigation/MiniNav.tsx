@@ -75,10 +75,17 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   }, []);
 
   // Derived colors
-  const arrowColor = propArrowColor || '#f59e0b';
-  const horizonColor = propHorizonColor || '#f59e0b';
-  const guideLaneColor = propGuideLaneColor || arrowColor;
-  const highwayBadgeColor = propHighwayBadgeColor;
+  const primaryPaletteColor = activePalette?.primary || '#38bdf8';
+  const arrowColor = propArrowColor && propArrowColor !== '#f59e0b' && propArrowColor !== '#38bdf8' && propArrowColor !== 'var(--color-primary)'
+    ? propArrowColor
+    : primaryPaletteColor;
+  const horizonColor = propHorizonColor && propHorizonColor !== '#f59e0b' && propHorizonColor !== '#38bdf8' && propHorizonColor !== 'var(--color-primary)'
+    ? propHorizonColor
+    : primaryPaletteColor;
+  const guideLaneColor = propGuideLaneColor && propGuideLaneColor !== '#f59e0b' && propGuideLaneColor !== '#38bdf8' && propGuideLaneColor !== 'var(--color-primary)'
+    ? propGuideLaneColor
+    : arrowColor;
+  const highwayBadgeColor = propHighwayBadgeColor || primaryPaletteColor;
 
   // Derived values favoring prop override or store journey state
   const currentManeuver = journey?.currentManeuver;
@@ -294,7 +301,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
 
             {/* Road Shoulder Border Shadows */}
             <filter id="roadGlow" x="-10%" y="-10%" width="120%" height="120%">
-              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#38bdf8" floodOpacity="0.2" />
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor={activePalette?.primary || '#38bdf8'} floodOpacity="0.2" />
             </filter>
           </defs>
 

@@ -91,12 +91,13 @@ export const BottomDock: React.FC = () => {
             style={{
               color: isActive && !isEditor ? 'var(--color-primary)' : undefined,
               borderColor: isActive && !isEditor ? 'var(--color-primary)' : undefined,
+              boxShadow: isActive && !isEditor ? '0 0 12px color-mix(in srgb, var(--color-primary) 30%, transparent)' : undefined,
             }}
             className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-300 relative group ${
               isEditor ? 'cursor-default select-none' : 'cursor-pointer'
             } ${
               isActive && !isEditor
-                ? 'bg-slate-800/90 shadow-[0_0_12px_rgba(56,189,248,0.2)] border scale-102'
+                ? 'bg-slate-800/90 border scale-102'
                 : isActive && isEditor
                 ? 'bg-slate-900/90 text-slate-300 border border-slate-800/80'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'

@@ -77,6 +77,9 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
   offset = { x: 0, y: 0 },
 }) => {
   const updateComponentConnector = useMockpitStore((s) => s.updateComponentConnector);
+  const activePalette = useMockpitStore((s) => s.activePalette);
+  const primaryColor = activePalette?.primary || '#38bdf8';
+  const secondaryColor = activePalette?.secondary || '#0284c7';
 
   // State for dragging an existing target endpoint handle
   const [draggingTarget, setDraggingTarget] = useState<{
@@ -240,7 +243,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
           const targetPt = getTargetCanvasCoords(targetComp, connector.targetX, connector.targetY);
 
           const isSelected = selectedComponentId === callout.id || selectedComponentId === targetComp.id;
-          const strokeColor = isSelected ? '#38bdf8' : '#0284c7';
+          const strokeColor = isSelected ? primaryColor : secondaryColor;
           const strokeWidth = isSelected ? 2.5 : 1.75;
           const strokeOpacity = isSelected ? 0.95 : 0.75;
 
@@ -263,7 +266,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
                 cx={sourcePt.x}
                 cy={sourcePt.y}
                 r={isSelected ? 4 : 3}
-                fill="#38bdf8"
+                fill={primaryColor}
                 stroke="#0f172a"
                 strokeWidth={1.5}
               />
@@ -282,7 +285,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
                 cx={targetPt.x}
                 cy={targetPt.y}
                 r={2.5}
-                fill="#38bdf8"
+                fill={primaryColor}
               />
             </g>
           );
@@ -296,7 +299,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
               y1={activeConnecting.startY}
               x2={activeConnecting.currentX}
               y2={activeConnecting.currentY}
-              stroke="#38bdf8"
+              stroke={primaryColor}
               strokeWidth={2}
               strokeDasharray="4 3"
               strokeOpacity={0.9}
@@ -305,21 +308,21 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
               cx={activeConnecting.startX}
               cy={activeConnecting.startY}
               r={4}
-              fill="#38bdf8"
+              fill={primaryColor}
             />
             <circle
               cx={activeConnecting.currentX}
               cy={activeConnecting.currentY}
               r={6}
               fill="none"
-              stroke="#38bdf8"
+              stroke={primaryColor}
               strokeWidth={1.5}
             />
             <circle
               cx={activeConnecting.currentX}
               cy={activeConnecting.currentY}
               r={2}
-              fill="#38bdf8"
+              fill={primaryColor}
             />
           </g>
         )}

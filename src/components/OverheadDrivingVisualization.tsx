@@ -420,8 +420,13 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
   const isExpanded = viewW >= 700 && viewH >= 420;
 
   // Component configuration props
+  const activePalette = useMockpitStore((s) => s.activePalette);
+  const primaryPaletteColor = activePalette?.primary || '#38bdf8';
   const props = component.staticProps || {};
-  const customAccentColor = props.color || '#38bdf8';
+  const customAccentColor =
+    props.color && props.color !== '#38bdf8' && props.color !== 'var(--color-primary)'
+      ? props.color
+      : primaryPaletteColor;
   const isGrayscale = props.grayscaleTraffic !== 'false';
 
   // Speed Limit settings & Non-pulsating Edge-Triggered Flash State
@@ -1459,15 +1464,15 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           {/* Forward Headlight Beam Gradient */}
           <radialGradient id="ego-headlight-beam" cx="50%" cy="0%" r="100%">
             <stop offset="0%" stopColor="#f0f9ff" stopOpacity="0.80" />
-            <stop offset="45%" stopColor="#38bdf8" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+            <stop offset="45%" stopColor={customAccentColor} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={customAccentColor} stopOpacity="0" />
           </radialGradient>
 
           {/* Median High-Mast Street Light Ambient Pool */}
           <radialGradient id="median-light-pool" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.70" />
-            <stop offset="40%" stopColor="#38bdf8" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+            <stop offset="0%" stopColor={customAccentColor} stopOpacity="0.70" />
+            <stop offset="40%" stopColor={customAccentColor} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={customAccentColor} stopOpacity="0" />
           </radialGradient>
         </defs>
 

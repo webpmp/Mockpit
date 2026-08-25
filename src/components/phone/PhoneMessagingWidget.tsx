@@ -216,9 +216,13 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
               disabled={!inputText.trim()}
               className={`p-2 rounded-full transition-all shrink-0 cursor-pointer ${
                 inputText.trim()
-                  ? 'bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-md'
+                  ? 'text-slate-950 shadow-md hover:brightness-110'
                   : 'bg-slate-800 text-slate-600 border border-slate-700/50 cursor-not-allowed'
               }`}
+              style={{
+                backgroundColor: inputText.trim() ? customColor : undefined,
+                boxShadow: inputText.trim() ? `0 0 10px ${customColor}60` : undefined,
+              }}
             >
               <Send className="w-3.5 h-3.5" />
             </button>

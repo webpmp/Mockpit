@@ -46,17 +46,30 @@ export const WeatherRadarScreen: React.FC<WeatherRadarScreenProps> = ({
         </div>
       </div>
 
-      {/* Main Full-Screen Radar Card Container - Landscape Filling Without Scroll */}
-      <div className="flex-1 min-h-0 w-full flex items-center justify-center">
-        <WeatherRadarCard
-          lat={resolvedLocation?.lat ?? 37.56299}
-          lon={resolvedLocation?.lon ?? -122.32553}
-          zoom={radarZoom}
-          label={radarLabel}
-          refreshIntervalMinutes={radarRefreshInterval}
-          variant="full"
-          className="w-full h-full"
-        />
+      {/* Main Content Area - 2 Columns: Bounded Radar Left + Weather Alerts Shell Right */}
+      <div className="flex-1 min-h-0 w-full flex items-start gap-6">
+        {/* Left: bounded radar */}
+        <div className="shrink-0" style={{ width: 'min(575px, 100%)' }}>
+          <WeatherRadarCard
+            lat={resolvedLocation?.lat ?? 37.56299}
+            lon={resolvedLocation?.lon ?? -122.32553}
+            zoom={radarZoom}
+            label={radarLabel}
+            refreshIntervalMinutes={radarRefreshInterval}
+            variant="full"
+            className="w-full"
+          />
+        </div>
+
+        {/* Right: reserved for weather alerts/summary — placeholder layout only */}
+        <div className="flex-1 min-w-0 h-full rounded-2xl border border-slate-800 bg-slate-900/40 p-4 overflow-y-auto">
+          <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-2">
+            Weather Alerts
+          </div>
+          <div className="text-xs font-mono text-slate-500 italic">
+            Alerts data source not yet connected — placeholder layout only.
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -637,9 +637,11 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
             }}
           >
             <div
-              className="bg-gradient-to-r from-pink-500 to-purple-500 h-full rounded-full transition-all duration-300"
+              className="h-full rounded-full transition-all duration-300"
               style={{
                 width: `${Math.min(100, (progressSec / currentTrack.durationSec) * 100)}%`,
+                backgroundColor: customColor,
+                boxShadow: `0 0 10px ${customColor}80`,
               }}
             />
           </div>
@@ -667,13 +669,17 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
 
             <button
               onClick={handleTogglePlay}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold"
+              style={{
+                backgroundColor: customColor,
+                boxShadow: `0 0 14px ${customColor}60`,
+              }}
               title={isPlaying ? 'Pause' : 'Play'}
             >
               {isPlaying ? (
-                <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current text-slate-950" />
               ) : (
-                <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current ml-0.5" />
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current ml-0.5 text-slate-950" />
               )}
             </button>
 

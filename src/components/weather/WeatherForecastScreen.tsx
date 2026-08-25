@@ -7,7 +7,7 @@ import { WeatherRadarCard } from './WeatherRadarCard';
 import { WeatherLocationControl } from './WeatherLocationControl';
 import { WeatherIcon } from './WeatherIcon';
 import { isCurrentlyAM } from '../../utils/timeOfDay';
-import { ChevronLeft, RotateCcw, AlertCircle } from 'lucide-react';
+import { ChevronLeft, AlertCircle } from 'lucide-react';
 
 export interface WeatherForecastScreenProps {
   onBack?: () => void;
@@ -31,7 +31,6 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
   const forecast = useWeatherStore((s) => s.forecast);
   const resolvedLocation = useWeatherStore((s) => s.resolvedLocation);
   const unit = useWeatherStore((s) => s.unit);
-  const setUnit = useWeatherStore((s) => s.setUnit);
   const displayScale = useWeatherStore((s) => s.displayScale);
   const status = useWeatherStore((s) => s.status);
   const lastFetchedAt = useWeatherStore((s) => s.lastFetchedAt);
@@ -50,10 +49,13 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
     return () => clearInterval(id);
   }, []);
 
-  // Fetch runs every time WeatherForecastScreen mounts per spec
+  // Fetch on mount and periodically on the same cadence as radarRefreshInterval
   useEffect(() => {
     fetchWeather();
-  }, [fetchWeather]);
+    const intervalMs = Math.max(1, radarRefreshInterval) * 60 * 1000;
+    const interval = setInterval(fetchWeather, intervalMs);
+    return () => clearInterval(interval);
+  }, [fetchWeather, radarRefreshInterval]);
 
   const hasCachedData = current !== null && forecast.length > 0;
   const isErrorWithCache = status === 'error' && lastFetchedAt !== null;
@@ -100,42 +102,6 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
               <span>Showing last update</span>
             </div>
           )}
-
-          {/* Unit Toggle F/C */}
-          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 font-mono text-xs font-bold">
-            <button
-              id="weather-unit-f"
-              onClick={() => setUnit('F')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                unit === 'F'
-                  ? 'bg-sky-500 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              °F
-            </button>
-            <button
-              id="weather-unit-c"
-              onClick={() => setUnit('C')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                unit === 'C'
-                  ? 'bg-sky-500 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              °C
-            </button>
-          </div>
-
-          {/* Refresh Button */}
-          <button
-            id="weather-refresh-btn"
-            onClick={() => fetchWeather()}
-            className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-all cursor-pointer"
-            title="Refresh forecast"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
@@ -162,14 +128,13 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
           </button>
         </div>
       ) : (
-        /* Standard Weather Forecast Dashboard Layout */
-        <div className="flex-1 flex flex-col justify-between gap-6 overflow-y-auto pr-1">
-          {/* Top Section: Today Card (MiniWeatherView) + 5-Day Forecast Row + Mini Radar */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            {/* Left: Mini Weather View (Today Card) */}
-            <div className="lg:col-span-4 flex flex-col">
-              <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-2">
-                <span>Today</span>
+        /* Standard Weather Forecast Dashboard Layout - Equal-Height Two-Row Layout */
+        <div className="flex-1 flex flex-col gap-4 min-h-0 overflow-hidden">
+          {/* Row 1: Today + Radar (equal share of vertical space) */}
+          <div className="flex-1 min-h-0 grid grid-cols-12 gap-6">
+            <div className="col-span-5 h-full flex flex-col min-h-0">
+              <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-1.5 shrink-0">
+                Today
               </div>
               {current && (
                 <MiniWeatherView
@@ -181,36 +146,14 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
                   wind={current.wind}
                   humidity={current.humidity}
                   precipitationChance={current.precipitationChance}
-                  className="flex-1"
+                  className="flex-1 min-h-0"
                 />
               )}
             </div>
 
-            {/* Right: 5-Day Forecast Row */}
-            <div className="lg:col-span-8 flex flex-col">
-              <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-2">
-                <span>5-Day Forecast</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 flex-1">
-                {forecast.map((day, idx) => (
-                  <ForecastDayCard
-                    key={`${day.dayLabel}-${idx}`}
-                    dayLabel={day.dayLabel}
-                    icon={resolveDisplayIcon(day)}
-                    conditionLabel={day.conditionLabel}
-                    high={day.high}
-                    low={day.low}
-                    unit={unit}
-                    className="h-full"
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Radar Card (Aligned strictly to 5-day forecast column range, nothing under Today card) */}
-            <div className="lg:col-start-5 lg:col-span-8 flex flex-col">
-              <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-2">
-                <span>Radar Imagery</span>
+            <div className="col-span-7 h-full flex flex-col min-h-0">
+              <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-1.5 shrink-0">
+                Radar Imagery
               </div>
               <WeatherRadarCard
                 lat={resolvedLocation?.lat ?? 37.56299}
@@ -218,10 +161,34 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
                 zoom={radarZoom}
                 label={radarLabel}
                 refreshIntervalMinutes={radarRefreshInterval}
-                className="w-full"
+                className="flex-1 min-h-0"
                 onExpand={() => setActiveView('weather-radar')}
                 variant="compact"
+                sizeMode="height"
               />
+            </div>
+          </div>
+
+          {/* Row 2: 5-Day Forecast (equal share of vertical space) */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-1.5 shrink-0">
+              5-Day Forecast
+            </div>
+            <div className="grid grid-cols-5 gap-[10px] flex-1 min-h-0" style={{ gap: '10px' }}>
+              {forecast.map((day, idx) => (
+                <ForecastDayCard
+                  key={`${day.dayLabel}-${idx}`}
+                  dayLabel={day.dayLabel}
+                  icon={day.icon}
+                  conditionLabel={day.conditionLabel}
+                  amCondition={day.amCondition}
+                  pmCondition={day.pmCondition}
+                  high={day.high}
+                  low={day.low}
+                  unit={unit}
+                  className="h-full min-h-0"
+                />
+              ))}
             </div>
           </div>
         </div>

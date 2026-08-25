@@ -884,10 +884,17 @@ export const Canvas: React.FC = () => {
 
                     {/* Editor Selection Box Overlay */}
                     {isSelected && (
-                      <div className="absolute inset-0 border-2 border-sky-400 rounded-2xl pointer-events-none shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+                      <div
+                        className="absolute inset-0 border-2 rounded-2xl pointer-events-none"
+                        style={{
+                          borderColor: 'var(--color-primary, #38bdf8)',
+                          boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
+                        }}
+                      >
                         {/* Move Drag Handle */}
                         <div
-                          className="absolute -top-3 left-1/2 -translate-x-1/2 bg-sky-500 text-slate-950 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-md cursor-move pointer-events-auto hover:bg-sky-400"
+                          className="absolute -top-3 left-1/2 -translate-x-1/2 text-slate-950 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-md cursor-move pointer-events-auto hover:brightness-110"
+                          style={{ backgroundColor: 'var(--color-primary, #38bdf8)' }}
                           onMouseDown={(e) => handleMouseDown(e, comp.id, comp.x, comp.y)}
                         >
                           <Move className="w-3 h-3" /> Move ({comp.x}, {comp.y})
@@ -907,7 +914,8 @@ export const Canvas: React.FC = () => {
 
                         {/* Bottom-Right Resize Handle */}
                         <div
-                          className="absolute -bottom-2 -right-2 w-6 h-6 bg-sky-500 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
+                          className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
+                          style={{ backgroundColor: 'var(--color-primary, #38bdf8)' }}
                           onMouseDown={(e) => handleResizeMouseDown(e, comp.id, comp.width, comp.height)}
                         >
                           <Maximize2 className="w-3 h-3" />

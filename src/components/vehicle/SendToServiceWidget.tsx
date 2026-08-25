@@ -22,8 +22,48 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
   baseOpacity = 'opacity-100',
   styleOpacity = 1,
 }) => {
-  const buttonLabel = resolved.buttonLabel || component.staticProps.buttonLabel || 'Send to Service Center';
-  const reportTitle = resolved.reportTitle || component.staticProps.reportTitle || 'Vehicle Diagnostic Report';
+  // Editable text properties with strict respect for user-configured blank fields
+  const buttonLabel =
+    resolved.buttonLabel !== undefined
+      ? resolved.buttonLabel
+      : component.staticProps?.buttonLabel !== undefined
+      ? component.staticProps.buttonLabel
+      : 'Send Vehicle Diagnostics';
+
+  const reportTitle =
+    resolved.reportTitle !== undefined
+      ? resolved.reportTitle
+      : component.staticProps?.reportTitle !== undefined
+      ? component.staticProps.reportTitle
+      : 'Vehicle Diagnostic Report';
+
+  const confirmLabel =
+    resolved.confirmLabel !== undefined
+      ? resolved.confirmLabel
+      : component.staticProps?.confirmLabel !== undefined
+      ? component.staticProps.confirmLabel
+      : 'Confirm Send';
+
+  const cancelLabel =
+    resolved.cancelLabel !== undefined
+      ? resolved.cancelLabel
+      : component.staticProps?.cancelLabel !== undefined
+      ? component.staticProps.cancelLabel
+      : 'Cancel';
+
+  const sendingLabel =
+    resolved.sendingLabel !== undefined
+      ? resolved.sendingLabel
+      : component.staticProps?.sendingLabel !== undefined
+      ? component.staticProps.sendingLabel
+      : 'Generating & Sending Report...';
+
+  const successLabel =
+    resolved.successLabel !== undefined
+      ? resolved.successLabel
+      : component.staticProps?.successLabel !== undefined
+      ? component.staticProps.successLabel
+      : 'Report Dispatched & Downloaded';
 
   const [status, setStatus] = useState<'idle' | 'confirming' | 'sending' | 'success'>('idle');
   const [progress, setProgress] = useState(0);
@@ -67,7 +107,10 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
           JSON.stringify(reportData, null, 2)
         )}`;
         const downloadAnchor = document.createElement('a');
-        const filename = `${reportTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}.json`;
+        const cleanSlug = reportTitle && reportTitle.trim()
+          ? reportTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          : 'vehicle-diagnostic-report';
+        const filename = `${cleanSlug}-${Date.now()}.json`;
         downloadAnchor.setAttribute('href', jsonString);
         downloadAnchor.setAttribute('download', filename);
         document.body.appendChild(downloadAnchor);
@@ -99,20 +142,29 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
       style={{ opacity: styleOpacity }}
     >
       {status === 'confirming' ? (
-        <div className="w-full min-h-[44px] flex items-center justify-between gap-2 p-1 bg-slate-800/95 border border-sky-500/50 rounded-xl animate-in fade-in zoom-in-95 duration-150">
+        <div
+          className="w-full min-h-[44px] flex items-center justify-between gap-2 p-1 bg-slate-800/95 border rounded-xl animate-in fade-in zoom-in-95 duration-150"
+          style={{
+            borderColor: customColor ? `color-mix(in srgb, ${customColor} 50%, transparent)` : 'var(--color-primary, #38bdf8)',
+          }}
+        >
           <button
             type="button"
             onClick={handleCancelConfirm}
             className="flex-1 min-h-[36px] px-2.5 py-1.5 rounded-lg font-mono text-[11px] font-semibold text-slate-300 hover:text-white bg-slate-700/60 hover:bg-slate-700 transition-colors cursor-pointer"
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             type="button"
             onClick={handleExecuteSend}
-            className="flex-1 min-h-[36px] px-2.5 py-1.5 rounded-lg font-mono text-[11px] font-bold text-slate-950 bg-sky-400 hover:bg-sky-300 shadow-md shadow-sky-500/20 transition-colors cursor-pointer"
+            className="flex-1 min-h-[36px] px-2.5 py-1.5 rounded-lg font-mono text-[11px] font-bold text-slate-950 hover:brightness-110 shadow-md transition-all cursor-pointer"
+            style={{
+              backgroundColor: customColor || 'var(--color-primary, #38bdf8)',
+              boxShadow: `0 0 12px color-mix(in srgb, ${customColor || '#38bdf8'} 40%, transparent)`,
+            }}
           >
-            Confirm Send
+            {confirmLabel}
           </button>
         </div>
       ) : (
@@ -125,14 +177,14 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.25)]'
               : status === 'sending'
               ? 'bg-slate-800 text-sky-300 border border-sky-500/40 cursor-wait'
-              : 'bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-md hover:shadow-lg shadow-sky-500/20 border border-sky-400/80 active:scale-[0.98]'
+              : 'text-slate-950 shadow-md hover:shadow-lg active:scale-[0.98] hover:brightness-105'
           }`}
           style={
-            status === 'idle' && customColor && customColor !== 'var(--color-primary)'
+            status === 'idle'
               ? {
-                  backgroundColor: customColor,
-                  borderColor: customColor,
-                  boxShadow: `0 0 15px ${customColor}33`,
+                  backgroundColor: customColor || 'var(--color-primary, #38bdf8)',
+                  borderColor: customColor || 'var(--color-primary, #38bdf8)',
+                  boxShadow: `0 0 15px color-mix(in srgb, ${customColor || '#38bdf8'} 35%, transparent)`,
                 }
               : undefined
           }
@@ -154,26 +206,28 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
             {status === 'sending' && (
               <>
                 <Loader2 className="w-4 h-4 animate-spin shrink-0 text-sky-400" />
-                <span className="truncate font-semibold">Generating & Sending Report...</span>
+                <span className="truncate font-semibold">{sendingLabel}</span>
               </>
             )}
 
             {status === 'success' && (
               <>
                 <Check className="w-4 h-4 shrink-0 text-emerald-400" />
-                <span className="truncate font-extrabold text-emerald-300">Report Dispatched & Downloaded</span>
+                <span className="truncate font-extrabold text-emerald-300">{successLabel}</span>
               </>
             )}
           </div>
         </button>
       )}
 
-      {/* Sub-label showing configured report title */}
-      <div className="mt-2 flex items-center text-[10px] font-mono text-slate-400 px-1">
-        <div className="flex items-center gap-1 truncate text-slate-400">
-          <span className="truncate">{reportTitle}</span>
+      {/* Sub-label showing configured report title (if blank, leave blank without replacing) */}
+      {reportTitle && reportTitle.trim() !== '' && (
+        <div className="mt-2 flex items-center text-[10px] font-mono text-slate-400 px-1">
+          <div className="flex items-center gap-1 truncate text-slate-400">
+            <span className="truncate">{reportTitle}</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

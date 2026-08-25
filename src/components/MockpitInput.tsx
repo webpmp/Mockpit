@@ -96,8 +96,11 @@ export const MockpitInput: React.FC<MockpitInputProps> = ({
 
   return (
     <div
+      style={isActive ? {
+        boxShadow: '0 0 12px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
+      } : undefined}
       className={`relative flex items-center transition-all rounded-xl ${INPUT_FIELD_HEIGHT_CLASS} ${
-        isActive ? 'z-50 relative ring-2 ring-sky-500/80 shadow-[0_0_12px_rgba(56,189,248,0.3)]' : ''
+        isActive ? 'z-50 relative ring-2 ring-[var(--color-primary,#38bdf8)]' : ''
       } ${wrapperClassName}`}
     >
       {icon && (
@@ -114,7 +117,8 @@ export const MockpitInput: React.FC<MockpitInputProps> = ({
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className={`w-full h-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500/80 font-mono antialiased transition-colors ${
+        style={isActive ? { borderColor: 'var(--color-primary, #38bdf8)' } : undefined}
+        className={`w-full h-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--color-primary,#38bdf8)] font-mono antialiased transition-colors ${
           icon ? 'pl-8 pr-2.5' : ''
         } ${className}`}
         {...props}

@@ -111,7 +111,7 @@ export const DebugStatePanel: React.FC = () => {
         {/* Quick Presets & Controls */}
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-1.5 mr-2">
-            <span className="text-[10px] font-mono text-slate-500 uppercase">Presets:</span>
+            <span className="text-[10px] font-mono text-slate-500 uppercase">Event Presets:</span>
             {PRESET_SCENARIOS.map((p) => {
               const active = isPresetActive(p.id, vehicleState);
               const isChargingPreset = p.id === 'charging_station';
