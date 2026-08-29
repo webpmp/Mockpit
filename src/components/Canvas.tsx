@@ -13,7 +13,7 @@ import { ContactAvatar } from './ContactAvatar';
 import { WeatherForecastScreen } from './weather/WeatherForecastScreen';
 import { WeatherRadarScreen } from './weather/WeatherRadarScreen';
 import { useWeatherStore } from '../store/useWeatherStore';
-import { Move, Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare } from 'lucide-react';
+import { Move, Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare, Battery, Zap } from 'lucide-react';
 
 const getTransitionClasses = (style: TransitionStyle = 'fade', isActive: boolean) => {
   if (!isActive) {
@@ -253,6 +253,7 @@ export const Canvas: React.FC = () => {
   const weatherUnit = useWeatherStore((s) => s.unit);
 
   const totalUnread = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  const [batteryDisplayMode, setBatteryDisplayMode] = useState<'percent' | 'range'>('percent');
 
   const selectComponent = useMockpitStore((s) => s.selectComponent);
   const setActiveView = useMockpitStore((s) => s.setActiveView);
@@ -716,20 +717,43 @@ export const Canvas: React.FC = () => {
                 );
               })()}
             </div>
-            <div className="flex items-center gap-8 font-bold shrink-0">
-              {/* Aggregate Unread Messages Header Icon */}
-              <button
-                onClick={() => setActiveView('phone')}
-                className="relative flex items-center justify-center p-1.5 rounded-full hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-all cursor-pointer pointer-events-auto"
-                title={`Messages (${totalUnread} unread)`}
-              >
-                <MessageSquare className="w-5 h-5" />
-                {totalUnread > 0 && (
+            <div className="flex items-center gap-8 shrink-0">
+              {/* Aggregate Unread Messages Header Icon (only when unread > 0) */}
+              {totalUnread > 0 && (
+                <button
+                  onClick={() => setActiveView('phone')}
+                  className="relative flex items-center justify-center p-1.5 rounded-full hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-all cursor-pointer pointer-events-auto"
+                  title={`Messages (${totalUnread} unread)`}
+                >
+                  <MessageSquare className="w-5 h-5" />
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-mono font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center ring-2 ring-slate-950">
                     {totalUnread > 99 ? '99+' : totalUnread}
                   </span>
-                )}
-              </button>
+                </button>
+              )}
+
+              {/* Battery % / Range Toggle */}
+              {(() => {
+                const batteryPercent = Math.round(vehicleState.batteryPercent ?? 89);
+                const batteryRange = Math.round((batteryPercent / 100) * 352);
+                return (
+                  <button
+                    id="header-battery-btn"
+                    onClick={() => setBatteryDisplayMode((prev) => (prev === 'percent' ? 'range' : 'percent'))}
+                    className="flex items-center gap-1.5 font-normal text-slate-300 cursor-pointer pointer-events-auto hover:text-slate-100 transition-colors"
+                    title={batteryDisplayMode === 'percent' ? 'Tap to switch to range' : 'Tap to switch to battery percentage'}
+                  >
+                    {vehicleState.isCharging ? (
+                      <Zap className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400 animate-pulse" />
+                    ) : (
+                      <Battery className={`w-4 h-4 ${batteryPercent <= 15 ? 'text-rose-400' : 'text-slate-400'}`} />
+                    )}
+                    <span>
+                      {batteryDisplayMode === 'percent' ? `${batteryPercent}%` : `${batteryRange} mi`}
+                    </span>
+                  </button>
+                );
+              })()}
 
               <button
                 id="header-weather-temp-btn"
@@ -741,7 +765,7 @@ export const Canvas: React.FC = () => {
                   ? `${Math.round(weatherCurrent.temperature)}°${weatherUnit}`
                   : '72°F'}
               </button>
-              <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="font-normal text-slate-300">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               {/* Animated 1-5 bar signal indicator (v0.11) */}
               <div
                 className="flex items-center gap-1.5 font-mono text-emerald-400 pr-4 shrink-0"

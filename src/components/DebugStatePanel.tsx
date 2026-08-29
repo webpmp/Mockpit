@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMockpitStore, isPresetActive } from '../store/useMockpitStore';
 import { DriveModeState, GearState } from '../types';
-import { Zap, AlertTriangle, ChevronDown, ChevronUp, RotateCcw, Gauge, ShieldAlert, Eye, Sun, Car, MessageSquare, CircleDot } from 'lucide-react';
+import { Zap, AlertTriangle, ChevronDown, ChevronUp, Gauge, ShieldAlert, Eye, Sun, Car, MessageSquare, CircleDot } from 'lucide-react';
 
 const SteeringWheel: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
@@ -40,7 +40,6 @@ export const DebugStatePanel: React.FC = () => {
   const isDebugOpen = useMockpitStore((s) => s.isDebugOpen);
   const toggleDebugPanel = useMockpitStore((s) => s.toggleDebugPanel);
   const setVehicleState = useMockpitStore((s) => s.setVehicleState);
-  const resetVehicleState = useMockpitStore((s) => s.resetVehicleState);
   const applyPresetScenario = useMockpitStore((s) => s.applyPresetScenario);
   const triggerNotification = useMockpitStore((s) => s.triggerNotification);
   const componentsByScreen = useMockpitStore((s) => s.componentsByScreen);
@@ -68,12 +67,6 @@ export const DebugStatePanel: React.FC = () => {
   }, [maxSpeedLimit, vehicleState.speed, setVehicleState]);
 
   const canCharge = vehicleState.gear === 'P' && vehicleState.speed === 0;
-
-  const handleResetVehicleState = () => {
-    if (window.confirm('Reset vehicle state (gear, speed, battery, etc.) to defaults?')) {
-      resetVehicleState();
-    }
-  };
 
   const handleToggleCruise = () => {
     if (vehicleState.gear !== 'D') return;
@@ -157,18 +150,6 @@ export const DebugStatePanel: React.FC = () => {
               <MessageSquare className="w-3 h-3" /> Text Message
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleResetVehicleState();
-            }}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors text-xs flex items-center gap-1 cursor-pointer border border-slate-700/80"
-            title="Reset Vehicle State"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
 
           <button
             type="button"

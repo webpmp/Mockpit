@@ -92,28 +92,22 @@ const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [
     defaultBindingDesc: 'static geolocation map display',
   },
   {
-    type: 'navHome',
-    title: 'Home Location',
-    description: 'Stored home location text & Lat/Lng coordinates',
-    defaultBindingDesc: 'Stored text & lat-lng location card',
+    type: 'navFavorites',
+    title: 'Favorites',
+    description: 'Saved favorite places & recent destinations with one-tap routing',
+    defaultBindingDesc: 'Favorites & recents list with one-tap guidance',
   },
   {
     type: 'navDestination',
     title: 'Trip Planner',
-    description: 'Destination input with ordered multi-stop trip list',
-    defaultBindingDesc: 'Multi-stop trip waypoint manager',
+    description: 'Destination & multi-stop trip planning, with live distance, time, energy and arrival charge once guidance starts',
+    defaultBindingDesc: 'Multi-stop trip planner with live trip estimate sync',
   },
   {
     type: 'navSearch',
     title: 'Navigation Search',
     description: 'POIs, chargers & restaurant search with mock results',
     defaultBindingDesc: 'Filtered static sample POI/charger search',
-  },
-  {
-    type: 'navTripEstimate',
-    title: 'Trip Estimate',
-    description: 'Straight-line Haversine mileage & battery consumption',
-    defaultBindingDesc: 'Straight-line distance & battery estimate',
   },
   {
     type: 'overheadVisualization',
@@ -306,10 +300,7 @@ export const Sidebar: React.FC = () => {
   };
 
   const totalComponentsCount =
-    HOME_WIDGET_ITEMS.length +
-    NAVIGATION_WIDGET_ITEMS.length +
-    MEDIA_WIDGET_ITEMS.length +
-    PHONE_WIDGET_ITEMS.length +
+    CATEGORIES.reduce((acc, cat) => acc + cat.items.length, 0) +
     NOTIFICATION_LIBRARY_ITEMS.length;
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS } from '../store/useMockpitStore';
 import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
-import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType } from '../types';
+import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop } from '../types';
 import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check } from 'lucide-react';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { LayersPanel } from './LayersPanel';
@@ -2092,9 +2092,9 @@ export const Inspector: React.FC = () => {
                           <label className="text-[10px] font-mono text-slate-400 block font-bold">
                             Target Endpoint On Diagram (0% - 100%)
                           </label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
-                              <span className="text-[10px] font-mono text-slate-400">Target X</span>
+                          <div className="flex flex-col gap-2">
+                            <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                              <span className="text-[11px] font-mono text-slate-300">Target X</span>
                               <NumericStepper
                                 value={Math.round(connector.targetX * 100)}
                                 min={0}
@@ -2109,8 +2109,8 @@ export const Inspector: React.FC = () => {
                                 }
                               />
                             </div>
-                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
-                              <span className="text-[10px] font-mono text-slate-400">Target Y</span>
+                            <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                              <span className="text-[11px] font-mono text-slate-300">Target Y</span>
                               <NumericStepper
                                 value={Math.round(connector.targetY * 100)}
                                 min={0}

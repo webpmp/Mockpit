@@ -3,7 +3,6 @@ import { useWeatherStore, WeatherDayData, WeatherConditionKey } from '../../stor
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { MiniWeatherView } from './MiniWeatherView';
 import { ForecastDayCard } from './ForecastDayCard';
-import { WeatherRadarCard } from './WeatherRadarCard';
 import { WeatherLocationControl } from './WeatherLocationControl';
 import { WeatherIcon } from './WeatherIcon';
 import { isCurrentlyAM } from '../../utils/timeOfDay';
@@ -29,6 +28,8 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
 }) => {
   const current = useWeatherStore((s) => s.current);
   const forecast = useWeatherStore((s) => s.forecast);
+  const airQuality = useWeatherStore((s) => s.airQuality);
+  const sunTime = useWeatherStore((s) => s.sunTime);
   const resolvedLocation = useWeatherStore((s) => s.resolvedLocation);
   const unit = useWeatherStore((s) => s.unit);
   const displayScale = useWeatherStore((s) => s.displayScale);
@@ -128,68 +129,48 @@ export const WeatherForecastScreen: React.FC<WeatherForecastScreenProps> = ({
           </button>
         </div>
       ) : (
-        /* Standard Weather Forecast Dashboard Layout - Equal-Height Two-Row Layout */
+        /* Standard Weather Forecast Dashboard Layout */
         <div className="flex-1 flex flex-col gap-4 min-h-0 overflow-hidden">
-          {/* Row 1: Today + Radar (equal share of vertical space) */}
-          <div className="flex-1 min-h-0 grid grid-cols-12 gap-6">
-            <div className="col-span-5 h-full flex flex-col min-h-0">
-              <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-1.5 shrink-0">
-                Today
-              </div>
-              {current && (
-                <MiniWeatherView
-                  icon={current.icon}
-                  temperature={current.temperature ?? current.high}
-                  unit={unit}
-                  high={current.high}
-                  low={current.low}
-                  wind={current.wind}
-                  humidity={current.humidity}
-                  precipitationChance={current.precipitationChance}
-                  className="flex-1 min-h-0"
-                />
-              )}
-            </div>
-
-            <div className="col-span-7 h-full flex flex-col min-h-0">
-              <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-1.5 shrink-0">
-                Radar Imagery
-              </div>
-              <WeatherRadarCard
-                lat={resolvedLocation?.lat ?? 37.56299}
-                lon={resolvedLocation?.lon ?? -122.32553}
-                zoom={radarZoom}
-                label={radarLabel}
-                refreshIntervalMinutes={radarRefreshInterval}
-                className="flex-1 min-h-0"
-                onExpand={() => setActiveView('weather-radar')}
-                variant="compact"
-                sizeMode="height"
+          {/* Row 1: Today as full-width element with corner radar thumbnail */}
+          <div className="flex-[3] min-h-0 w-full">
+            {current && (
+              <MiniWeatherView
+                icon={current.icon}
+                temperature={current.temperature ?? current.high}
+                unit={unit}
+                high={current.high}
+                low={current.low}
+                wind={current.wind}
+                humidity={current.humidity}
+                precipitationChance={current.precipitationChance}
+                airQuality={airQuality}
+                sunTime={sunTime}
+                radarLat={resolvedLocation?.lat ?? 37.56299}
+                radarLon={resolvedLocation?.lon ?? -122.32553}
+                radarZoom={radarZoom}
+                radarRefreshInterval={radarRefreshInterval}
+                onOpenRadar={() => setActiveView('weather-radar')}
+                className="w-full h-full min-h-0"
               />
-            </div>
+            )}
           </div>
 
-          {/* Row 2: 5-Day Forecast (equal share of vertical space) */}
-          <div className="flex-1 min-h-0 flex flex-col">
-            <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-1.5 shrink-0">
-              5-Day Forecast
-            </div>
-            <div className="grid grid-cols-5 gap-[10px] flex-1 min-h-0" style={{ gap: '10px' }}>
-              {forecast.map((day, idx) => (
-                <ForecastDayCard
-                  key={`${day.dayLabel}-${idx}`}
-                  dayLabel={day.dayLabel}
-                  icon={day.icon}
-                  conditionLabel={day.conditionLabel}
-                  amCondition={day.amCondition}
-                  pmCondition={day.pmCondition}
-                  high={day.high}
-                  low={day.low}
-                  unit={unit}
-                  className="h-full min-h-0"
-                />
-              ))}
-            </div>
+          {/* Row 2: 5-Day Forecast in independent 5-column grid */}
+          <div className="grid grid-cols-5 gap-3 flex-1 min-h-0 items-stretch">
+            {forecast.map((day, idx) => (
+              <ForecastDayCard
+                key={`${day.dayLabel}-${idx}`}
+                dayLabel={day.dayLabel}
+                icon={day.icon}
+                conditionLabel={day.conditionLabel}
+                amCondition={day.amCondition}
+                pmCondition={day.pmCondition}
+                high={day.high}
+                low={day.low}
+                unit={unit}
+                className="h-full min-h-0"
+              />
+            ))}
           </div>
         </div>
       )}

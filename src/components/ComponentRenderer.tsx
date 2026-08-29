@@ -32,6 +32,7 @@ import {
   Send,
   ShieldAlert,
   Sliders,
+  Star,
   Sun,
   Thermometer,
   Trash2,
@@ -39,12 +40,14 @@ import {
   Users,
   Wrench,
   X,
+  XCircle,
   Zap,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MusicMediaPlayer } from './MusicMediaPlayer';
 import { MockpitInput } from './MockpitInput';
+import { AddressGeocodeInput } from './navigation/AddressGeocodeInput';
 import { OverheadDrivingVisualization } from './OverheadDrivingVisualization';
 import { PhoneContactsWidget } from './phone/PhoneContactsWidget';
 import { PhoneDialPadWidget } from './phone/PhoneDialPadWidget';
@@ -60,7 +63,9 @@ import { VehicleStatusCalloutWidget } from './vehicle/VehicleStatusCalloutWidget
 import { SendToServiceWidget } from './vehicle/SendToServiceWidget';
 import { MiniNav } from './navigation/MiniNav';
 import { getResolvedProps } from '../lib/bindingEvaluator';
-import { ComponentInstance, ComponentType, DriveModeState, VehicleState } from '../types';
+import { ComponentInstance, ComponentType, DriveModeState, VehicleState, TripStop } from '../types';
+import { calculateTripEstimate, haversineMiles } from '../utils/tripCalculations';
+import { searchNearbyPOIs } from '../utils/poiSearch';
 import { useMockpitStore } from '../store/useMockpitStore';
 
 interface ComponentRendererProps {
@@ -83,6 +88,7 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   driveMode: 'Drive Mode Selector',
   tirePressure: 'Tire Pressure Monitor',
   navHome: 'Home Location',
+  navFavorites: 'Favorites',
   navDestination: 'Trip Planner',
   navSearch: 'Navigation Search',
   navTripEstimate: 'Trip Estimate',
@@ -445,13 +451,17 @@ const NavHomeWidget: React.FC<{
   baseOpacity: string;
   styleOpacity?: number;
 }> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
-  const initialAddress = resolved.address || component.staticProps?.address || '1234 Silicon Way, San Jose, CA 95134';
+  const initialAddress = resolved.address || component.staticProps?.address || 'San Jose, CA';
   const [address, setAddress] = React.useState(initialAddress);
-  const coords = resolved.coords || component.staticProps?.coords || '37.3861° N, 122.0839° W';
+  const [homeLat, setHomeLat] = React.useState(resolved.lat || component.staticProps?.lat || '37.3861');
+  const [homeLng, setHomeLng] = React.useState(resolved.lng || component.staticProps?.lng || '-122.0839');
   const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navHome;
+  const startTripGuidance = useMockpitStore((s) => s.startTripGuidance);
 
   return (
     <div
+      id={`component-${component.type}`}
+      data-component-type="navHome"
       className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
@@ -466,22 +476,32 @@ const NavHomeWidget: React.FC<{
         }
       />
 
-      <div className="flex-1 min-h-0 my-1.5 space-y-1.5 flex flex-col justify-center">
-        <MockpitInput
+      <div className="flex-1 min-h-0 my-1.5 flex flex-col justify-center">
+        <AddressGeocodeInput
           value={address}
           onChange={setAddress}
-          placeholder="Enter Home address..."
+          onResolved={(lat, lng, displayName) => {
+            setHomeLat(lat.toString());
+            setHomeLng(lng.toString());
+            if (displayName) setAddress(displayName);
+          }}
+          placeholder="Enter Home city or address..."
           componentId={component.id}
           keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
           icon={<MapPin className="w-3.5 h-3.5 text-slate-400" />}
         />
-        <div className="text-[0.625rem] text-slate-400 font-mono pl-1">
-          Coordinates: <span className="text-slate-300">{coords}</span>
-        </div>
       </div>
 
       <button
-        onClick={() => alert(`Starting route to Home: ${address}`)}
+        onClick={() => {
+          startTripGuidance({
+            destinationName: address || 'Home',
+            destLat: Number(homeLat) || 37.3861,
+            destLng: Number(homeLng) || -122.0839,
+            destGeocoded: true,
+            stops: [],
+          });
+        }}
         className="w-full py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
       >
         <Navigation className="w-3.5 h-3.5 text-slate-400" /> Navigate Home
@@ -490,14 +510,7 @@ const NavHomeWidget: React.FC<{
   );
 };
 
-interface TripStop {
-  id: string;
-  name: string;
-  lat: string;
-  lng: string;
-}
-
-const NavDestinationWidget: React.FC<{
+const NavFavoritesWidget: React.FC<{
   component: ComponentInstance;
   resolved: Record<string, any>;
   isSelected?: boolean;
@@ -505,6 +518,225 @@ const NavDestinationWidget: React.FC<{
   baseOpacity: string;
   styleOpacity?: number;
 }> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
+  const favorites = useMockpitStore((s) => s.favorites) || [];
+  const recents = useMockpitStore((s) => s.recents) || [];
+  const addFavorite = useMockpitStore((s) => s.addFavorite);
+  const removeFavorite = useMockpitStore((s) => s.removeFavorite);
+  const promoteRecentToFavorite = useMockpitStore((s) => s.promoteRecentToFavorite);
+  const startTripGuidance = useMockpitStore((s) => s.startTripGuidance);
+  const updateComponentSize = useMockpitStore((s) => s.updateComponentSize);
+
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [newLabel, setNewLabel] = React.useState('');
+  const [newAddress, setNewAddress] = React.useState('');
+  const [newLat, setNewLat] = React.useState<number | null>(null);
+  const [newLng, setNewLng] = React.useState<number | null>(null);
+
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navFavorites;
+
+  // Dynamic height adjustment when adding form opens/closes or list length changes
+  React.useEffect(() => {
+    const totalCount = favorites.length + recents.length;
+    const baseHeight = 220;
+    const itemHeight = 36;
+    const addFormExtra = isAdding ? 110 : 0;
+    const targetHeight = Math.min(Math.max(baseHeight + Math.min(totalCount, 6) * itemHeight + addFormExtra, 260), 600);
+    if (Math.abs(component.height - targetHeight) > 20) {
+      updateComponentSize(component.id, component.width, targetHeight);
+    }
+  }, [favorites.length, recents.length, isAdding, component.id, component.width, component.height, updateComponentSize]);
+
+  const handleSaveFavorite = () => {
+    if (!newAddress.trim() || newLat === null || newLng === null) return;
+    addFavorite({
+      label: newLabel.trim() || newAddress.split(',')[0] || 'Favorite',
+      address: newAddress,
+      lat: newLat,
+      lng: newLng,
+      geocoded: true,
+    });
+    setNewLabel('');
+    setNewAddress('');
+    setNewLat(null);
+    setNewLng(null);
+    setIsAdding(false);
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      id={`component-${component.type}`}
+      data-component-type="navFavorites"
+      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
+    >
+      <ComponentHeader
+        type="navFavorites"
+        label={headerLabel}
+        customColor={customColor}
+      />
+
+      <div className="flex-1 min-h-0 my-2 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+        {/* Favorites Section */}
+        <div className="space-y-1">
+          <span className="text-[0.5625rem] font-mono text-slate-500 uppercase tracking-wider font-semibold block px-1">
+            SAVED PLACES
+          </span>
+          {favorites.length === 0 ? (
+            <div className="text-[0.6875rem] text-slate-500 font-mono italic px-2 py-1">
+              No saved favorite locations.
+            </div>
+          ) : (
+            favorites.map((fav) => (
+              <div
+                key={fav.id}
+                onClick={() => {
+                  startTripGuidance({
+                    destinationName: fav.label || fav.address,
+                    destLat: fav.lat,
+                    destLng: fav.lng,
+                    destGeocoded: fav.geocoded !== false,
+                    stops: [],
+                  });
+                }}
+                className="group p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
+              >
+                <div className="min-w-0 pr-2 flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[0.75rem] font-bold text-slate-200 truncate">{fav.label}</div>
+                    <div className="text-[0.625rem] text-slate-400 truncate">{fav.address}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFavorite(fav.id);
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-slate-700/80 text-slate-500 hover:text-rose-400 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
+                    title="Delete Favorite"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Inline Add Favorite Form */}
+        {isAdding ? (
+          <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 space-y-2">
+            <div className="text-[0.625rem] font-mono text-slate-300 font-bold uppercase">Add New Favorite</div>
+            <MockpitInput
+              value={newLabel}
+              onChange={setNewLabel}
+              placeholder="Label (e.g. Gym, Mom's House)..."
+              componentId={component.id}
+              keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+              className="min-h-[36px] text-xs"
+            />
+            <AddressGeocodeInput
+              value={newAddress}
+              onChange={setNewAddress}
+              onResolved={(lat, lng, displayName) => {
+                setNewLat(lat);
+                setNewLng(lng);
+                if (displayName) setNewAddress(displayName);
+              }}
+              placeholder="Enter city or landmark..."
+              componentId={component.id}
+              keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+              icon={<MapPin className="w-3.5 h-3.5 text-slate-400" />}
+            />
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={() => {
+                  setIsAdding(false);
+                  setNewLabel('');
+                  setNewAddress('');
+                  setNewLat(null);
+                  setNewLng(null);
+                }}
+                className="flex-1 py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-colors cursor-pointer border border-slate-700 min-h-[36px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveFavorite}
+                disabled={!newAddress.trim() || newLat === null}
+                className="flex-1 py-1.5 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
+              >
+                Save Favorite
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAdding(true)}
+            className="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700 min-h-[44px]"
+          >
+            <Plus className="w-4 h-4 text-slate-400" /> Add Favorite
+          </button>
+        )}
+
+        {/* Recents Section */}
+        {recents.length > 0 && (
+          <div className="space-y-1 pt-2 border-t border-slate-800/80">
+            <span className="text-[0.5625rem] font-mono text-slate-500 uppercase tracking-wider font-semibold block px-1">
+              RECENT DESTINATIONS
+            </span>
+            {recents.map((recent) => (
+              <div
+                key={recent.id}
+                onClick={() => {
+                  startTripGuidance({
+                    destinationName: recent.label || recent.address,
+                    destLat: recent.lat,
+                    destLng: recent.lng,
+                    destGeocoded: recent.geocoded !== false,
+                    stops: [],
+                  });
+                }}
+                className="group p-2 rounded-xl bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/60 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
+              >
+                <div className="min-w-0 pr-2 flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[0.6875rem] font-bold text-slate-300 truncate">{recent.label}</div>
+                    <div className="text-[0.5625rem] text-slate-500 truncate">{recent.address}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    promoteRecentToFavorite(recent.id, recent.label);
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-slate-700/80 text-slate-400 hover:text-amber-300 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
+                  title="Save as Favorite"
+                >
+                  <Star className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const NavDestinationWidget: React.FC<{
+  component: ComponentInstance;
+  resolved: Record<string, any>;
+  vehicleState: VehicleState;
+  isSelected?: boolean;
+  customColor: string;
+  baseOpacity: string;
+  styleOpacity?: number;
+}> = ({ component, resolved, vehicleState, isSelected, customColor, baseOpacity, styleOpacity }) => {
   const initialPrimaryDest = resolved.destination || component.staticProps?.destination || 'Yosemite National Park Valley';
   const initialDestLat = resolved.destLat || component.staticProps?.destLat || resolved.lat || component.staticProps?.lat || '37.7456';
   const initialDestLng = resolved.destLng || component.staticProps?.destLng || resolved.lng || component.staticProps?.lng || '-119.5936';
@@ -512,8 +744,39 @@ const NavDestinationWidget: React.FC<{
   const [primaryDest, setPrimaryDest] = React.useState(initialPrimaryDest);
   const [destLat, setDestLat] = React.useState(initialDestLat);
   const [destLng, setDestLng] = React.useState(initialDestLng);
+  const [showCancelConfirm, setShowCancelConfirm] = React.useState(false);
 
-  // Parse waypoints / stops
+  const activeTrip = useMockpitStore((s) => s.activeTrip);
+  const startTripGuidance = useMockpitStore((s) => s.startTripGuidance);
+  const cancelTripGuidance = useMockpitStore((s) => s.cancelTripGuidance);
+  const updateComponentSize = useMockpitStore((s) => s.updateComponentSize);
+
+  const metricsGridRef = React.useRef<HTMLDivElement>(null);
+  const prevActiveRef = React.useRef<boolean>(!!activeTrip);
+  const lastGridDeltaRef = React.useRef<number>(90);
+
+  React.useEffect(() => {
+    const wasActive = prevActiveRef.current;
+    const isActive = !!activeTrip;
+
+    if (wasActive !== isActive) {
+      if (isActive && metricsGridRef.current) {
+        const gridHeight = metricsGridRef.current.offsetHeight || 82;
+        const gap = 8;
+        const delta = gridHeight + gap;
+        lastGridDeltaRef.current = delta;
+        const newHeight = component.height + delta;
+        updateComponentSize(component.id, component.width, newHeight);
+      } else if (!isActive) {
+        const delta = lastGridDeltaRef.current || 90;
+        const newHeight = Math.max(component.height - delta, 240);
+        updateComponentSize(component.id, component.width, newHeight);
+      }
+    }
+    prevActiveRef.current = isActive;
+  }, [activeTrip, component.id, component.width, component.height, updateComponentSize]);
+
+  // Parse waypoints / stops for draft mode
   const parseInitialStops = (): TripStop[] => {
     if (component.staticProps?.tripStops) {
       try {
@@ -544,35 +807,158 @@ const NavDestinationWidget: React.FC<{
     ];
   };
 
-  const [stops, setStops] = React.useState<TripStop[]>(parseInitialStops);
+  const [draftStops, setDraftStops] = React.useState<TripStop[]>(parseInitialStops);
   const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navDestination;
 
-  const handleUpdateStop = (index: number, field: 'name' | 'lat' | 'lng', val: string) => {
-    setStops((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: val };
-      return updated;
-    });
+  // Single source of truth: when activeTrip is active, read destination and stops directly from activeTrip
+  const currentDestName = activeTrip ? activeTrip.destinationName : primaryDest;
+  const currentStops = activeTrip ? activeTrip.stops : draftStops;
+
+  const [destGeocoded, setDestGeocoded] = React.useState<boolean | undefined>(undefined);
+
+  const handleUpdateDestName = (name: string) => {
+    if (activeTrip) {
+      startTripGuidance({
+        ...activeTrip,
+        destinationName: name,
+      });
+    } else {
+      setPrimaryDest(name);
+    }
+  };
+
+  const handleUpdateDestCoords = (lat: number, lng: number, displayName?: string) => {
+    setDestGeocoded(true);
+    if (activeTrip) {
+      startTripGuidance({
+        ...activeTrip,
+        destinationName: displayName || activeTrip.destinationName,
+        destLat: lat,
+        destLng: lng,
+        destGeocoded: true,
+      });
+    } else {
+      setDestLat(lat.toString());
+      setDestLng(lng.toString());
+      if (displayName) setPrimaryDest(displayName);
+    }
+  };
+
+  const handleDestUnresolved = () => {
+    setDestGeocoded(false);
+    if (activeTrip) {
+      startTripGuidance({
+        ...activeTrip,
+        destGeocoded: false,
+      });
+    }
+  };
+
+  const handleUpdateStopName = (index: number, name: string) => {
+    if (activeTrip) {
+      const updated = [...activeTrip.stops];
+      updated[index] = { ...updated[index], name };
+      startTripGuidance({
+        ...activeTrip,
+        stops: updated,
+      });
+    } else {
+      const updated = [...draftStops];
+      updated[index] = { ...updated[index], name };
+      setDraftStops(updated);
+    }
+  };
+
+  const handleUpdateStopCoords = (index: number, lat: number, lng: number, displayName?: string) => {
+    if (activeTrip) {
+      const updated = [...activeTrip.stops];
+      updated[index] = {
+        ...updated[index],
+        lat: lat.toString(),
+        lng: lng.toString(),
+        name: displayName || updated[index].name,
+        geocoded: true,
+      };
+      startTripGuidance({
+        ...activeTrip,
+        stops: updated,
+      });
+    } else {
+      const updated = [...draftStops];
+      updated[index] = {
+        ...updated[index],
+        lat: lat.toString(),
+        lng: lng.toString(),
+        name: displayName || updated[index].name,
+        geocoded: true,
+      };
+      setDraftStops(updated);
+    }
+  };
+
+  const handleStopUnresolved = (index: number) => {
+    if (activeTrip) {
+      const updated = [...activeTrip.stops];
+      updated[index] = {
+        ...updated[index],
+        geocoded: false,
+      };
+      startTripGuidance({
+        ...activeTrip,
+        stops: updated,
+      });
+    } else {
+      const updated = [...draftStops];
+      updated[index] = {
+        ...updated[index],
+        geocoded: false,
+      };
+      setDraftStops(updated);
+    }
   };
 
   const handleAddStop = () => {
-    setStops((prev) => [
-      ...prev,
-      {
-        id: `stop-${Date.now()}`,
-        name: `Stop ${prev.length + 1}`,
-        lat: '37.5000',
-        lng: '-120.0000',
-      },
-    ]);
+    const newStop: TripStop = {
+      id: `stop-${Date.now()}`,
+      name: `Stop ${currentStops.length + 1}`,
+      lat: '37.5000',
+      lng: '-120.0000',
+    };
+    if (activeTrip) {
+      startTripGuidance({
+        ...activeTrip,
+        stops: [...activeTrip.stops, newStop],
+      });
+    } else {
+      setDraftStops([...draftStops, newStop]);
+    }
   };
 
   const handleRemoveStop = (index: number) => {
-    setStops((prev) => prev.filter((_, i) => i !== index));
+    if (activeTrip) {
+      const nextStops = activeTrip.stops.filter((_, i) => i !== index);
+      startTripGuidance({
+        ...activeTrip,
+        stops: nextStops,
+      });
+    } else {
+      setDraftStops(draftStops.filter((_, i) => i !== index));
+    }
   };
+
+  // Live estimate calculation for Active Mode
+  const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
+  const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
+  const consumptionRate = Number(resolved.consumptionRate || component.staticProps?.consumptionRate) || 0.32;
+
+  const estimate = activeTrip
+    ? calculateTripEstimate(originLat, originLng, activeTrip, consumptionRate, vehicleState.batteryPercent)
+    : null;
 
   return (
     <div
+      id={`component-${component.type}`}
+      data-component-type="navDestination"
       className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
@@ -580,65 +966,83 @@ const NavDestinationWidget: React.FC<{
         type="navDestination"
         label={headerLabel}
         customColor={customColor}
-        rightElement={
-          <div className="flex items-center gap-1.5">
-            <span className="text-[0.5625rem] font-mono text-slate-400">{stops.length + 1} STOPS</span>
-            <button
-              onClick={handleAddStop}
-              className="p-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-700 transition-colors cursor-pointer"
-              title="Add Trip Stop"
-            >
-              <Plus className="w-3 h-3" />
-            </button>
-          </div>
-        }
       />
 
       <div className="flex-1 min-h-0 my-1.5 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
-        {/* Primary Destination with Name and Lat / Long */}
+        {/* Active Mode: Live Trip Estimate 2x2 Grid */}
+        {activeTrip && estimate && (
+          estimate.isUnresolved ? (
+            <div ref={metricsGridRef} className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-amber-300">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+              <span className="text-[0.6875rem] font-mono font-medium leading-tight">
+                {estimate.unresolvedMessage}
+              </span>
+            </div>
+          ) : (
+            <div ref={metricsGridRef} className="grid grid-cols-2 gap-1.5 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+              <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
+                <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                  Distance
+                </span>
+                <span className="text-xs font-bold text-slate-100 font-mono leading-tight">
+                  {estimate.formattedDistance}
+                </span>
+              </div>
+
+              <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
+                <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                  Estimated Time
+                </span>
+                <span className="text-xs font-bold text-slate-100 font-mono leading-tight">
+                  {estimate.formattedDuration}
+                </span>
+              </div>
+
+              <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
+                <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                  Energy Required
+                </span>
+                <span className="text-[0.6875rem] font-bold text-slate-100 font-mono leading-tight">
+                  {estimate.formattedEnergy}
+                </span>
+              </div>
+
+              <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
+                <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                  Arrival Charge
+                </span>
+                <span className="text-[0.6875rem] font-bold text-emerald-400 font-mono leading-tight">
+                  {estimate.formattedArrivalBattery}
+                </span>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Destination with Name and Address Geocode */}
         <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-200 font-mono">
               <Flag className="w-3.5 h-3.5 text-amber-400" />
-              <span>PRIMARY DESTINATION</span>
+              <span>DESTINATION</span>
             </div>
             <span className="text-[0.5625rem] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
               FINAL
             </span>
           </div>
-          <MockpitInput
-            value={primaryDest}
-            onChange={setPrimaryDest}
-            placeholder="Primary Destination name..."
+          <AddressGeocodeInput
+            value={currentDestName}
+            onChange={(val) => handleUpdateDestName(val)}
+            onResolved={(lat, lng, displayName) => handleUpdateDestCoords(lat, lng, displayName)}
+            onUnresolved={handleDestUnresolved}
+            placeholder="Destination address or city..."
             componentId={component.id}
             keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
           />
-          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-            <div className="space-y-0.5">
-              <span className="text-[0.5625rem] font-mono text-slate-400 block font-semibold">LATITUDE</span>
-              <MockpitInput
-                value={destLat}
-                onChange={setDestLat}
-                placeholder="e.g. 37.7456"
-                componentId={component.id}
-                keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-              />
-            </div>
-            <div className="space-y-0.5">
-              <span className="text-[0.5625rem] font-mono text-slate-400 block font-semibold">LONGITUDE</span>
-              <MockpitInput
-                value={destLng}
-                onChange={setDestLng}
-                placeholder="e.g. -119.5936"
-                componentId={component.id}
-                keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-              />
-            </div>
-          </div>
         </div>
 
-        {/* Waypoint / Trip Stops with Lat & Long */}
-        {stops.map((stop, i) => (
+        {/* Waypoint / Trip Stops with Address Geocode */}
+        {currentStops.map((stop, i) => (
           <div
             key={stop.id || i}
             className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1.5 transition-all"
@@ -659,51 +1063,74 @@ const NavDestinationWidget: React.FC<{
               </button>
             </div>
 
-            <MockpitInput
+            <AddressGeocodeInput
               value={stop.name}
-              onChange={(val) => handleUpdateStop(i, 'name', val)}
-              placeholder={`Stop ${i + 1} location name...`}
+              onChange={(val) => handleUpdateStopName(i, val)}
+              onResolved={(lat, lng, displayName) => handleUpdateStopCoords(i, lat, lng, displayName)}
+              onUnresolved={() => handleStopUnresolved(i)}
+              placeholder={`Stop ${i + 1} address or city...`}
               componentId={component.id}
               keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
             />
-
-            <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-              <div className="space-y-0.5">
-                <span className="text-[0.5625rem] font-mono text-slate-400 block font-semibold">LATITUDE</span>
-                <MockpitInput
-                  value={stop.lat}
-                  onChange={(val) => handleUpdateStop(i, 'lat', val)}
-                  placeholder="e.g. 37.3022"
-                  componentId={component.id}
-                  keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-                />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[0.5625rem] font-mono text-slate-400 block font-semibold">LONGITUDE</span>
-                <MockpitInput
-                  value={stop.lng}
-                  onChange={(val) => handleUpdateStop(i, 'lng', val)}
-                  placeholder="e.g. -120.4830"
-                  componentId={component.id}
-                  keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-                />
-              </div>
-            </div>
           </div>
         ))}
+
+        {/* Full-width Add Stop Button with min-h-[44px] */}
+        <button
+          type="button"
+          onClick={handleAddStop}
+          className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-slate-950/40 hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-2 cursor-pointer border border-dashed border-slate-700/80 hover:border-slate-600 shadow-sm"
+        >
+          <Plus className="w-4 h-4 text-slate-400" />
+          <span>Add Stop</span>
+        </button>
       </div>
 
       <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
-        <button
-          onClick={() =>
-            alert(
-              `Starting Trip Guidance:\n${stops.map((s, idx) => `• Stop ${idx + 1}: ${s.name} (${s.lat}, ${s.lng})`).join('\n')}\n• Final: ${primaryDest} (${destLat}, ${destLng})`
-            )
-          }
-          className="flex-1 py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1 cursor-pointer border border-slate-700"
-        >
-          <Navigation className="w-3.5 h-3.5 text-slate-400" /> Start Guidance
-        </button>
+        {activeTrip ? (
+          showCancelConfirm ? (
+            <div className="w-full flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirm(false)}
+                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl border border-slate-800 bg-slate-950/80 hover:bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
+              >
+                Keep Trip
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCancelConfirm(false);
+                  cancelTripGuidance();
+                }}
+                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
+              >
+                Confirm Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowCancelConfirm(true)}
+              className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+            >
+              <XCircle className="w-3.5 h-3.5 text-slate-400" /> Cancel Guidance
+            </button>
+          )
+        ) : (
+          <button
+            onClick={() =>
+              startTripGuidance({
+                destinationName: primaryDest,
+                destLat: Number(destLat) || 37.7456,
+                destLng: Number(destLng) || -119.5936,
+                stops: draftStops,
+              })
+            }
+            className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+          >
+            <Navigation className="w-3.5 h-3.5 text-slate-400" /> Start Guidance
+          </button>
+        )}
       </div>
     </div>
   );
@@ -718,20 +1145,107 @@ const NavSearchWidget: React.FC<{
   styleOpacity?: number;
 }> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
   const [query, setQuery] = React.useState('');
+  const [isFocused, setIsFocused] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [poiResults, setPoiResults] = React.useState<Array<{
+    name: string;
+    status: string;
+    dist: string;
+    lat: number;
+    lng: number;
+    category?: string;
+  }>>([]);
+
   const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navSearch;
+  const startTripGuidance = useMockpitStore((s) => s.startTripGuidance);
+  const setSearchResults = useMockpitStore((s) => s.setSearchResults);
+  const vehicleState = useMockpitStore((s) => s.vehicleState);
+  const updateComponentSize = useMockpitStore((s) => s.updateComponentSize);
 
-  const samplePOIs = [
-    { name: 'Tesla Supercharger - 250kW', status: '8/12 Open', dist: '1.2 mi' },
-    { name: 'Electrify America - 350kW', status: '4/6 Open', dist: '2.4 mi' },
-    { name: 'Starbucks Coffee Drive-thru', status: 'Open Now', dist: '0.8 mi' },
-  ];
+  const resultsPanelRef = React.useRef<HTMLDivElement>(null);
+  const isExpanded = isFocused || query.trim().length > 0;
+  const prevExpandedRef = React.useRef<boolean>(isExpanded);
+  const lastSearchDeltaRef = React.useRef<number>(140);
 
-  const filteredPOIs = query.trim()
-    ? samplePOIs.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
-    : samplePOIs;
+  const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
+  const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
+
+  const defaultPOIs = React.useMemo(() => [
+    { name: 'Tesla Supercharger - 250kW', status: '8/12 Open', dist: '1.2 mi', lat: originLat + 0.008, lng: originLng + 0.003, category: 'charging_station' },
+    { name: 'Electrify America - 350kW', status: '4/6 Open', dist: '2.4 mi', lat: originLat + 0.015, lng: originLng - 0.019, category: 'charging_station' },
+    { name: 'Starbucks Coffee Drive-thru', status: 'Open Now', dist: '0.8 mi', lat: originLat + 0.001, lng: originLng + 0.001, category: 'cafe' },
+  ], [originLat, originLng]);
+
+  // Handle dynamic measured resize on expand/collapse (v3.0.1)
+  React.useEffect(() => {
+    const wasExpanded = prevExpandedRef.current;
+    if (wasExpanded !== isExpanded) {
+      if (isExpanded) {
+        // Measure results panel or use a bounded height (capped at 160px for ~4-5 results before scrolling)
+        const measured = resultsPanelRef.current?.offsetHeight || 140;
+        const delta = Math.min(Math.max(measured, 120), 160);
+        lastSearchDeltaRef.current = delta;
+        const newHeight = component.height + delta;
+        updateComponentSize(component.id, component.width, newHeight);
+      } else {
+        const delta = lastSearchDeltaRef.current || 140;
+        const newHeight = Math.max(component.height - delta, 160);
+        updateComponentSize(component.id, component.width, newHeight);
+      }
+    }
+    prevExpandedRef.current = isExpanded;
+  }, [isExpanded, component.id, component.width, component.height, updateComponentSize]);
+
+  // Debounced live Overpass POI search
+  React.useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setPoiResults([]);
+      setLoading(false);
+      setSearchResults([]);
+      return;
+    }
+
+    setLoading(true);
+    const timeout = setTimeout(async () => {
+      try {
+        const pois = await searchNearbyPOIs(trimmed, originLat, originLng, 8000);
+        if (pois && pois.length > 0) {
+          const mapped = pois.map((p) => {
+            const miles = haversineMiles(originLat, originLng, p.lat, p.lng);
+            return {
+              name: p.name,
+              status: p.category === 'charging_station' ? 'EV Charger' : p.category === 'cafe' ? 'Cafe / Food' : 'Location',
+              dist: `${miles.toFixed(1)} mi`,
+              lat: p.lat,
+              lng: p.lng,
+              category: p.category,
+            };
+          });
+          setPoiResults(mapped);
+          setSearchResults(pois);
+        } else {
+          // Fallback to local filtering of sample POIs
+          const filtered = defaultPOIs.filter((p) => p.name.toLowerCase().includes(trimmed.toLowerCase()));
+          setPoiResults(filtered);
+        }
+      } catch (err) {
+        const filtered = defaultPOIs.filter((p) => p.name.toLowerCase().includes(trimmed.toLowerCase()));
+        setPoiResults(filtered);
+      } finally {
+        setLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [query, originLat, originLng, defaultPOIs, setSearchResults]);
+
+  const displayedPOIs = query.trim() ? poiResults : defaultPOIs;
 
   return (
     <div
+      id={`component-${component.type}`}
+      data-component-type="navSearch"
       className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
@@ -748,38 +1262,62 @@ const NavSearchWidget: React.FC<{
         <MockpitInput
           value={query}
           onChange={setQuery}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            setTimeout(() => setIsFocused(false), 200);
+          }}
           placeholder="Search EV chargers, food, parking..."
           componentId={component.id}
           keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
           icon={<Search className="w-3.5 h-3.5 text-slate-500" />}
+          className="min-h-[44px]"
         />
       </div>
 
-      <div className="flex-1 min-h-0 my-1 space-y-1 overflow-y-auto pr-1 custom-scrollbar">
-        {filteredPOIs.length === 0 ? (
-          <div className="text-[0.6875rem] text-slate-500 italic p-1">No matching results</div>
-        ) : (
-          filteredPOIs.map((poi, idx) => (
-            <div
-              key={idx}
-              onClick={() => alert(`Selected POI: ${poi.name}`)}
-              className="p-1.5 rounded-lg bg-slate-950/50 hover:bg-slate-800/80 border border-slate-800/80 flex items-center justify-between cursor-pointer transition-colors"
-            >
-              <div className="min-w-0 pr-1">
-                <div className="text-[0.6875rem] font-bold text-slate-200 truncate">{poi.name}</div>
-                <div className="text-[0.5625rem] text-emerald-400 font-mono">{poi.status}</div>
+      {isExpanded ? (
+        <div ref={resultsPanelRef} className="flex-1 min-h-0 flex flex-col justify-between">
+          <div className="flex-1 min-h-0 my-1 space-y-1 overflow-y-auto pr-1 custom-scrollbar max-h-[180px]">
+            {loading ? (
+              <div className="text-[0.6875rem] text-slate-400 font-mono italic p-2 text-center animate-pulse">
+                Searching nearby...
               </div>
-              <span className="text-[0.625rem] font-mono text-slate-400 shrink-0 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
-                {poi.dist}
-              </span>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="text-[0.5625rem] text-slate-500 font-mono text-center pt-1 border-t border-slate-800/60">
-        FILTERED SAMPLE POIS
-      </div>
+            ) : displayedPOIs.length === 0 ? (
+              <div className="text-[0.6875rem] text-slate-500 italic p-1">No matching results</div>
+            ) : (
+              displayedPOIs.map((poi, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    startTripGuidance({
+                      destinationName: poi.name,
+                      destLat: poi.lat,
+                      destLng: poi.lng,
+                      destGeocoded: true,
+                      stops: [],
+                    });
+                  }}
+                  className="p-1.5 rounded-lg bg-slate-950/50 hover:bg-slate-800/80 border border-slate-800/80 flex items-center justify-between cursor-pointer transition-colors"
+                >
+                  <div className="min-w-0 pr-1">
+                    <div className="text-[0.6875rem] font-bold text-slate-200 truncate">{poi.name}</div>
+                    <div className="text-[0.5625rem] text-emerald-400 font-mono">{poi.status}</div>
+                  </div>
+                  <span className="text-[0.625rem] font-mono text-slate-400 shrink-0 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                    {poi.dist}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="text-[0.5625rem] text-slate-500 font-mono text-center pt-1 border-t border-slate-800/60">
+            {query.trim() ? 'LIVE POI SEARCH RESULTS' : 'POPULAR NEARBY'}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center text-[0.625rem] text-slate-600 font-mono">
+          Focus search to view nearby points of interest
+        </div>
+      )}
     </div>
   );
 };
@@ -801,10 +1339,8 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
   baseOpacity,
   styleOpacity,
 }) => {
-  const flStr = resolved.frontLeft || '35 PSI';
-  const frStr = resolved.frontRight || '35 PSI';
-  const rlStr = resolved.rearLeft || '36 PSI';
-  const rrStr = resolved.rearRight || '36 PSI';
+  const tirePressureWarning = useMockpitStore((s) => s.vehicleState.tirePressureWarning ?? false);
+
   const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.tirePressure;
 
   const warningThresh = Number(component.staticProps?.warningThreshold) || 31;
@@ -815,6 +1351,37 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
     return isNaN(num) ? 35 : num;
   };
 
+  const rawFlStr = resolved.frontLeft || component.staticProps?.frontLeft || '35 PSI';
+  const rawFrStr = resolved.frontRight || component.staticProps?.frontRight || '35 PSI';
+  const rawRlStr = resolved.rearLeft || component.staticProps?.rearLeft || '36 PSI';
+  const rawRrStr = resolved.rearRight || component.staticProps?.rearRight || '36 PSI';
+
+  let flStr = rawFlStr;
+  let frStr = rawFrStr;
+  let rlStr = rawRlStr;
+  let rrStr = rawRrStr;
+
+  if (tirePressureWarning) {
+    // If all configured values are > warningThresh (e.g. default 35/35/36/36 without custom low tire), show 28 PSI on FL
+    const flPsi = parsePsi(rawFlStr);
+    const frPsi = parsePsi(rawFrStr);
+    const rlPsi = parsePsi(rawRlStr);
+    const rrPsi = parsePsi(rawRrStr);
+    if (flPsi > warningThresh && frPsi > warningThresh && rlPsi > warningThresh && rrPsi > warningThresh) {
+      flStr = '28 PSI';
+    }
+  } else {
+    // When preset is OFF, all tire pressure settings should be normal
+    const flPsi = parsePsi(rawFlStr);
+    const frPsi = parsePsi(rawFrStr);
+    const rlPsi = parsePsi(rawRlStr);
+    const rrPsi = parsePsi(rawRrStr);
+    flStr = flPsi <= warningThresh ? '35 PSI' : rawFlStr;
+    frStr = frPsi <= warningThresh ? '35 PSI' : rawFrStr;
+    rlStr = rlPsi <= warningThresh ? '36 PSI' : rawRlStr;
+    rrStr = rrPsi <= warningThresh ? '36 PSI' : rawRrStr;
+  }
+
   const tires = [
     { code: 'FL', label: 'Front Left', str: flStr, psi: parsePsi(flStr) },
     { code: 'FR', label: 'Front Right', str: frStr, psi: parsePsi(frStr) },
@@ -823,12 +1390,12 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
   ];
 
   const getStatus = (psi: number) => {
+    if (!tirePressureWarning) return 'normal';
     if (psi <= criticalThresh) return 'critical';
     if (psi <= warningThresh) return 'warning';
     return 'normal';
   };
 
-  const triggeredRef = useRef<Record<string, string>>({});
   const gridContainerRef = useRef<HTMLDivElement>(null);
   const measureContainerRef = useRef<HTMLDivElement>(null);
   const [useAbbreviation, setUseAbbreviation] = useState(false);
@@ -837,10 +1404,6 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
   const checkFit = () => {
     if (!gridContainerRef.current) return;
     const gridWidth = gridContainerRef.current.clientWidth;
-    // Each column gets roughly (gridWidth - gap) / 2.
-    // Inside each tile: padding is px-2 (16px total) or p-2 (16px total).
-    // An optional warning indicator dot takes ~10px with gap.
-    // We measure the longest label ("Front Right" / "Front Left") in the hidden offscreen measure ref.
     const tileWidth = (gridWidth - 8) / 2;
     const availableTextWidth = tileWidth - 24; // 16px tile padding + 8px safety/dot margin
 
@@ -870,33 +1433,6 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
       observer.disconnect();
     };
   }, []);
-
-  useEffect(() => {
-    let hasAbnormal = false;
-    tires.forEach((tire) => {
-      const status = getStatus(tire.psi);
-      const prevStatus = triggeredRef.current[tire.code];
-
-      if (status !== 'normal') {
-        hasAbnormal = true;
-      }
-
-      if (status !== 'normal' && status !== prevStatus) {
-        triggeredRef.current[tire.code] = status;
-        const store = useMockpitStore.getState();
-        store.setVehicleState({ tirePressureWarning: true });
-      } else if (status === 'normal' && prevStatus) {
-        delete triggeredRef.current[tire.code];
-      }
-    });
-
-    if (!hasAbnormal && Object.keys(triggeredRef.current).length === 0) {
-      const vs = useMockpitStore.getState().vehicleState;
-      if (vs.tirePressureWarning) {
-        useMockpitStore.getState().setVehicleState({ tirePressureWarning: false });
-      }
-    }
-  }, [flStr, frStr, rlStr, rrStr, warningThresh, criticalThresh]);
 
   return (
     <div
@@ -976,6 +1512,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 }) => {
   const setVehicleState = useMockpitStore((s) => s.setVehicleState);
   const activePalette = useMockpitStore((s) => s.activePalette);
+  const activeTrip = useMockpitStore((s) => s.activeTrip);
   const primaryColor = activePalette?.primary || '#38bdf8';
   const resolved = getResolvedProps(component, vehicleState);
 
@@ -1056,17 +1593,10 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             customColor={customColor}
             rightElement={
               vehicleState.isCharging ? (
-                vehicleState.batteryPercent >= 100 ? (
-                  <span className="flex items-center gap-1 text-emerald-400 font-bold text-[0.625rem] bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40">
-                    <Check className="w-3 h-3 text-emerald-400" />
-                    CHARGING COMPLETE
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-emerald-400 font-bold text-[0.625rem] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    <Zap className="w-3 h-3 fill-emerald-400" />
-                    CHARGING
-                  </span>
-                )
+                <span className="flex items-center gap-1 text-emerald-400 font-bold text-[0.625rem] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <Zap className="w-3 h-3 fill-emerald-400" />
+                  CHARGING
+                </span>
               ) : (
                 <span className="text-[0.625rem] font-mono font-bold text-slate-400 uppercase">
                   {liveRange} MILE RANGE
@@ -1693,6 +2223,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       const lng = Number(resolved.lng) || -122.4194;
       const zoom = Number(resolved.zoom) || 13;
       const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.map;
+      const searchResults = useMockpitStore.getState().searchResults || [];
 
       return (
         <div
@@ -1725,6 +2256,34 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <Marker position={[lat, lng]} icon={customPinIcon} />
+
+              {/* Active Trip Destination Pin */}
+              {activeTrip && !isNaN(activeTrip.destLat) && !isNaN(activeTrip.destLng) && (
+                <Marker
+                  position={[activeTrip.destLat, activeTrip.destLng]}
+                  icon={L.divIcon({
+                    className: 'custom-dest-pin',
+                    html: `<div style="background-color: #f59e0b; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #0f172a; box-shadow: 0 0 10px #f59e0b;"></div>`,
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7],
+                  })}
+                />
+              )}
+
+              {/* Search Result POI Pins */}
+              {searchResults.slice(0, 10).map((poi) => (
+                <Marker
+                  key={poi.id}
+                  position={[poi.lat, poi.lng]}
+                  icon={L.divIcon({
+                    className: 'custom-poi-pin',
+                    html: `<div style="background-color: #10b981; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #0f172a; box-shadow: 0 0 8px #10b981;"></div>`,
+                    iconSize: [10, 10],
+                    iconAnchor: [5, 5],
+                  })}
+                />
+              ))}
+
               <MapResizer />
             </MapContainer>
           </div>
@@ -1896,11 +2455,25 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       );
     }
 
+    case 'navFavorites': {
+      return (
+        <NavFavoritesWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
+      );
+    }
+
     case 'navDestination': {
       return (
         <NavDestinationWidget
           component={component}
           resolved={resolved}
+          vehicleState={vehicleState}
           isSelected={isSelected}
           customColor={customColor}
           baseOpacity={baseOpacity}
@@ -1923,11 +2496,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
 
     case 'navTripEstimate': {
-      // Note: Real geocoding/routing integration deferred to live network API phase.
-      const distance = resolved.distance || component.staticProps?.distance || '142.5 miles';
-      const duration = resolved.duration || component.staticProps?.duration || '2 hrs 15 mins';
-      const energyEstRaw = resolved.energy || component.staticProps?.energy || '38.2 kWh (27%)';
-      const arrBatteryRaw = resolved.arrivalBattery || component.staticProps?.arrivalBattery || `${Math.max(0, Math.round(vehicleState.batteryPercent - 27))}% at Arrival`;
+      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navTripEstimate;
 
       // Labels: customizable from staticProps / bindings, defaulting to full words
       const distanceLabel = resolved.distanceLabel || component.staticProps?.distanceLabel || 'Distance';
@@ -1935,14 +2504,54 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       const energyRequiredLabel = resolved.energyRequiredLabel || component.staticProps?.energyRequiredLabel || 'Energy Required';
       const arrivalChargeLabel = resolved.arrivalChargeLabel || component.staticProps?.arrivalChargeLabel || 'Arrival Charge';
 
-      const energyEst = energyEstRaw
-        .replace(/\s*Battery\s*/gi, '')
-        .replace(/(\d+\.\d+)%/g, (_, num) => `${Math.round(parseFloat(num))}%`);
-      const arrBattery = arrBatteryRaw.replace(/(\d+\.\d+)%/g, (_, num) => `${Math.round(parseFloat(num))}%`);
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navTripEstimate;
+      if (!activeTrip) {
+        return (
+          <div
+            id={`component-${component.type}`}
+            data-component-type="navTripEstimate"
+            className={`w-full min-h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+            style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
+          >
+            <ComponentHeader
+              type="navTripEstimate"
+              label={headerLabel}
+              customColor={customColor}
+            />
+
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center p-3 my-auto">
+              <span className="text-xs font-mono text-slate-400">No active trip.</span>
+              <button
+                onClick={() => {
+                  const el = document.getElementById('component-navDestination') || document.querySelector('[data-component-type="navDestination"]');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }}
+                className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold border border-slate-700 cursor-pointer transition-colors shadow-sm"
+              >
+                Set Destination
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
+      const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
+      const consumptionRate = Number(resolved.consumptionRate || component.staticProps?.consumptionRate) || 0.32;
+
+      const estimate = calculateTripEstimate(
+        originLat,
+        originLng,
+        activeTrip,
+        consumptionRate,
+        vehicleState.batteryPercent
+      );
 
       return (
         <div
+          id={`component-${component.type}`}
+          data-component-type="navTripEstimate"
           className={`w-full min-h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
@@ -1957,28 +2566,28 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
                 {distanceLabel}
               </span>
-              <span className="text-xs font-bold text-slate-100 font-mono leading-tight">{distance}</span>
+              <span className="text-xs font-bold text-slate-100 font-mono leading-tight">{estimate.formattedDistance}</span>
             </div>
 
             <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
               <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
                 {estimatedTimeLabel}
               </span>
-              <span className="text-xs font-bold text-slate-100 font-mono leading-tight">{duration}</span>
+              <span className="text-xs font-bold text-slate-100 font-mono leading-tight">{estimate.formattedDuration}</span>
             </div>
 
             <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
               <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
                 {energyRequiredLabel}
               </span>
-              <span className="text-[0.6875rem] font-bold text-slate-100 font-mono leading-tight">{energyEst}</span>
+              <span className="text-[0.6875rem] font-bold text-slate-100 font-mono leading-tight">{estimate.formattedEnergy}</span>
             </div>
 
             <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
               <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
                 {arrivalChargeLabel}
               </span>
-              <span className="text-[0.6875rem] font-bold text-emerald-400 font-mono leading-tight">{arrBattery}</span>
+              <span className="text-[0.6875rem] font-bold text-emerald-400 font-mono leading-tight">{estimate.formattedArrivalBattery}</span>
             </div>
           </div>
         </div>

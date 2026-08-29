@@ -1,6 +1,7 @@
 import React from 'react';
 import { ComponentInstance, ConnectorAnchor } from '../../types';
 import { ShieldCheck, AlertCircle, AlertTriangle } from 'lucide-react';
+import { useMockpitStore } from '../../store/useMockpitStore';
 
 interface VehicleStatusCalloutWidgetProps {
   component: ComponentInstance;
@@ -50,12 +51,56 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
   onSelectAnchor,
   onStartConnectDrag,
 }) => {
-  const title = resolved.title ?? component.staticProps.title ?? 'Front Powertrain';
-  const description = resolved.description ?? component.staticProps.description ?? 'Primary electric drive unit & inverter';
-  const statusCode = resolved.statusCode ?? component.staticProps.statusCode ?? '4101';
-  const statusMessage = resolved.statusMessage ?? component.staticProps.statusMessage ?? 'Operating within normal thermal parameters';
-  const healthType = (resolved.healthType ?? component.staticProps.healthType ?? 'rgy') as 'none' | 'percent' | 'rgy';
-  const healthValue = resolved.healthValue ?? component.staticProps.healthValue ?? 'green';
+  const tirePressureWarning = useMockpitStore((s) => s.vehicleState.tirePressureWarning ?? false);
+
+  const rawTitle = resolved.title ?? component.staticProps.title ?? 'Front Powertrain';
+  const rawDescription = resolved.description ?? component.staticProps.description ?? 'Primary electric drive unit & inverter';
+  const rawStatusCode = resolved.statusCode ?? component.staticProps.statusCode ?? '4101';
+  const rawStatusMessage = resolved.statusMessage ?? component.staticProps.statusMessage ?? 'Operating within normal thermal parameters';
+  const rawHealthType = (resolved.healthType ?? component.staticProps.healthType ?? 'rgy') as 'none' | 'percent' | 'rgy';
+  const rawHealthValue = resolved.healthValue ?? component.staticProps.healthValue ?? 'green';
+
+  const isTireCallout =
+    rawTitle.toLowerCase().includes('tire') ||
+    rawTitle.toLowerCase().includes('tpms') ||
+    rawTitle.toLowerCase().includes('wheel') ||
+    rawDescription.toLowerCase().includes('tire') ||
+    rawDescription.toLowerCase().includes('tpms') ||
+    rawDescription.toLowerCase().includes('pressure') ||
+    component.id.toLowerCase().includes('tire') ||
+    component.id.toLowerCase().includes('tpms');
+
+  let title = rawTitle;
+  let description = rawDescription;
+  let statusCode = rawStatusCode;
+  let statusMessage = rawStatusMessage;
+  let healthType = rawHealthType;
+  let healthValue = rawHealthValue;
+
+  if (isTireCallout) {
+    if (tirePressureWarning) {
+      healthType = 'rgy';
+      healthValue = rawHealthValue && rawHealthValue !== 'green' ? rawHealthValue : 'yellow';
+      statusCode = rawStatusCode || 'TPMS-01';
+      statusMessage = rawStatusMessage || 'Low tire pressure detected';
+    } else {
+      healthType = 'rgy';
+      healthValue = 'green';
+      statusCode = ''; // Suppress code when normal
+      if (
+        rawStatusMessage.toLowerCase().includes('low') ||
+        rawStatusMessage.toLowerCase().includes('warning') ||
+        rawStatusMessage.toLowerCase().includes('puncture') ||
+        rawStatusMessage.toLowerCase().includes('critical') ||
+        rawStatusMessage.toLowerCase().includes('check') ||
+        rawStatusMessage.toLowerCase().includes('fail')
+      ) {
+        statusMessage = 'Operating within normal pressure parameters';
+      } else {
+        statusMessage = rawStatusMessage || 'Operating within normal pressure parameters';
+      }
+    }
+  }
 
   const currentAnchor = component.connector?.sourceAnchor || null;
 

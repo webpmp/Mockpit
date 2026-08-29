@@ -199,6 +199,7 @@ export type ComponentType =
   | 'driveMode'
   | 'tirePressure'
   | 'navHome'
+  | 'navFavorites'
   | 'navDestination'
   | 'navSearch'
   | 'navTripEstimate'
@@ -247,6 +248,40 @@ export type ScreenDefinition = {
 
 export type ActiveView = string;
 export type ScreenId = string;
+
+export interface TripStop {
+  id: string;
+  name: string;
+  lat: string;
+  lng: string;
+  geocoded?: boolean;
+}
+
+export interface ActiveTrip {
+  destinationName: string;
+  destLat: number;
+  destLng: number;
+  stops: TripStop[];
+  startedAt: number;
+  destGeocoded?: boolean;
+}
+
+export interface POISearchResult {
+  id: string;
+  name: string;
+  category: string;
+  lat: number;
+  lng: number;
+}
+
+export interface FavoriteLocation {
+  id: string;
+  label: string; // "Home", "Work", "Mom's House" — user-editable
+  address: string; // display text
+  lat: number;
+  lng: number;
+  geocoded: boolean;
+}
 
 export type CopiedComponentState = {
   component: ComponentInstance;

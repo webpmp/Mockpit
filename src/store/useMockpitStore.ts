@@ -26,6 +26,10 @@ import {
   JourneyState,
   ManeuverStep,
   ManeuverType,
+  TripStop,
+  ActiveTrip,
+  POISearchResult,
+  FavoriteLocation,
 } from '../types';
 
 import {
@@ -49,6 +53,69 @@ const LOCAL_STORAGE_VEHICLE_BG_KEY = 'mockpit_vehicle_bg_config_v1';
 const LOCAL_STORAGE_KEYBOARD_DIRECTION_KEY = 'mockpit_keyboard_slide_direction_v1';
 const LOCAL_STORAGE_EGO_VEHICLE_TYPE_KEY = 'mockpit_ego_vehicle_type_v1';
 const LOCAL_STORAGE_TEMP_GRADIENT_KEY = 'mockpit_temp_gradient_v1';
+const LOCAL_STORAGE_ACTIVE_TRIP_KEY = 'mockpit_active_trip_v1';
+const LOCAL_STORAGE_FAVORITES_KEY = 'mockpit_favorites_v1';
+const LOCAL_STORAGE_RECENTS_KEY = 'mockpit_recents_v1';
+
+const DEFAULT_FAVORITES: FavoriteLocation[] = [
+  {
+    id: 'fav-home',
+    label: 'Home',
+    address: '1 Apple Park Way, Cupertino, CA',
+    lat: 37.3346,
+    lng: -122.0090,
+    geocoded: true,
+  },
+  {
+    id: 'fav-work',
+    label: 'Work',
+    address: 'San Jose, CA',
+    lat: 37.3382,
+    lng: -121.8863,
+    geocoded: true,
+  },
+];
+
+const loadSavedFavorites = (): FavoriteLocation[] => {
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_FAVORITES_KEY);
+    if (val) {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load favorites from localStorage', e);
+  }
+  return DEFAULT_FAVORITES;
+};
+
+const loadSavedRecents = (): FavoriteLocation[] => {
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_RECENTS_KEY);
+    if (val) {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load recents from localStorage', e);
+  }
+  return [];
+};
+
+const loadSavedActiveTrip = (): ActiveTrip | null => {
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_ACTIVE_TRIP_KEY);
+    if (val) {
+      const parsed = JSON.parse(val);
+      if (parsed && typeof parsed.destinationName === 'string') {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load active trip from localStorage', e);
+  }
+  return null;
+};
 
 const loadSavedTempGradientColors = (): TempGradientColors => {
   try {
@@ -341,7 +408,8 @@ export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number
   driveMode: { width: 320, height: 160, maxHeight: 1080 },
   tirePressure: { width: 380, height: 210, maxHeight: 1080 },
   navHome: { width: 380, height: 160, maxHeight: 1080 },
-  navDestination: { width: 380, height: 260, maxHeight: 1080 },
+  navFavorites: { width: 380, height: 260, maxHeight: 1080 },
+  navDestination: { width: 380, height: 240, maxHeight: 1080 },
   navSearch: { width: 380, height: 220, maxHeight: 1080 },
   navTripEstimate: { width: 380, height: 200, maxHeight: 1080 },
   overheadVisualization: { width: 780, height: 480, maxHeight: 1080 },
@@ -771,6 +839,24 @@ interface MockpitStore {
   updateCurrentManeuver: (partial: Partial<ManeuverStep>) => void;
   setManeuverType: (type: ManeuverType) => void;
 
+  // Active Trip State & Guidance Actions
+  activeTrip: ActiveTrip | null;
+  startTripGuidance: (trip: Omit<ActiveTrip, 'startedAt'>) => void;
+  cancelTripGuidance: () => void;
+
+  // Search POI results
+  searchResults: POISearchResult[];
+  setSearchResults: (results: POISearchResult[]) => void;
+  clearSearchResults: () => void;
+
+  // Favorites & Recents (v4.0)
+  favorites: FavoriteLocation[];
+  recents: FavoriteLocation[];
+  addFavorite: (fav: Omit<FavoriteLocation, 'id'>) => void;
+  removeFavorite: (id: string) => void;
+  updateFavorite: (id: string, partial: Partial<FavoriteLocation>) => void;
+  promoteRecentToFavorite: (recentId: string, label: string) => void;
+
   // Ambient Simulation
   ambientTick: () => void;
 
@@ -952,6 +1038,122 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       },
     }));
   },
+
+  activeTrip: loadSavedActiveTrip(),
+  favorites: loadSavedFavorites(),
+  recents: loadSavedRecents(),
+
+  startTripGuidance: (trip) => {
+    const fullTrip: ActiveTrip = {
+      ...trip,
+      startedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(LOCAL_STORAGE_ACTIVE_TRIP_KEY, JSON.stringify(fullTrip));
+    } catch (e) {
+      console.error('Failed to save active trip to localStorage', e);
+    }
+
+    // Auto-populate / update recents (capped at 5, most-recent-first, deduplicated)
+    const state = get();
+    if (trip.destinationName && !isNaN(trip.destLat) && !isNaN(trip.destLng)) {
+      const destName = trip.destinationName.trim();
+      const existingRecents = state.recents || [];
+      const filtered = existingRecents.filter(
+        (r) =>
+          r.label.toLowerCase() !== destName.toLowerCase() &&
+          r.address.toLowerCase() !== destName.toLowerCase() &&
+          (Math.abs(r.lat - trip.destLat) > 0.0001 || Math.abs(r.lng - trip.destLng) > 0.0001)
+      );
+      const newRecent: FavoriteLocation = {
+        id: `recent-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        label: destName,
+        address: destName,
+        lat: trip.destLat,
+        lng: trip.destLng,
+        geocoded: trip.destGeocoded !== false,
+      };
+      const updatedRecents = [newRecent, ...filtered].slice(0, 5);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_RECENTS_KEY, JSON.stringify(updatedRecents));
+      } catch (e) {
+        console.error('Failed to save recents to localStorage', e);
+      }
+      set({ activeTrip: fullTrip, recents: updatedRecents });
+      return;
+    }
+
+    set({ activeTrip: fullTrip });
+  },
+  cancelTripGuidance: () => {
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_ACTIVE_TRIP_KEY);
+    } catch (e) {
+      console.error('Failed to remove active trip from localStorage', e);
+    }
+    set({ activeTrip: null });
+  },
+
+  addFavorite: (fav) => {
+    const newFav: FavoriteLocation = {
+      ...fav,
+      id: `fav-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+    };
+    const updated = [newFav, ...(get().favorites || [])];
+    try {
+      localStorage.setItem(LOCAL_STORAGE_FAVORITES_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save favorites to localStorage', e);
+    }
+    set({ favorites: updated });
+  },
+
+  removeFavorite: (id) => {
+    const updated = (get().favorites || []).filter((f) => f.id !== id);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_FAVORITES_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save favorites to localStorage', e);
+    }
+    set({ favorites: updated });
+  },
+
+  updateFavorite: (id, partial) => {
+    const updated = (get().favorites || []).map((f) => (f.id === id ? { ...f, ...partial } : f));
+    try {
+      localStorage.setItem(LOCAL_STORAGE_FAVORITES_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save favorites to localStorage', e);
+    }
+    set({ favorites: updated });
+  },
+
+  promoteRecentToFavorite: (recentId, label) => {
+    const state = get();
+    const recent = (state.recents || []).find((r) => r.id === recentId);
+    if (!recent) return;
+    const newFav: FavoriteLocation = {
+      id: `fav-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      label: label.trim() || recent.label || recent.address,
+      address: recent.address,
+      lat: recent.lat,
+      lng: recent.lng,
+      geocoded: recent.geocoded,
+    };
+    const updatedFavs = [newFav, ...(state.favorites || [])];
+    const updatedRecents = (state.recents || []).filter((r) => r.id !== recentId);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_FAVORITES_KEY, JSON.stringify(updatedFavs));
+      localStorage.setItem(LOCAL_STORAGE_RECENTS_KEY, JSON.stringify(updatedRecents));
+    } catch (e) {
+      console.error('Failed to update favorites/recents in localStorage', e);
+    }
+    set({ favorites: updatedFavs, recents: updatedRecents });
+  },
+
+  searchResults: [],
+  setSearchResults: (results) => set({ searchResults: results }),
+  clearSearchResults: () => set({ searchResults: [] }),
 
   isSettingsOpen: false,
   toggleSettingsModal: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
@@ -1624,12 +1826,6 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       newVs.signalBars = Math.max(1, Math.min(5, currentSignal + signalDir));
     }
 
-    // Global tire pressure check across all screens
-    const tireCheck = evaluateAllTirePressureWarnings(state.componentsByScreen, state.components);
-    if (tireCheck.hasWarning !== currentVs.tirePressureWarning) {
-      newVs.tirePressureWarning = tireCheck.hasWarning;
-    }
-
     if (Object.keys(newVs).length > 0) {
       state.setVehicleState(newVs);
     }
@@ -2120,7 +2316,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       case 'tirePressure':
         width = 380;
         height = 210;
-        staticProps = { frontLeft: '35 PSI', frontRight: '35 PSI', rearLeft: '36 PSI', rearRight: '36 PSI' };
+        staticProps = { frontLeft: '28 PSI', frontRight: '35 PSI', rearLeft: '36 PSI', rearRight: '36 PSI' };
         bindings = [];
         break;
       case 'navHome':
@@ -2131,7 +2327,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         break;
       case 'navDestination':
         width = 380;
-        height = 260;
+        height = 240;
         staticProps = {
           destination: 'Yosemite Valley, CA',
           destLat: '37.7456',
@@ -2471,14 +2667,6 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
       } catch (e) {
         console.error('Failed to save staticProps', e);
-      }
-
-      // Check all tire pressures across screens to keep tirePressureWarning in sync globally
-      const tireCheck = evaluateAllTirePressureWarnings(updatedScreens, updatedList);
-      if (tireCheck.hasWarning !== state.vehicleState.tirePressureWarning) {
-        setTimeout(() => {
-          get().setVehicleState({ tirePressureWarning: tireCheck.hasWarning });
-        }, 0);
       }
 
       return {
@@ -2955,6 +3143,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(INITIAL_VEHICLE_STATE));
         localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(DEFAULT_DOCK_ORDER));
         localStorage.setItem(LOCAL_STORAGE_VEHICLE_BG_KEY, JSON.stringify(DEFAULT_VEHICLE_BACKGROUND));
+        localStorage.removeItem(LOCAL_STORAGE_ACTIVE_TRIP_KEY);
       } catch (e) {
         console.error('Failed to reset store data', e);
       }
@@ -2972,6 +3161,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         conversations: INITIAL_CONVERSATIONS,
         selectedMessagingThreadId: null,
         queuedMessageToasts: [],
+        activeTrip: null,
       };
     });
   },

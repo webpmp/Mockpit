@@ -1,6 +1,10 @@
 import React from 'react';
 import { WeatherConditionKey } from '../../store/useWeatherStore';
 import { WeatherIcon } from './WeatherIcon';
+import { WeatherRadarCard } from './WeatherRadarCard';
+import { AirQualityData } from '../../types/airQuality';
+import { SunTimeData } from '../../types/sunTime';
+import { getAqiEpaColorInfo } from '../../services/airQualityService';
 
 export interface MiniWeatherViewProps {
   icon: WeatherConditionKey;
@@ -16,6 +20,13 @@ export interface MiniWeatherViewProps {
   };
   humidity?: number;
   precipitationChance?: number;
+  airQuality?: AirQualityData;
+  sunTime?: SunTimeData;
+  radarLat?: number;
+  radarLon?: number;
+  radarZoom?: number;
+  radarRefreshInterval?: number;
+  onOpenRadar?: () => void;
   className?: string;
 }
 
@@ -28,74 +39,180 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
   wind,
   humidity,
   precipitationChance,
+  airQuality,
+  sunTime,
+  radarLat,
+  radarLon,
+  radarZoom = 7,
+  radarRefreshInterval = 5,
+  onOpenRadar,
   className = '',
 }) => {
+  const windDisplay = wind ? `${wind.direction || 'CALM'} ${Math.round(wind.speed)}` : '—';
+  const humidityDisplay = humidity !== undefined ? `${Math.round(humidity)}%` : '—';
+  const precipDisplay = precipitationChance !== undefined ? `${Math.round(precipitationChance)}%` : '—';
+
+  const aqiInfo = airQuality ? getAqiEpaColorInfo(airQuality.category) : null;
+  const aqiDisplay =
+    airQuality && airQuality.aqi !== null && airQuality.aqi !== undefined
+      ? `${airQuality.aqi} · ${aqiInfo?.colorWord || 'GREEN'}`
+      : '—';
+  const aqiAriaLabel =
+    airQuality && airQuality.aqi !== null && airQuality.aqi !== undefined
+      ? `Air quality index ${airQuality.aqi}, category ${aqiInfo?.categoryPhrase || 'Good'}`
+      : 'Air quality data unavailable';
+  const aqiTextColor = aqiInfo?.textColor || 'text-emerald-400';
+
+  const sunriseDisplay = sunTime?.sunriseFormatted || '—';
+  const sunsetDisplay = sunTime?.sunsetFormatted || '—';
+
   return (
     <div
       id="mini-weather-view"
-      className={`bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-3 flex flex-col items-center justify-between shadow-xl transition-all duration-300 text-slate-100 ${className}`}
+      className={`relative bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl shadow-xl text-slate-100 flex justify-center items-center w-full h-full min-h-0 ${className}`}
+      style={{ padding: '32px', gap: '48px' }}
     >
-      {/* Main Condition Icon Display */}
-      <div className="my-1 flex items-center justify-center p-2 rounded-full bg-slate-950/40 border border-slate-800/60 shadow-inner">
-        <WeatherIcon condition={icon} size={96} />
-      </div>
+      {/* Absolute Radar Thumbnail (top-right corner) */}
+      {radarLat !== undefined && radarLon !== undefined && (
+        <WeatherRadarCard
+          lat={radarLat}
+          lon={radarLon}
+          zoom={radarZoom}
+          refreshIntervalMinutes={radarRefreshInterval}
+          variant="thumbnail"
+          onExpand={onOpenRadar}
+        />
+      )}
 
-      {/* Primary Temperature Readout */}
-      <div className="flex flex-col items-center">
-        <div
-          id="mini-weather-temperature"
-          className="text-[max(2.25rem,calc(2.5rem*var(--weather-font-scale,1)))] font-black tracking-tighter text-slate-100 font-mono leading-none"
-        >
-          {Math.round(temperature)}°{unit}
-        </div>
-
-        {/* High / Low Temperature Pills */}
-        <div
-          id="mini-weather-high-low"
-          className="mt-1.5 flex items-center gap-2 font-mono font-bold"
-        >
-          <span
-            className="px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-amber-400 text-[max(1.25rem,calc(1.25rem*var(--weather-font-scale,1)))] font-bold leading-none"
-            aria-label="High temperature"
-          >
-            {Math.round(high)}°
-          </span>
-          <span
-            className="px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-sky-400 text-[max(1.25rem,calc(1.25rem*var(--weather-font-scale,1)))] font-bold leading-none"
-            aria-label="Low temperature"
-          >
-            {Math.round(low)}°
-          </span>
-        </div>
-      </div>
-
-      {/* Details 3-Column Grid: Wind, Humidity, Precipitation */}
+      {/* Left Stats Column */}
       <div
-        id="mini-weather-details"
-        className="mt-2 pt-1.5 border-t border-slate-800/80 w-full grid grid-cols-3 gap-1 font-mono text-center"
+        id="mini-weather-left-stats"
+        className="flex-none flex flex-col justify-center border-r border-slate-800"
+        style={{ width: '260px', gap: '28px', paddingRight: '24px' }}
       >
-        <div id="mini-weather-wind" className="flex flex-col items-center gap-0.5">
-          <span className="text-[max(0.75rem,calc(0.75rem*var(--weather-font-scale,1)))] text-slate-400 font-bold uppercase tracking-tight">
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Wind
           </span>
-          <span className="text-[max(1.125rem,calc(1.125rem*var(--weather-font-scale,1)))] text-slate-100 font-bold whitespace-nowrap">
-            {wind ? `${wind.direction} ${Math.round(wind.speed)}` : '—'}
+          <span
+            id="mini-weather-wind-value"
+            className="font-bold text-slate-100 whitespace-nowrap"
+            style={{ fontSize: '26px' }}
+          >
+            {windDisplay}
           </span>
         </div>
-        <div id="mini-weather-humidity" className="flex flex-col items-center gap-0.5">
-          <span className="text-[max(0.75rem,calc(0.75rem*var(--weather-font-scale,1)))] text-slate-400 font-bold uppercase tracking-tight">
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Humidity
           </span>
-          <span className="text-[max(1.125rem,calc(1.125rem*var(--weather-font-scale,1)))] text-slate-100 font-bold whitespace-nowrap">
-            {humidity !== undefined ? `${Math.round(humidity)}%` : '—'}
+          <span
+            id="mini-weather-humidity-value"
+            className="font-bold text-slate-100 whitespace-nowrap"
+            style={{ fontSize: '26px' }}
+          >
+            {humidityDisplay}
           </span>
         </div>
-        <div id="mini-weather-precip" className="flex flex-col items-center gap-0.5">
-          <span className="text-[max(0.75rem,calc(0.75rem*var(--weather-font-scale,1)))] text-slate-400 font-bold uppercase tracking-tight">
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Precipitation
           </span>
-          <span className="text-[max(1.125rem,calc(1.125rem*var(--weather-font-scale,1)))] text-slate-100 font-bold whitespace-nowrap">
-            {precipitationChance !== undefined ? `${Math.round(precipitationChance)}%` : '—'}
+          <span
+            id="mini-weather-precip-value"
+            className="font-bold text-slate-100 whitespace-nowrap"
+            style={{ fontSize: '26px' }}
+          >
+            {precipDisplay}
+          </span>
+        </div>
+      </div>
+
+      {/* Center Hero Column: Icon, Temperature, High/Low */}
+      <div className="flex-none flex flex-col items-center justify-center" style={{ gap: '20px' }}>
+        {/* Condition Icon */}
+        <div
+          className="flex items-center justify-center rounded-full bg-slate-950/40 border border-slate-800/60 shadow-inner"
+          style={{ padding: '16px' }}
+        >
+          <WeatherIcon condition={icon} size={200} />
+        </div>
+
+        {/* Primary Temperature Readout */}
+        <div className="flex flex-col items-center">
+          <div
+            id="mini-weather-temperature"
+            className="font-black tracking-tighter text-slate-100 font-mono leading-none"
+            style={{ fontSize: '120px' }}
+          >
+            {Math.round(temperature)}°{unit}
+          </div>
+
+          {/* High / Low Temperature Pills */}
+          <div
+            id="mini-weather-high-low"
+            className="flex items-center font-mono font-bold"
+            style={{ marginTop: '12px', gap: '12px' }}
+          >
+            <span
+              className="rounded-lg bg-slate-950/80 border border-slate-800 text-amber-400 font-bold leading-none"
+              style={{ padding: '12px 24px', fontSize: '34px' }}
+              aria-label="High temperature"
+            >
+              {Math.round(high)}°
+            </span>
+            <span
+              className="rounded-lg bg-slate-950/80 border border-slate-800 text-sky-400 font-bold leading-none"
+              style={{ padding: '12px 24px', fontSize: '34px' }}
+              aria-label="Low temperature"
+            >
+              {Math.round(low)}°
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Stats Column */}
+      <div
+        id="mini-weather-right-stats"
+        className="flex-none flex flex-col justify-center border-l border-slate-800"
+        style={{ width: '260px', gap: '28px', paddingLeft: '24px' }}
+      >
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
+            Air Quality
+          </span>
+          <span
+            id="air-quality-stat-value"
+            className={`font-bold ${aqiTextColor} whitespace-nowrap`}
+            style={{ fontSize: '26px' }}
+            aria-label={aqiAriaLabel}
+          >
+            {aqiDisplay}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
+            Sunrise
+          </span>
+          <span
+            id="sunrise-stat-value"
+            className="font-bold text-amber-400 whitespace-nowrap"
+            style={{ fontSize: '26px' }}
+          >
+            {sunriseDisplay}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
+            Sunset
+          </span>
+          <span
+            id="sunset-stat-value"
+            className="font-bold text-orange-400 whitespace-nowrap"
+            style={{ fontSize: '26px' }}
+          >
+            {sunsetDisplay}
           </span>
         </div>
       </div>

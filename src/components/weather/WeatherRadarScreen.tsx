@@ -2,6 +2,7 @@ import React from 'react';
 import { useWeatherStore } from '../../store/useWeatherStore';
 import { WeatherRadarCard } from './WeatherRadarCard';
 import { WeatherLocationControl } from './WeatherLocationControl';
+import { WeatherAlertsSection } from './WeatherAlertsSection';
 import { ChevronLeft } from 'lucide-react';
 
 export interface WeatherRadarScreenProps {
@@ -29,12 +30,12 @@ export const WeatherRadarScreen: React.FC<WeatherRadarScreenProps> = ({
     >
       {/* Top Header Row with Back Control and Shared Location Control */}
       <div className="flex items-center justify-between border-b border-slate-800/80 pb-3.5 mb-3.5 shrink-0 relative z-50">
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-4">
           {/* Back Control (min 44x44px tap target, top-left) */}
           <button
             id="weather-radar-back-btn"
             onClick={handleBack}
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-slate-100 flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95 group"
+            className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-2xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-slate-100 flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95 group"
             title="Return to Weather"
             aria-label="Back to Weather"
           >
@@ -42,14 +43,14 @@ export const WeatherRadarScreen: React.FC<WeatherRadarScreenProps> = ({
           </button>
 
           {/* Shared Editable Location Heading */}
-          <WeatherLocationControl headingClassName="text-lg md:text-xl" />
+          <WeatherLocationControl headingClassName="text-xl md:text-2xl" />
         </div>
       </div>
 
-      {/* Main Content Area - 2 Columns: Bounded Radar Left + Weather Alerts Shell Right */}
+      {/* Main Content Area - 2 Columns: Bounded Radar Left + Weather Alerts Dynamic Section Right */}
       <div className="flex-1 min-h-0 w-full flex items-start gap-6">
         {/* Left: bounded radar */}
-        <div className="shrink-0" style={{ width: 'min(575px, 100%)' }}>
+        <div className="shrink-0 h-full">
           <WeatherRadarCard
             lat={resolvedLocation?.lat ?? 37.56299}
             lon={resolvedLocation?.lon ?? -122.32553}
@@ -57,19 +58,11 @@ export const WeatherRadarScreen: React.FC<WeatherRadarScreenProps> = ({
             label={radarLabel}
             refreshIntervalMinutes={radarRefreshInterval}
             variant="full"
-            className="w-full"
           />
         </div>
 
-        {/* Right: reserved for weather alerts/summary — placeholder layout only */}
-        <div className="flex-1 min-w-0 h-full rounded-2xl border border-slate-800 bg-slate-900/40 p-4 overflow-y-auto">
-          <div className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 font-mono mb-2">
-            Weather Alerts
-          </div>
-          <div className="text-xs font-mono text-slate-500 italic">
-            Alerts data source not yet connected — placeholder layout only.
-          </div>
-        </div>
+        {/* Right: dynamic weather alerts and condition advisories */}
+        <WeatherAlertsSection className="flex-1 w-full h-full" />
       </div>
     </div>
   );

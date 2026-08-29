@@ -15,7 +15,7 @@ export interface WeatherRadarCardProps {
   refreshIntervalMinutes?: number;
   className?: string;
   onExpand?: () => void;
-  variant?: 'compact' | 'full';
+  variant?: 'compact' | 'full' | 'thumbnail';
   sizeMode?: 'width' | 'height';
 }
 
@@ -203,15 +203,55 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
   }, [frameTime]);
 
   const isFull = variant === 'full';
+  const isThumbnail = variant === 'thumbnail';
 
   // ──────────────────────────────────────────────────────────────────────────
-  // FULL VARIANT: 575px Bounded Square Map with Cover Crop (scale=1.5)
+  // THUMBNAIL VARIANT: 96x96px Absolute Corner Thumbnail for Today Card
+  // ──────────────────────────────────────────────────────────────────────────
+  if (isThumbnail) {
+    return (
+      <div
+        id="weather-radar-thumbnail"
+        role="button"
+        tabIndex={0}
+        onClick={onExpand}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onExpand?.();
+          }
+        }}
+        className={`absolute top-4 right-4 w-[96px] h-[96px] rounded-xl overflow-hidden border border-slate-700 shadow-lg cursor-pointer select-none bg-slate-200 flex items-center justify-center ${className}`}
+        title="Open full radar view"
+        aria-label="Open radar imagery"
+      >
+        {hasError ? (
+          <div className="flex flex-col items-center justify-center w-full h-full bg-slate-900 text-amber-500 p-1 text-center">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+        ) : (
+          <div className="relative w-full h-full overflow-hidden flex items-center justify-center">
+            <RadarTileMosaic
+              tileOffsets={tileOffsets}
+              safeZoom={safeZoom}
+              radarHost={radarHost}
+              radarPath={radarPath}
+              reticleSize="sm"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // FULL VARIANT: Bounded Square Map with Cover Crop (scale=1.5)
   // ──────────────────────────────────────────────────────────────────────────
   if (isFull) {
     return (
       <div
         id="weather-radar-card"
-        className={`relative w-full aspect-square max-w-[575px] max-h-[575px] rounded-2xl overflow-hidden bg-slate-200 border border-slate-800/90 select-none shadow-2xl ${className}`}
+        className={`relative h-full aspect-square rounded-2xl overflow-hidden bg-slate-200 border border-slate-800/90 select-none shadow-2xl ${className}`}
       >
         {hasError ? (
           <div className="flex flex-col items-center justify-center w-full h-full gap-2 text-slate-700 p-4 text-center">
@@ -238,9 +278,10 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
             {/* Bottom-left: Intensity legend overlay chip */}
             <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/85 backdrop-blur-sm border border-slate-800 text-[10px] font-mono shadow-md text-slate-200">
               <span className="text-slate-400 uppercase font-bold">INTENSITY:</span>
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" title="Light" />
-              <span className="inline-block w-2 h-2 rounded-full bg-amber-400" title="Moderate" />
-              <span className="inline-block w-2 h-2 rounded-full bg-rose-500" title="Heavy" />
+              <span className="inline-block w-2 h-2 rounded-full bg-sky-400" title="Light" />
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" title="Moderate" />
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-400" title="Heavy" />
+              <span className="inline-block w-2 h-2 rounded-full bg-pink-500" title="Severe" />
             </div>
 
             {/* Top-right: Enlarged Refresh button (meets >=44x44px minimum tap target) */}

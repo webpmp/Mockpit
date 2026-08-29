@@ -1,4 +1,8 @@
 import { create } from 'zustand';
+import { AirQualityData } from '../types/airQuality';
+import { fetchAirQuality } from '../services/airQualityService';
+import { SunTimeData } from '../types/sunTime';
+import { parseSunTimes } from '../services/sunTimeService';
 
 export type WeatherConditionKey =
   | 'clear-day'
@@ -43,6 +47,8 @@ export interface WeatherState {
   displayScale: 'sm' | 'md' | 'lg'; // default 'md'
   current: WeatherDayData | null;
   forecast: WeatherDayData[]; // 5 entries
+  airQuality: AirQualityData;
+  sunTime: SunTimeData;
   status: 'idle' | 'loading' | 'success' | 'error';
   lastFetchedAt: number | null; // epoch ms, for the "last known" fallback
   // Weather Radar Config (Inspector-controllable)
@@ -339,6 +345,29 @@ const INITIAL_FORECAST: WeatherDayData[] = [
   { dayLabel: 'SUN', icon: 'partly-cloudy-day', conditionLabel: 'AM MOSTLY SUNNY\nPM MOSTLY SUNNY', amCondition: 'MOSTLY SUNNY', pmCondition: 'MOSTLY SUNNY', high: 71, low: 56, precipitationChance: 0 },
 ];
 
+const INITIAL_AIR_QUALITY: AirQualityData = {
+  aqi: 30,
+  category: 'GOOD',
+  categoryLabel: 'GOOD',
+  pm25: 6.9,
+  pm10: 9.3,
+  status: 'success',
+  lastFetchedAt: Date.now(),
+};
+
+const INITIAL_SUN_TIME: SunTimeData = {
+  sunrise: '2026-08-25T06:34',
+  sunset: '2026-08-25T19:48',
+  sunriseFormatted: '6:34 AM',
+  sunsetFormatted: '7:48 PM',
+  daylightDurationFormatted: '13H 14M',
+  daylightSeconds: 47666,
+  phase: 'DAYLIGHT',
+  phaseLabel: 'DAYLIGHT',
+  status: 'success',
+  lastFetchedAt: Date.now(),
+};
+
 export const useWeatherStore = create<WeatherState>((set, get) => ({
   locationInput: 'San Mateo, California',
   resolvedLocation: {
@@ -350,6 +379,8 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
   displayScale: 'md',
   current: INITIAL_CURRENT,
   forecast: INITIAL_FORECAST,
+  airQuality: INITIAL_AIR_QUALITY,
+  sunTime: INITIAL_SUN_TIME,
   status: 'idle',
   lastFetchedAt: Date.now(),
   radarZoom: 7,
@@ -708,24 +739,40 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
         }
       }
 
-      // Step 3 — Open-Meteo (for international locations or if NWS was unavailable)
+      // Step 3 — Open-Meteo forecast & Air Quality
+      const tempUnitParam = unit === 'C' ? 'celsius' : 'fahrenheit';
+      const windUnitParam = unit === 'C' ? 'kmh' : 'mph';
+
+      const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,daylight_duration&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,rain,showers,snowfall,weather_code,wind_speed_10m,cloud_cover&temperature_unit=${tempUnitParam}&wind_speed_unit=${windUnitParam}&timezone=auto&forecast_days=7`;
+
+      const [omResult, aqiResult] = await Promise.allSettled([
+        fetch(forecastUrl).then((r) => {
+          if (!r.ok) throw new Error(`Forecast HTTP ${r.status}`);
+          return r.json();
+        }),
+        fetchAirQuality({ lat, lon }),
+      ]);
+
+      const omData = omResult.status === 'fulfilled' ? omResult.value : null;
+      const aqiData = aqiResult.status === 'fulfilled' ? aqiResult.value : get().airQuality;
+
+      let sunTimeResult: SunTimeData = get().sunTime;
+
+      if (omData && omData.daily) {
+        sunTimeResult = parseSunTimes(
+          omData.daily.sunrise,
+          omData.daily.sunset,
+          omData.daily.daylight_duration,
+          omData.timezone
+        );
+      }
+
       if (!nwsSucceeded) {
-        const tempUnitParam = unit === 'C' ? 'celsius' : 'fahrenheit';
-        const windUnitParam = unit === 'C' ? 'kmh' : 'mph';
-
-        const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&hourly=weather_code&temperature_unit=${tempUnitParam}&wind_speed_unit=${windUnitParam}&timezone=auto&forecast_days=7`;
-
-        const forecastRes = await fetch(forecastUrl);
-        if (!forecastRes.ok) {
-          throw new Error(`Forecast HTTP ${forecastRes.status}`);
-        }
-
-        const data = await forecastRes.json();
-
-        if (!data.current || !data.daily) {
+        if (!omData || !omData.current || !omData.daily) {
           throw new Error('Invalid weather payload');
         }
 
+        const data = omData;
         const dailyTimes: string[] = data.daily.time || [];
         const dailyCodes: number[] = data.daily.weather_code || [];
         const dailyMaxes: number[] = data.daily.temperature_2m_max || [];
@@ -818,6 +865,8 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
       set({
         current: currentDayData,
         forecast: forecastDays,
+        airQuality: aqiData,
+        sunTime: sunTimeResult,
         status: 'success',
         lastFetchedAt: Date.now(),
       });
