@@ -52,6 +52,7 @@ export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
   overheadVisualization: { type: 'overheadVisualization', icon: Eye, defaultColor: '#38bdf8' },
   miniNav: { type: 'miniNav', icon: Navigation, defaultColor: '#38bdf8' },
   media: { type: 'media', icon: Music, defaultColor: '#ec4899' },
+  nowPlaying: { type: 'nowPlaying', icon: Music, defaultColor: '#ec4899' },
   phone: { type: 'phone', icon: Phone, defaultColor: '#10b981' },
   phoneContacts: { type: 'phoneContacts', icon: Users, defaultColor: '#a855f7' },
   phoneDialPad: { type: 'phoneDialPad', icon: Grid, defaultColor: '#10b981' },

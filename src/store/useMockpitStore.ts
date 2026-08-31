@@ -30,6 +30,9 @@ import {
   ActiveTrip,
   POISearchResult,
   FavoriteLocation,
+  ClimateState,
+  ClimateFanSpeed,
+  ClimateSeat,
 } from '../types';
 
 import {
@@ -38,6 +41,7 @@ import {
 } from '../utils/tempGradient';
 import { Conversation, INITIAL_CONVERSATIONS, CONTACT_PHOTO_MAP } from '../data/mockPhoneData';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants';
+import { useWeatherStore } from './useWeatherStore';
 
 const LOCAL_STORAGE_KEY = 'mockpit_components_v1';
 const LOCAL_STORAGE_KEY_V2 = 'mockpit_components_by_screen_v2';
@@ -56,6 +60,7 @@ const LOCAL_STORAGE_TEMP_GRADIENT_KEY = 'mockpit_temp_gradient_v1';
 const LOCAL_STORAGE_ACTIVE_TRIP_KEY = 'mockpit_active_trip_v1';
 const LOCAL_STORAGE_FAVORITES_KEY = 'mockpit_favorites_v1';
 const LOCAL_STORAGE_RECENTS_KEY = 'mockpit_recents_v1';
+const LOCAL_STORAGE_CLIMATE_STATE_KEY = 'mockpit_climate_state_v1';
 
 const DEFAULT_FAVORITES: FavoriteLocation[] = [
   {
@@ -75,6 +80,62 @@ const DEFAULT_FAVORITES: FavoriteLocation[] = [
     geocoded: true,
   },
 ];
+
+export const computeInitialClimateState = (): ClimateState => {
+  let initialHeat = 0;
+  let initialCool = 0;
+  try {
+    const weatherState = useWeatherStore.getState();
+    const current = weatherState?.current;
+    if (current && typeof current.temperature === 'number') {
+      const tempF = weatherState.unit === 'C' ? (current.temperature * 9) / 5 + 32 : current.temperature;
+      if (tempF > 72) {
+        initialCool = 1;
+        initialHeat = 0;
+      } else {
+        initialHeat = 1;
+        initialCool = 0;
+      }
+    }
+  } catch {
+    initialHeat = 0;
+    initialCool = 0;
+  }
+
+  return {
+    driverTemp: 72,
+    passengerTemp: 72,
+    isSynced: true,
+    selectedSeat: 'driver',
+    fanSpeed: 'AUTO',
+    driverSeatHeat: initialHeat,
+    driverSeatCool: initialCool,
+    passengerSeatHeat: initialHeat,
+    passengerSeatCool: initialCool,
+  };
+};
+
+export const INITIAL_CLIMATE_STATE: ClimateState = computeInitialClimateState();
+
+const loadSavedClimateState = (): ClimateState => {
+  const initial = computeInitialClimateState();
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_CLIMATE_STATE_KEY);
+    if (val) {
+      const parsed = JSON.parse(val);
+      if (typeof parsed.driverTemp === 'number') {
+        return {
+          ...initial,
+          ...parsed,
+          isSynced: parsed.isSynced !== undefined ? parsed.isSynced : true,
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load climate state from localStorage', e);
+  }
+  return initial;
+};
 
 const loadSavedFavorites = (): FavoriteLocation[] => {
   try {
@@ -403,6 +464,7 @@ export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number
   warning: { width: 380, height: 140, maxHeight: 1080 },
   map: { width: 440, height: 280, maxHeight: 1080 },
   media: { width: 720, height: 480, maxHeight: 1080 },
+  nowPlaying: { width: 420, height: 180, maxHeight: 1080 },
   climate: { width: 320, height: 150, maxHeight: 1080 },
   phone: { width: 340, height: 150, maxHeight: 1080 },
   driveMode: { width: 320, height: 160, maxHeight: 1080 },
@@ -799,6 +861,10 @@ interface MockpitStore {
   setEgoVehicleType: (type: EgoVehicleType) => void;
   tempGradientColors: TempGradientColors;
   setTempGradientColors: (colors: Partial<TempGradientColors>) => void;
+
+  // Shared Climate State & Actions
+  climateState: ClimateState;
+  setClimateState: (partial: Partial<ClimateState>) => void;
 
   // On-screen Virtual Keyboard
   keyboardSlideDirection: KeyboardSlideDirection;
@@ -1304,6 +1370,19 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         console.error('Failed to save temp gradient colors', e);
       }
       return { tempGradientColors: updated };
+    });
+  },
+
+  climateState: loadSavedClimateState(),
+  setClimateState: (partial) => {
+    set((state) => {
+      const updated = { ...state.climateState, ...partial };
+      try {
+        localStorage.setItem(LOCAL_STORAGE_CLIMATE_STATE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save climate state to localStorage', e);
+      }
+      return { climateState: updated };
     });
   },
 
@@ -2278,6 +2357,21 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         };
         bindings = [];
         break;
+      case 'nowPlaying':
+        width = 420;
+        height = 180;
+        staticProps = {
+          orientation: 'horizontal',
+          autoDismissEnabled: 'false',
+          autoDismissSeconds: '8',
+          dismissDirection: 'down',
+          slideDurationMs: '800',
+          label: 'Now Playing',
+          songTransition: 'fade',
+          songInfoDisplayDuration: '2.5',
+        };
+        bindings = [];
+        break;
       case 'climate':
         width = 320;
         height = 150;
@@ -3143,6 +3237,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(INITIAL_VEHICLE_STATE));
         localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(DEFAULT_DOCK_ORDER));
         localStorage.setItem(LOCAL_STORAGE_VEHICLE_BG_KEY, JSON.stringify(DEFAULT_VEHICLE_BACKGROUND));
+        localStorage.setItem(LOCAL_STORAGE_CLIMATE_STATE_KEY, JSON.stringify(INITIAL_CLIMATE_STATE));
         localStorage.removeItem(LOCAL_STORAGE_ACTIVE_TRIP_KEY);
       } catch (e) {
         console.error('Failed to reset store data', e);
@@ -3154,6 +3249,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         notificationStackPosition: 'top-center',
         components: HOME_SEED_COMPONENTS,
         vehicleState: INITIAL_VEHICLE_STATE,
+        climateState: INITIAL_CLIMATE_STATE,
         dockOrder: DEFAULT_DOCK_ORDER,
         selectedComponentId: null,
         activeView: 'home',

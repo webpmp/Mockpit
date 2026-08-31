@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS } from '../store/useMockpitStore';
 import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
 import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop } from '../types';
-import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check } from 'lucide-react';
+import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check } from 'lucide-react';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { LayersPanel } from './LayersPanel';
 import { NumericStepper } from './NumericStepper';
 import { ManeuverGlyph } from './navigation/ManeuverGlyph';
 import { WeatherIcon } from './weather/WeatherIcon';
+import { SAMPLE_TRACKS } from '../data/mediaData';
 
 const REFERENCE_ICONS: Array<{ key: WeatherConditionKey; label: string }> = [
   { key: 'clear-day', label: 'Clear' },
@@ -1381,6 +1382,212 @@ export const Inspector: React.FC = () => {
               </div>
             )}
 
+            {selectedComp.type === 'nowPlaying' && (
+              <div className="space-y-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                  Now Playing Settings
+                </span>
+
+                {/* Layout Orientation */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                  <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">
+                    <span>Layout Orientation</span>
+                    <span className="text-[9px] text-sky-400 font-normal">Card Layout</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(['horizontal', 'vertical'] as const).map((orient) => {
+                      const isActive = (selectedComp.staticProps.orientation || 'horizontal') === orient;
+                      return (
+                        <button
+                          key={orient}
+                          type="button"
+                          onClick={() => {
+                            const prevOrient = selectedComp.staticProps.orientation || 'horizontal';
+                            handleStaticPropChange('orientation', orient);
+                            if (orient !== prevOrient) {
+                              if (orient === 'horizontal' && selectedComp.width < selectedComp.height) {
+                                updateComponentSize(selectedComp.id, Math.max(400, selectedComp.height), 180);
+                              } else if (orient === 'vertical' && selectedComp.width > selectedComp.height) {
+                                updateComponentSize(selectedComp.id, 280, Math.max(320, selectedComp.height));
+                              }
+                            }
+                          }}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-mono font-bold transition-all border capitalize ${
+                            isActive
+                              ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-sm'
+                              : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                          }`}
+                        >
+                          {orient}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                  {/* Auto-Dismiss Controls */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-mono text-slate-300 font-bold block">Auto-Dismiss</span>
+                      <span className="text-[10px] text-slate-400">Slide off screen after song start</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = selectedComp.staticProps.autoDismissEnabled === 'true';
+                        handleStaticPropChange('autoDismissEnabled', current ? 'false' : 'true');
+                      }}
+                      className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all border ${
+                        selectedComp.staticProps.autoDismissEnabled === 'true'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                          : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      {selectedComp.staticProps.autoDismissEnabled === 'true' ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+
+                  {/* Auto-Dismiss Options: Slide Direction and Delay */}
+                  {selectedComp.staticProps.autoDismissEnabled === 'true' && (
+                    <div className="pt-2 border-t border-slate-700/60 space-y-2.5">
+                      {/* Slide Direction */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">
+                          <span>Dismiss Direction</span>
+                          <span className="text-[9px] text-sky-400 font-normal">Slide Off Canvas</span>
+                        </label>
+                        <div className="grid grid-cols-4 gap-1">
+                          {(
+                            [
+                              { dir: 'up', label: 'Up', Icon: ArrowUp },
+                              { dir: 'down', label: 'Down', Icon: ArrowDown },
+                              { dir: 'left', label: 'Left', Icon: ArrowLeft },
+                              { dir: 'right', label: 'Right', Icon: ArrowRight },
+                            ] as const
+                          ).map(({ dir, label, Icon }) => {
+                            const currentDir = selectedComp.staticProps.dismissDirection || 'down';
+                            const isActive = currentDir === dir;
+                            return (
+                              <button
+                                key={dir}
+                                type="button"
+                                onClick={() => handleStaticPropChange('dismissDirection', dir)}
+                                className={`py-1 px-1 rounded-md text-[10px] font-mono font-bold transition-all border flex flex-col items-center gap-0.5 ${
+                                  isActive
+                                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-sm'
+                                    : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                                }`}
+                                title={`Slide ${label} when dismissed`}
+                              >
+                                <Icon className="w-3.5 h-3.5" />
+                                <span>{label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Dismiss Duration */}
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-700/40">
+                        <span className="text-[11px] font-mono text-slate-400">Dismiss After</span>
+                        <div className="flex items-center gap-1.5">
+                          <NumericStepper
+                            min={1}
+                            max={60}
+                            step={1}
+                            value={parseInt(selectedComp.staticProps.autoDismissSeconds || '8', 10)}
+                            onChange={(val) => handleStaticPropChange('autoDismissSeconds', String(val))}
+                          />
+                          <span className="text-[11px] font-mono text-slate-400">sec</span>
+                        </div>
+                      </div>
+
+                      {/* Slide Effect Duration in Milliseconds */}
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-700/40">
+                        <div>
+                          <span className="text-[11px] font-mono text-slate-300 font-bold block">Slide Duration</span>
+                          <span className="text-[10px] text-slate-400">Effect speed</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <NumericStepper
+                            min={100}
+                            max={5000}
+                            step={50}
+                            value={parseInt(selectedComp.staticProps.slideDurationMs || '800', 10)}
+                            onChange={(val) => handleStaticPropChange('slideDurationMs', String(val))}
+                          />
+                          <span className="text-[11px] font-mono text-slate-400">ms</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Default Track Selection */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                  <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
+                    Initial Track
+                  </label>
+                  <select
+                    value={selectedComp.staticProps.trackId || SAMPLE_TRACKS[0].id}
+                    onChange={(e) => handleStaticPropChange('trackId', e.target.value)}
+                    className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                  >
+                    {SAMPLE_TRACKS.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title} — {t.artist} ({t.duration})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Song Transition Selection */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                  <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">
+                    <span>Song Transition</span>
+                    <span className="text-[9px] text-sky-400 font-normal">Visual Transition</span>
+                  </label>
+                  <select
+                    value={selectedComp.staticProps.songTransition || 'fade'}
+                    onChange={(e) => handleStaticPropChange('songTransition', e.target.value)}
+                    className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold capitalize"
+                  >
+                    <option value="none">None</option>
+                    <option value="fade">Fade</option>
+                    <option value="crossfade">Crossfade</option>
+                    <option value="slide">Slide</option>
+                    <option value="zoom">Zoom</option>
+                  </select>
+                </div>
+
+                {/* Song Info Display Duration (Compact / Constrained Layouts) */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                  <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">
+                    <span>Song Info Display Duration</span>
+                    <span className="text-[9px] text-sky-400 font-normal">Compact Mode</span>
+                  </label>
+                  <select
+                    value={selectedComp.staticProps.songInfoDisplayDuration || '2.5'}
+                    onChange={(e) => handleStaticPropChange('songInfoDisplayDuration', e.target.value)}
+                    className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                  >
+                    <option value="0.5">0.5 sec</option>
+                    <option value="1">1 sec</option>
+                    <option value="1.5">1.5 sec</option>
+                    <option value="2">2 sec</option>
+                    <option value="2.5">2.5 sec (Default)</option>
+                    <option value="3">3 sec</option>
+                    <option value="4">4 sec</option>
+                    <option value="5">5 sec</option>
+                  </select>
+                  <p className="text-[10px] text-slate-400 font-sans leading-tight pt-0.5">
+                    Controls how long song info stays visible when height is &lt; 125px before returning to scrubber.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {['navSearch', 'media', 'navHome', 'navDestination', 'phoneContacts', 'phoneMessaging'].includes(selectedComp.type) && (
               <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
                 <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">
@@ -2399,12 +2606,123 @@ export const Inspector: React.FC = () => {
               </div>
             )}
 
+            {/* Drive Mode Selector Configuration */}
+            {selectedComp.type === 'driveMode' && (() => {
+              const modesProp = selectedComp.staticProps.modes;
+              let modes: string[] = ['ECO', 'NORMAL', 'SPORT'];
+              if (Array.isArray(modesProp) && modesProp.length > 0) {
+                modes = modesProp;
+              } else if (typeof modesProp === 'string' && modesProp.trim()) {
+                try {
+                  const parsed = JSON.parse(modesProp);
+                  if (Array.isArray(parsed) && parsed.length > 0) modes = parsed;
+                } catch {
+                  const split = modesProp.split(',').map((s) => s.trim()).filter(Boolean);
+                  if (split.length > 0) modes = split;
+                }
+              }
+
+              const updateModes = (newModes: string[]) => {
+                handleStaticPropChange('modes', JSON.stringify(newModes));
+              };
+
+              const moveMode = (index: number, direction: 'up' | 'down') => {
+                const targetIdx = direction === 'up' ? index - 1 : index + 1;
+                if (targetIdx < 0 || targetIdx >= modes.length) return;
+                const next = [...modes];
+                const temp = next[index];
+                next[index] = next[targetIdx];
+                next[targetIdx] = temp;
+                updateModes(next);
+              };
+
+              return (
+                <div className="space-y-2.5 bg-slate-800/80 p-3 rounded-lg border border-slate-700/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-sky-400 uppercase">
+                      Drive Modes
+                    </span>
+                    <span className="text-[9px] font-mono text-slate-400">
+                      {modes.length} {modes.length === 1 ? 'mode' : 'modes'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {modes.map((mode, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          value={mode}
+                          onChange={(e) => {
+                            const next = [...modes];
+                            next[idx] = e.target.value;
+                            updateModes(next);
+                          }}
+                          placeholder={`Mode ${idx + 1}`}
+                          className="flex-1 bg-slate-950 px-2.5 py-1.5 rounded-lg text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 focus:border-sky-500 uppercase"
+                        />
+
+                        {/* Reorder Buttons */}
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => moveMode(idx, 'up')}
+                            className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            title="Move up"
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === modes.length - 1}
+                            onClick={() => moveMode(idx, 'down')}
+                            className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            title="Move down"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        {/* Delete Button */}
+                        {modes.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = modes.filter((_, i) => i !== idx);
+                              updateModes(next);
+                            }}
+                            className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors cursor-pointer shrink-0"
+                            title="Remove mode"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateModes([...modes, `CUSTOM ${modes.length + 1}`]);
+                    }}
+                    className="w-full py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-dashed border-slate-600 hover:border-sky-500/80 text-sky-400 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Mode</span>
+                  </button>
+                </div>
+              );
+            })()}
+
             {Object.entries(selectedComp.staticProps)
               .filter(
                 ([key]) =>
                   key !== 'displayStyle' &&
                   key !== 'maxSpeed' &&
                   key !== 'label' &&
+                  key !== 'modes' &&
                   key !== 'service' &&
                   key !== 'keyboardSlideDirection' &&
                   key !== 'drainPercentPerInterval' &&
@@ -2477,6 +2795,7 @@ export const Inspector: React.FC = () => {
                   key !== 'cancelLabel' &&
                   key !== 'sendingLabel' &&
                   key !== 'successLabel' &&
+                  !(selectedComp.type === 'nowPlaying' && (key === 'orientation' || key === 'autoDismissEnabled' || key === 'autoDismissSeconds' || key === 'dismissDirection' || key === 'slideDurationMs' || key === 'trackId' || key === 'songTransition' || key === 'songInfoDisplayDuration')) &&
                   !(selectedComp.type === 'overheadVisualization' && key === 'color')
               )
               .map(([key, val]) => {

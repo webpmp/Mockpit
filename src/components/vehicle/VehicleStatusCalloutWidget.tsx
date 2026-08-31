@@ -148,7 +148,7 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
       style={{ opacity: styleOpacity }}
     >
       {/* Top Header Row */}
-      <div className="flex items-center h-9 min-h-[36px] max-h-[36px] text-[0.8125rem] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60">
+      <div className="flex items-center h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60">
         <span className="flex items-center gap-2 min-w-0 truncate">
           <span
             className="w-1.5 h-1.5 rounded-full shrink-0"

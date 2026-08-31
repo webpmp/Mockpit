@@ -46,6 +46,7 @@ import {
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MusicMediaPlayer } from './MusicMediaPlayer';
+import { NowPlayingWidget } from './NowPlayingWidget';
 import { MockpitInput } from './MockpitInput';
 import { AddressGeocodeInput } from './navigation/AddressGeocodeInput';
 import { OverheadDrivingVisualization } from './OverheadDrivingVisualization';
@@ -58,9 +59,12 @@ import { getAvatarColor, getInitials } from '../utils/avatarHash';
 import { ClimateVentWidget } from './climate/ClimateVentWidget';
 import { ClimateTempWidget } from './climate/ClimateTempWidget';
 import { ClimateSeatsWidget } from './climate/ClimateSeatsWidget';
+import { CompactClimateWidget } from './climate/CompactClimateWidget';
 import { VehicleExplodedViewWidget } from './vehicle/VehicleExplodedViewWidget';
 import { VehicleStatusCalloutWidget } from './vehicle/VehicleStatusCalloutWidget';
 import { SendToServiceWidget } from './vehicle/SendToServiceWidget';
+import { DriveModeWidget } from './vehicle/DriveModeWidget';
+import { GearWidget } from './vehicle/GearWidget';
 import { MiniNav } from './navigation/MiniNav';
 import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ComponentInstance, ComponentType, DriveModeState, VehicleState, TripStop } from '../types';
@@ -83,6 +87,7 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   warning: 'Warning Alert Overlay',
   map: 'Navigation Map',
   media: 'Music Media Player',
+  nowPlaying: 'Now Playing',
   climate: 'Climate Control',
   phone: 'Phone & Contacts',
   driveMode: 'Drive Mode Selector',
@@ -114,7 +119,7 @@ export const getAlphaColor = (color: string, hexAlpha: string, mixPercent: numbe
 };
 
 export const getComponentDefaultIcon = (type: string, customColor: string, iconKey?: string) => {
-  const className = 'w-6 h-6 shrink-0';
+  const className = 'w-5 h-5 shrink-0';
   if (type === 'warning' || iconKey) {
     return renderNotificationIcon(iconKey || 'alert-triangle', className);
   }
@@ -153,7 +158,7 @@ export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
 
   return (
     <div
-      className={`flex items-center justify-between h-9 min-h-[36px] max-h-[36px] text-[0.8125rem] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60 ${className}`}
+      className={`flex items-center justify-between h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60 ${className}`}
     >
       <span className="flex items-center gap-2 min-w-0 truncate">
         {getComponentDefaultIcon(type, customColor, iconKey)}
@@ -1632,50 +1637,16 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
 
     case 'gear': {
-      const currentGear = (resolved.text || vehicleState.gear || 'P').toUpperCase();
-      const gears = ['P', 'R', 'N', 'D'];
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.gear;
-
       return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between items-stretch shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
-        >
-          <ComponentHeader
-            type="gear"
-            label={headerLabel}
-            customColor={customColor}
-          />
-
-          <div className="flex items-center justify-center my-auto">
-            <div
-              className="text-4xl font-black tracking-widest px-4 py-1 rounded-xl bg-slate-800/60 border border-slate-700/50 transition-all duration-300"
-              style={{
-                color: customColor,
-                boxShadow: `0 0 20px ${getAlphaColor(customColor, '40', 25)}`,
-              }}
-            >
-              {currentGear}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 bg-slate-950/80 px-3 py-1 rounded-full border border-slate-800">
-            {gears.map((g) => {
-              const isActive = g === currentGear;
-              return (
-                <span
-                  key={g}
-                  className={`text-xs font-bold transition-all px-1.5 py-0.5 rounded ${
-                    isActive ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-600'
-                  }`}
-                  style={isActive ? { color: customColor } : undefined}
-                >
-                  {g}
-                </span>
-              );
-            })}
-          </div>
-        </div>
+        <GearWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          isPresentation={isPresentation}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 
@@ -2306,40 +2277,30 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       );
     }
 
-    case 'climate': {
-      const temp = resolved.temp || '72°F';
-      const fanSpeed = resolved.fanSpeed || 'Auto 3';
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.climate;
-
+    case 'nowPlaying': {
       return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
-        >
-          <ComponentHeader
-            type="climate"
-            label={headerLabel}
-            customColor={customColor}
-            rightElement={
-              <span className="text-[0.5625rem] px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 font-semibold">
-                DUAL AC
-              </span>
-            }
-          />
+        <NowPlayingWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+          isPresentation={isPresentation}
+        />
+      );
+    }
 
-          <div className="flex-1 min-h-0 flex items-center justify-between my-1">
-            <div className="text-3xl font-black text-slate-100 tracking-tight">{temp}</div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-300 font-mono bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/50">
-              <Fan className="w-3.5 h-3.5 text-slate-400" />
-              <span>{fanSpeed}</span>
-            </div>
-          </div>
-
-          <div className="text-[0.625rem] text-slate-500 font-mono flex justify-between pt-1 border-t border-slate-800/60">
-            <span>DRIVER: {temp}</span>
-            <span>PASSENGER: 70°F</span>
-          </div>
-        </div>
+    case 'climate': {
+      return (
+        <CompactClimateWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 
@@ -2380,52 +2341,16 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
 
     case 'driveMode': {
-      const currentMode = vehicleState.driveMode || 'Normal';
-      const modes: DriveModeState[] = ['Eco', 'Normal', 'Sport'];
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.driveMode;
-
       return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
-        >
-          <ComponentHeader
-            type="driveMode"
-            label={headerLabel}
-            customColor={customColor}
-          />
-
-          <div className="grid grid-cols-3 gap-1.5 my-auto">
-            {modes.map((m) => {
-              const isActive = m === currentMode;
-              return (
-                <button
-                  key={m}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setVehicleState({ driveMode: m });
-                  }}
-                  className={`py-2 px-1 rounded-xl font-black text-xs tracking-wider transition-all cursor-pointer ${
-                    isActive
-                      ? 'shadow-lg scale-105 border font-black text-slate-950'
-                      : 'bg-slate-800/70 text-slate-400 border border-slate-700/50 hover:bg-slate-800 hover:text-slate-200'
-                  }`}
-                  style={
-                    isActive
-                      ? {
-                          backgroundColor: customColor,
-                          borderColor: customColor,
-                          boxShadow: `0 0 14px ${getAlphaColor(customColor, '80', 50)}`,
-                        }
-                      : undefined
-                  }
-                >
-                  {m.toUpperCase()}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <DriveModeWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          isPresentation={isPresentation}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 

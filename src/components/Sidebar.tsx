@@ -132,6 +132,12 @@ const MEDIA_WIDGET_ITEMS: ComponentLibraryItem[] = [
           description: 'Multi-service music player with library, search & playback',
           defaultBindingDesc: 'Self-contained music player UI',
         },
+        {
+          type: 'nowPlaying' as ComponentType,
+          title: 'Now Playing',
+          description: 'Compact now playing card with cover art, playback controls & auto-dismiss',
+          defaultBindingDesc: 'Media now playing playback widget',
+        },
       ]
     : []),
 ];

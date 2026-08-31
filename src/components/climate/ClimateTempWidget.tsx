@@ -29,11 +29,24 @@ export const ClimateTempWidget: React.FC<ClimateTempWidgetProps> = ({
   const orientation = (component.staticProps?.orientation || 'vertical') as 'vertical' | 'horizontal';
 
   const tempGradientColors = useMockpitStore((s) => s.tempGradientColors);
+  const climateState = useMockpitStore((s) => s.climateState);
+  const setClimateState = useMockpitStore((s) => s.setClimateState);
 
-  const [temp, setTemp] = useState<number>(() => {
-    const p = parseFloat(String(resolved.temp || component.staticProps?.temp || '72'));
-    return isNaN(p) ? 72 : Math.min(maxTemp, Math.max(minTemp, p));
-  });
+  const selectedSeat = climateState?.selectedSeat || 'driver';
+  const currentStoreTemp = selectedSeat === 'driver' ? (climateState?.driverTemp ?? 72) : (climateState?.passengerTemp ?? 70);
+  const temp = Math.min(maxTemp, Math.max(minTemp, currentStoreTemp));
+
+  const setTemp = (newTempOrUpdater: number | ((prev: number) => number)) => {
+    const val = typeof newTempOrUpdater === 'function' ? newTempOrUpdater(temp) : newTempOrUpdater;
+    const clamped = Math.min(maxTemp, Math.max(minTemp, val));
+    if (climateState?.isSynced) {
+      setClimateState({ driverTemp: clamped, passengerTemp: clamped });
+    } else if (selectedSeat === 'driver') {
+      setClimateState({ driverTemp: clamped });
+    } else {
+      setClimateState({ passengerTemp: clamped });
+    }
+  };
 
   const [isDragging, setIsDragging] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);

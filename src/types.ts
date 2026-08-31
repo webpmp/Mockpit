@@ -15,7 +15,7 @@ export type ActiveInputState = {
 } | null;
 
 export type GearState = 'P' | 'R' | 'N' | 'D';
-export type DriveModeState = 'Eco' | 'Normal' | 'Sport';
+export type DriveModeState = 'Eco' | 'Normal' | 'Sport' | (string & {});
 
 export type VehicleBackgroundPosition =
   | 'top-left'
@@ -99,6 +99,21 @@ export const BUILTIN_PALETTES: Record<Exclude<PalettePresetId, 'custom'>, Palett
     tertiary: '#38bdf8',
   },
 };
+
+export type ClimateFanSpeed = 'AUTO' | 'LOW' | 'MED' | 'HIGH';
+export type ClimateSeat = 'driver' | 'passenger';
+
+export interface ClimateState {
+  driverTemp: number;     // 60 - 85 °F, default 72
+  passengerTemp: number;  // 60 - 85 °F, default 70
+  isSynced?: boolean;     // default true (dual-zone sync)
+  selectedSeat: ClimateSeat; // 'driver' | 'passenger', default 'driver'
+  fanSpeed: ClimateFanSpeed; // 'AUTO' | 'LOW' | 'MED' | 'HIGH', default 'AUTO'
+  driverSeatHeat?: number;   // 0 - 3
+  driverSeatCool?: number;   // 0 - 3
+  passengerSeatHeat?: number; // 0 - 3
+  passengerSeatCool?: number; // 0 - 3
+}
 
 export type VehicleState = {
   gear: GearState;
@@ -194,6 +209,7 @@ export type ComponentType =
   | 'warning'
   | 'map'
   | 'media'
+  | 'nowPlaying'
   | 'climate'
   | 'phone'
   | 'driveMode'
@@ -234,6 +250,8 @@ export type Project = {
 };
 
 export type ScreenMode = 'editor' | 'presentation';
+
+export type SongTransition = 'none' | 'fade' | 'crossfade' | 'slide' | 'zoom';
 
 export type TransitionStyle = 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'fade';
 

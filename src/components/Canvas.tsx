@@ -851,18 +851,18 @@ export const Canvas: React.FC = () => {
 
           {/* Bottom Dock Container within the 84px Reserved Zone */}
           <div
-            className={`absolute bottom-0 left-0 right-0 h-[84px] z-40 flex items-center justify-center pointer-events-none ${
+            className={`absolute bottom-0 left-0 right-0 h-[84px] ${
               !isPresentation
-                ? 'border-t-2 border-dashed border-sky-400/60 bg-sky-950/20 backdrop-blur-[1px]'
-                : ''
-            }`}
+                ? 'z-20 border-t-2 border-dashed border-sky-400/60 bg-sky-950/20 backdrop-blur-[1px]'
+                : 'z-40'
+            } flex items-center justify-center pointer-events-none`}
           >
             <BottomDock />
           </div>
 
           {/* Editor Canvas for Screens (Active strictly in Editor Mode) */}
           {!isPresentation && (
-            <div className="absolute inset-x-0 top-0 bottom-0 z-10">
+            <div className="absolute inset-x-0 top-0 bottom-0 z-30">
               {[...components]
                 .sort((a, b) => {
                   const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : 10);
