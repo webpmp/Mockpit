@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Snowflake } from 'lucide-react';
+import { Flame, Snowflake, Power } from 'lucide-react';
 import { ComponentHeader } from '../ComponentRenderer';
 import { useMockpitStore } from '../../store/useMockpitStore';
 
@@ -33,23 +33,31 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
   const passengerCool = (climateState?.passengerSeatCool ?? 0) as Level;
   const selectedSeat = climateState?.selectedSeat || 'driver';
 
-  const cycleHeat = (seat: 'driver' | 'passenger') => {
+  const setSeatClimate = (seat: 'driver' | 'passenger', mode: 'heat' | 'cool', level: Level) => {
     if (seat === 'driver') {
-      const nextHeat = ((driverHeat + 1) % 4) as Level;
-      setClimateState({ driverSeatHeat: nextHeat, driverSeatCool: 0, selectedSeat: 'driver' });
+      if (mode === 'heat') {
+        const nextHeat = driverHeat === level ? 0 : level;
+        setClimateState({ driverSeatHeat: nextHeat, driverSeatCool: 0, selectedSeat: 'driver' });
+      } else {
+        const nextCool = driverCool === level ? 0 : level;
+        setClimateState({ driverSeatCool: nextCool, driverSeatHeat: 0, selectedSeat: 'driver' });
+      }
     } else {
-      const nextHeat = ((passengerHeat + 1) % 4) as Level;
-      setClimateState({ passengerSeatHeat: nextHeat, passengerSeatCool: 0, selectedSeat: 'passenger' });
+      if (mode === 'heat') {
+        const nextHeat = passengerHeat === level ? 0 : level;
+        setClimateState({ passengerSeatHeat: nextHeat, passengerSeatCool: 0, selectedSeat: 'passenger' });
+      } else {
+        const nextCool = passengerCool === level ? 0 : level;
+        setClimateState({ passengerSeatCool: nextCool, passengerSeatHeat: 0, selectedSeat: 'passenger' });
+      }
     }
   };
 
-  const cycleCool = (seat: 'driver' | 'passenger') => {
+  const turnSeatOff = (seat: 'driver' | 'passenger') => {
     if (seat === 'driver') {
-      const nextCool = ((driverCool + 1) % 4) as Level;
-      setClimateState({ driverSeatCool: nextCool, driverSeatHeat: 0, selectedSeat: 'driver' });
+      setClimateState({ driverSeatHeat: 0, driverSeatCool: 0, selectedSeat: 'driver' });
     } else {
-      const nextCool = ((passengerCool + 1) % 4) as Level;
-      setClimateState({ passengerSeatCool: nextCool, passengerSeatHeat: 0, selectedSeat: 'passenger' });
+      setClimateState({ passengerSeatHeat: 0, passengerSeatCool: 0, selectedSeat: 'passenger' });
     }
   };
 
@@ -61,26 +69,48 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
   ) => {
     const isHeating = heat > 0;
     const isCooling = cool > 0;
+    const isOff = heat === 0 && cool === 0;
     const isCurrentActive = selectedSeat === seat;
 
     return (
       <div
         onClick={() => setClimateState({ selectedSeat: seat })}
-        className={`flex-1 min-w-0 h-full bg-slate-950/60 border rounded-xl p-[3%] flex flex-col items-center justify-between gap-[2%] overflow-hidden cursor-pointer transition-all ${
+        className={`flex-1 min-w-0 h-full bg-slate-950/60 border rounded-xl p-[3%] flex flex-col items-center justify-between gap-2 overflow-hidden cursor-pointer transition-all ${
           isCurrentActive
             ? 'border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.15)]'
             : 'border-slate-800/80 hover:border-slate-700'
         }`}
       >
-        {/* Seat Header Label */}
-        <span className={`text-[clamp(12px,3.5cqw,18px)] font-mono font-bold uppercase tracking-wider shrink-0 ${
-          isCurrentActive ? 'text-sky-300' : 'text-slate-300'
-        }`}>
-          {label}
-        </span>
+        {/* Seat Header Label & Status */}
+        <div className="w-full flex items-center justify-between px-1 shrink-0">
+          <span
+            className={`text-[clamp(12px,3.5cqw,18px)] font-mono font-bold uppercase tracking-wider shrink-0 ${
+              isCurrentActive ? 'text-sky-300' : 'text-slate-300'
+            }`}
+          >
+            {label}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              turnSeatOff(seat);
+            }}
+            disabled={isOff}
+            className={`p-1 rounded-md transition-all ${
+              !isOff
+                ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 cursor-pointer'
+                : 'text-slate-700 opacity-40 cursor-not-allowed'
+            }`}
+            title={`${label}: Turn OFF`}
+            aria-label={`${label}: Turn OFF`}
+          >
+            <Power className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
         {/* Seat Outline Graphic with Animated Layer Overlays */}
-        <div className="relative flex-1 min-h-0 w-full max-w-[120px] max-h-[160px] aspect-[7/8] flex items-center justify-center my-auto p-1">
+        <div className="relative flex-1 min-h-0 w-full max-w-[120px] max-h-[140px] aspect-[7/8] flex items-center justify-center my-auto p-1">
           {/* SVG Outline Seat Glyph */}
           <svg
             className={`w-full h-full transition-colors ${
@@ -137,36 +167,88 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
           )}
         </div>
 
-        {/* Two Separate Controls per Seat: Heat Button & Cool Button */}
+        {/* Expose BOTH Modes: HEAT (1 2 3) & COOL (1 2 3) */}
         <div
-          className="grid grid-cols-2 gap-2 w-full shrink-0"
+          className="w-full flex flex-col gap-1.5 shrink-0"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Heat Control Button */}
-          <button
-            onClick={() => cycleHeat(seat)}
-            className={`h-[clamp(32px,12cqh,48px)] px-[clamp(8px,2cqw,16px)] rounded-xl border font-mono text-[clamp(12px,3.5cqw,18px)] font-bold flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer ${
-              heat > 0
-                ? 'bg-orange-500/20 border-orange-500/80 text-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.3)]'
-                : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            <Flame className={`w-[clamp(16px,4.5cqw,24px)] h-[clamp(16px,4.5cqw,24px)] shrink-0 ${heat > 0 ? 'fill-current text-orange-400' : 'text-slate-500'}`} />
-            {heat > 0 && <span>{heat}</span>}
-          </button>
+          {/* HEAT Row: 🔥 HEAT 1 2 3 */}
+          <div className="flex items-center gap-1.5 w-full bg-slate-900/80 border border-slate-800/80 rounded-xl p-1">
+            <button
+              type="button"
+              onClick={() => setSeatClimate(seat, 'heat', heat > 0 ? heat : 1)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer select-none ${
+                isHeating
+                  ? 'bg-orange-500/25 border border-orange-500/60 text-orange-300 shadow-[0_0_8px_rgba(249,115,22,0.3)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+              title={`${label}: Toggle HEAT`}
+              aria-label={`${label}: Toggle HEAT`}
+            >
+              <Flame className={`w-3.5 h-3.5 shrink-0 ${isHeating ? 'fill-current text-orange-400' : 'text-slate-400'}`} />
+              <span className="hidden sm:inline">HEAT</span>
+            </button>
+            <div className="flex items-center gap-1 flex-1 justify-end">
+              {([1, 2, 3] as Level[]).map((lvl) => {
+                const isActive = heat === lvl;
+                return (
+                  <button
+                    key={`heat-lvl-${lvl}`}
+                    type="button"
+                    onClick={() => setSeatClimate(seat, 'heat', lvl)}
+                    className={`flex-1 py-1 px-1 rounded-lg font-mono text-xs font-bold transition-all cursor-pointer select-none text-center ${
+                      isActive
+                        ? 'bg-orange-500 text-slate-950 font-black shadow-[0_0_10px_rgba(249,115,22,0.5)]'
+                        : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-slate-800'
+                    }`}
+                    title={`${label} HEAT Level ${lvl}`}
+                    aria-label={`${label} HEAT Level ${lvl}`}
+                  >
+                    {lvl}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-          {/* Cool Control Button */}
-          <button
-            onClick={() => cycleCool(seat)}
-            className={`h-[clamp(32px,12cqh,48px)] px-[clamp(8px,2cqw,16px)] rounded-xl border font-mono text-[clamp(12px,3.5cqw,18px)] font-bold flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer ${
-              cool > 0
-                ? 'bg-sky-500/20 border-sky-500/80 text-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.3)]'
-                : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            <Snowflake className={`w-[clamp(16px,4.5cqw,24px)] h-[clamp(16px,4.5cqw,24px)] shrink-0 ${cool > 0 ? 'text-sky-300' : 'text-slate-500'}`} />
-            {cool > 0 && <span>{cool}</span>}
-          </button>
+          {/* COOL Row: ❄ COOL 1 2 3 */}
+          <div className="flex items-center gap-1.5 w-full bg-slate-900/80 border border-slate-800/80 rounded-xl p-1">
+            <button
+              type="button"
+              onClick={() => setSeatClimate(seat, 'cool', cool > 0 ? cool : 1)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer select-none ${
+                isCooling
+                  ? 'bg-cyan-500/25 border border-cyan-500/60 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+              title={`${label}: Toggle COOL`}
+              aria-label={`${label}: Toggle COOL`}
+            >
+              <Snowflake className={`w-3.5 h-3.5 shrink-0 ${isCooling ? 'text-cyan-400 stroke-[2.2]' : 'text-slate-400'}`} />
+              <span className="hidden sm:inline">COOL</span>
+            </button>
+            <div className="flex items-center gap-1 flex-1 justify-end">
+              {([1, 2, 3] as Level[]).map((lvl) => {
+                const isActive = cool === lvl;
+                return (
+                  <button
+                    key={`cool-lvl-${lvl}`}
+                    type="button"
+                    onClick={() => setSeatClimate(seat, 'cool', lvl)}
+                    className={`flex-1 py-1 px-1 rounded-lg font-mono text-xs font-bold transition-all cursor-pointer select-none text-center ${
+                      isActive
+                        ? 'bg-cyan-400 text-slate-950 font-black shadow-[0_0_10px_rgba(6,182,212,0.5)]'
+                        : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-slate-800'
+                    }`}
+                    title={`${label} COOL Level ${lvl}`}
+                    aria-label={`${label} COOL Level ${lvl}`}
+                  >
+                    {lvl}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     );

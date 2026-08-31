@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Fan, ChevronDown, ArrowUpDown, Link2, Unlink2, Flame, Snowflake } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Fan, ChevronDown, ArrowUpDown, Flame, Snowflake } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ComponentHeader } from '../ComponentRenderer';
 import { useMockpitStore } from '../../store/useMockpitStore';
@@ -16,9 +16,11 @@ interface CompactClimateWidgetProps {
   styleOpacity: number;
 }
 
+type Level = 0 | 1 | 2 | 3;
+
 const FAN_OPTIONS: ClimateFanSpeed[] = ['AUTO', 'LOW', 'MED', 'HIGH'];
 
-const SeatIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
+const SeatIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5 sm:w-5.5 sm:h-5.5' }) => (
   <svg
     className={`${className} shrink-0`}
     viewBox="0 0 24 24"
@@ -68,15 +70,61 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
   const passengerTemp = climateState?.passengerTemp ?? (isSynced ? driverTemp : 72);
   const fanSpeed: ClimateFanSpeed = climateState?.fanSpeed || 'AUTO';
 
-  // Seat Climate levels from shared store (0 - 3)
-  const driverHeat = climateState?.driverSeatHeat ?? 0;
-  const driverCool = climateState?.driverSeatCool ?? 0;
-  const passengerHeat = climateState?.passengerSeatHeat ?? 0;
-  const passengerCool = climateState?.passengerSeatCool ?? 0;
+  const seatOrientation: 'vertical' | 'horizontal' =
+    resolved.seatOrientation || component.staticProps?.seatOrientation || 'vertical';
+  const fanOrientation: 'horizontal' | 'vertical' =
+    resolved.fanOrientation || component.staticProps?.fanOrientation || 'horizontal';
 
-  // In SYNC mode, active display temp is the shared driverTemp.
-  // In UNSYNC mode, active display temp is the currently selected zone.
+  // Seat Climate levels from shared store (0 - 3)
+  const driverHeat = (climateState?.driverSeatHeat ?? 0) as Level;
+  const driverCool = (climateState?.driverSeatCool ?? 0) as Level;
+  const passengerHeat = (climateState?.passengerSeatHeat ?? 0) as Level;
+  const passengerCool = (climateState?.passengerSeatCool ?? 0) as Level;
+
+  // Active display temp: shared driverTemp in SYNC mode, selected zone in UNSYNC mode
   const activeTemp = isSynced ? driverTemp : selectedSeat === 'driver' ? driverTemp : passengerTemp;
+
+  // Visual active zone highlights:
+  // When SYNC === true: SYNC is active; neither DRIVER nor PASSENGER displays active styling
+  // When SYNC === false: SYNC is inactive; selected zone displays active styling
+  const isSyncActive = isSynced;
+  const isDriverActive = !isSynced && selectedSeat === 'driver';
+  const isPassengerActive = !isSynced && selectedSeat === 'passenger';
+
+  // Container sizing observation for intelligent reflow layout
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({
+    width: component.width ?? 374,
+    height: component.height ?? 198,
+  });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateSize = () => {
+      setContainerSize({
+        width: el.clientWidth || component.width || 374,
+        height: el.clientHeight || component.height || 198,
+      });
+    };
+
+    updateSize();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(() => {
+        updateSize();
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+    }
+  }, [component.width, component.height]);
+
+  // Responsive state resolution adhering to element priority hierarchy:
+  // Priority 1: Temperature | 2: SYNC Button (Single source of truth) | 3: Fan Speed | 4: Seat Controls | 5: Zone Labels
+  // Tested down to: 374x198, 350x190, 320x180, 300x175, 280x170, 260x165, 240x160, 220x150
+  const isComfortable = containerSize.width >= 320 && containerSize.height >= 155;
+  const isVeryNarrow = containerSize.width < 235 || containerSize.height < 140;
 
   // Fan Dropdown state & auto-dismiss
   const [isFanOpen, setIsFanOpen] = useState(false);
@@ -87,6 +135,31 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
     onDismiss: () => setIsFanOpen(false),
     timeoutMs: 12000,
     containerRef: fanContainerRef,
+    dismissOnEscape: true,
+    dismissOnClickOutside: true,
+    resetOnActivity: true,
+  });
+
+  // Popover state for Driver & Passenger seat climate
+  const [openSeatPopover, setOpenSeatPopover] = useState<'driver' | 'passenger' | null>(null);
+  const driverSeatContainerRef = useRef<HTMLDivElement>(null);
+  const passengerSeatContainerRef = useRef<HTMLDivElement>(null);
+
+  useAutoDismiss({
+    isOpen: openSeatPopover === 'driver',
+    onDismiss: () => setOpenSeatPopover((prev) => (prev === 'driver' ? null : prev)),
+    timeoutMs: 12000,
+    containerRef: driverSeatContainerRef,
+    dismissOnEscape: true,
+    dismissOnClickOutside: true,
+    resetOnActivity: true,
+  });
+
+  useAutoDismiss({
+    isOpen: openSeatPopover === 'passenger',
+    onDismiss: () => setOpenSeatPopover((prev) => (prev === 'passenger' ? null : prev)),
+    timeoutMs: 12000,
+    containerRef: passengerSeatContainerRef,
     dismissOnEscape: true,
     dismissOnClickOutside: true,
     resetOnActivity: true,
@@ -144,71 +217,65 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
     }
   }, [isDraggingTemp]);
 
-  // SYNC toggle handler
+  // SYNC toggle handler (exclusively cabin temperature sync - keeps activeZone decoupled)
   const handleToggleSync = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isSynced) {
-      // Unsync: zones become independent, preserving current temperatures
-      setClimateState({ isSynced: false });
+      // Turning SYNC OFF defaults the active zone to DRIVER
+      setClimateState({ isSynced: false, selectedSeat: 'driver' });
     } else {
-      // Re-enable sync: use currently selected zone's temperature as shared value
-      if (selectedSeat === 'passenger') {
-        setClimateState({ isSynced: true, driverTemp: passengerTemp });
-      } else {
-        setClimateState({ isSynced: true, passengerTemp: driverTemp });
-      }
+      // Turning SYNC ON links temps, SYNC is the only active control (DRIVER & PASSENGER inactive)
+      setClimateState({ isSynced: true, passengerTemp: driverTemp });
     }
   };
 
   const handleSelectDriver = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setClimateState({ selectedSeat: 'driver' });
+    // Explicitly tapping DRIVER turns off SYNC and makes DRIVER active
+    setClimateState({ isSynced: false, selectedSeat: 'driver' });
   };
 
   const handleSelectPassenger = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setClimateState({ selectedSeat: 'passenger' });
+    // Explicitly tapping PASSENGER turns off SYNC and makes PASSENGER active
+    setClimateState({ isSynced: false, selectedSeat: 'passenger' });
   };
 
-  // Seat Climate cycle handlers (OFF -> 1 -> 2 -> 3 -> OFF, respecting weather default)
-  const handleCycleDriverSeatClimate = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (driverCool > 0) {
-      const nextCool = (driverCool + 1) % 4;
-      setClimateState({ driverSeatCool: nextCool, driverSeatHeat: 0 });
-    } else if (driverHeat > 0) {
-      const nextHeat = (driverHeat + 1) % 4;
-      setClimateState({ driverSeatHeat: nextHeat, driverSeatCool: 0 });
-    } else {
-      const defaultMode = getDefaultWeatherSeatMode();
-      if (defaultMode === 'cool') {
-        setClimateState({ driverSeatCool: 1, driverSeatHeat: 0 });
+  // Direct seat climate setter with immediate mode switching, level setting, and auto-dismiss
+  const handleSetSeatClimate = (seat: 'driver' | 'passenger', mode: 'heat' | 'cool', level: Level) => {
+    const targetLevel = level === 0 ? 1 : level;
+    if (seat === 'driver') {
+      if (mode === 'heat') {
+        setClimateState({ driverSeatHeat: targetLevel, driverSeatCool: 0 });
       } else {
-        setClimateState({ driverSeatHeat: 1, driverSeatCool: 0 });
+        setClimateState({ driverSeatCool: targetLevel, driverSeatHeat: 0 });
+      }
+    } else {
+      if (mode === 'heat') {
+        setClimateState({ passengerSeatHeat: targetLevel, passengerSeatCool: 0 });
+      } else {
+        setClimateState({ passengerSeatCool: targetLevel, passengerSeatHeat: 0 });
       }
     }
+    // Explicitly dismiss the popover immediately after committing the selection
+    setOpenSeatPopover(null);
   };
 
-  const handleCyclePassengerSeatClimate = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (passengerCool > 0) {
-      const nextCool = (passengerCool + 1) % 4;
-      setClimateState({ passengerSeatCool: nextCool, passengerSeatHeat: 0 });
-    } else if (passengerHeat > 0) {
-      const nextHeat = (passengerHeat + 1) % 4;
-      setClimateState({ passengerSeatHeat: nextHeat, passengerSeatCool: 0 });
+  const handleTurnSeatOff = (seat: 'driver' | 'passenger') => {
+    if (seat === 'driver') {
+      setClimateState({ driverSeatHeat: 0, driverSeatCool: 0 });
     } else {
-      const defaultMode = getDefaultWeatherSeatMode();
-      if (defaultMode === 'cool') {
-        setClimateState({ passengerSeatCool: 1, passengerSeatHeat: 0 });
-      } else {
-        setClimateState({ passengerSeatHeat: 1, passengerSeatCool: 0 });
-      }
+      setClimateState({ passengerSeatHeat: 0, passengerSeatCool: 0 });
     }
+    // Explicitly dismiss the popover immediately after turning off
+    setOpenSeatPopover(null);
   };
 
   // Helper for seat button styling levels
-  const getSeatButtonClasses = (heat: number, cool: number): string => {
+  const getSeatButtonClasses = (heat: number, cool: number, isOpen: boolean): string => {
+    if (isOpen) {
+      return 'bg-slate-950 border-cyan-500 text-cyan-300 ring-2 ring-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.3)]';
+    }
     if (heat === 1) {
       return 'bg-orange-500/15 border-orange-500/40 text-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.25)]';
     }
@@ -231,7 +298,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
   };
 
   const renderSeatIcon = (heat: number, cool: number) => {
-    const iconClass = 'w-[clamp(18px,4.8cqw,22px)] h-[clamp(18px,4.8cqw,22px)] shrink-0 transition-transform';
+    const iconClass = isComfortable ? 'w-5 h-5 sm:w-5.5 sm:h-5.5 shrink-0 transition-transform' : 'w-4.5 h-4.5 shrink-0 transition-transform';
     if (heat > 0) {
       return <Flame className={`${iconClass} fill-current`} />;
     }
@@ -242,14 +309,184 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
   };
 
   const getSeatButtonTitle = (seatLabel: string, heat: number, cool: number) => {
-    if (heat > 0) return `${seatLabel} seat: HEAT ${heat}/3 (Click to cycle)`;
-    if (cool > 0) return `${seatLabel} seat: COOL ${cool}/3 (Click to cycle)`;
-    return `${seatLabel} seat: OFF (Click to turn on)`;
+    if (heat > 0) return `${seatLabel} seat climate: HEAT level ${heat}`;
+    if (cool > 0) return `${seatLabel} seat climate: COOL level ${cool}`;
+    return `${seatLabel} seat climate: OFF`;
   };
+
+  const getSeatButtonAriaLabel = (seatLabel: string, heat: number, cool: number) => {
+    if (heat > 0) return `${seatLabel} seat climate: HEAT level ${heat}`;
+    if (cool > 0) return `${seatLabel} seat climate: COOL level ${cool}`;
+    return `${seatLabel} seat climate: OFF`;
+  };
+
+  const SEAT_SELECTOR_OPTIONS = [
+    { type: 'heat' as const, level: 3 as Level, label: '3' },
+    { type: 'heat' as const, level: 2 as Level, label: '2' },
+    { type: 'heat' as const, level: 1 as Level, label: '1' },
+    { type: 'off' as const, level: 0 as Level, label: 'OFF' },
+    { type: 'cool' as const, level: 1 as Level, label: '1' },
+    { type: 'cool' as const, level: 2 as Level, label: '2' },
+    { type: 'cool' as const, level: 3 as Level, label: '3' },
+  ];
+
+  const renderSeatSelector = (seat: 'driver' | 'passenger', heat: Level, cool: Level) => {
+    const seatLabel = seat === 'driver' ? 'Driver' : 'Passenger';
+    const isVertical = seatOrientation === 'vertical';
+
+    return (
+      <AnimatePresence>
+        {openSeatPopover === seat && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.95 }}
+            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            className={`absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-50 p-1 rounded-2xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden select-none ${
+              isVertical
+                ? 'flex flex-col gap-1 w-[52px] sm:w-[56px]'
+                : 'flex flex-row gap-1 h-[52px] sm:h-[56px] w-auto'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {SEAT_SELECTOR_OPTIONS.map((opt) => {
+              let isSelected = false;
+              let itemClasses = '';
+              let itemTitle = '';
+              let itemAriaLabel = '';
+              let iconElement: React.ReactNode = null;
+
+              if (opt.type === 'heat') {
+                isSelected = heat === opt.level;
+                itemTitle = `${seatLabel} Heat ${opt.level}`;
+                itemAriaLabel = `${seatLabel} seat heat level ${opt.level}`;
+                itemClasses = isSelected
+                  ? 'bg-orange-500/25 border-orange-500/60 text-orange-300 shadow-[0_0_8px_rgba(249,115,22,0.3)]'
+                  : 'text-slate-400 hover:text-orange-300 hover:bg-slate-800/60 border-transparent';
+                iconElement = isVertical ? (
+                  <>
+                    <Flame className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'fill-current text-orange-400' : 'text-slate-400'}`} />
+                    <span className="font-mono text-xs font-bold leading-none">{opt.label}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-mono text-xs font-bold leading-none">{opt.label}</span>
+                    <Flame className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'fill-current text-orange-400' : 'text-slate-400'}`} />
+                  </>
+                );
+              } else if (opt.type === 'off') {
+                isSelected = heat === 0 && cool === 0;
+                itemTitle = `${seatLabel} Climate Off`;
+                itemAriaLabel = `${seatLabel} seat climate off`;
+                itemClasses = isSelected
+                  ? 'bg-slate-800 border-slate-600 text-slate-200 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 border-transparent';
+                iconElement = (
+                  <span className="font-mono text-[11px] sm:text-xs font-bold leading-none tracking-wider">OFF</span>
+                );
+              } else {
+                isSelected = cool === opt.level;
+                itemTitle = `${seatLabel} Cool ${opt.level}`;
+                itemAriaLabel = `${seatLabel} seat cool level ${opt.level}`;
+                itemClasses = isSelected
+                  ? 'bg-cyan-500/25 border-cyan-500/60 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
+                  : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 border-transparent';
+                iconElement = isVertical ? (
+                  <>
+                    <Snowflake className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-cyan-400 stroke-[2.2]' : 'text-slate-400'}`} />
+                    <span className="font-mono text-xs font-bold leading-none">{opt.label}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-mono text-xs font-bold leading-none">{opt.label}</span>
+                    <Snowflake className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-cyan-400 stroke-[2.2]' : 'text-slate-400'}`} />
+                  </>
+                );
+              }
+
+              return (
+                <button
+                  key={`${seat}-${opt.type}-${opt.type === 'off' ? 'off' : opt.level}`}
+                  type="button"
+                  onClick={() => {
+                    if (opt.type === 'heat') {
+                      handleSetSeatClimate(seat, 'heat', opt.level);
+                    } else if (opt.type === 'off') {
+                      handleTurnSeatOff(seat);
+                    } else {
+                      handleSetSeatClimate(seat, 'cool', opt.level);
+                    }
+                    setOpenSeatPopover(null);
+                  }}
+                  className={`${
+                    isVertical ? 'h-8 sm:h-8.5 w-full flex-row gap-1' : 'w-8.5 sm:w-9 h-full flex-col justify-center gap-0.5'
+                  } rounded-xl border flex items-center justify-center transition-all cursor-pointer select-none active:scale-95 box-border overflow-hidden ${itemClasses}`}
+                  title={itemTitle}
+                  aria-label={itemAriaLabel}
+                >
+                  {iconElement}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  };
+
+  const renderFanDropdown = () => (
+    <AnimatePresence>
+      {isFanOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 6, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 6, scale: 0.96 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          className={`absolute right-0 bottom-[calc(100%+6px)] z-50 p-1 rounded-xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden ${
+            fanOrientation === 'vertical'
+              ? 'flex flex-col gap-1 w-24 sm:w-28'
+              : 'flex items-center gap-1'
+          }`}
+        >
+          {FAN_OPTIONS.map((option) => {
+            const isCurrent = fanSpeed === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setClimateState({ fanSpeed: option });
+                  setIsFanOpen(false);
+                }}
+                className={`${
+                  fanOrientation === 'vertical' ? 'w-full py-1.5' : 'px-2.5 py-1'
+                } rounded-lg font-mono text-xs sm:text-[12.5px] font-bold tracking-wider transition-all select-none cursor-pointer whitespace-nowrap text-center ${
+                  isCurrent
+                    ? 'bg-cyan-500/25 border border-cyan-500/60 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 border border-transparent'
+                }`}
+                style={{
+                  color: isCurrent ? customColor : undefined,
+                  borderColor: isCurrent ? `${customColor}80` : undefined,
+                  backgroundColor: isCurrent ? `${customColor}25` : undefined,
+                }}
+              >
+                {option}
+              </button>
+            );
+          })}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 
   return (
     <div
-      className={`@container w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative select-none ${baseOpacity}`}
+      ref={containerRef}
+      className={`@container w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 ${
+        isComfortable ? 'p-3.5 sm:p-4' : isVeryNarrow ? 'p-2.5' : 'p-3'
+      } flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative select-none ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       {/* 1. Header (Thermometer icon + title only) */}
@@ -259,191 +496,310 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
         customColor={customColor}
       />
 
-      {/* 2. Middle Row: Dominant Draggable Temperature + Fan Selector Dropdown */}
-      <div className="flex-1 min-h-0 flex items-center justify-between gap-2 px-1 my-auto">
-        {/* Dominant Draggable Temperature Target */}
-        <div
-          onPointerDown={handlePointerDownTemp}
-          onPointerMove={handlePointerMoveTemp}
-          onPointerUp={handlePointerUpTemp}
-          onPointerCancel={handlePointerUpTemp}
-          className={`group flex items-center gap-2 cursor-ns-resize touch-none select-none py-1 px-2 -ml-2 rounded-xl transition-all duration-150 relative ${
-            isDraggingTemp
-              ? 'scale-[1.02] bg-cyan-500/10 ring-1 ring-cyan-400/40'
-              : 'hover:bg-slate-800/40'
-          }`}
-          title="Drag vertically to adjust temperature"
-        >
-          {/* Vertical Adjustment Icon */}
-          <ArrowUpDown
-            className={`w-[clamp(18px,5.5cqw,24px)] h-[clamp(18px,5.5cqw,24px)] shrink-0 transition-all duration-150 ${
-              isDraggingTemp
-                ? 'text-cyan-400 scale-110'
-                : 'text-slate-400 group-hover:text-slate-200'
-            }`}
-          />
+      {/* 2. Responsive Content Layout based on Element Priority Hierarchy */}
+      {isVeryNarrow ? (
+        /* State 2: Very Narrow (<235px) - Stacked multi-row with crystal-clear typography */
+        <div className="w-full flex-1 flex flex-col justify-between py-1 gap-2 min-w-0 max-w-full">
+          {/* Row 1: Temperature, SYNC Button & Fan Selector (shared vertical centerline) */}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 w-full min-w-0">
+            {/* Col 1: Temperature */}
+            <div className="flex items-center justify-start min-w-0">
+              <div
+                onPointerDown={handlePointerDownTemp}
+                onPointerMove={handlePointerMoveTemp}
+                onPointerUp={handlePointerUpTemp}
+                onPointerCancel={handlePointerUpTemp}
+                className="group flex items-center gap-1 cursor-ns-resize touch-none select-none py-0.5 px-0.5 rounded-lg hover:bg-slate-800/40 min-w-0"
+                title="Drag vertically to adjust temperature"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5 shrink-0 text-slate-400 group-hover:text-slate-200" />
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-2xl font-black text-slate-100 font-mono leading-none">
+                    {activeTemp}°
+                  </span>
+                  <span className="text-xs font-bold text-slate-400 font-mono">F</span>
+                </div>
+              </div>
+            </div>
 
-          {/* Primary Temperature Readout matching Speedometer / Gear typography */}
-          <div className="flex items-baseline gap-1">
-            <span className="text-[clamp(32px,12cqw,46px)] font-black tracking-tight text-slate-100 font-mono leading-none">
-              {activeTemp}°
-            </span>
-            <span className="text-[clamp(13px,3.8cqw,18px)] font-bold text-slate-400 font-mono self-start mt-0.5">
-              F
-            </span>
+            {/* Col 2: Interactive SYNC Button (single source of truth) */}
+            <div className="flex items-center justify-center justify-self-center min-w-0 z-10 shrink-0">
+              <button
+                type="button"
+                onClick={handleToggleSync}
+                className={`font-mono text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-lg border transition-all select-none cursor-pointer active:scale-95 whitespace-nowrap ${
+                  isSynced
+                    ? 'text-cyan-300 bg-cyan-500/15 border-cyan-500/35 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
+                    : 'text-slate-400 bg-slate-800/70 border-slate-700/60'
+                }`}
+                title={isSynced ? 'Unsync cabin temperatures' : 'Sync cabin temperatures'}
+                aria-label={isSynced ? 'Unsync dual-zone cabin temperature' : 'Sync dual-zone cabin temperature'}
+              >
+                SYNC
+              </button>
+            </div>
+
+            {/* Col 3: Fan Selector */}
+            <div className="flex items-center justify-end min-w-0">
+              <div ref={fanContainerRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFanOpen((prev) => !prev);
+                  }}
+                  className="flex items-center gap-1 text-xs font-mono px-2 py-1 rounded-lg border border-slate-800 bg-slate-950/70 text-slate-300 active:scale-95"
+                  title="Fan speed selection"
+                >
+                  <Fan className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="font-bold">{fanSpeed}</span>
+                </button>
+                {renderFanDropdown()}
+              </div>
+            </div>
           </div>
 
-          {/* Contextual zone / sync badge */}
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 bg-cyan-500/15 border border-cyan-500/30 px-1.5 py-0.5 rounded ml-1">
-            {isSynced ? 'SYNC' : selectedSeat.toUpperCase()}
-          </span>
-        </div>
-
-        {/* Compact Fan Speed Dropdown / Selector */}
-        <div ref={fanContainerRef} className="relative">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsFanOpen((prev) => !prev);
-            }}
-            className={`flex items-center gap-1.5 text-[clamp(10px,3cqw,12px)] font-mono px-2.5 py-1.5 rounded-xl border transition-all duration-150 cursor-pointer select-none active:scale-95 ${
-              isFanOpen
-                ? 'bg-slate-950 border-cyan-500/60 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
-                : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-slate-100'
-            }`}
-            title="Fan speed selection"
-          >
-            <Fan className={`w-3.5 h-3.5 transition-transform duration-300 ${isFanOpen ? 'rotate-90 text-cyan-400' : 'text-slate-400'}`} />
-            <span className="font-bold tracking-wider">{fanSpeed}</span>
-            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isFanOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`} />
-          </button>
-
-          {/* Animated Fan Speed Options Dropdown (Opens Upward) */}
-          <AnimatePresence>
-            {isFanOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute right-0 bottom-[calc(100%+6px)] z-50 flex items-center gap-1 p-1 rounded-xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl"
+          {/* Row 2: Driver controls */}
+          <div className="w-full flex items-center justify-between min-w-0">
+            <button
+              type="button"
+              onClick={handleSelectDriver}
+              className={`font-mono text-xs font-bold uppercase py-0.5 px-2 rounded-lg transition-all ${
+                isDriverActive
+                  ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35'
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+              }`}
+            >
+              DRIVER
+            </button>
+            <div ref={driverSeatContainerRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsFanOpen(false);
+                  setOpenSeatPopover((prev) => (prev === 'driver' ? null : 'driver'));
+                }}
+                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 ${getSeatButtonClasses(
+                  driverHeat,
+                  driverCool,
+                  openSeatPopover === 'driver'
+                )}`}
               >
-                {FAN_OPTIONS.map((option) => {
-                  const isCurrent = fanSpeed === option;
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setClimateState({ fanSpeed: option });
-                        setIsFanOpen(false);
-                      }}
-                      className={`px-2 py-1 rounded-lg font-mono text-[11px] font-bold tracking-wider transition-all select-none cursor-pointer whitespace-nowrap ${
-                        isCurrent
-                          ? 'bg-cyan-500/25 border border-cyan-500/60 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
-                          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 border border-transparent'
-                      }`}
-                      style={{
-                        color: isCurrent ? customColor : undefined,
-                        borderColor: isCurrent ? `${customColor}80` : undefined,
-                        backgroundColor: isCurrent ? `${customColor}25` : undefined,
-                      }}
-                    >
-                      {option}
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                {renderSeatIcon(driverHeat, driverCool)}
+              </button>
+              {renderSeatSelector('driver', driverHeat, driverCool)}
+            </div>
+          </div>
+
+          {/* Row 3: Passenger controls */}
+          <div className="w-full flex items-center justify-between min-w-0">
+            <button
+              type="button"
+              onClick={handleSelectPassenger}
+              className={`font-mono text-xs font-bold uppercase py-0.5 px-2 rounded-lg transition-all ${
+                isPassengerActive
+                  ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35'
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+              }`}
+            >
+              PASSENGER
+            </button>
+            <div ref={passengerSeatContainerRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsFanOpen(false);
+                  setOpenSeatPopover((prev) => (prev === 'passenger' ? null : 'passenger'));
+                }}
+                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 ${getSeatButtonClasses(
+                  passengerHeat,
+                  passengerCool,
+                  openSeatPopover === 'passenger'
+                )}`}
+              >
+                {renderSeatIcon(passengerHeat, passengerCool)}
+              </button>
+              {renderSeatSelector('passenger', passengerHeat, passengerCool)}
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* State 1: Standard / Comfortable (>=235px) */
+        /* Symmetrical 2-Row Layout:
+           - Row 1: [ TEMPERATURE ]    [ SYNC BUTTON ]    [ FAN SPEED ] (All sharing common vertical centerline)
+           - Row 2: [ DRIVER ] [ SEAT ]                  [ SEAT ] [ PASSENGER ] (All sharing common vertical centerline)
+        */
+        <div className="w-full flex-1 flex flex-col justify-around min-h-0 py-1 min-w-0 max-w-full">
+          {/* Row 1: [ TEMPERATURE ] [ SYNC BUTTON ] [ FAN SPEED ] */}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 w-full min-w-0">
+            {/* Row 1, Col 1: Dominant Draggable Temperature */}
+            <div className="flex items-center justify-start min-w-0">
+              <div
+                onPointerDown={handlePointerDownTemp}
+                onPointerMove={handlePointerMoveTemp}
+                onPointerUp={handlePointerUpTemp}
+                onPointerCancel={handlePointerUpTemp}
+                className={`group flex items-center gap-1.5 sm:gap-2 cursor-ns-resize touch-none select-none py-0.5 px-1 -ml-1 rounded-xl transition-all duration-150 relative min-w-0 ${
+                  isDraggingTemp
+                    ? 'scale-[1.02] bg-cyan-500/10 ring-1 ring-cyan-400/40'
+                    : 'hover:bg-slate-800/40'
+                }`}
+                title="Drag vertically to adjust temperature"
+              >
+                <ArrowUpDown
+                  className={`w-4.5 h-4.5 shrink-0 transition-all duration-150 ${
+                    isDraggingTemp ? 'text-cyan-400 scale-110' : 'text-slate-400 group-hover:text-slate-200'
+                  }`}
+                />
+                <div className="flex items-baseline gap-0.5">
+                  <span
+                    className={`${
+                      isComfortable ? 'text-4xl' : 'text-3xl'
+                    } font-black tracking-tight text-slate-100 font-mono leading-none`}
+                  >
+                    {activeTemp}°
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-slate-400 font-mono self-start mt-0.5">
+                    F
+                  </span>
+                </div>
+              </div>
+            </div>
 
-      {/* 3. Bottom Row: DRIVER [SEAT] [LINK] [SEAT] PASSENGER */}
-      <div className="w-full flex items-center justify-between gap-2.5 sm:gap-4 px-1 shrink-0 select-none pt-1">
-        {/* Left Side: DRIVER [SEAT] */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* DRIVER Zone Selector */}
-          <button
-            type="button"
-            onClick={handleSelectDriver}
-            className={`font-mono text-[clamp(11px,3.4cqw,13px)] font-bold tracking-wider uppercase transition-all py-1.5 px-2 rounded-lg cursor-pointer select-none ${
-              !isSynced && selectedSeat === 'driver'
-                ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
-                : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-slate-800/40'
-            }`}
-            title={isSynced ? 'Driver cabin zone (Linked in SYNC mode)' : 'Select Driver cabin zone'}
-          >
-            DRIVER
-          </button>
+            {/* Row 1, Col 2: Interactive SYNC Button (Single source of truth, shared vertical centerline with temp and fan controls) */}
+            <div className="flex items-center justify-center justify-self-center min-w-0 z-10 shrink-0">
+              <button
+                type="button"
+                onClick={handleToggleSync}
+                className={`font-mono text-xs sm:text-[13px] font-bold uppercase tracking-wider ${
+                  isComfortable ? 'px-3 py-1.5' : 'px-2.5 py-1'
+                } rounded-xl border transition-all select-none cursor-pointer active:scale-95 whitespace-nowrap ${
+                  isSynced
+                    ? 'text-cyan-300 bg-cyan-500/15 border-cyan-500/35 shadow-[0_0_10px_rgba(6,182,212,0.25)] hover:bg-cyan-500/25'
+                    : 'text-slate-400 bg-slate-800/70 border-slate-700/60 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+                title={isSynced ? 'Unsync cabin temperatures' : 'Sync cabin temperatures'}
+                aria-label={isSynced ? 'Unsync dual-zone cabin temperature' : 'Sync dual-zone cabin temperature'}
+              >
+                SYNC
+              </button>
+            </div>
 
-          {/* Driver [SEAT] Interactive Seat Climate Control */}
-          <button
-            type="button"
-            onClick={handleCycleDriverSeatClimate}
-            className={`w-[clamp(32px,9cqw,38px)] h-[clamp(32px,9cqw,38px)] rounded-xl border transition-all cursor-pointer select-none active:scale-95 shrink-0 flex items-center justify-center ${getSeatButtonClasses(
-              driverHeat,
-              driverCool
-            )}`}
-            title={getSeatButtonTitle('Driver', driverHeat, driverCool)}
-            aria-label="Driver seat climate"
-          >
-            {renderSeatIcon(driverHeat, driverCool)}
-          </button>
+            {/* Row 1, Col 3: Fan Speed Selector */}
+            <div className="flex items-center justify-end min-w-0">
+              <div ref={fanContainerRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFanOpen((prev) => !prev);
+                  }}
+                  className={`flex items-center gap-1.5 text-xs sm:text-[13px] font-mono ${
+                    isComfortable ? 'px-3 py-1.5' : 'px-2.5 py-1'
+                  } rounded-xl border transition-all duration-150 cursor-pointer select-none active:scale-95 ${
+                    isFanOpen
+                      ? 'bg-slate-950 border-cyan-500/60 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                      : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-slate-100'
+                  }`}
+                  title="Fan speed selection"
+                >
+                  <Fan className={`w-3.5 h-3.5 shrink-0 transition-transform duration-300 ${isFanOpen ? 'rotate-90 text-cyan-400' : 'text-slate-400'}`} />
+                  <span className="font-bold tracking-wider whitespace-nowrap">{fanSpeed}</span>
+                  <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-200 ${isFanOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`} />
+                </button>
+                {renderFanDropdown()}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: [ DRIVER ] [ SEAT ]                  [ SEAT ] [ PASSENGER ] */}
+          <div className="flex items-center justify-between w-full min-w-0 max-w-full">
+            {/* Left: DRIVER Group (DRIVER label + [seat] button) */}
+            <div className="flex items-center justify-start gap-[clamp(4px,1.2cqw,8px)] min-w-0 shrink">
+              <button
+                type="button"
+                id="climate-driver-zone-btn"
+                onClick={handleSelectDriver}
+                className={`font-mono text-xs sm:text-[13px] font-bold tracking-wider uppercase transition-all py-1 px-1.5 sm:px-2 rounded-lg cursor-pointer select-none whitespace-nowrap ${
+                  isDriverActive
+                    ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
+                    : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-slate-800/40'
+                }`}
+                title="Select Driver cabin zone"
+              >
+                DRIVER
+              </button>
+
+              <div ref={driverSeatContainerRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  id="climate-driver-seat-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFanOpen(false);
+                    setOpenSeatPopover((prev) => (prev === 'driver' ? null : 'driver'));
+                  }}
+                  className={`${
+                    isComfortable ? 'w-11 h-11' : 'w-10 h-10'
+                  } rounded-xl border transition-all cursor-pointer select-none active:scale-95 shrink-0 flex items-center justify-center ${getSeatButtonClasses(
+                    driverHeat,
+                    driverCool,
+                    openSeatPopover === 'driver'
+                  )}`}
+                  title={getSeatButtonTitle('Driver', driverHeat, driverCool)}
+                  aria-label={getSeatButtonAriaLabel('Driver', driverHeat, driverCool)}
+                >
+                  {renderSeatIcon(driverHeat, driverCool)}
+                </button>
+                {renderSeatSelector('driver', driverHeat, driverCool)}
+              </div>
+            </div>
+
+            {/* Right: PASSENGER Group ([seat] button + PASSENGER label) */}
+            <div className="flex items-center justify-end gap-[clamp(4px,1.2cqw,8px)] min-w-0 shrink">
+              <div ref={passengerSeatContainerRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  id="climate-passenger-seat-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFanOpen(false);
+                    setOpenSeatPopover((prev) => (prev === 'passenger' ? null : 'passenger'));
+                  }}
+                  className={`${
+                    isComfortable ? 'w-11 h-11' : 'w-10 h-10'
+                  } rounded-xl border transition-all cursor-pointer select-none active:scale-95 shrink-0 flex items-center justify-center ${getSeatButtonClasses(
+                    passengerHeat,
+                    passengerCool,
+                    openSeatPopover === 'passenger'
+                  )}`}
+                  title={getSeatButtonTitle('Passenger', passengerHeat, passengerCool)}
+                  aria-label={getSeatButtonAriaLabel('Passenger', passengerHeat, passengerCool)}
+                >
+                  {renderSeatIcon(passengerHeat, passengerCool)}
+                </button>
+                {renderSeatSelector('passenger', passengerHeat, passengerCool)}
+              </div>
+
+              <button
+                type="button"
+                id="climate-passenger-zone-btn"
+                onClick={handleSelectPassenger}
+                className={`font-mono text-xs sm:text-[13px] font-bold tracking-wider uppercase transition-all py-1 px-1.5 sm:px-2 rounded-lg cursor-pointer select-none whitespace-nowrap ${
+                  isPassengerActive
+                    ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
+                    : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-slate-800/40'
+                }`}
+                title="Select Passenger cabin zone"
+              >
+                PASSENGER
+              </button>
+            </div>
+          </div>
         </div>
-
-        {/* Center: [LINK] Synchronization Control */}
-        <button
-          type="button"
-          onClick={handleToggleSync}
-          className={`w-[clamp(32px,9cqw,38px)] h-[clamp(32px,9cqw,38px)] rounded-xl border transition-all cursor-pointer select-none active:scale-95 shrink-0 flex items-center justify-center mx-auto ${
-            isSynced
-              ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.25)] hover:bg-cyan-500/30'
-              : 'bg-slate-900/80 border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
-          }`}
-          title={isSynced ? 'Unsync cabin temperatures' : 'Sync cabin temperatures'}
-          aria-label={isSynced ? 'Unsync dual-zone cabin temperature' : 'Sync dual-zone cabin temperature'}
-        >
-          {isSynced ? (
-            <Link2 className="w-[clamp(18px,4.5cqw,20px)] h-[clamp(18px,4.5cqw,20px)] stroke-[2.2]" />
-          ) : (
-            <Unlink2 className="w-[clamp(18px,4.5cqw,20px)] h-[clamp(18px,4.5cqw,20px)] stroke-[2.2]" />
-          )}
-        </button>
-
-        {/* Right Side: [SEAT] PASSENGER */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Passenger [SEAT] Interactive Seat Climate Control */}
-          <button
-            type="button"
-            onClick={handleCyclePassengerSeatClimate}
-            className={`w-[clamp(32px,9cqw,38px)] h-[clamp(32px,9cqw,38px)] rounded-xl border transition-all cursor-pointer select-none active:scale-95 shrink-0 flex items-center justify-center ${getSeatButtonClasses(
-              passengerHeat,
-              passengerCool
-            )}`}
-            title={getSeatButtonTitle('Passenger', passengerHeat, passengerCool)}
-            aria-label="Passenger seat climate"
-          >
-            {renderSeatIcon(passengerHeat, passengerCool)}
-          </button>
-
-          {/* PASSENGER Zone Selector */}
-          <button
-            type="button"
-            onClick={handleSelectPassenger}
-            className={`font-mono text-[clamp(11px,3.4cqw,13px)] font-bold tracking-wider uppercase transition-all py-1.5 px-2 rounded-lg cursor-pointer select-none ${
-              !isSynced && selectedSeat === 'passenger'
-                ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
-                : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-slate-800/40'
-            }`}
-            title={isSynced ? 'Passenger cabin zone (Linked in SYNC mode)' : 'Select Passenger cabin zone'}
-          >
-            PASSENGER
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

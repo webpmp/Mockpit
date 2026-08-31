@@ -2716,6 +2716,73 @@ export const Inspector: React.FC = () => {
               );
             })()}
 
+            {/* Climate Controls */}
+            {selectedComp.type === 'climate' && (
+              <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
+                <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                  OVERLAY ORIENTATION
+                </span>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-slate-300">SEAT TEMP</span>
+                    <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => handleStaticPropChange('seatOrientation', 'vertical')}
+                        className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors cursor-pointer ${
+                          (selectedComp.staticProps.seatOrientation || 'vertical') === 'vertical'
+                            ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Vertical
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleStaticPropChange('seatOrientation', 'horizontal')}
+                        className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors cursor-pointer ${
+                          selectedComp.staticProps.seatOrientation === 'horizontal'
+                            ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Horizontal
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-slate-300">FAN SPEED</span>
+                    <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => handleStaticPropChange('fanOrientation', 'vertical')}
+                        className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors cursor-pointer ${
+                          selectedComp.staticProps.fanOrientation === 'vertical'
+                            ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Vertical
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleStaticPropChange('fanOrientation', 'horizontal')}
+                        className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors cursor-pointer ${
+                          (selectedComp.staticProps.fanOrientation || 'horizontal') === 'horizontal'
+                            ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Horizontal
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {Object.entries(selectedComp.staticProps)
               .filter(
                 ([key]) =>
@@ -2724,6 +2791,8 @@ export const Inspector: React.FC = () => {
                   key !== 'label' &&
                   key !== 'modes' &&
                   key !== 'service' &&
+                  key !== 'seatOrientation' &&
+                  key !== 'fanOrientation' &&
                   key !== 'keyboardSlideDirection' &&
                   key !== 'drainPercentPerInterval' &&
                   key !== 'drainIntervalSeconds' &&
