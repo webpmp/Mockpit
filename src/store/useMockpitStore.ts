@@ -40,8 +40,18 @@ import {
   DEFAULT_TEMP_GRADIENT_COLORS,
 } from '../utils/tempGradient';
 import { Conversation, INITIAL_CONVERSATIONS, CONTACT_PHOTO_MAP } from '../data/mockPhoneData';
+import { MusicServiceType, MUSIC_SERVICES } from '../data/mediaData';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants';
 import { useWeatherStore } from './useWeatherStore';
+import {
+  DisplayConfig,
+  DEFAULT_DISPLAY_CONFIG,
+  InteractionLogEntry,
+} from '../lib/hmiRules/registry';
+import {
+  recordRuntimeInteraction as recordRuntimeLoggerEntry,
+  clearRuntimeLog as clearRuntimeLogger,
+} from '../lib/hmiRules/runtimeInstrumenter';
 
 const LOCAL_STORAGE_KEY = 'mockpit_components_v1';
 const LOCAL_STORAGE_KEY_V2 = 'mockpit_components_by_screen_v2';
@@ -61,6 +71,21 @@ const LOCAL_STORAGE_ACTIVE_TRIP_KEY = 'mockpit_active_trip_v1';
 const LOCAL_STORAGE_FAVORITES_KEY = 'mockpit_favorites_v1';
 const LOCAL_STORAGE_RECENTS_KEY = 'mockpit_recents_v1';
 const LOCAL_STORAGE_CLIMATE_STATE_KEY = 'mockpit_climate_state_v1';
+const LOCAL_STORAGE_DISPLAY_CONFIG_KEY = 'mockpit_display_config_v1';
+const LOCAL_STORAGE_HMI_AUDIT_NOTES_KEY = 'mockpit_hmi_audit_notes_v1';
+const LOCAL_STORAGE_SELECTED_MUSIC_SERVICE_KEY = 'mockpit_selected_music_service_v1';
+
+const loadSavedSelectedMusicService = (): MusicServiceType => {
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_SELECTED_MUSIC_SERVICE_KEY);
+    if (val && (MUSIC_SERVICES as readonly string[]).includes(val)) {
+      return val as MusicServiceType;
+    }
+  } catch (e) {
+    console.error('Failed to load selected music service from localStorage', e);
+  }
+  return 'Spotify';
+};
 
 const DEFAULT_FAVORITES: FavoriteLocation[] = [
   {
@@ -465,6 +490,8 @@ export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number
   map: { width: 440, height: 280, maxHeight: 1080 },
   media: { width: 720, height: 480, maxHeight: 1080 },
   nowPlaying: { width: 420, height: 180, maxHeight: 1080 },
+  mediaPlaylists: { width: 540, height: 420, maxHeight: 1080 },
+  mediaDiscovery: { width: 620, height: 260, maxHeight: 1080 },
   climate: { width: 320, height: 150, maxHeight: 1080 },
   phone: { width: 340, height: 150, maxHeight: 1080 },
   driveMode: { width: 320, height: 160, maxHeight: 1080 },
@@ -825,6 +852,41 @@ function loadSavedVehicleBackground(): VehicleBackgroundSettings {
   return DEFAULT_VEHICLE_BACKGROUND;
 }
 
+function loadSavedDisplayConfig(): DisplayConfig {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_DISPLAY_CONFIG_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return {
+          displayDiagonalInches: Number(parsed.displayDiagonalInches) || DEFAULT_DISPLAY_CONFIG.displayDiagonalInches,
+          displayWidthMM: Number(parsed.displayWidthMM) || DEFAULT_DISPLAY_CONFIG.displayWidthMM,
+          displayHeightMM: Number(parsed.displayHeightMM) || DEFAULT_DISPLAY_CONFIG.displayHeightMM,
+          viewingDistanceMM: Number(parsed.viewingDistanceMM) || DEFAULT_DISPLAY_CONFIG.viewingDistanceMM,
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load display config from localStorage', e);
+  }
+  return DEFAULT_DISPLAY_CONFIG;
+}
+
+function loadSavedHmiAuditNotes(): Record<string, Record<string, { status: 'needs-review' | 'reviewed'; note: string }>> {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_HMI_AUDIT_NOTES_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load HMI audit notes from localStorage', e);
+  }
+  return {};
+}
+
 interface MockpitStore {
   vehicleState: VehicleState;
   screens: ScreenDefinition[];
@@ -841,6 +903,21 @@ interface MockpitStore {
   debugPanelHeight: number;
   dockOrder: string[];
   copiedComponent: CopiedComponentState;
+
+  // HMI Compliance Rules & Audit System
+  displayConfig: DisplayConfig;
+  hmiAuditNotes: Record<string, Record<string, { status: 'needs-review' | 'reviewed'; note: string }>>;
+  isAuditPanelOpen: boolean;
+  auditTargetScreenId: string;
+  runtimeLog: InteractionLogEntry[];
+  setAuditPanelOpen: (open: boolean) => void;
+  toggleAuditPanel: () => void;
+  setAuditTargetScreenId: (screenId: string) => void;
+  setAuditNote: (screenId: string, ruleId: string, note: string) => void;
+  toggleAuditReviewStatus: (screenId: string, ruleId: string) => void;
+  updateDisplayConfig: (partial: Partial<DisplayConfig>) => void;
+  addRuntimeLogEntry: (entry: Omit<InteractionLogEntry, 'id' | 'timestamp'>) => void;
+  clearRuntimeLog: () => void;
 
   // Settings, Palette & Canvas Grid
   isSettingsOpen: boolean;
@@ -925,6 +1002,10 @@ interface MockpitStore {
 
   // Ambient Simulation
   ambientTick: () => void;
+
+  // Shared Music Provider State
+  selectedMusicService: MusicServiceType;
+  setSelectedMusicService: (service: MusicServiceType | string) => void;
 
   // Vehicle State Actions
   setVehicleState: (partial: Partial<VehicleState>) => void;
@@ -1073,6 +1154,74 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   dockOrder: loadSavedDockOrder(initialScreensList),
   copiedComponent: null,
 
+  // HMI Compliance Rules & Audit System
+  displayConfig: loadSavedDisplayConfig(),
+  hmiAuditNotes: loadSavedHmiAuditNotes(),
+  isAuditPanelOpen: false,
+  auditTargetScreenId: 'current',
+  runtimeLog: [],
+  setAuditPanelOpen: (open: boolean) => set({ isAuditPanelOpen: open }),
+  toggleAuditPanel: () => set((state) => ({ isAuditPanelOpen: !state.isAuditPanelOpen })),
+  setAuditTargetScreenId: (screenId: string) => set({ auditTargetScreenId: screenId }),
+  setAuditNote: (screenId: string, ruleId: string, note: string) => {
+    set((state) => {
+      const screenNotes = state.hmiAuditNotes[screenId] || {};
+      const currentEntry = screenNotes[ruleId] || { status: 'needs-review' as const, note: '' };
+      const updatedNotes: Record<string, Record<string, { status: 'needs-review' | 'reviewed'; note: string }>> = {
+        ...state.hmiAuditNotes,
+        [screenId]: {
+          ...screenNotes,
+          [ruleId]: { ...currentEntry, note },
+        },
+      };
+      try {
+        localStorage.setItem(LOCAL_STORAGE_HMI_AUDIT_NOTES_KEY, JSON.stringify(updatedNotes));
+      } catch (e) {
+        console.error('Failed to save HMI audit notes', e);
+      }
+      return { hmiAuditNotes: updatedNotes };
+    });
+  },
+  toggleAuditReviewStatus: (screenId: string, ruleId: string) => {
+    set((state) => {
+      const screenNotes = state.hmiAuditNotes[screenId] || {};
+      const currentEntry = screenNotes[ruleId] || { status: 'needs-review' as const, note: '' };
+      const nextStatus: 'needs-review' | 'reviewed' = currentEntry.status === 'reviewed' ? 'needs-review' : 'reviewed';
+      const updatedNotes: Record<string, Record<string, { status: 'needs-review' | 'reviewed'; note: string }>> = {
+        ...state.hmiAuditNotes,
+        [screenId]: {
+          ...screenNotes,
+          [ruleId]: { ...currentEntry, status: nextStatus },
+        },
+      };
+      try {
+        localStorage.setItem(LOCAL_STORAGE_HMI_AUDIT_NOTES_KEY, JSON.stringify(updatedNotes));
+      } catch (e) {
+        console.error('Failed to save HMI audit review status', e);
+      }
+      return { hmiAuditNotes: updatedNotes };
+    });
+  },
+  updateDisplayConfig: (partial: Partial<DisplayConfig>) => {
+    set((state) => {
+      const updatedConfig = { ...state.displayConfig, ...partial };
+      try {
+        localStorage.setItem(LOCAL_STORAGE_DISPLAY_CONFIG_KEY, JSON.stringify(updatedConfig));
+      } catch (e) {
+        console.error('Failed to save display config', e);
+      }
+      return { displayConfig: updatedConfig };
+    });
+  },
+  addRuntimeLogEntry: (entry) => {
+    const full = recordRuntimeLoggerEntry(entry);
+    set((state) => ({ runtimeLog: [full, ...state.runtimeLog].slice(0, 200) }));
+  },
+  clearRuntimeLog: () => {
+    clearRuntimeLogger();
+    set({ runtimeLog: [] });
+  },
+
   journey: INITIAL_JOURNEY_STATE,
   setJourneyState: (partial) => {
     set((state) => ({
@@ -1220,6 +1369,19 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   searchResults: [],
   setSearchResults: (results) => set({ searchResults: results }),
   clearSearchResults: () => set({ searchResults: [] }),
+
+  selectedMusicService: loadSavedSelectedMusicService(),
+  setSelectedMusicService: (service) => {
+    const validService = ((MUSIC_SERVICES as readonly string[]).includes(service)
+      ? service
+      : 'Spotify') as MusicServiceType;
+    try {
+      localStorage.setItem(LOCAL_STORAGE_SELECTED_MUSIC_SERVICE_KEY, validService);
+    } catch (e) {
+      console.error('Failed to save selected music service to localStorage', e);
+    }
+    set({ selectedMusicService: validService });
+  },
 
   isSettingsOpen: false,
   toggleSettingsModal: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
@@ -2369,6 +2531,28 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           label: 'Now Playing',
           songTransition: 'fade',
           songInfoDisplayDuration: '2.5',
+          titleFontSize: 'default',
+          artistFontSize: 'default',
+          titleColor: '#f8fafc',
+          artistColor: '#94a3b8',
+        };
+        bindings = [];
+        break;
+      case 'mediaPlaylists':
+        width = 540;
+        height = 420;
+        staticProps = {
+          label: 'Playlists',
+        };
+        bindings = [];
+        break;
+      case 'mediaDiscovery':
+        width = 620;
+        height = 260;
+        staticProps = {
+          mode: 'trending',
+          layout: 'horizontal',
+          label: 'Discovery',
         };
         bindings = [];
         break;

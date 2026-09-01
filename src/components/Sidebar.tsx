@@ -138,6 +138,18 @@ const MEDIA_WIDGET_ITEMS: ComponentLibraryItem[] = [
           description: 'Compact now playing card with cover art, playback controls & auto-dismiss',
           defaultBindingDesc: 'Media now playing playback widget',
         },
+        {
+          type: 'mediaPlaylists' as ComponentType,
+          title: 'Playlists',
+          description: 'Provider-synchronized playlist grid with art thumbnails & track counts',
+          defaultBindingDesc: 'Streaming service playlists simulation',
+        },
+        {
+          type: 'mediaDiscovery' as ComponentType,
+          title: 'Discovery',
+          description: 'Visual album-art discovery with Trending ranks and For You suggestions',
+          defaultBindingDesc: 'Trending and curated suggestions discovery',
+        },
       ]
     : []),
 ];

@@ -27,6 +27,8 @@ import {
   Activity,
   Send,
   Navigation,
+  ListMusic,
+  Sparkles,
 } from 'lucide-react';
 import { ComponentType } from '../types';
 
@@ -53,6 +55,8 @@ export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
   miniNav: { type: 'miniNav', icon: Navigation, defaultColor: '#38bdf8' },
   media: { type: 'media', icon: Music, defaultColor: '#ec4899' },
   nowPlaying: { type: 'nowPlaying', icon: Music, defaultColor: '#ec4899' },
+  mediaPlaylists: { type: 'mediaPlaylists', icon: ListMusic, defaultColor: '#38bdf8' },
+  mediaDiscovery: { type: 'mediaDiscovery', icon: Sparkles, defaultColor: '#38bdf8' },
   phone: { type: 'phone', icon: Phone, defaultColor: '#10b981' },
   phoneContacts: { type: 'phoneContacts', icon: Users, defaultColor: '#a855f7' },
   phoneDialPad: { type: 'phoneDialPad', icon: Grid, defaultColor: '#10b981' },

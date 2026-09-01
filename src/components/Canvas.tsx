@@ -80,13 +80,13 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
   const transitionClasses = getTransitionClasses(transitionStyle, isActive);
   const setActiveView = useMockpitStore((s) => s.setActiveView);
 
-  // Preserve Home screen's full canvas footprint (inset-x-0 top-0 bottom-[84px]) vs non-Home focused apps (FOCUSED_APP_RECT)
+  // Preserve Home screen's full canvas footprint vs non-Home focused apps (FOCUSED_APP_RECT)
   const containerStyle = isHomeScreen
     ? {
         left: 0,
         top: 0,
         width: CANVAS_WIDTH,
-        height: CANVAS_HEIGHT - 84,
+        height: CANVAS_HEIGHT,
       }
     : {
         left: FOCUSED_APP_RECT.x,
@@ -131,27 +131,29 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
   return (
     <div
       key={activeView}
-      className={`absolute transition-all duration-300 ease-out z-20 overflow-hidden ${transitionClasses}`}
+      className={`absolute transition-all duration-300 ease-out z-10 overflow-hidden ${transitionClasses}`}
       style={containerStyle}
     >
       {focusedAppComponents.length > 0 ? (
         <div className="relative w-full h-full overflow-hidden">
           {[...focusedAppComponents]
             .sort((a, b) => {
-              const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : 10);
-              const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : 10);
+              const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
+              const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
               if (zA !== zB) return zA - zB;
               return focusedAppComponents.indexOf(a) - focusedAppComponents.indexOf(b);
             })
             .map((comp) => {
-              const baseZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : 10);
+              const baseZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
+              const offsetX = isHomeScreen ? 0 : FOCUSED_APP_RECT.x;
+              const offsetY = isHomeScreen ? 0 : FOCUSED_APP_RECT.y;
               return (
                 <div
                   key={comp.id}
                   className="absolute pointer-events-auto"
                   style={{
-                    left: comp.x,
-                    top: comp.y,
+                    left: comp.x - offsetX,
+                    top: comp.y - offsetY,
                     width: comp.width,
                     height: comp.height,
                     zIndex: baseZ,
@@ -849,30 +851,19 @@ export const Canvas: React.FC = () => {
             </div>
           )}
 
-          {/* Bottom Dock Container within the 84px Reserved Zone */}
-          <div
-            className={`absolute bottom-0 left-0 right-0 h-[84px] ${
-              !isPresentation
-                ? 'z-20 border-t-2 border-dashed border-sky-400/60 bg-sky-950/20 backdrop-blur-[1px]'
-                : 'z-40'
-            } flex items-center justify-center pointer-events-none`}
-          >
-            <BottomDock />
-          </div>
-
           {/* Editor Canvas for Screens (Active strictly in Editor Mode) */}
           {!isPresentation && (
-            <div className="absolute inset-x-0 top-0 bottom-0 z-30">
+            <div className="absolute inset-x-0 top-0 bottom-0 z-10">
               {[...components]
                 .sort((a, b) => {
-                  const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : 10);
-                  const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : 10);
+                  const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
+                  const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
                   if (zA !== zB) return zA - zB;
                   return components.indexOf(a) - components.indexOf(b);
                 })
                 .map((comp) => {
                   const isSelected = comp.id === selectedComponentId;
-                  const baseZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : 10);
+                  const baseZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
                   const effectiveZ = isSelected ? baseZ + 100 : baseZ;
 
                   return (
@@ -966,10 +957,6 @@ export const Canvas: React.FC = () => {
             * Animates every screen transition via the per-screen transitionStyle (slideUp/Down/Left/Right/fade).
           */}
           {isPresentation && (() => {
-            const focusOffset = activeView !== 'home'
-              ? { x: FOCUSED_APP_RECT.x, y: FOCUSED_APP_RECT.y }
-              : { x: 0, y: 0 };
-
             return (
               <>
                 <FocusedAppScreen
@@ -984,7 +971,6 @@ export const Canvas: React.FC = () => {
                   selectedComponentId={null}
                   isPresentation={true}
                   activeView={activeView}
-                  offset={focusOffset}
                 />
               </>
             );
@@ -1008,7 +994,7 @@ export const Canvas: React.FC = () => {
 
             return (
               <div
-                className={`absolute z-50 pointer-events-auto flex gap-3 transition-all duration-300 ease-out ${posStyles}`}
+                className={`absolute z-30 pointer-events-auto flex gap-3 transition-all duration-300 ease-out ${posStyles}`}
               >
                 {fullNotifs.map((comp) => (
                   <div
@@ -1031,6 +1017,17 @@ export const Canvas: React.FC = () => {
               </div>
             );
           })()}
+
+          {/* Bottom Dock Navigation - Permanent UI Chrome Layer (Always Topmost) */}
+          <div
+            className={`absolute bottom-0 left-0 right-0 h-[84px] z-[9999] ${
+              !isPresentation
+                ? 'border-t-2 border-dashed border-sky-400/60 bg-sky-950/20 backdrop-blur-[1px]'
+                : ''
+            } flex items-center justify-center pointer-events-none`}
+          >
+            <BottomDock />
+          </div>
 
 
           {/* On-Screen Touch Virtual Keyboard anchored to vehicle canvas */}

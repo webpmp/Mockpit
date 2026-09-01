@@ -9,7 +9,207 @@ import {
   Heart,
   Compass,
   TrendingUp,
+  ListMusic,
+  Folder,
 } from 'lucide-react';
+
+export const MUSIC_SERVICES = ['Spotify', 'Apple Music', 'YouTube Music', 'Amazon Music'] as const;
+export type MusicServiceType = (typeof MUSIC_SERVICES)[number];
+
+export interface PlaylistMock {
+  id: string;
+  name: string;
+  trackCount: number;
+  iconName?: string;
+  gradientBg: string;
+  accentColor: string;
+}
+
+export const MOCK_PLAYLISTS: Record<MusicServiceType, PlaylistMock[]> = {
+  Spotify: [
+    { id: 'sp-1', name: 'Discover Weekly', trackCount: 30, iconName: 'Compass', gradientBg: 'from-emerald-600 to-teal-900', accentColor: '#1DB954' },
+    { id: 'sp-2', name: 'Daily Mix 1', trackCount: 50, iconName: 'Radio', gradientBg: 'from-green-600 to-emerald-950', accentColor: '#1DB954' },
+    { id: 'sp-3', name: 'Liked Songs', trackCount: 214, iconName: 'Heart', gradientBg: 'from-teal-600 to-emerald-900', accentColor: '#1DB954' },
+    { id: 'sp-4', name: 'Road Trip Radio', trackCount: 42, iconName: 'Flame', gradientBg: 'from-emerald-500 to-teal-800', accentColor: '#1DB954' },
+    { id: 'sp-5', name: 'Release Radar', trackCount: 30, iconName: 'Sparkles', gradientBg: 'from-green-700 to-teal-950', accentColor: '#1DB954' },
+    { id: 'sp-6', name: 'Chill Vibes', trackCount: 65, iconName: 'Music', gradientBg: 'from-emerald-700 to-slate-900', accentColor: '#1DB954' },
+  ],
+  'Apple Music': [
+    { id: 'am-1', name: 'Favorites Mix', trackCount: 25, iconName: 'Heart', gradientBg: 'from-rose-600 to-pink-900', accentColor: '#FA243C' },
+    { id: 'am-2', name: 'New Music Mix', trackCount: 25, iconName: 'Sparkles', gradientBg: 'from-pink-600 to-rose-950', accentColor: '#FA243C' },
+    { id: 'am-3', name: 'Replay 2026', trackCount: 100, iconName: 'TrendingUp', gradientBg: 'from-red-600 to-rose-900', accentColor: '#FA243C' },
+    { id: 'am-4', name: 'Heavy Rotation', trackCount: 40, iconName: 'Flame', gradientBg: 'from-rose-500 to-red-950', accentColor: '#FA243C' },
+    { id: 'am-5', name: 'Chill Mix', trackCount: 25, iconName: 'Disc', gradientBg: 'from-pink-700 to-rose-950', accentColor: '#FA243C' },
+    { id: 'am-6', name: 'Spatial Audio Showcase', trackCount: 32, iconName: 'Zap', gradientBg: 'from-rose-700 to-slate-900', accentColor: '#FA243C' },
+  ],
+  'YouTube Music': [
+    { id: 'yt-1', name: 'My Supermix', trackCount: 100, iconName: 'Zap', gradientBg: 'from-red-600 to-amber-900', accentColor: '#FF0000' },
+    { id: 'yt-2', name: 'Discover Mix', trackCount: 50, iconName: 'Compass', gradientBg: 'from-amber-600 to-red-950', accentColor: '#FF0000' },
+    { id: 'yt-3', name: 'Liked Music', trackCount: 185, iconName: 'Heart', gradientBg: 'from-red-700 to-orange-950', accentColor: '#FF0000' },
+    { id: 'yt-4', name: 'Energy Booster', trackCount: 35, iconName: 'Flame', gradientBg: 'from-orange-600 to-red-900', accentColor: '#FF0000' },
+    { id: 'yt-5', name: 'Focus Flow', trackCount: 48, iconName: 'Disc', gradientBg: 'from-red-800 to-slate-900', accentColor: '#FF0000' },
+    { id: 'yt-6', name: 'Commute Beats', trackCount: 28, iconName: 'Radio', gradientBg: 'from-amber-700 to-red-950', accentColor: '#FF0000' },
+  ],
+  'Amazon Music': [
+    { id: 'az-1', name: 'My Discovery Mix', trackCount: 30, iconName: 'Sparkles', gradientBg: 'from-cyan-600 to-blue-900', accentColor: '#00A8E1' },
+    { id: 'az-2', name: 'Top Songs - Liked', trackCount: 150, iconName: 'Heart', gradientBg: 'from-sky-600 to-cyan-950', accentColor: '#00A8E1' },
+    { id: 'az-3', name: 'All Hits Radio', trackCount: 50, iconName: 'Radio', gradientBg: 'from-blue-600 to-indigo-950', accentColor: '#00A8E1' },
+    { id: 'az-4', name: 'Acoustic Chill', trackCount: 40, iconName: 'Music', gradientBg: 'from-cyan-700 to-sky-950', accentColor: '#00A8E1' },
+    { id: 'az-5', name: 'Road Trip USA', trackCount: 60, iconName: 'Compass', gradientBg: 'from-sky-500 to-blue-900', accentColor: '#00A8E1' },
+    { id: 'az-6', name: 'Ultra HD Hits', trackCount: 25, iconName: 'Zap', gradientBg: 'from-blue-700 to-slate-900', accentColor: '#00A8E1' },
+  ],
+};
+
+export const PROVIDER_ACCENTS: Record<MusicServiceType, { color: string; gradient: string; label: string }> = {
+  Spotify: { color: '#1DB954', gradient: 'from-emerald-500 to-teal-800', label: 'Spotify' },
+  'Apple Music': { color: '#FA243C', gradient: 'from-rose-500 to-pink-800', label: 'Apple Music' },
+  'YouTube Music': { color: '#FF0000', gradient: 'from-red-600 to-amber-800', label: 'YouTube Music' },
+  'Amazon Music': { color: '#00A8E1', gradient: 'from-cyan-500 to-blue-800', label: 'Amazon Music' },
+};
+
+export interface DiscoveryTrack {
+  id: string;
+  title: string;
+  artist: string;
+  album: string;
+  duration: string;
+  gradientFrom: string;
+  gradientTo: string;
+  iconName: string;
+  rank?: number;
+}
+
+export const DISCOVERY_TRACKS_TRENDING: DiscoveryTrack[] = [
+  {
+    id: 'tr-1',
+    rank: 1,
+    title: 'Cruel Summer',
+    artist: 'Taylor Swift',
+    album: 'Lover',
+    duration: '2:58',
+    gradientFrom: 'from-pink-600',
+    gradientTo: 'to-rose-900',
+    iconName: 'Flame',
+  },
+  {
+    id: 'tr-2',
+    rank: 2,
+    title: 'Paint The Town Red',
+    artist: 'Doja Cat',
+    album: 'Scarlet',
+    duration: '3:51',
+    gradientFrom: 'from-red-600',
+    gradientTo: 'to-amber-950',
+    iconName: 'Sparkles',
+  },
+  {
+    id: 'tr-3',
+    rank: 3,
+    title: 'Greedy',
+    artist: 'Tate McRae',
+    album: 'THINK LATER',
+    duration: '2:11',
+    gradientFrom: 'from-purple-600',
+    gradientTo: 'to-indigo-950',
+    iconName: 'TrendingUp',
+  },
+  {
+    id: 'tr-4',
+    rank: 4,
+    title: 'Strangers',
+    artist: 'Kenya Grace',
+    album: 'After Thought',
+    duration: '2:52',
+    gradientFrom: 'from-cyan-600',
+    gradientTo: 'to-blue-950',
+    iconName: 'Zap',
+  },
+  {
+    id: 'tr-5',
+    rank: 5,
+    title: 'Water',
+    artist: 'Tyla',
+    album: 'TYLA',
+    duration: '3:20',
+    gradientFrom: 'from-teal-600',
+    gradientTo: 'to-emerald-950',
+    iconName: 'Compass',
+  },
+  {
+    id: 'tr-6',
+    rank: 6,
+    title: 'Lovin On Me',
+    artist: 'Jack Harlow',
+    album: 'Lovin On Me',
+    duration: '2:18',
+    gradientFrom: 'from-amber-600',
+    gradientTo: 'to-red-950',
+    iconName: 'Radio',
+  },
+];
+
+export const DISCOVERY_TRACKS_FORYOU: DiscoveryTrack[] = [
+  {
+    id: 'fy-1',
+    title: 'Resonance',
+    artist: 'HOME',
+    album: 'Odyssey',
+    duration: '3:32',
+    gradientFrom: 'from-indigo-600',
+    gradientTo: 'to-purple-950',
+    iconName: 'Disc',
+  },
+  {
+    id: 'fy-2',
+    title: 'After Dark',
+    artist: 'Mr.Kitty',
+    album: 'Time',
+    duration: '4:17',
+    gradientFrom: 'from-violet-600',
+    gradientTo: 'to-slate-950',
+    iconName: 'Music',
+  },
+  {
+    id: 'fy-3',
+    title: 'Pacific Coast Highway',
+    artist: 'Kavinsky',
+    album: 'OutRun',
+    duration: '4:18',
+    gradientFrom: 'from-rose-600',
+    gradientTo: 'to-orange-950',
+    iconName: 'Compass',
+  },
+  {
+    id: 'fy-4',
+    title: 'Sunset Lover',
+    artist: 'Petit Biscuit',
+    album: 'Presence',
+    duration: '3:57',
+    gradientFrom: 'from-amber-500',
+    gradientTo: 'to-pink-900',
+    iconName: 'Sparkles',
+  },
+  {
+    id: 'fy-5',
+    title: 'Daylight',
+    artist: 'David Kushner',
+    album: 'Daylight',
+    duration: '3:32',
+    gradientFrom: 'from-emerald-600',
+    gradientTo: 'to-cyan-950',
+    iconName: 'Heart',
+  },
+  {
+    id: 'fy-6',
+    title: 'Starboy',
+    artist: 'The Weeknd ft. Daft Punk',
+    album: 'Starboy',
+    duration: '3:50',
+    gradientFrom: 'from-purple-600',
+    gradientTo: 'to-pink-900',
+    iconName: 'Zap',
+  },
+];
 
 export interface Track {
   id: string;
@@ -197,6 +397,10 @@ export const renderCoverIcon = (iconName: string, className = 'w-5 h-5 text-whit
       return <Compass className={className} />;
     case 'TrendingUp':
       return <TrendingUp className={className} />;
+    case 'ListMusic':
+      return <ListMusic className={className} />;
+    case 'Folder':
+      return <Folder className={className} />;
     default:
       return <Music className={className} />;
   }

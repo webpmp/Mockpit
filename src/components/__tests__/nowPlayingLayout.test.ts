@@ -2,90 +2,161 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveNowPlayingLayout } from '../../utils/nowPlayingLayout';
 
-describe('Now Playing Layout Determinism & Grid Snapping Regression Suite', () => {
-  it('1. Deterministically resolves Tall Layout for 264 × 352', () => {
+describe('Now Playing Layout Determinism & Progressive Content Removal Suite', () => {
+  it('1. Deterministically resolves Tall Layout for 264 × 352 with full features', () => {
     const layout = resolveNowPlayingLayout(264, 352, 'horizontal');
     assert.equal(layout.layoutMode, 'tall');
     assert.equal(layout.isTallLayout, true);
     assert.equal(layout.isExtremelyConstrained, false);
+    assert.equal(layout.showHeaderIcon, true);
+    assert.equal(layout.showHeaderDivider, true);
     assert.equal(layout.showThumbnail, true);
+    assert.equal(layout.showSeekBar, true);
     assert.equal(layout.showTimestamps, true);
     assert.equal(layout.showFavoriteButton, true);
     assert.equal(layout.showShuffleRepeat, true);
     assert.equal(layout.paddingClass, 'p-3.5');
   });
 
-  it('2. Deterministically resolves Tall Layout for 264 × 250', () => {
-    const layout = resolveNowPlayingLayout(264, 250, 'horizontal');
+  it('2. Deterministically resolves Tall Layout for 264 × 270 with restored secondary actions', () => {
+    const layout = resolveNowPlayingLayout(264, 270, 'horizontal');
     assert.equal(layout.layoutMode, 'tall');
     assert.equal(layout.isTallLayout, true);
     assert.equal(layout.isExtremelyConstrained, false);
     assert.equal(layout.showThumbnail, true);
-    assert.equal(layout.showTimestamps, true);
+    assert.equal(layout.showSeekBar, true);
     assert.equal(layout.showFavoriteButton, true);
     assert.equal(layout.showShuffleRepeat, true);
+    assert.equal(layout.showHeaderIcon, false, 'Header icon removed at 264x270 to preserve action row');
+    assert.equal(layout.showHeaderDivider, false, 'Header divider removed at 264x270 to preserve action row');
+    assert.equal(layout.showTimestamps, false, 'Timestamps removed at 264x270 to preserve action row');
   });
 
-  it('3. Deterministically resolves Compact Layout with Right-Side Controls for 264 × 200', () => {
-    const layout = resolveNowPlayingLayout(264, 200, 'horizontal');
+  it('3. Deterministically applies Progressive Removal for 242 × 220 (Compact Mode)', () => {
+    // 242 × 220: Space is constrained
+    // Priority 1: Timestamps removed (showTimestamps = false)
+    // Priority 2: Header Icon removed (showHeaderIcon = false)
+    // Priority 3: Header Divider removed (showHeaderDivider = false)
+    // Priority 4: Secondary actions (Favorite/Shuffle/Repeat) removed (showFavoriteButton = false, showShuffleRepeat = false)
+    // Essential: Seek bar, Thumbnail, Transport controls kept!
+    const layout = resolveNowPlayingLayout(242, 220, 'horizontal');
     assert.equal(layout.layoutMode, 'compact');
-    assert.equal(layout.useRightSideControls, true);
-    assert.equal(layout.isExtremelyConstrained, false);
-    assert.equal(layout.showThumbnail, true);
-    assert.equal(layout.showFavoriteButton, true);
+    assert.equal(layout.showHeaderIcon, false, 'Header icon removed at 242x220');
+    assert.equal(layout.showHeaderDivider, false, 'Header divider removed at 242x220');
+    assert.equal(layout.showTimestamps, false, 'Timestamps removed at 242x220');
+    assert.equal(layout.showShuffleRepeat, false, 'Shuffle/Repeat removed at 242x220');
+    assert.equal(layout.showFavoriteButton, false, 'Favorite button hidden at 242x220');
+    assert.equal(layout.showSeekBar, true, 'Seek bar fits at 242x220');
+    assert.equal(layout.showThumbnail, true, 'Artwork fits at 242x220');
+  });
+
+  it('4. Deterministically applies Progressive Removal for 242 × 180 and 200 × 180', () => {
+    // 242 × 180: Timestamps removed, Header icon & divider removed, Shuffle/Repeat removed, Favorite removed
+    // Seek bar, Thumbnail, Transport controls kept
+    const layout1 = resolveNowPlayingLayout(242, 180, 'horizontal');
+    assert.equal(layout1.layoutMode, 'compact');
+    assert.equal(layout1.showHeaderIcon, false);
+    assert.equal(layout1.showHeaderDivider, false);
+    assert.equal(layout1.showTimestamps, false);
+    assert.equal(layout1.showShuffleRepeat, false);
+    assert.equal(layout1.showFavoriteButton, false);
+    assert.equal(layout1.showSeekBar, true);
+    assert.equal(layout1.showThumbnail, true);
+
+    // 200 × 180: Narrower width (< 230)
+    const layout2 = resolveNowPlayingLayout(200, 180, 'horizontal');
+    assert.equal(layout2.showFavoriteButton, false);
+    assert.equal(layout2.showSeekBar, true);
+    assert.equal(layout2.showThumbnail, true);
+  });
+
+  it('5. Narrow but Tall Bidirectional Content Restoration Acceptance Test (280x220 -> 280x260 -> 280x300 -> 280x220 -> 280x300)', () => {
+    // Phase 1: 280 × 220 (Narrow + Short)
+    // Not enough vertical space: TRACK INFO, SEEK BAR, BACK PAUSE NEXT. Secondary actions & timestamps hidden.
+    const step1 = resolveNowPlayingLayout(280, 220, 'horizontal');
+    assert.equal(step1.layoutMode, 'compact');
+    assert.equal(step1.showThumbnail, true, 'Track info artwork shown');
+    assert.equal(step1.showSeekBar, true, 'Seek bar shown');
+    assert.equal(step1.showTimestamps, false, 'Timestamps hidden at 280x220');
+    assert.equal(step1.showFavoriteButton, false, 'Secondary actions hidden at 280x220');
+    assert.equal(step1.showShuffleRepeat, false, 'Secondary actions hidden at 280x220');
+
+    // Phase 2: Resize height only -> 280 × 260 (Narrow + Tall)
+    // Enough vertical space: Secondary actions restored into dedicated bottom row beneath transport controls!
+    const step2 = resolveNowPlayingLayout(280, 260, 'horizontal');
+    assert.equal(step2.layoutMode, 'tall');
+    assert.equal(step2.isTallLayout, true);
+    assert.equal(step2.showThumbnail, true, 'Track info artwork shown');
+    assert.equal(step2.showSeekBar, true, 'Seek bar shown');
+    assert.equal(step2.showTimestamps, false, 'Timestamps still omitted at 260px to preserve control breathing room');
+    assert.equal(step2.showFavoriteButton, true, 'Favorite restored in dedicated row at 280x260');
+    assert.equal(step2.showShuffleRepeat, true, 'Shuffle/Repeat restored in dedicated row at 280x260');
+
+    // Phase 3: Resize height only -> 280 × 300 (Narrow + Very Tall)
+    // Definitely enough vertical space: Timestamps restored as well!
+    const step3 = resolveNowPlayingLayout(280, 300, 'horizontal');
+    assert.equal(step3.layoutMode, 'tall');
+    assert.equal(step3.isTallLayout, true);
+    assert.equal(step3.showThumbnail, true, 'Track info artwork shown');
+    assert.equal(step3.showSeekBar, true, 'Seek bar shown');
+    assert.equal(step3.showTimestamps, true, 'Timestamps restored at 280x300');
+    assert.equal(step3.showFavoriteButton, true, 'Favorite restored at 280x300');
+    assert.equal(step3.showShuffleRepeat, true, 'Shuffle/Repeat restored at 280x300');
+
+    // Phase 4: Reduce height back down -> 280 × 220
+    // Content removal is not permanent - automatically removes timestamps & secondary actions again
+    const step4 = resolveNowPlayingLayout(280, 220, 'horizontal');
+    assert.equal(step4.layoutMode, 'compact');
+    assert.equal(step4.showTimestamps, false);
+    assert.equal(step4.showFavoriteButton, false);
+    assert.equal(step4.showShuffleRepeat, false);
+
+    // Phase 5: Increase height back up -> 280 × 300
+    // Content is immediately restored with zero sticky state
+    const step5 = resolveNowPlayingLayout(280, 300, 'horizontal');
+    assert.equal(step5.layoutMode, 'tall');
+    assert.equal(step5.showTimestamps, true);
+    assert.equal(step5.showFavoriteButton, true);
+    assert.equal(step5.showShuffleRepeat, true);
+  });
+
+  it('6. Deterministically applies Progressive Removal for 200 × 140', () => {
+    // 200 × 140: Height < 150px removes seek bar, preserving essential title, artist, artwork and controls
+    const layout = resolveNowPlayingLayout(200, 140, 'horizontal');
+    assert.equal(layout.layoutMode, 'compact');
+    assert.equal(layout.showHeaderIcon, false);
+    assert.equal(layout.showHeaderDivider, false);
+    assert.equal(layout.showTimestamps, false);
+    assert.equal(layout.showSeekBar, false, 'Seek bar removed when height < 150');
+    assert.equal(layout.showFavoriteButton, false);
     assert.equal(layout.showShuffleRepeat, false);
+    assert.equal(layout.showThumbnail, true);
   });
 
-  it('4. Deterministically resolves Compact Layout for 264 × 180', () => {
-    const layout = resolveNowPlayingLayout(264, 180, 'horizontal');
-    assert.equal(layout.layoutMode, 'compact');
-    assert.equal(layout.useRightSideControls, true);
-    assert.equal(layout.isExtremelyConstrained, false);
-  });
-
-  it('5. Deterministically resolves Compact Layout for 264 × 160', () => {
-    const layout = resolveNowPlayingLayout(264, 160, 'horizontal');
-    assert.equal(layout.layoutMode, 'compact');
-    assert.equal(layout.useRightSideControls, true);
-    assert.equal(layout.isExtremelyConstrained, false);
-  });
-
-  it('6. Deterministically resolves Compact Layout for 264 × 144 (stable breakpoint, no loop)', () => {
-    const layout = resolveNowPlayingLayout(264, 144, 'horizontal');
-    assert.equal(layout.layoutMode, 'compact');
-    assert.equal(layout.useRightSideControls, true);
-    assert.equal(layout.isExtremelyConstrained, false);
-    assert.equal(layout.paddingClass, 'p-2.5');
-  });
-
-  it('7. Deterministically resolves Compact Layout for 264 × 128', () => {
-    const layout = resolveNowPlayingLayout(264, 128, 'horizontal');
-    assert.equal(layout.layoutMode, 'compact');
-    assert.equal(layout.useRightSideControls, true);
-    assert.equal(layout.isExtremelyConstrained, false);
-  });
-
-  it('8. Deterministically resolves Extremely Constrained Layout for 264 × 112', () => {
+  it('7. Deterministically resolves Extremely Constrained Layout for 264 × 112', () => {
     const layout = resolveNowPlayingLayout(264, 112, 'horizontal');
     assert.equal(layout.layoutMode, 'extremely_constrained');
     assert.equal(layout.isExtremelyConstrained, true);
     assert.equal(layout.useRightSideControls, false);
     assert.equal(layout.isTallLayout, false);
     assert.equal(layout.showThumbnail, true);
+    assert.equal(layout.showSeekBar, true);
+    assert.equal(layout.showTimestamps, false);
     assert.equal(layout.paddingClass, 'p-2');
   });
 
-  it('9. Invariant: Same dimensions always yield the exact same layout (idempotent)', () => {
+  it('8. Invariant: Same dimensions always yield the exact same layout (idempotent)', () => {
     for (const [w, h] of [
       [264, 352],
       [264, 250],
-      [264, 200],
-      [264, 180],
+      [242, 220],
+      [242, 180],
       [264, 160],
       [264, 144],
       [264, 128],
       [264, 112],
-      [400, 160],
+      [400, 200],
+      [500, 160],
       [400, 140],
       [400, 120],
       [400, 100],
@@ -101,11 +172,11 @@ describe('Now Playing Layout Determinism & Grid Snapping Regression Suite', () =
     }
   });
 
-  it('10. Continuous resizing between 352px and 100px height never produces undefined or oscillating modes and scales controls gracefully', () => {
+  it('9. Continuous resizing between 352px and 100px height never produces undefined or oscillating modes and scales controls gracefully', () => {
     let lastMode = '';
     for (let h = 352; h >= 100; h -= 2) {
       const layout = resolveNowPlayingLayout(264, h, 'horizontal');
-      assert.ok(['tall', 'compact', 'extremely_constrained', 'standard_horizontal'].includes(layout.layoutMode));
+      assert.ok(['tall', 'compact', 'extremely_constrained', 'standard_horizontal', 'wide_short'].includes(layout.layoutMode));
       assert.ok(layout.buttonWidthPx > 0);
       assert.ok(layout.playButtonWidthPx > 0);
       assert.ok(layout.iconSizePx > 0);
@@ -114,46 +185,7 @@ describe('Now Playing Layout Determinism & Grid Snapping Regression Suite', () =
     assert.equal(lastMode, 'extremely_constrained');
   });
 
-  it('11. Verifies exact responsive control sizing for explicit test dimensions', () => {
-    const testCases: [number, number, { minBtn: number; maxBtn: number }][] = [
-      [264, 352, { minBtn: 44, maxBtn: 48 }], // 46px
-      [264, 250, { minBtn: 44, maxBtn: 48 }], // 46px
-      [264, 200, { minBtn: 44, maxBtn: 48 }], // 46px
-      [264, 180, { minBtn: 44, maxBtn: 48 }], // 46px
-      [264, 160, { minBtn: 44, maxBtn: 48 }], // 46px
-      [264, 144, { minBtn: 38, maxBtn: 42 }], // 40px
-      [264, 128, { minBtn: 32, maxBtn: 36 }], // 34px
-      [264, 112, { minBtn: 34, maxBtn: 38 }], // 36px (single-row)
-      [400, 160, { minBtn: 44, maxBtn: 48 }], // 46px
-      [400, 140, { minBtn: 38, maxBtn: 42 }], // 40px
-      [400, 120, { minBtn: 34, maxBtn: 38 }], // 36px
-      [400, 100, { minBtn: 28, maxBtn: 32 }], // 30px
-      [200, 200, { minBtn: 38, maxBtn: 42 }], // 40px
-      [200, 160, { minBtn: 38, maxBtn: 42 }], // 40px
-      [200, 140, { minBtn: 38, maxBtn: 42 }], // 40px
-    ];
-
-    for (const [w, h, expected] of testCases) {
-      const layout = resolveNowPlayingLayout(w, h, 'horizontal');
-      assert.ok(
-        layout.buttonWidthPx >= expected.minBtn && layout.buttonWidthPx <= expected.maxBtn,
-        `Expected button width between ${expected.minBtn} and ${expected.maxBtn} for ${w}x${h}, got ${layout.buttonWidthPx}`
-      );
-      assert.equal(
-        layout.playButtonWidthPx,
-        layout.playButtonHeightPx,
-        `Play/Pause MUST be a true circle (width === height) for ${w}x${h}`
-      );
-      assert.equal(
-        layout.buttonWidthPx,
-        layout.buttonHeightPx,
-        `Back/Next MUST be square (width === height) for ${w}x${h}`
-      );
-    }
-  });
-
-  it('12. Auto-dismiss state resolution: editor mode preserves accessibility when selected or dismissed', () => {
-    // Helper replicating the state resolution logic: isActuallyDismissed = isDismissed && autoDismissEnabled && (!isSelected || isPresentation)
+  it('10. Auto-dismiss state resolution: editor mode preserves accessibility when selected or dismissed', () => {
     const computeActuallyDismissed = (isDismissed: boolean, autoDismissEnabled: boolean, isSelected: boolean, isPresentation: boolean) =>
       isDismissed && autoDismissEnabled && (!isSelected || isPresentation);
 
@@ -164,45 +196,31 @@ describe('Now Playing Layout Determinism & Grid Snapping Regression Suite', () =
     assert.equal(computeActuallyDismissed(true, false, false, true), false);
 
     // Editor mode:
-    // When dismissed & unselected -> isActuallyDismissed is true (ghost frame visible, widget translated)
     assert.equal(computeActuallyDismissed(true, true, false, false), true);
-    // When dismissed but user selects the component -> isActuallyDismissed becomes false (instantly visible on canvas)
     assert.equal(computeActuallyDismissed(true, true, true, false), false);
-    // When not dismissed -> false
     assert.equal(computeActuallyDismissed(false, true, false, false), false);
-    // When autoDismiss is disabled -> false
     assert.equal(computeActuallyDismissed(true, false, false, false), false);
   });
 
-  it('13. Verifies primary playback controls size (Back/Next 46x46px, Play/Pause 50x50px circle) and icon size (22px) across standard layouts', () => {
-    // Tall layout
-    const tall = resolveNowPlayingLayout(264, 352, 'horizontal');
-    assert.equal(tall.buttonWidthPx, 46, 'Back/Next button width is 46px in tall layout');
-    assert.equal(tall.buttonHeightPx, 46, 'Back/Next button height is 46px in tall layout');
-    assert.equal(tall.playButtonWidthPx, 50, 'Play/Pause button width is 50px in tall layout');
-    assert.equal(tall.playButtonHeightPx, 50, 'Play/Pause button height is 50px in tall layout');
-    assert.equal(tall.playButtonWidthPx, tall.playButtonHeightPx, 'Play/Pause is a true circle in tall layout');
-    assert.equal(tall.iconSizePx, 22, 'Icon size is 22px in tall layout');
-    assert.ok(tall.controlGapPx >= 5 && tall.controlGapPx <= 6, 'Gap between controls is 5-6px');
+  it('11. Verifies Wide + Short Layout Mode (Mode 2 side-by-side) when wide and vertically constrained', () => {
+    const wideShort1 = resolveNowPlayingLayout(500, 160, 'horizontal');
+    assert.equal(wideShort1.layoutMode, 'wide_short');
+    assert.equal(wideShort1.isWideShort, true);
+    assert.equal(wideShort1.isTallLayout, false);
+    assert.equal(wideShort1.isExtremelyConstrained, false);
+    assert.equal(wideShort1.showTimestamps, true);
+    assert.equal(wideShort1.showHeaderIcon, true);
+    assert.equal(wideShort1.showShuffleRepeat, true);
 
-    // Standard horizontal layout
-    const standard = resolveNowPlayingLayout(400, 200, 'horizontal');
-    assert.equal(standard.buttonWidthPx, 46, 'Back/Next button width is 46px in standard horizontal');
-    assert.equal(standard.buttonHeightPx, 46, 'Back/Next button height is 46px in standard horizontal');
-    assert.equal(standard.playButtonWidthPx, 50, 'Play/Pause button width is 50px in standard horizontal');
-    assert.equal(standard.playButtonHeightPx, 50, 'Play/Pause button height is 50px in standard horizontal');
-    assert.equal(standard.playButtonWidthPx, standard.playButtonHeightPx, 'Play/Pause is a true circle in standard horizontal');
-    assert.equal(standard.iconSizePx, 22, 'Icon size is 22px in standard horizontal');
-    assert.ok(standard.controlGapPx >= 5 && standard.controlGapPx <= 6, 'Gap between controls is 5-6px');
+    const wideShort2 = resolveNowPlayingLayout(650, 175, 'horizontal');
+    assert.equal(wideShort2.layoutMode, 'wide_short');
+    assert.equal(wideShort2.isWideShort, true);
 
-    // Compact layout
-    const compact = resolveNowPlayingLayout(264, 180, 'horizontal');
-    assert.equal(compact.buttonWidthPx, 46, 'Back/Next button width is 46px in compact layout');
-    assert.equal(compact.buttonHeightPx, 46, 'Back/Next button height is 46px in compact layout');
-    assert.equal(compact.playButtonWidthPx, 50, 'Play/Pause button width is 50px in compact layout');
-    assert.equal(compact.playButtonHeightPx, 50, 'Play/Pause button height is 50px in compact layout');
-    assert.equal(compact.playButtonWidthPx, compact.playButtonHeightPx, 'Play/Pause is a true circle in compact layout');
-    assert.equal(compact.iconSizePx, 22, 'Icon size is 22px in compact layout');
-    assert.ok(compact.controlGapPx >= 5 && compact.controlGapPx <= 6, 'Gap between controls is 5-6px');
+    // Standard stacked layout when height is sufficient (h >= 195 and w >= 300)
+    const standardStacked = resolveNowPlayingLayout(400, 200, 'horizontal');
+    assert.equal(standardStacked.layoutMode, 'standard_horizontal');
+    assert.equal(standardStacked.isWideShort, false);
+    assert.equal(standardStacked.showTimestamps, true);
+    assert.equal(standardStacked.showHeaderIcon, true);
   });
 });

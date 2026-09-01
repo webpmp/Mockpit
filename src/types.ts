@@ -210,6 +210,8 @@ export type ComponentType =
   | 'map'
   | 'media'
   | 'nowPlaying'
+  | 'mediaPlaylists'
+  | 'mediaDiscovery'
   | 'climate'
   | 'phone'
   | 'driveMode'
@@ -325,6 +327,9 @@ export type ComponentsByScreen = Record<string, ComponentInstance[]>;
 export const APP_SCREEN_VIEWS: Record<string, string> = {
   map: 'navigation',
   media: 'media',
+  nowPlaying: 'media',
+  mediaPlaylists: 'media',
+  mediaDiscovery: 'media',
   phone: 'phone',
   phoneContacts: 'phone',
   phoneDialPad: 'phone',

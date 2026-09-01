@@ -12,7 +12,6 @@ import {
   Radio,
   ListMusic,
   Disc,
-  Volume2,
   TrendingUp,
   Sparkles,
   Flame,
@@ -34,10 +33,12 @@ import {
   SAMPLE_ALBUMS,
   renderCoverIcon,
   formatMediaTime,
+  MUSIC_SERVICES,
+  MusicServiceType,
 } from '../data/mediaData';
 
-const SERVICES = ['Spotify', 'Apple Music', 'YouTube Music', 'Amazon Music'] as const;
-type ServiceType = (typeof SERVICES)[number];
+const SERVICES = MUSIC_SERVICES;
+type ServiceType = MusicServiceType;
 
 interface MusicMediaPlayerProps {
   component: ComponentInstance;
@@ -55,9 +56,11 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
   headerLabel,
 }) => {
   const updateComponentStaticProps = useMockpitStore((s) => s.updateComponentStaticProps);
+  const selectedMusicService = useMockpitStore((s) => s.selectedMusicService);
+  const setSelectedMusicService = useMockpitStore((s) => s.setSelectedMusicService);
 
   const currentService: ServiceType =
-    (component.staticProps?.service as ServiceType) || 'Spotify';
+    (selectedMusicService as ServiceType) || (component.staticProps?.service as ServiceType) || 'Spotify';
 
   const [activeTab, setActiveTab] = useState<'lastPlayed' | 'library' | 'search'>('lastPlayed');
   const [currentTrack, setCurrentTrack] = useState<Track>(SAMPLE_TRACKS[0]);
@@ -85,6 +88,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
   }, [isPlaying, currentTrack.durationSec]);
 
   const handleSelectService = (serviceName: ServiceType) => {
+    setSelectedMusicService(serviceName);
     updateComponentStaticProps(component.id, { service: serviceName });
   };
 
@@ -471,12 +475,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
         </div>
 
         {/* Playback Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <Volume2 className="w-4 h-4" />
-            <span className="text-xs font-mono font-medium">Stereo</span>
-          </div>
-
+        <div className="flex items-center justify-center">
           <div className="flex items-center gap-3.5">
             <button
               onClick={handlePrevTrack}
@@ -509,10 +508,6 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
             >
               <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-          </div>
-
-          <div className="text-xs font-mono text-slate-400 font-bold uppercase">
-            {currentService.split(' ')[0]}
           </div>
         </div>
       </div>

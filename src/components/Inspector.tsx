@@ -643,6 +643,8 @@ export const Inspector: React.FC = () => {
   const updateBinding = useMockpitStore((s) => s.updateBinding);
   const removeBinding = useMockpitStore((s) => s.removeBinding);
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
+  const selectedMusicService = useMockpitStore((s) => s.selectedMusicService);
+  const setSelectedMusicService = useMockpitStore((s) => s.setSelectedMusicService);
 
   const selectedComp =
     components.find((c) => c.id === selectedComponentId) ||
@@ -1370,8 +1372,11 @@ export const Inspector: React.FC = () => {
                   Music Service
                 </label>
                 <select
-                  value={selectedComp.staticProps.service || 'Spotify'}
-                  onChange={(e) => handleStaticPropChange('service', e.target.value)}
+                  value={selectedMusicService || selectedComp.staticProps.service || 'Spotify'}
+                  onChange={(e) => {
+                    handleStaticPropChange('service', e.target.value);
+                    setSelectedMusicService(e.target.value);
+                  }}
                   className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
                 >
                   <option value="Spotify">Spotify</option>
@@ -1379,6 +1384,99 @@ export const Inspector: React.FC = () => {
                   <option value="YouTube Music">YouTube Music</option>
                   <option value="Amazon Music">Amazon Music</option>
                 </select>
+              </div>
+            )}
+
+            {selectedComp.type === 'mediaPlaylists' && (
+              <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
+                  Synchronized Music Service
+                </label>
+                <select
+                  value={selectedMusicService || 'Spotify'}
+                  onChange={(e) => {
+                    setSelectedMusicService(e.target.value);
+                  }}
+                  className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                >
+                  <option value="Spotify">Spotify</option>
+                  <option value="Apple Music">Apple Music</option>
+                  <option value="YouTube Music">YouTube Music</option>
+                  <option value="Amazon Music">Amazon Music</option>
+                </select>
+                <span className="text-[10px] font-mono text-slate-400 block">
+                  Synchronized across Media components
+                </span>
+              </div>
+            )}
+
+            {selectedComp.type === 'mediaDiscovery' && (
+              <div className="space-y-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                  Discovery Settings
+                </span>
+
+                {/* Content Mode */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                  <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
+                    Content Mode
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleStaticPropChange('mode', 'trending')}
+                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                        (selectedComp.staticProps?.mode || 'trending') === 'trending'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      Trending
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStaticPropChange('mode', 'foryou')}
+                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                        selectedComp.staticProps?.mode === 'foryou'
+                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-sm'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      For You
+                    </button>
+                  </div>
+                </div>
+
+                {/* Layout Orientation */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                  <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
+                    Layout
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleStaticPropChange('layout', 'horizontal')}
+                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                        (selectedComp.staticProps?.layout || 'horizontal') === 'horizontal'
+                          ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      Horizontal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStaticPropChange('layout', 'vertical')}
+                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                        selectedComp.staticProps?.layout === 'vertical'
+                          ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      Vertical
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1584,6 +1682,99 @@ export const Inspector: React.FC = () => {
                   <p className="text-[10px] text-slate-400 font-sans leading-tight pt-0.5">
                     Controls how long song info stays visible when height is &lt; 125px before returning to scrubber.
                   </p>
+                </div>
+
+                {/* Track Typography & Colors */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2.5">
+                  <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                    Track Typography & Colors
+                  </span>
+
+                  {/* Song Title Controls */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-300 font-mono block font-semibold flex items-center justify-between">
+                      <span>Song Title</span>
+                      <span className="text-[9px] text-slate-400 font-normal">Font & Color</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-mono block mb-1">Font Size</label>
+                        <select
+                          value={selectedComp.staticProps.titleFontSize || 'default'}
+                          onChange={(e) => handleStaticPropChange('titleFontSize', e.target.value)}
+                          className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                        >
+                          <option value="default">Default (Scale)</option>
+                          <option value="xs">XS (Extra Small)</option>
+                          <option value="sm">SM (Small)</option>
+                          <option value="md">MD (Medium)</option>
+                          <option value="lg">LG (Large)</option>
+                          <option value="xl">XL (Extra Large)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-mono block mb-1">Color</label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.titleColor || '#f8fafc'}
+                            onChange={(e) => handleStaticPropChange('titleColor', e.target.value)}
+                            className="w-7 h-7 rounded bg-transparent border-none cursor-pointer shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={selectedComp.staticProps.titleColor || '#f8fafc'}
+                            onChange={(e) => handleStaticPropChange('titleColor', e.target.value)}
+                            placeholder="#f8fafc"
+                            className="w-full bg-slate-900 px-1.5 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Artist Controls */}
+                  <div className="space-y-1.5 pt-2 border-t border-slate-700/50">
+                    <label className="text-[10px] text-slate-300 font-mono block font-semibold flex items-center justify-between">
+                      <span>Artist</span>
+                      <span className="text-[9px] text-slate-400 font-normal">Font & Color</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-mono block mb-1">Font Size</label>
+                        <select
+                          value={selectedComp.staticProps.artistFontSize || 'default'}
+                          onChange={(e) => handleStaticPropChange('artistFontSize', e.target.value)}
+                          className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                        >
+                          <option value="default">Default (Scale)</option>
+                          <option value="xs">XS (Extra Small)</option>
+                          <option value="sm">SM (Small)</option>
+                          <option value="md">MD (Medium)</option>
+                          <option value="lg">LG (Large)</option>
+                          <option value="xl">XL (Extra Large)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-mono block mb-1">Color</label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.artistColor || '#94a3b8'}
+                            onChange={(e) => handleStaticPropChange('artistColor', e.target.value)}
+                            className="w-7 h-7 rounded bg-transparent border-none cursor-pointer shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={selectedComp.staticProps.artistColor || '#94a3b8'}
+                            onChange={(e) => handleStaticPropChange('artistColor', e.target.value)}
+                            placeholder="#94a3b8"
+                            className="w-full bg-slate-900 px-1.5 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -2864,7 +3055,8 @@ export const Inspector: React.FC = () => {
                   key !== 'cancelLabel' &&
                   key !== 'sendingLabel' &&
                   key !== 'successLabel' &&
-                  !(selectedComp.type === 'nowPlaying' && (key === 'orientation' || key === 'autoDismissEnabled' || key === 'autoDismissSeconds' || key === 'dismissDirection' || key === 'slideDurationMs' || key === 'trackId' || key === 'songTransition' || key === 'songInfoDisplayDuration')) &&
+                  !(selectedComp.type === 'nowPlaying' && (key === 'orientation' || key === 'autoDismissEnabled' || key === 'autoDismissSeconds' || key === 'dismissDirection' || key === 'slideDurationMs' || key === 'trackId' || key === 'songTransition' || key === 'songInfoDisplayDuration' || key === 'titleFontSize' || key === 'artistFontSize' || key === 'titleColor' || key === 'artistColor')) &&
+                  !(selectedComp.type === 'mediaDiscovery' && (key === 'mode' || key === 'layout')) &&
                   !(selectedComp.type === 'overheadVisualization' && key === 'color')
               )
               .map(([key, val]) => {

@@ -116,27 +116,25 @@ const getDismissTransform = (
   direction: DismissDirection = 'down',
   comp: { x?: number; y?: number; width?: number; height?: number } = {}
 ): string => {
-  const x = comp.x ?? 0;
-  const y = comp.y ?? 0;
   const w = comp.width ?? 400;
   const h = comp.height ?? 200;
 
   switch (direction) {
     case 'left': {
-      const dist = Math.max(w + 50, x + w + 50);
+      const dist = Math.max(w + 30, 100);
       return `translate3d(-${dist}px, 0, 0)`;
     }
     case 'right': {
-      const dist = Math.max(w + 50, 1280 - x + 50);
+      const dist = Math.max(w + 30, 100);
       return `translate3d(${dist}px, 0, 0)`;
     }
     case 'up': {
-      const dist = Math.max(h + 50, y + h + 50);
+      const dist = Math.max(h + 30, 100);
       return `translate3d(0, -${dist}px, 0)`;
     }
     case 'down':
     default: {
-      const dist = Math.max(h + 50, 800 - y + 50);
+      const dist = Math.max(h + 30, 100);
       return `translate3d(0, ${dist}px, 0)`;
     }
   }
@@ -303,13 +301,13 @@ const PlaybackScrubber: React.FC<PlaybackScrubberProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onKeyDown={handleKeyDown}
-        className="w-full h-6 cursor-pointer touch-none select-none relative flex items-center group outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-full"
+        className="w-full h-5 cursor-pointer touch-none select-none relative flex items-center group outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-full"
         style={{
           ['--tw-ring-color' as any]: customColor,
         }}
       >
-        {/* Background Track (Fixed 8px height across all states) */}
-        <div className="w-full bg-slate-800/90 h-[8px] rounded-full overflow-hidden relative border border-slate-700/50">
+        {/* Background Track */}
+        <div className="w-full bg-slate-800/90 h-[6px] rounded-full overflow-hidden relative border border-slate-700/50">
           {/* Played Portion */}
           <div
             className={`h-full rounded-full ${isDragging ? '' : 'transition-all duration-150 ease-out'}`}
@@ -321,28 +319,115 @@ const PlaybackScrubber: React.FC<PlaybackScrubberProps> = ({
           />
         </div>
 
-        {/* Scrubber Thumb (Fixed 18px size, vertically centered with zero layout shift) */}
+        {/* Scrubber Thumb */}
         <div
-          className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-[18px] h-[18px] rounded-full bg-white shadow-lg pointer-events-none transition-transform duration-100 ease-out ${
+          className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 @[240px]:w-4 @[240px]:h-4 rounded-full bg-white shadow-lg pointer-events-none transition-transform duration-100 ease-out ${
             isDragging || isHovered ? 'scale-110' : 'scale-100'
           }`}
           style={{
             left: `${percentage}%`,
-            border: `2.5px solid ${customColor}`,
-            boxShadow: `0 0 10px ${customColor}A0, 0 2px 6px rgba(0,0,0,0.6)`,
+            border: `2px solid ${customColor}`,
+            boxShadow: `0 0 8px ${customColor}A0, 0 2px 4px rgba(0,0,0,0.6)`,
           }}
         />
       </div>
 
-      {/* Time Indicators: Elapsed and Duration */}
+      {/* Time Indicators: Elapsed and Duration (Flush left and right with seek bar) */}
       {showTimestamps && (
-        <div className="flex items-center justify-between text-xs font-mono text-slate-400 font-semibold select-none tabular-nums mt-0.5">
-          <span>{formatMediaTime(safeCurrentTime)}</span>
-          <span>{formatMediaTime(safeDuration)}</span>
+        <div
+          data-testid="nowplaying-timestamps-row"
+          className="flex items-center justify-between text-[10px] @[240px]:text-xs font-mono text-slate-400 font-semibold select-none tabular-nums mt-0.5 leading-none w-full tracking-tight"
+        >
+          <span className="shrink-0 text-left whitespace-nowrap">{formatMediaTime(safeCurrentTime)}</span>
+          <span className="shrink-0 text-right whitespace-nowrap">{formatMediaTime(safeDuration)}</span>
         </div>
       )}
     </div>
   );
+};
+
+const getTitleFontSizeClasses = (sizePreset: string) => {
+  switch (sizePreset) {
+    case 'xs':
+      return {
+        constrained: 'text-[11px]',
+        tall: 'text-xs sm:text-sm @[360px]:text-base',
+        horizontal: 'text-[11px] sm:text-xs @[360px]:text-sm',
+      };
+    case 'sm':
+      return {
+        constrained: 'text-xs',
+        tall: 'text-sm sm:text-base @[360px]:text-lg',
+        horizontal: 'text-xs sm:text-sm @[360px]:text-base',
+      };
+    case 'md':
+      return {
+        constrained: 'text-sm',
+        tall: 'text-base sm:text-lg @[360px]:text-xl',
+        horizontal: 'text-sm sm:text-base @[360px]:text-lg',
+      };
+    case 'lg':
+      return {
+        constrained: 'text-base',
+        tall: 'text-lg sm:text-xl @[360px]:text-2xl',
+        horizontal: 'text-base sm:text-lg @[360px]:text-xl',
+      };
+    case 'xl':
+      return {
+        constrained: 'text-lg',
+        tall: 'text-xl sm:text-2xl @[360px]:text-3xl',
+        horizontal: 'text-lg sm:text-xl @[360px]:text-2xl',
+      };
+    case 'default':
+    default:
+      return {
+        constrained: 'text-xs',
+        tall: 'text-sm sm:text-base @[360px]:text-lg',
+        horizontal: 'text-xs sm:text-sm @[360px]:text-base',
+      };
+  }
+};
+
+const getArtistFontSizeClasses = (sizePreset: string) => {
+  switch (sizePreset) {
+    case 'xs':
+      return {
+        constrained: 'text-[10px]',
+        tall: 'text-[10px] sm:text-[11px] @[360px]:text-xs',
+        horizontal: 'text-[10px] sm:text-[11px] @[360px]:text-xs',
+      };
+    case 'sm':
+      return {
+        constrained: 'text-[11px]',
+        tall: 'text-[11px] sm:text-xs @[360px]:text-sm',
+        horizontal: 'text-[11px] sm:text-xs @[360px]:text-sm',
+      };
+    case 'md':
+      return {
+        constrained: 'text-xs',
+        tall: 'text-xs sm:text-sm @[360px]:text-base',
+        horizontal: 'text-xs sm:text-sm @[360px]:text-base',
+      };
+    case 'lg':
+      return {
+        constrained: 'text-sm',
+        tall: 'text-sm sm:text-base @[360px]:text-lg',
+        horizontal: 'text-sm sm:text-base @[360px]:text-lg',
+      };
+    case 'xl':
+      return {
+        constrained: 'text-base',
+        tall: 'text-base sm:text-lg @[360px]:text-xl',
+        horizontal: 'text-base sm:text-lg @[360px]:text-xl',
+      };
+    case 'default':
+    default:
+      return {
+        constrained: 'text-xs',
+        tall: 'text-xs sm:text-sm @[360px]:text-base',
+        horizontal: 'text-xs sm:text-sm @[360px]:text-base',
+      };
+  }
 };
 
 export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
@@ -367,8 +452,12 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
     isExtremelyConstrained,
     isTallLayout,
     isStandardHorizontal,
+    isWideShort,
     useRightSideControls,
+    showHeaderIcon,
+    showHeaderDivider,
     showThumbnail,
+    showSeekBar,
     showTimestamps,
     showFavoriteButton,
     showShuffleRepeat,
@@ -397,6 +486,18 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
     0.1,
     Math.min(30, parseFloat(component.staticProps?.songInfoDisplayDuration || '2.5'))
   );
+
+  // Inspector-configurable typography and colors
+  const titleFontSizeProp = component.staticProps?.titleFontSize || 'default';
+  const artistFontSizeProp = component.staticProps?.artistFontSize || 'default';
+  const titleColorProp = component.staticProps?.titleColor;
+  const artistColorProp = component.staticProps?.artistColor;
+
+  const isPresetTitleSize = ['default', 'xs', 'sm', 'md', 'lg', 'xl'].includes(titleFontSizeProp);
+  const isPresetArtistSize = ['default', 'xs', 'sm', 'md', 'lg', 'xl'].includes(artistFontSizeProp);
+
+  const titleFontSizeClasses = getTitleFontSizeClasses(isPresetTitleSize ? titleFontSizeProp : 'default');
+  const artistFontSizeClasses = getArtistFontSizeClasses(isPresetArtistSize ? artistFontSizeProp : 'default');
 
   // Active track and playback state
   const initialTrackId = component.staticProps?.trackId || SAMPLE_TRACKS[0].id;
@@ -602,26 +703,26 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
     <div
       id={`component-${component.type}`}
       data-component-type="nowPlaying"
-      className="w-full h-full min-w-0 min-h-0 relative select-none"
+      className="w-full h-full min-w-0 min-h-0 relative select-none overflow-hidden"
     >
       {/* Editor Ghost Placeholder: Shown in Editor mode when dismissed & unselected */}
       {!isPresentation && isActuallyDismissed && !isSelected && (
         <div
           data-testid="nowplaying-editor-ghost"
-          className="absolute inset-0 rounded-2xl border-2 border-dashed border-sky-500/50 bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center transition-all hover:border-sky-400 hover:bg-slate-900/80 cursor-pointer pointer-events-auto shadow-md z-0"
+          className="absolute inset-0 rounded-2xl border-2 border-dashed border-sky-500/50 bg-slate-950/35 backdrop-blur-[2px] flex flex-col items-center justify-center p-2 text-center transition-all hover:border-sky-400 hover:bg-slate-900/60 cursor-pointer pointer-events-auto shadow-md z-10"
           onClick={(e) => {
             e.stopPropagation();
             resetDismissTimer();
           }}
-          title="Now Playing (Auto-dismissed · Click to select)"
+          title="Now Playing (Auto-dismissed)"
         >
           <div className="flex items-center gap-1.5 text-sky-400 font-mono text-[11px] font-bold uppercase tracking-wider truncate max-w-full px-1">
-            <Music className="w-3.5 h-3.5 shrink-0 animate-pulse" />
+            <Music className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{headerLabel}</span>
           </div>
           {componentHeight >= 80 && (
             <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-1">
-              Auto-dismissed · Click to select
+              Auto-dismissed
             </span>
           )}
         </div>
@@ -634,7 +735,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
             resetDismissTimer();
           }
         }}
-        className={`w-full h-full min-w-0 min-h-0 rounded-2xl bg-slate-900/90 border border-slate-800 ${paddingClass} flex flex-col justify-between shadow-lg backdrop-blur-md relative select-none @container overflow-hidden ${baseOpacity} ${
+        className={`w-full h-full min-w-0 min-h-0 rounded-2xl bg-slate-900/90 border border-slate-800 ${paddingClass} flex flex-col shadow-lg backdrop-blur-md relative select-none @container overflow-hidden ${baseOpacity} ${
           isActuallyDismissed && isPresentation ? 'pointer-events-none' : 'pointer-events-auto'
         }`}
         style={{
@@ -646,16 +747,20 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
           containerType: 'inline-size',
         }}
       >
-      {/* Component Header */}
-      <ComponentHeader
-        type="nowPlaying"
-        label={headerLabel}
-        customColor={customColor}
-      />
+      {/* 1. COMPONENT HEADER GROUP (shrink-0) */}
+      <div className={`shrink-0 ${showHeaderDivider ? 'mb-1' : 'mb-0.5'}`}>
+        <ComponentHeader
+          type="nowPlaying"
+          label={headerLabel}
+          customColor={customColor}
+          hideIcon={!showHeaderIcon}
+          hideDivider={!showHeaderDivider}
+        />
+      </div>
 
       {/* 1. EXTREMELY CONSTRAINED LAYOUT (Height < 125px) */}
       {isExtremelyConstrained ? (
-        <div className="flex-1 min-h-0 flex items-center justify-center relative overflow-hidden pt-0.5">
+        <div className="flex-1 min-h-0 min-w-0 flex items-center justify-center relative overflow-hidden pt-0.5">
           <AnimatePresence mode="wait" initial={false}>
             {isMetadataRevealing ? (
               /* Song-change brief metadata reveal with selected song transition */
@@ -667,17 +772,17 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 animate="animate"
                 exit="exit"
                 transition={transitionConfig}
-                className="flex items-center justify-between gap-2.5 w-full h-full min-w-0 px-1"
+                className="flex items-center justify-between gap-2 w-full h-full min-w-0 px-0.5"
               >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   {showThumbnail && (
                     <div
                       className={`rounded-lg bg-gradient-to-br ${currentTrack.coverBg} flex items-center justify-center shrink-0 shadow-sm border border-white/20 overflow-hidden aspect-square`}
                       style={{
-                        width: '28px',
-                        height: '28px',
-                        minWidth: '28px',
-                        minHeight: '28px',
+                        width: '26px',
+                        height: '26px',
+                        minWidth: '26px',
+                        minHeight: '26px',
                       }}
                     >
                       {renderCoverIcon(
@@ -686,11 +791,23 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       )}
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs sm:text-sm font-extrabold text-slate-100 truncate leading-tight">
+                  <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
+                    <div
+                      className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-slate-100' : ''}`}
+                      style={{
+                        color: titleColorProp || undefined,
+                        ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+                      }}
+                    >
                       {currentTrack.title}
                     </div>
-                    <div className="text-[10px] sm:text-xs text-slate-400 truncate font-medium leading-tight">
+                    <div
+                      className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-slate-400' : ''}`}
+                      style={{
+                        color: artistColorProp || undefined,
+                        ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+                      }}
+                    >
                       {currentTrack.artist}
                     </div>
                   </div>
@@ -700,26 +817,28 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 </div>
               </motion.div>
             ) : (
-              /* Normal state: Scrubber + Dedicated 40px Playback Controls */
+              /* Normal state: Scrubber + Dedicated Playback Controls */
               <motion.div
                 key="constrained-controls-row"
                 initial={prefersReducedMotion ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.18 }}
-                className="flex items-center gap-2.5 sm:gap-3 w-full h-full min-w-0"
+                className="flex items-center gap-2 sm:gap-2.5 w-full h-full min-w-0"
               >
                 {/* Scrubber (Surrenders width gracefully before controls shrink) */}
-                <div className="flex-1 min-w-0 flex items-center">
-                  <PlaybackScrubber
-                    currentTime={progressSec}
-                    duration={currentTrack.durationSec}
-                    customColor={customColor}
-                    showTimestamps={false}
-                    onSeek={handleSeek}
-                    onUserInteraction={() => resetDismissTimer()}
-                  />
-                </div>
+                {showSeekBar && (
+                  <div className="flex-1 min-w-0 flex items-center">
+                    <PlaybackScrubber
+                      currentTime={progressSec}
+                      duration={currentTrack.durationSec}
+                      customColor={customColor}
+                      showTimestamps={false}
+                      onSeek={handleSeek}
+                      onUserInteraction={() => resetDismissTimer()}
+                    />
+                  </div>
+                )}
 
                 {/* Primary Playback Controls */}
                 <div className="flex items-center shrink-0" style={{ gap: `${controlGapPx}px` }}>
@@ -781,157 +900,11 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
             )}
           </AnimatePresence>
         </div>
-      ) : useRightSideControls ? (
-        /* 2. COMPACT / SHORT LAYOUT (Right-Side Playback Controls with 2 rows) */
-        <div className="flex-1 min-h-0 flex flex-col justify-between gap-1 pt-0.5">
-          {/* Top Row: Track metadata row with smooth song-change transition + Favorite */}
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="grid grid-cols-1 grid-rows-1 relative flex-1 min-w-0 overflow-hidden items-center">
-              <AnimatePresence
-                mode={songTransition === 'fade' ? 'wait' : 'sync'}
-                custom={slideDirection}
-                initial={false}
-              >
-                <motion.div
-                  key={currentTrack.id}
-                  custom={slideDirection}
-                  variants={transitionVariants}
-                  initial={songTransition === 'none' || prefersReducedMotion ? false : 'initial'}
-                  animate="animate"
-                  exit="exit"
-                  transition={transitionConfig}
-                  className="col-start-1 row-start-1 flex items-center gap-2.5 min-w-0 w-full"
-                >
-                  {showThumbnail && (
-                    <div
-                      className={`rounded-lg bg-gradient-to-br ${currentTrack.coverBg} flex items-center justify-center shrink-0 shadow-sm border border-white/20 overflow-hidden aspect-square`}
-                      style={{
-                        width: 'clamp(24px, 7cqw, 32px)',
-                        height: 'clamp(24px, 7cqw, 32px)',
-                        minWidth: '24px',
-                        minHeight: '24px',
-                        maxWidth: '32px',
-                        maxHeight: '32px',
-                      }}
-                    >
-                      {renderCoverIcon(
-                        currentTrack.iconName,
-                        'w-[50%] h-[50%] max-w-[16px] max-h-[16px] min-w-[12px] min-h-[12px] text-white/90'
-                      )}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs sm:text-sm font-extrabold text-slate-100 truncate leading-tight">
-                      {currentTrack.title}
-                    </div>
-                    <div className="text-[10px] sm:text-xs text-slate-400 truncate font-medium leading-tight">
-                      {currentTrack.artist}
-                    </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Favorite button if horizontal space permits */}
-            {showFavoriteButton && (
-              <button
-                onClick={toggleFavorite}
-                style={{
-                  width: `${secondaryControlSizePx}px`,
-                  height: `${secondaryControlSizePx}px`,
-                  minWidth: `${secondaryControlSizePx}px`,
-                  minHeight: `${secondaryControlSizePx}px`,
-                }}
-                className={`p-1 rounded-lg transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-90 ${
-                  isFavorited
-                    ? 'text-rose-500 bg-rose-500/15 border border-rose-500/30'
-                    : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800'
-                }`}
-                title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-                aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <Heart style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} className={isFavorited ? 'fill-current' : ''} />
-              </button>
-            )}
-          </div>
-
-          {/* Bottom Row: Scrubber (Flex-1) + Right-Side Playback Controls */}
-          <div className="flex items-center gap-2 sm:gap-2.5 w-full min-w-0">
-            {/* Scrubber */}
-            <div className="flex-1 min-w-0 flex items-center">
-              <PlaybackScrubber
-                currentTime={progressSec}
-                duration={currentTrack.durationSec}
-                customColor={customColor}
-                showTimestamps={false}
-                onSeek={handleSeek}
-                onUserInteraction={() => resetDismissTimer()}
-              />
-            </div>
-
-            {/* Dedicated Playback Controls */}
-            <div className="flex items-center shrink-0" style={{ gap: `${controlGapPx}px` }}>
-              <button
-                onClick={handlePrevTrack}
-                style={{
-                  width: `${buttonWidthPx}px`,
-                  height: `${buttonHeightPx}px`,
-                  minWidth: `${buttonWidthPx}px`,
-                  minHeight: `${buttonHeightPx}px`,
-                  aspectRatio: '1 / 1',
-                }}
-                className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
-                title="Previous track"
-                aria-label="Previous track"
-              >
-                <SkipBack style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
-              </button>
-
-              <button
-                onClick={handleTogglePlay}
-                style={{
-                  width: `${playButtonWidthPx}px`,
-                  height: `${playButtonHeightPx}px`,
-                  minWidth: `${playButtonWidthPx}px`,
-                  minHeight: `${playButtonHeightPx}px`,
-                  aspectRatio: '1 / 1',
-                  backgroundColor: customColor,
-                  boxShadow: `0 0 12px ${customColor}60`,
-                }}
-                className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
-                title={isPlaying ? 'Pause' : 'Play'}
-                aria-label={isPlaying ? 'Pause' : 'Play'}
-              >
-                {isPlaying ? (
-                  <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
-                ) : (
-                  <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
-                )}
-              </button>
-
-              <button
-                onClick={handleNextTrack}
-                style={{
-                  width: `${buttonWidthPx}px`,
-                  height: `${buttonHeightPx}px`,
-                  minWidth: `${buttonWidthPx}px`,
-                  minHeight: `${buttonHeightPx}px`,
-                  aspectRatio: '1 / 1',
-                }}
-                className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
-                title="Next track"
-                aria-label="Next track"
-              >
-                <SkipForward style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
-              </button>
-            </div>
-          </div>
-        </div>
       ) : isTallLayout ? (
-        /* 3. TALL / SPACIOUS MEDIA PLAYER LAYOUT (Intentional vertical composition) */
-        <div className="flex-1 min-h-0 flex flex-col justify-between py-1">
-          {/* Song Information Block: Album Artwork aligned with Title + Artist */}
-          <div className="grid grid-cols-1 grid-rows-1 relative w-full min-w-0 overflow-hidden items-center">
+        /* 2. TALL / SPACIOUS MEDIA PLAYER LAYOUT (Explicit sequential vertical groups with proportional flexible spacing) */
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col pt-0.5">
+          {/* TRACK INFORMATION GROUP (shrinkable, min-h-0) */}
+          <div className="grid grid-cols-1 grid-rows-1 relative w-full min-w-0 min-h-0 overflow-hidden items-center shrink-0">
             <AnimatePresence
               mode={songTransition === 'fade' ? 'wait' : 'sync'}
               custom={slideDirection}
@@ -945,31 +918,43 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 animate="animate"
                 exit="exit"
                 transition={transitionConfig}
-                className="col-start-1 row-start-1 flex items-center gap-3 min-w-0 w-full"
+                className="col-start-1 row-start-1 flex items-center gap-2.5 sm:gap-3 min-w-0 w-full"
               >
                 {showThumbnail && (
                   <div
                     className={`rounded-xl bg-gradient-to-br ${currentTrack.coverBg} flex items-center justify-center shrink-0 shadow-md border border-white/20 overflow-hidden aspect-square`}
                     style={{
-                      width: 'clamp(36px, 14cqw, 48px)',
-                      height: 'clamp(36px, 14cqw, 48px)',
-                      minWidth: '36px',
-                      minHeight: '36px',
+                      width: 'clamp(32px, 12cqw, 48px)',
+                      height: 'clamp(32px, 12cqw, 48px)',
+                      minWidth: '28px',
+                      minHeight: '28px',
                       maxWidth: '48px',
                       maxHeight: '48px',
                     }}
                   >
                     {renderCoverIcon(
                       currentTrack.iconName,
-                      'w-[50%] h-[50%] max-w-[22px] max-h-[22px] min-w-[16px] min-h-[16px] text-white/90'
+                      'w-[50%] h-[50%] max-w-[22px] max-h-[22px] min-w-[14px] min-h-[14px] text-white/90'
                     )}
                   </div>
                 )}
-                <div className="min-w-0 flex-1 flex flex-col justify-center">
-                  <div className="text-sm sm:text-base font-extrabold text-slate-100 truncate leading-snug">
+                <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
+                  <div
+                    className={`${titleFontSizeClasses.tall} font-extrabold truncate leading-snug ${!titleColorProp ? 'text-slate-100' : ''}`}
+                    style={{
+                      color: titleColorProp || undefined,
+                      ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+                    }}
+                  >
                     {currentTrack.title}
                   </div>
-                  <div className="text-xs sm:text-sm text-slate-400 truncate font-medium leading-snug">
+                  <div
+                    className={`${artistFontSizeClasses.tall} truncate font-medium leading-snug ${!artistColorProp ? 'text-slate-400' : ''}`}
+                    style={{
+                      color: artistColorProp || undefined,
+                      ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+                    }}
+                  >
                     {currentTrack.artist}
                   </div>
                 </div>
@@ -977,19 +962,29 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
             </AnimatePresence>
           </div>
 
-          {/* Interactive Scrubber with Timestamps */}
-          <div className="w-full">
-            <PlaybackScrubber
-              currentTime={progressSec}
-              duration={currentTrack.durationSec}
-              customColor={customColor}
-              showTimestamps={showTimestamps}
-              onSeek={handleSeek}
-              onUserInteraction={() => resetDismissTimer()}
-            />
-          </div>
+          {/* Flexible vertical spacer 1: Between Track Info and Scrubber */}
+          {showSeekBar && (
+            <div className="flex-1 min-h-[4px]" />
+          )}
 
-          {/* Centered Primary Playback Controls */}
+          {/* PROGRESS GROUP (shrink-0) */}
+          {showSeekBar && (
+            <div className="w-full shrink-0">
+              <PlaybackScrubber
+                currentTime={progressSec}
+                duration={currentTrack.durationSec}
+                customColor={customColor}
+                showTimestamps={showTimestamps}
+                onSeek={handleSeek}
+                onUserInteraction={() => resetDismissTimer()}
+              />
+            </div>
+          )}
+
+          {/* Flexible vertical spacer 2: Between Scrubber/Timestamps and Transport Controls */}
+          <div className="flex-1 min-h-[4px]" />
+
+          {/* PLAYBACK TRANSPORT CONTROLS (shrink-0) */}
           <div className="flex items-center justify-center shrink-0" style={{ gap: `${controlGapPx}px` }}>
             <button
               onClick={handlePrevTrack}
@@ -1046,84 +1041,103 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
             </button>
           </div>
 
-          {/* Secondary Controls Row below primary controls: Favorite / Shuffle / Repeat */}
-          {showShuffleRepeat && (
-            <div className="flex items-center justify-center gap-2.5 shrink-0 pt-0.5 border-t border-slate-800/50">
-              {/* Favorite */}
-              <button
-                onClick={toggleFavorite}
-                style={{
-                  width: `${secondaryControlSizePx}px`,
-                  height: `${secondaryControlSizePx}px`,
-                  minWidth: `${secondaryControlSizePx}px`,
-                  minHeight: `${secondaryControlSizePx}px`,
-                }}
-                className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
-                  isFavorited
-                    ? 'text-rose-500 bg-rose-500/15 border border-rose-500/30'
-                    : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800/60'
-                }`}
-                title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-                aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <Heart style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} className={isFavorited ? 'fill-current' : ''} />
-              </button>
+          {/* SECONDARY CONTROLS (shrink-0) */}
+          {(showFavoriteButton || showShuffleRepeat) && (
+            <>
+              {/* Flexible vertical spacer 3: Between Transport Controls and Secondary Controls */}
+              <div className="flex-1 min-h-[6px]" />
 
-              {/* Shuffle */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsShuffle((p) => !p);
-                  resetDismissTimer();
-                }}
-                style={{
-                  width: `${secondaryControlSizePx}px`,
-                  height: `${secondaryControlSizePx}px`,
-                  minWidth: `${secondaryControlSizePx}px`,
-                  minHeight: `${secondaryControlSizePx}px`,
-                }}
-                className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
-                  isShuffle
-                    ? 'text-slate-100 bg-slate-800 border border-slate-700'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                }`}
-                title="Shuffle"
-                aria-label="Shuffle"
-              >
-                <Shuffle style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} />
-              </button>
+              {/* Separator + Secondary Controls (Favorite, Shuffle, Repeat) */}
+              <div className="flex items-center justify-center gap-2.5 shrink-0 pt-1.5 border-t border-slate-800/50 w-full">
+                {/* Favorite */}
+                {showFavoriteButton && (
+                  <button
+                    onClick={toggleFavorite}
+                    style={{
+                      width: `${secondaryControlSizePx}px`,
+                      height: `${secondaryControlSizePx}px`,
+                      minWidth: `${secondaryControlSizePx}px`,
+                      minHeight: `${secondaryControlSizePx}px`,
+                    }}
+                    className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
+                      isFavorited
+                        ? 'text-rose-500 bg-rose-500/15 border border-rose-500/30'
+                        : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800/60'
+                    }`}
+                    title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                    aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    <Heart style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} className={isFavorited ? 'fill-current' : ''} />
+                  </button>
+                )}
 
-              {/* Repeat */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsRepeat((p) => !p);
-                  resetDismissTimer();
-                }}
-                style={{
-                  width: `${secondaryControlSizePx}px`,
-                  height: `${secondaryControlSizePx}px`,
-                  minWidth: `${secondaryControlSizePx}px`,
-                  minHeight: `${secondaryControlSizePx}px`,
-                }}
-                className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
-                  isRepeat
-                    ? 'text-slate-100 bg-slate-800 border border-slate-700'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                }`}
-                title="Repeat"
-                aria-label="Repeat"
-              >
-                <Repeat style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} />
-              </button>
-            </div>
+                {/* Shuffle & Repeat */}
+                {showShuffleRepeat && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsShuffle((p) => !p);
+                        resetDismissTimer();
+                      }}
+                      style={{
+                        width: `${secondaryControlSizePx}px`,
+                        height: `${secondaryControlSizePx}px`,
+                        minWidth: `${secondaryControlSizePx}px`,
+                        minHeight: `${secondaryControlSizePx}px`,
+                      }}
+                      className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
+                        isShuffle
+                          ? 'text-slate-100 bg-slate-800 border border-slate-700'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                      }`}
+                      title="Shuffle"
+                      aria-label="Shuffle"
+                    >
+                      <Shuffle style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsRepeat((p) => !p);
+                        resetDismissTimer();
+                      }}
+                      style={{
+                        width: `${secondaryControlSizePx}px`,
+                        height: `${secondaryControlSizePx}px`,
+                        minWidth: `${secondaryControlSizePx}px`,
+                        minHeight: `${secondaryControlSizePx}px`,
+                      }}
+                      className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
+                        isRepeat
+                          ? 'text-slate-100 bg-slate-800 border border-slate-700'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                      }`}
+                      title="Repeat"
+                      aria-label="Repeat"
+                    >
+                      <Repeat style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Bottom breathing buffer */}
+              <div className="flex-[0.4] min-h-[2px]" />
+            </>
+          )}
+
+          {/* If no secondary controls in tall mode, provide small bottom buffer */}
+          {!(showFavoriteButton || showShuffleRepeat) && (
+            <div className="flex-[0.5] min-h-[2px]" />
           )}
         </div>
       ) : (
-        /* 4. STANDARD HORIZONTAL LAYOUT (Bottom-Centered Playback Controls) */
-        <div className="flex-1 min-h-0 flex flex-col justify-between pt-1">
-          {/* Track Header Row: Cover Art + Info + Secondary Controls */}
-          <div className="flex items-center justify-between gap-2 min-h-0">
+        /* 3. RESPONSIVE HORIZONTAL / COMPACT LAYOUT (Dynamic Stacked vs Wide + Short Compact Layout) */
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col pt-0.5">
+          {/* TRACK INFORMATION GROUP (shrinkable, min-h-0) */}
+          <div className="flex items-center justify-between gap-2 min-h-0 min-w-0 shrink-0">
             <div className="grid grid-cols-1 grid-rows-1 relative min-w-0 flex-1 overflow-hidden items-center">
               <AnimatePresence
                 mode={songTransition === 'fade' ? 'wait' : 'sync'}
@@ -1138,31 +1152,43 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                   animate="animate"
                   exit="exit"
                   transition={transitionConfig}
-                  className="col-start-1 row-start-1 flex items-center gap-2.5 sm:gap-3 min-w-0 w-full"
+                  className="col-start-1 row-start-1 flex items-center gap-2 sm:gap-2.5 min-w-0 w-full"
                 >
                   {showThumbnail && (
                     <div
                       className={`rounded-xl bg-gradient-to-br ${currentTrack.coverBg} flex items-center justify-center shrink-0 shadow-md border border-white/20 transition-transform overflow-hidden aspect-square`}
                       style={{
-                        width: 'clamp(28px, 12cqw, 48px)',
-                        height: 'clamp(28px, 12cqw, 48px)',
-                        minWidth: '28px',
-                        minHeight: '28px',
-                        maxWidth: '48px',
-                        maxHeight: '48px',
+                        width: 'clamp(26px, 9cqw, 44px)',
+                        height: 'clamp(26px, 9cqw, 44px)',
+                        minWidth: '24px',
+                        minHeight: '24px',
+                        maxWidth: '44px',
+                        maxHeight: '44px',
                       }}
                     >
                       {renderCoverIcon(
                         currentTrack.iconName,
-                        'w-[50%] h-[50%] max-w-[20px] max-h-[20px] min-w-[14px] min-h-[14px] text-white/90'
+                        'w-[50%] h-[50%] max-w-[20px] max-h-[20px] min-w-[12px] min-h-[12px] text-white/90'
                       )}
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm sm:text-base font-extrabold text-slate-100 truncate">
+                  <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
+                    <div
+                      className={`${titleFontSizeClasses.horizontal} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-slate-100' : ''}`}
+                      style={{
+                        color: titleColorProp || undefined,
+                        ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+                      }}
+                    >
                       {currentTrack.title}
                     </div>
-                    <div className="text-xs sm:text-sm text-slate-400 truncate font-medium">
+                    <div
+                      className={`${artistFontSizeClasses.horizontal} truncate font-medium leading-tight ${!artistColorProp ? 'text-slate-400' : ''}`}
+                      style={{
+                        color: artistColorProp || undefined,
+                        ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+                      }}
+                    >
                       {currentTrack.artist}
                     </div>
                   </div>
@@ -1170,149 +1196,241 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
               </AnimatePresence>
             </div>
 
-            {/* Secondary Controls Row (Favorite, Shuffle, Repeat) */}
-            <div className="flex items-center gap-1 shrink-0">
-              {showFavoriteButton && (
-                <button
-                  onClick={toggleFavorite}
-                  style={{
-                    width: `${secondaryControlSizePx}px`,
-                    height: `${secondaryControlSizePx}px`,
-                    minWidth: `${secondaryControlSizePx}px`,
-                    minHeight: `${secondaryControlSizePx}px`,
-                  }}
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
-                    isFavorited
-                      ? 'text-rose-500 bg-rose-500/15 border border-rose-500/30'
-                      : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800/40'
-                  }`}
-                  title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-                  aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-                >
-                  <Heart style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} className={isFavorited ? 'fill-current' : ''} />
-                </button>
-              )}
-
-              {showShuffleRepeat && (
-                <>
+            {/* Secondary Controls Inline (Favorite, Shuffle, Repeat) */}
+            {(showFavoriteButton || showShuffleRepeat) && (
+              <div className="flex items-center gap-1 shrink-0">
+                {showFavoriteButton && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsShuffle((p) => !p);
-                      resetDismissTimer();
-                    }}
+                    onClick={toggleFavorite}
                     style={{
                       width: `${secondaryControlSizePx}px`,
                       height: `${secondaryControlSizePx}px`,
                       minWidth: `${secondaryControlSizePx}px`,
                       minHeight: `${secondaryControlSizePx}px`,
                     }}
-                    className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
-                      isShuffle
-                        ? 'text-slate-100 bg-slate-800 border border-slate-700'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                    className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
+                      isFavorited
+                        ? 'text-rose-500 bg-rose-500/15 border border-rose-500/30'
+                        : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800/40'
                     }`}
-                    title="Shuffle"
-                    aria-label="Shuffle"
+                    title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                    aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
                   >
-                    <Shuffle style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} />
+                    <Heart style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} className={isFavorited ? 'fill-current' : ''} />
+                  </button>
+                )}
+
+                {showShuffleRepeat && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsShuffle((p) => !p);
+                        resetDismissTimer();
+                      }}
+                      style={{
+                        width: `${secondaryControlSizePx}px`,
+                        height: `${secondaryControlSizePx}px`,
+                        minWidth: `${secondaryControlSizePx}px`,
+                        minHeight: `${secondaryControlSizePx}px`,
+                      }}
+                      className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
+                        isShuffle
+                          ? 'text-slate-100 bg-slate-800 border border-slate-700'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                      }`}
+                      title="Shuffle"
+                      aria-label="Shuffle"
+                    >
+                      <Shuffle style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsRepeat((p) => !p);
+                        resetDismissTimer();
+                      }}
+                      style={{
+                        width: `${secondaryControlSizePx}px`,
+                        height: `${secondaryControlSizePx}px`,
+                        minWidth: `${secondaryControlSizePx}px`,
+                        minHeight: `${secondaryControlSizePx}px`,
+                      }}
+                      className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
+                        isRepeat
+                          ? 'text-slate-100 bg-slate-800 border border-slate-700'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                      }`}
+                      title="Repeat"
+                      aria-label="Repeat"
+                    >
+                      <Repeat style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* PLAYBACK AREA: Dynamically switches between Mode 1: Stacked and Mode 2: Wide + Short Compact */}
+          {(isWideShort || useRightSideControls) && showSeekBar ? (
+            <div className="flex-1 min-h-0 flex flex-col justify-center">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 sm:gap-3.5 w-full min-w-0 shrink-0">
+                {/* PROGRESS GROUP (Seek Bar + Timestamps) */}
+                <div className="w-full min-w-0">
+                  <PlaybackScrubber
+                    currentTime={progressSec}
+                    duration={currentTrack.durationSec}
+                    customColor={customColor}
+                    showTimestamps={showTimestamps}
+                    onSeek={handleSeek}
+                    onUserInteraction={() => resetDismissTimer()}
+                  />
+                </div>
+
+                {/* TRANSPORT CONTROLS (Back, Play/Pause, Next) */}
+                <div className="flex items-center shrink-0" style={{ gap: `${controlGapPx}px` }}>
+                  <button
+                    onClick={handlePrevTrack}
+                    style={{
+                      width: `${buttonWidthPx}px`,
+                      height: `${buttonHeightPx}px`,
+                      minWidth: `${buttonWidthPx}px`,
+                      minHeight: `${buttonHeightPx}px`,
+                      aspectRatio: '1 / 1',
+                    }}
+                    className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                    title="Previous track"
+                    aria-label="Previous track"
+                  >
+                    <SkipBack style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
                   </button>
 
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsRepeat((p) => !p);
-                      resetDismissTimer();
-                    }}
+                    onClick={handleTogglePlay}
                     style={{
-                      width: `${secondaryControlSizePx}px`,
-                      height: `${secondaryControlSizePx}px`,
-                      minWidth: `${secondaryControlSizePx}px`,
-                      minHeight: `${secondaryControlSizePx}px`,
+                      width: `${playButtonWidthPx}px`,
+                      height: `${playButtonHeightPx}px`,
+                      minWidth: `${playButtonWidthPx}px`,
+                      minHeight: `${playButtonHeightPx}px`,
+                      aspectRatio: '1 / 1',
+                      backgroundColor: customColor,
+                      boxShadow: `0 0 14px ${customColor}60`,
                     }}
-                    className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
-                      isRepeat
-                        ? 'text-slate-100 bg-slate-800 border border-slate-700'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                    }`}
-                    title="Repeat"
-                    aria-label="Repeat"
+                    className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
+                    title={isPlaying ? 'Pause' : 'Play'}
+                    aria-label={isPlaying ? 'Pause' : 'Play'}
                   >
-                    <Repeat style={{ width: `${secondaryIconSizePx}px`, height: `${secondaryIconSizePx}px` }} />
+                    {isPlaying ? (
+                      <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
+                    ) : (
+                      <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+                    )}
                   </button>
-                </>
-              )}
+
+                  <button
+                    onClick={handleNextTrack}
+                    style={{
+                      width: `${buttonWidthPx}px`,
+                      height: `${buttonHeightPx}px`,
+                      minWidth: `${buttonWidthPx}px`,
+                      minHeight: `${buttonHeightPx}px`,
+                      aspectRatio: '1 / 1',
+                    }}
+                    className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                    title="Next track"
+                    aria-label="Next track"
+                  >
+                    <SkipForward style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Stacked / Compact Layout with flexible vertical distribution */
+            <div className="flex-1 min-h-0 flex flex-col">
+              {/* Flexible spacer 1: Track Info <-> Scrubber */}
+              {showSeekBar && <div className="flex-1 min-h-[4px]" />}
 
-          {/* Interactive Playback Scrubber & Time */}
-          <div className="w-full">
-            <PlaybackScrubber
-              currentTime={progressSec}
-              duration={currentTrack.durationSec}
-              customColor={customColor}
-              showTimestamps={showTimestamps}
-              onSeek={handleSeek}
-              onUserInteraction={() => resetDismissTimer()}
-            />
-          </div>
-
-          {/* Centered Playback Controls */}
-          <div className="flex items-center justify-center shrink-0 pt-0.5" style={{ gap: `${controlGapPx}px` }}>
-            <button
-              onClick={handlePrevTrack}
-              style={{
-                width: `${buttonWidthPx}px`,
-                height: `${buttonHeightPx}px`,
-                minWidth: `${buttonWidthPx}px`,
-                minHeight: `${buttonHeightPx}px`,
-                aspectRatio: '1 / 1',
-              }}
-              className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
-              title="Previous track"
-              aria-label="Previous track"
-            >
-              <SkipBack style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
-            </button>
-
-            <button
-              onClick={handleTogglePlay}
-              style={{
-                width: `${playButtonWidthPx}px`,
-                height: `${playButtonHeightPx}px`,
-                minWidth: `${playButtonWidthPx}px`,
-                minHeight: `${playButtonHeightPx}px`,
-                aspectRatio: '1 / 1',
-                backgroundColor: customColor,
-                boxShadow: `0 0 14px ${customColor}60`,
-              }}
-              className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
-              title={isPlaying ? 'Pause' : 'Play'}
-              aria-label={isPlaying ? 'Pause' : 'Play'}
-            >
-              {isPlaying ? (
-                <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
-              ) : (
-                <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+              {/* PROGRESS GROUP */}
+              {showSeekBar && (
+                <div className="w-full shrink-0">
+                  <PlaybackScrubber
+                    currentTime={progressSec}
+                    duration={currentTrack.durationSec}
+                    customColor={customColor}
+                    showTimestamps={showTimestamps}
+                    onSeek={handleSeek}
+                    onUserInteraction={() => resetDismissTimer()}
+                  />
+                </div>
               )}
-            </button>
 
-            <button
-              onClick={handleNextTrack}
-              style={{
-                width: `${buttonWidthPx}px`,
-                height: `${buttonHeightPx}px`,
-                minWidth: `${buttonWidthPx}px`,
-                minHeight: `${buttonHeightPx}px`,
-                aspectRatio: '1 / 1',
-              }}
-              className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
-              title="Next track"
-              aria-label="Next track"
-            >
-              <SkipForward style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
-            </button>
-          </div>
+              {/* Flexible spacer 2: Scrubber <-> Transport Controls */}
+              <div className="flex-1 min-h-[4px]" />
+
+              {/* TRANSPORT CONTROLS */}
+              <div className="flex items-center justify-center shrink-0" style={{ gap: `${controlGapPx}px` }}>
+                <button
+                  onClick={handlePrevTrack}
+                  style={{
+                    width: `${buttonWidthPx}px`,
+                    height: `${buttonHeightPx}px`,
+                    minWidth: `${buttonWidthPx}px`,
+                    minHeight: `${buttonHeightPx}px`,
+                    aspectRatio: '1 / 1',
+                  }}
+                  className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                  title="Previous track"
+                  aria-label="Previous track"
+                >
+                  <SkipBack style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
+                </button>
+
+                <button
+                  onClick={handleTogglePlay}
+                  style={{
+                    width: `${playButtonWidthPx}px`,
+                    height: `${playButtonHeightPx}px`,
+                    minWidth: `${playButtonWidthPx}px`,
+                    minHeight: `${playButtonHeightPx}px`,
+                    aspectRatio: '1 / 1',
+                    backgroundColor: customColor,
+                    boxShadow: `0 0 14px ${customColor}60`,
+                  }}
+                  className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
+                  title={isPlaying ? 'Pause' : 'Play'}
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                >
+                  {isPlaying ? (
+                    <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
+                  ) : (
+                    <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+                  )}
+                </button>
+
+                <button
+                  onClick={handleNextTrack}
+                  style={{
+                    width: `${buttonWidthPx}px`,
+                    height: `${buttonHeightPx}px`,
+                    minWidth: `${buttonWidthPx}px`,
+                    minHeight: `${buttonHeightPx}px`,
+                    aspectRatio: '1 / 1',
+                  }}
+                  className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                  title="Next track"
+                  aria-label="Next track"
+                >
+                  <SkipForward style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
+                </button>
+              </div>
+
+              {/* Bottom buffer */}
+              <div className="flex-[0.5] min-h-[2px]" />
+            </div>
+          )}
         </div>
       )}
       </div>

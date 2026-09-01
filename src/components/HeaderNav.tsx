@@ -18,11 +18,14 @@ import {
   CornerDownRight,
   FolderTree,
   Trash2,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const HeaderNav: React.FC = () => {
   const screenMode = useMockpitStore((s) => s.screenMode);
   const setScreenMode = useMockpitStore((s) => s.setScreenMode);
+  const isAuditPanelOpen = useMockpitStore((s) => s.isAuditPanelOpen);
+  const toggleAuditPanel = useMockpitStore((s) => s.toggleAuditPanel);
   const activeView = useMockpitStore((s) => s.activeView);
   const setActiveView = useMockpitStore((s) => s.setActiveView);
   const screens = useMockpitStore((s) => s.screens);
@@ -516,6 +519,20 @@ export const HeaderNav: React.FC = () => {
       {/* Utility Action Icons */}
       {!isPresentation && (
         <div className="flex items-center gap-1.5 ml-auto">
+          {/* HMI Compliance & Safety Audit Button */}
+          <button
+            onClick={toggleAuditPanel}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono transition-all border flex items-center gap-1.5 cursor-pointer ${
+              isAuditPanelOpen
+                ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.3)]'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:text-sky-300 hover:border-sky-500/30'
+            }`}
+            title="HMI Compliance & Safety Audit (v1.0)"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+            <span className="hidden sm:inline">Audit</span>
+          </button>
+
           {copiedComponent && (
             <button
               onClick={() => pasteComponent()}

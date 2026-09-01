@@ -47,6 +47,8 @@ import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MusicMediaPlayer } from './MusicMediaPlayer';
 import { NowPlayingWidget } from './NowPlayingWidget';
+import { MediaPlaylistsWidget } from './MediaPlaylistsWidget';
+import { MediaDiscoveryWidget } from './MediaDiscoveryWidget';
 import { MockpitInput } from './MockpitInput';
 import { AddressGeocodeInput } from './navigation/AddressGeocodeInput';
 import { OverheadDrivingVisualization } from './OverheadDrivingVisualization';
@@ -65,6 +67,7 @@ import { VehicleStatusCalloutWidget } from './vehicle/VehicleStatusCalloutWidget
 import { SendToServiceWidget } from './vehicle/SendToServiceWidget';
 import { DriveModeWidget } from './vehicle/DriveModeWidget';
 import { GearWidget } from './vehicle/GearWidget';
+import { SpeedometerWidget } from './vehicle/SpeedometerWidget';
 import { MiniNav } from './navigation/MiniNav';
 import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ComponentInstance, ComponentType, DriveModeState, VehicleState, TripStop } from '../types';
@@ -88,6 +91,8 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   map: 'Navigation Map',
   media: 'Music Media Player',
   nowPlaying: 'Now Playing',
+  mediaPlaylists: 'Playlists',
+  mediaDiscovery: 'Discovery',
   climate: 'Climate Control',
   phone: 'Phone & Contacts',
   driveMode: 'Drive Mode Selector',
@@ -134,6 +139,8 @@ interface ComponentHeaderProps {
   iconKey?: string;
   rightElement?: React.ReactNode;
   className?: string;
+  hideIcon?: boolean;
+  hideDivider?: boolean;
 }
 
 export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
@@ -143,6 +150,8 @@ export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
   iconKey,
   rightElement,
   className = '',
+  hideIcon = false,
+  hideDivider = false,
 }) => {
   const isNotification = type === 'warning';
 
@@ -156,12 +165,14 @@ export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
     );
   }
 
+  const baseHeaderClass = hideDivider
+    ? 'flex items-center justify-between text-[11px] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none leading-none'
+    : 'flex items-center justify-between h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60';
+
   return (
-    <div
-      className={`flex items-center justify-between h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60 ${className}`}
-    >
-      <span className="flex items-center gap-2 min-w-0 truncate">
-        {getComponentDefaultIcon(type, customColor, iconKey)}
+    <div className={`${baseHeaderClass} ${className}`}>
+      <span className="flex items-center gap-1.5 min-w-0 truncate">
+        {!hideIcon && getComponentDefaultIcon(type, customColor, iconKey)}
         <span className="truncate">{label}</span>
       </span>
       {rightElement && <div className="shrink-0 flex items-center gap-1.5 ml-2">{rightElement}</div>}
@@ -1651,415 +1662,16 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
 
     case 'speed': {
-      const speedVal = resolved.text || String(vehicleState.speed);
-      const unitVal = resolved.unit || 'mph';
-      const displayStyle = (resolved.displayStyle || component.staticProps?.displayStyle || 'numeric') as 'numeric' | 'radialGauge' | 'arcGauge';
-      const maxSpd = Math.max(1, Number(resolved.maxSpeed || component.staticProps?.maxSpeed || 140));
-      const headerLabel = resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.speed;
-
-      const parsedSpeed = parseFloat(speedVal);
-      const currentSpeed = !isNaN(parsedSpeed) ? parsedSpeed : (vehicleState.speed || 0);
-      const ratio = Math.min(1, Math.max(0, currentSpeed / maxSpd));
-
-      if (displayStyle === 'radialGauge') {
-        const startAngle = 220;
-        const totalSweep = 280;
-        const activeAngle = startAngle + ratio * totalSweep;
-
-        const polarToCartesian = (cx: number, cy: number, r: number, angleInDegrees: number) => {
-          const rad = ((angleInDegrees - 90) * Math.PI) / 180;
-          return {
-            x: cx + r * Math.cos(rad),
-            y: cy + r * Math.sin(rad),
-          };
-        };
-
-        const describeArcPath = (cx: number, cy: number, r: number, startA: number, endA: number) => {
-          const start = polarToCartesian(cx, cy, r, endA);
-          const end = polarToCartesian(cx, cy, r, startA);
-          const largeArcFlag = endA - startA <= 180 ? '0' : '1';
-          return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
-        };
-
-        const cx = 100;
-        const cy = 100;
-        const r = 72;
-
-        const bgArcPath = describeArcPath(cx, cy, r, startAngle, startAngle + totalSweep);
-        const activeArcPath = describeArcPath(cx, cy, r, startAngle, Math.max(startAngle + 0.5, activeAngle));
-
-        const needleTip = polarToCartesian(cx, cy, 58, activeAngle);
-
-        const ticksCount = 6;
-        const majorTicks = Array.from({ length: ticksCount + 1 }).map((_, i) => {
-          const tickAngle = startAngle + i * (totalSweep / ticksCount);
-          const outerPt = polarToCartesian(cx, cy, 72, tickAngle);
-          const innerPt = polarToCartesian(cx, cy, 64, tickAngle);
-          const labelPt = polarToCartesian(cx, cy, 52, tickAngle);
-          const val = Math.round((i / ticksCount) * maxSpd);
-          return { i, tickAngle, outerPt, innerPt, labelPt, val };
-        });
-
-        return (
-          <div
-            className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
-            style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
-          >
-            <ComponentHeader
-              type="speed"
-              label={headerLabel}
-              customColor={customColor}
-              className="w-full"
-            />
-
-            <div className="relative w-full flex-1 flex items-center justify-center my-1 z-10 min-h-0">
-              <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
-                {/* Background Arc */}
-                <path
-                  d={bgArcPath}
-                  fill="none"
-                  stroke="rgba(51, 65, 85, 0.4)"
-                  strokeWidth="10"
-                  strokeLinecap="round"
-                />
-
-                {/* Active Arc */}
-                <path
-                  d={activeArcPath}
-                  fill="none"
-                  stroke={customColor}
-                  strokeWidth="10"
-                  strokeLinecap="round"
-                  style={{ filter: `drop-shadow(0 0 8px ${getAlphaColor(customColor, '80', 50)})` }}
-                />
-
-                {/* Major Ticks & Labels */}
-                {majorTicks.map((t) => (
-                  <g key={t.i}>
-                    <line
-                      x1={t.innerPt.x}
-                      y1={t.innerPt.y}
-                      x2={t.outerPt.x}
-                      y2={t.outerPt.y}
-                      stroke={t.tickAngle <= activeAngle ? customColor : 'rgba(100, 116, 139, 0.6)'}
-                      strokeWidth="2"
-                    />
-                    <text
-                      x={t.labelPt.x}
-                      y={t.labelPt.y + 3}
-                      textAnchor="middle"
-                      fill="rgba(148, 163, 184, 0.8)"
-                      fontSize="9"
-                      fontWeight="bold"
-                      fontFamily="monospace"
-                    >
-                      {t.val}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Pivot Center */}
-                <circle cx={cx} cy={cy} r="8" fill="#0f172a" stroke={customColor} strokeWidth="2.5" />
-                <circle cx={cx} cy={cy} r="3" fill={customColor} />
-
-                {/* Rotating Needle */}
-                <line
-                  x1={cx}
-                  y1={cy}
-                  x2={needleTip.x}
-                  y2={needleTip.y}
-                  stroke={customColor}
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  style={{ filter: `drop-shadow(0 0 8px ${customColor})` }}
-                />
-
-                {/* Center Numeric Value Overlay */}
-                <text
-                  x={cx}
-                  y={cy + 36}
-                  textAnchor="middle"
-                  fill={customColor}
-                  fontSize="24"
-                  fontWeight="900"
-                  fontFamily="system-ui, sans-serif"
-                  style={{ filter: `drop-shadow(0 0 10px ${getAlphaColor(customColor, '60', 35)})` }}
-                >
-                  {speedVal}
-                </text>
-                <text
-                  x={cx}
-                  y={cy + 48}
-                  textAnchor="middle"
-                  fill="rgba(148, 163, 184, 0.8)"
-                  fontSize="8"
-                  fontWeight="bold"
-                  letterSpacing="1"
-                  fontFamily="monospace"
-                >
-                  {unitVal.toUpperCase()}
-                </text>
-              </svg>
-            </div>
-
-            <div className="w-full flex justify-between items-center text-slate-500 font-mono z-10 border-t border-slate-800/80 pt-1.5 shrink-0" style={{ fontSize: 'clamp(8px, 4.2cqmin, 16px)' }}>
-              <span>MAX {maxSpd}</span>
-              {vehicleState.cruiseControlActive && (
-                <span className="text-emerald-400 font-bold">CRUISE SET</span>
-              )}
-            </div>
-
-            <div
-              className="absolute inset-0 opacity-10 pointer-events-none rounded-2xl blur-xl"
-              style={{ backgroundColor: customColor }}
-            />
-          </div>
-        );
-      }
-
-      if (displayStyle === 'arcGauge') {
-        const stop1 = resolved.arcStop1Color || component.staticProps?.arcStop1Color || '#10b981';
-        const stop2 = resolved.arcStop2Color || component.staticProps?.arcStop2Color || '#06b6d4';
-        const stop3 = resolved.arcStop3Color || component.staticProps?.arcStop3Color || customColor;
-        const stop4 = resolved.arcStop4Color || component.staticProps?.arcStop4Color || '#f59e0b';
-        const stop5 = resolved.arcStop5Color || component.staticProps?.arcStop5Color || '#ef4444';
-
-        const startAngle = 220;
-        const totalSweep = 280;
-        const activeAngle = startAngle + ratio * totalSweep;
-
-        const polarToCartesian = (cx: number, cy: number, r: number, angleInDegrees: number) => {
-          const rad = ((angleInDegrees - 90) * Math.PI) / 180;
-          return {
-            x: cx + r * Math.cos(rad),
-            y: cy + r * Math.sin(rad),
-          };
-        };
-
-        const cx = 100;
-        const cy = 100;
-        const rMid = 70;
-        const minWidth = 1.5;
-        const maxWidth = 18;
-
-        const computeTaperedWedge = (endDeg: number, steps = 30) => {
-          const safeEndDeg = Math.max(startAngle + 0.2, endDeg);
-          const sweep = safeEndDeg - startAngle;
-          const outerPts: { x: number; y: number }[] = [];
-          const innerPts: { x: number; y: number }[] = [];
-
-          for (let i = 0; i <= steps; i++) {
-            const stepFrac = i / steps;
-            const angleDeg = startAngle + stepFrac * sweep;
-            const fullFrac = (angleDeg - startAngle) / totalSweep;
-            const w = minWidth + fullFrac * (maxWidth - minWidth);
-            const rOut = rMid + w / 2;
-            const rIn = rMid - w / 2;
-
-            outerPts.push(polarToCartesian(cx, cy, rOut, angleDeg));
-            innerPts.push(polarToCartesian(cx, cy, rIn, angleDeg));
-          }
-
-          let d = `M ${outerPts[0].x.toFixed(2)} ${outerPts[0].y.toFixed(2)}`;
-          for (let i = 1; i <= steps; i++) {
-            d += ` L ${outerPts[i].x.toFixed(2)} ${outerPts[i].y.toFixed(2)}`;
-          }
-          for (let i = steps; i >= 0; i--) {
-            d += ` L ${innerPts[i].x.toFixed(2)} ${innerPts[i].y.toFixed(2)}`;
-          }
-          d += ' Z';
-          return d;
-        };
-
-        const bgWedgePath = computeTaperedWedge(startAngle + totalSweep, 30);
-        const activeWedgePath = computeTaperedWedge(activeAngle, 30);
-
-        const gradientId = `arcGaugeGrad_${component.id}`;
-        const glowBlur = (4 + ratio * 18).toFixed(1);
-        const glowOpacity = (0.2 + ratio * 0.75).toFixed(2);
-
-        const ticksCount = 4;
-        const arcTicks = Array.from({ length: ticksCount + 1 }).map((_, i) => {
-          const tickFrac = i / ticksCount;
-          const tickAngle = startAngle + tickFrac * totalSweep;
-          const tickW = minWidth + tickFrac * (maxWidth - minWidth);
-          const outerPt = polarToCartesian(cx, cy, rMid + tickW / 2 + 5, tickAngle);
-          const innerPt = polarToCartesian(cx, cy, rMid + tickW / 2 + 1, tickAngle);
-          const labelPt = polarToCartesian(cx, cy, rMid + tickW / 2 + 12, tickAngle);
-          const val = Math.round(tickFrac * maxSpd);
-          return { i, tickAngle, outerPt, innerPt, labelPt, val };
-        });
-
-        return (
-          <div
-            className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
-            style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
-          >
-            <ComponentHeader
-              type="speed"
-              label={headerLabel}
-              customColor={customColor}
-              className="w-full"
-            />
-
-            <div className="relative w-full flex-1 flex items-center justify-center my-1 z-10 min-h-0">
-              <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
-                <defs>
-                  {/* Full 0 -> Max Range Gradient */}
-                  <linearGradient
-                    id={gradientId}
-                    x1="45"
-                    y1="0"
-                    x2="155"
-                    y2="0"
-                    gradientUnits="userSpaceOnUse"
-                  >
-                    <stop offset="0%" stopColor={stop1} />
-                    <stop offset="25%" stopColor={stop2} />
-                    <stop offset="50%" stopColor={stop3} />
-                    <stop offset="75%" stopColor={stop4} />
-                    <stop offset="100%" stopColor={stop5} />
-                  </linearGradient>
-                </defs>
-
-                {/* Background Tapered Wedge Track */}
-                <path
-                  d={bgWedgePath}
-                  fill="rgba(30, 41, 59, 0.45)"
-                  stroke="rgba(71, 85, 105, 0.35)"
-                  strokeWidth="1"
-                />
-
-                {/* Dynamic Glowing Wedge Underlay */}
-                <path
-                  d={activeWedgePath}
-                  fill={`url(#${gradientId})`}
-                  style={{
-                    filter: `blur(${glowBlur}px)`,
-                    opacity: Number(glowOpacity),
-                  }}
-                />
-
-                {/* Crisp Foreground Active Tapered Wedge */}
-                <path
-                  d={activeWedgePath}
-                  fill={`url(#${gradientId})`}
-                  style={{
-                    filter: `drop-shadow(0 0 ${Math.max(2, ratio * 8)}px rgba(255, 255, 255, 0.25))`,
-                  }}
-                />
-
-                {/* Arc Outer Ticks and Scale Labels */}
-                {arcTicks.map((t) => (
-                  <g key={t.i}>
-                    <line
-                      x1={t.innerPt.x}
-                      y1={t.innerPt.y}
-                      x2={t.outerPt.x}
-                      y2={t.outerPt.y}
-                      stroke={t.tickAngle <= activeAngle ? 'rgba(255, 255, 255, 0.8)' : 'rgba(100, 116, 139, 0.5)'}
-                      strokeWidth="1.5"
-                    />
-                    <text
-                      x={t.labelPt.x}
-                      y={t.labelPt.y + 3}
-                      textAnchor="middle"
-                      fill={t.tickAngle <= activeAngle ? 'rgba(226, 232, 240, 0.9)' : 'rgba(148, 163, 184, 0.6)'}
-                      fontSize="8"
-                      fontWeight="bold"
-                      fontFamily="monospace"
-                    >
-                      {t.val}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Center Numeric Speed Value */}
-                <text
-                  x={cx}
-                  y={cy + 8}
-                  textAnchor="middle"
-                  fill={customColor}
-                  fontSize="38"
-                  fontWeight="900"
-                  fontFamily="system-ui, sans-serif"
-                  style={{
-                    filter: `drop-shadow(0 0 10px ${getAlphaColor(customColor, '60', 35)})`,
-                  }}
-                >
-                  {speedVal}
-                </text>
-                <text
-                  x={cx}
-                  y={cy + 26}
-                  textAnchor="middle"
-                  fill="rgba(148, 163, 184, 0.8)"
-                  fontSize="9"
-                  fontWeight="bold"
-                  letterSpacing="1"
-                  fontFamily="monospace"
-                >
-                  {unitVal.toUpperCase()}
-                </text>
-              </svg>
-            </div>
-
-            <div className="w-full flex justify-end items-center text-slate-500 font-mono z-10 border-t border-slate-800/80 pt-1.5 shrink-0" style={{ fontSize: 'clamp(8px, 4.2cqmin, 16px)' }}>
-              {vehicleState.cruiseControlActive && (
-                <span className="text-emerald-400 font-bold ml-auto">CRUISE SET</span>
-              )}
-            </div>
-
-            <div
-              className="absolute inset-0 pointer-events-none rounded-2xl transition-all duration-150"
-              style={{
-                background: `radial-gradient(circle at center, rgba(56, 189, 248, ${0.05 + ratio * 0.15}) 0%, transparent 70%)`,
-              }}
-            />
-          </div>
-        );
-      }
-
-      // Default 'numeric' style
       return (
-        <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
-          style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
-        >
-          <ComponentHeader
-            type="speed"
-            label={headerLabel}
-            customColor={customColor}
-            className="w-full"
-          />
-
-          <div className="my-auto z-10 flex flex-col items-center">
-            <div
-              className="font-black tracking-tighter leading-none"
-              style={{
-                color: customColor,
-                textShadow: `0 0 25px ${getAlphaColor(customColor, '60', 35)}`,
-                fontSize: 'clamp(28px, 32cqmin, 120px)',
-              }}
-            >
-              {speedVal}
-            </div>
-            <div className="font-bold tracking-widest text-slate-400 uppercase mt-1" style={{ fontSize: 'clamp(9px, 5cqmin, 22px)' }}>
-              {unitVal}
-            </div>
-          </div>
-
-          <div className="w-full flex justify-end items-center text-slate-500 font-mono z-10 border-t border-slate-800/80 pt-2 shrink-0" style={{ fontSize: 'clamp(8px, 4.2cqmin, 16px)' }}>
-            {vehicleState.cruiseControlActive && (
-              <span className="text-emerald-400 font-bold ml-auto">CRUISE SET</span>
-            )}
-          </div>
-
-          <div
-            className="absolute inset-0 opacity-10 pointer-events-none rounded-2xl blur-xl"
-            style={{ backgroundColor: customColor }}
-          />
-        </div>
+        <SpeedometerWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          isPresentation={isPresentation}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 
@@ -2287,6 +1899,40 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           baseOpacity={baseOpacity}
           styleOpacity={styleOpacity}
           isPresentation={isPresentation}
+        />
+      );
+    }
+
+    case 'mediaPlaylists': {
+      const headerLabel =
+        resolved.label ||
+        component.staticProps?.label ||
+        DEFAULT_COMPONENT_LABELS.mediaPlaylists ||
+        'Playlists';
+      return (
+        <MediaPlaylistsWidget
+          component={component}
+          isSelected={isSelected}
+          customColor={customColor}
+          styleOpacity={styleOpacity}
+          headerLabel={headerLabel}
+        />
+      );
+    }
+
+    case 'mediaDiscovery': {
+      const headerLabel =
+        resolved.label ||
+        component.staticProps?.label ||
+        DEFAULT_COMPONENT_LABELS.mediaDiscovery ||
+        'Discovery';
+      return (
+        <MediaDiscoveryWidget
+          component={component}
+          isSelected={isSelected}
+          customColor={customColor}
+          styleOpacity={styleOpacity}
+          headerLabel={headerLabel}
         />
       );
     }
