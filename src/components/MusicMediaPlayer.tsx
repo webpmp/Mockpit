@@ -7,7 +7,6 @@ import {
   SkipForward,
   Shuffle,
   Repeat,
-  Search,
   Clock,
   Radio,
   ListMusic,
@@ -23,7 +22,6 @@ import {
 import { ComponentInstance } from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ComponentHeader } from './ComponentRenderer';
-import { MockpitInput } from './MockpitInput';
 import {
   Track,
   Playlist,
@@ -36,6 +34,7 @@ import {
   MUSIC_SERVICES,
   MusicServiceType,
 } from '../data/mediaData';
+import { getCoverArtCacheKey } from '../services/musicBrainzService';
 
 const SERVICES = MUSIC_SERVICES;
 type ServiceType = MusicServiceType;
@@ -58,18 +57,36 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
   const updateComponentStaticProps = useMockpitStore((s) => s.updateComponentStaticProps);
   const selectedMusicService = useMockpitStore((s) => s.selectedMusicService);
   const setSelectedMusicService = useMockpitStore((s) => s.setSelectedMusicService);
+  const coverArtCache = useMockpitStore((s) => s.coverArtCache);
+  const resolveCoverArt = useMockpitStore((s) => s.resolveCoverArt);
+  const markCoverArtStatus = useMockpitStore((s) => s.markCoverArtStatus);
+  const advanceCoverArtCandidate = useMockpitStore((s) => s.advanceCoverArtCandidate);
 
   const currentService: ServiceType =
     (selectedMusicService as ServiceType) || (component.staticProps?.service as ServiceType) || 'Spotify';
 
-  const [activeTab, setActiveTab] = useState<'lastPlayed' | 'library' | 'search'>('lastPlayed');
+  const [activeTab, setActiveTab] = useState<'lastPlayed' | 'library'>('lastPlayed');
   const [currentTrack, setCurrentTrack] = useState<Track>(SAMPLE_TRACKS[0]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [progressSec, setProgressSec] = useState<number>(102);
   const [isShuffle, setIsShuffle] = useState<boolean>(false);
   const [isRepeat, setIsRepeat] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState<boolean>(false);
+
+  // Trigger cover art resolution for current track and sample tracks
+  useEffect(() => {
+    if (currentTrack.artist && currentTrack.album) {
+      resolveCoverArt(currentTrack.artist, currentTrack.album);
+    }
+  }, [currentTrack.artist, currentTrack.album, resolveCoverArt]);
+
+  useEffect(() => {
+    SAMPLE_TRACKS.forEach((t) => {
+      if (t.artist && t.album) {
+        resolveCoverArt(t.artist, t.album);
+      }
+    });
+  }, [resolveCoverArt]);
 
   // Simulated progress timer when playing
   useEffect(() => {
@@ -119,13 +136,6 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
-
-  const filteredSearchTracks = SAMPLE_TRACKS.filter(
-    (t) =>
-      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.album.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <div
@@ -198,7 +208,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
         }
       />
 
-      {/* Tabs Row: Last Played | Library | Search (Increased Text Size for Legibility) */}
+      {/* Tabs Row: Last Played | Library */}
       <div className="flex items-center gap-1.5 border-b border-slate-800/80 pb-2 my-2 shrink-0">
         <button
           onClick={() => setActiveTab('lastPlayed')}
@@ -222,17 +232,6 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
           <ListMusic className="w-4 h-4 text-slate-400" />
           Library
         </button>
-        <button
-          onClick={() => setActiveTab('search')}
-          className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'search'
-              ? 'bg-slate-800 text-slate-100 border border-slate-700/80 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-          }`}
-        >
-          <Search className="w-4 h-4 text-slate-400" />
-          Search
-        </button>
       </div>
 
       {/* Tab Contents Area */}
@@ -245,6 +244,9 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
             </div>
             {SAMPLE_TRACKS.map((track) => {
               const isSelectedTrack = currentTrack.id === track.id;
+              const cacheKey = getCoverArtCacheKey(track.artist, track.album);
+              const coverArt = coverArtCache[cacheKey];
+
               return (
                 <div
                   key={track.id}
@@ -256,11 +258,20 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    {/* Mock Album Art Placeholder */}
+                    {/* Album Art / Placeholder */}
                     <div
-                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${track.coverBg} flex items-center justify-center shrink-0 shadow-sm border border-white/10 group-hover:scale-105 transition-transform`}
+                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${track.coverBg} flex items-center justify-center shrink-0 shadow-sm border border-white/10 group-hover:scale-105 transition-transform overflow-hidden`}
                     >
-                      {renderCoverIcon(track.iconName)}
+                      {coverArt?.status === 'found' && coverArt?.coverUrl ? (
+                        <img
+                          src={coverArt.coverUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={() => advanceCoverArtCandidate(cacheKey)}
+                        />
+                      ) : (
+                        renderCoverIcon(track.iconName)
+                      )}
                     </div>
                     <div className="min-w-0">
                       <div
@@ -356,54 +367,6 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
             </div>
           </div>
         )}
-
-        {/* Tab 3: Search */}
-        {activeTab === 'search' && (
-          <div className="space-y-2.5">
-            <MockpitInput
-              value={searchQuery}
-              onChange={(val) => setSearchQuery(val)}
-              placeholder={`Search ${currentService} catalog...`}
-              componentId={component.id}
-              keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-              className="text-sm sm:text-base py-2 font-mono"
-              icon={<Search className="w-4 h-4 text-slate-400" />}
-            />
-
-            <div className="space-y-1.5">
-              {filteredSearchTracks.length === 0 ? (
-                <div className="text-sm sm:text-base text-slate-400 italic p-3 text-center font-medium">
-                  No matching tracks found on {currentService}.
-                </div>
-              ) : (
-                filteredSearchTracks.map((track) => (
-                  <div
-                    key={track.id}
-                    onClick={() => handleSelectTrack(track)}
-                    className="p-2.5 rounded-xl bg-slate-950/50 hover:bg-slate-800/80 border border-slate-800/80 flex items-center justify-between cursor-pointer transition-colors group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${track.coverBg} flex items-center justify-center shrink-0 border border-white/10`}
-                      >
-                        {renderCoverIcon(track.iconName)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-sm sm:text-base font-bold text-slate-200 truncate group-hover:text-slate-100">
-                          {track.title}
-                        </div>
-                        <div className="text-xs sm:text-sm text-slate-400 truncate">{track.artist}</div>
-                      </div>
-                    </div>
-                    <div className="text-xs sm:text-sm font-mono text-slate-400 shrink-0">
-                      {track.duration}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Basic Playback Chrome */}
@@ -411,11 +374,26 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
         {/* Track Title & Cover */}
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${currentTrack.coverBg} flex items-center justify-center shrink-0 shadow-md border border-white/20`}
-            >
-              {renderCoverIcon(currentTrack.iconName)}
-            </div>
+            {(() => {
+              const currentCacheKey = getCoverArtCacheKey(currentTrack.artist, currentTrack.album);
+              const currentCoverArt = coverArtCache[currentCacheKey];
+              return (
+                <div
+                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${currentTrack.coverBg} flex items-center justify-center shrink-0 shadow-md border border-white/20 overflow-hidden`}
+                >
+                  {currentCoverArt?.status === 'found' && currentCoverArt?.coverUrl ? (
+                    <img
+                      src={currentCoverArt.coverUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={() => advanceCoverArtCandidate(currentCacheKey)}
+                    />
+                  ) : (
+                    renderCoverIcon(currentTrack.iconName)
+                  )}
+                </div>
+              );
+            })()}
             <div className="min-w-0">
               <div className="text-sm sm:text-base font-extrabold text-slate-100 truncate">
                 {currentTrack.title}

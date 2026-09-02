@@ -419,3 +419,83 @@ export const formatMediaTime = (seconds?: number | null): string => {
   }
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 };
+
+export type MediaContentType = 'music' | 'podcast' | 'audiobook';
+export type MediaSearchSource = 'spotify' | 'apple_music' | 'radio';
+
+export interface SearchCatalogItem {
+  id: string;
+  title: string;
+  artist: string;
+  album?: string;
+  duration?: string;
+  contentType: MediaContentType;
+  source: MediaSearchSource;
+  sourceLabel: string;
+  iconName?: string;
+}
+
+export const MOCK_SEARCH_CATALOG: SearchCatalogItem[] = [
+  // Music - Spotify
+  { id: 'sc-1', title: 'Salad Days', artist: 'Mac DeMarco', album: 'Salad Days', duration: '2:25', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+  { id: 'sc-2', title: 'Chamber of Reflection', artist: 'Mac DeMarco', album: 'Salad Days', duration: '3:51', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+  { id: 'sc-3', title: 'Starboy', artist: 'The Weeknd ft. Daft Punk', album: 'Starboy', duration: '3:50', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+  { id: 'sc-4', title: 'Blinding Lights', artist: 'The Weeknd', album: 'After Hours', duration: '3:20', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+  { id: 'sc-5', title: 'Midnight City', artist: 'M83', album: "Hurry Up, We're Dreaming", duration: '4:03', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+  { id: 'sc-6', title: 'Resonance', artist: 'HOME', album: 'Odyssey', duration: '3:32', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Disc' },
+  { id: 'sc-7', title: 'After Dark', artist: 'Mr.Kitty', album: 'Time', duration: '4:17', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+  
+  // Music - Apple Music
+  { id: 'sc-8', title: 'As It Was', artist: 'Harry Styles', album: "Harry's House", duration: '2:47', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Disc' },
+  { id: 'sc-9', title: 'Cruel Summer', artist: 'Taylor Swift', album: 'Lover', duration: '2:58', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Heart' },
+  { id: 'sc-10', title: 'Levitating', artist: 'Dua Lipa', album: 'Future Nostalgia', duration: '3:23', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Zap' },
+  { id: 'sc-11', title: 'Get Lucky', artist: 'Daft Punk ft. Pharrell', album: 'Random Access Memories', duration: '4:08', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Sparkles' },
+  { id: 'sc-12', title: 'Pacific Coast Highway', artist: 'Kavinsky', album: 'OutRun', duration: '4:18', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Compass' },
+  
+  // Music - Radio
+  { id: 'sc-13', title: 'KEXP 90.3 FM Live', artist: 'Where the Music Matters', album: 'Seattle Radio', duration: 'Live', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
+  { id: 'sc-14', title: 'NPR Music Live Sessions', artist: 'Tiny Desk Concerts', album: 'NPR Radio', duration: 'Live', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
+  { id: 'sc-15', title: 'Heat Waves', artist: 'Glass Animals', album: 'Alt Nation', duration: '3:58', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
+  { id: 'sc-16', title: 'Sunroof', artist: 'Nicky Youre & dazy', album: 'Top Hits Radio', duration: '2:43', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
+
+  // Spoken Word - Podcasts (Spotify / Apple Music)
+  { id: 'sc-17', title: 'The Daily: Behind the Wheel', artist: 'The New York Times', album: 'Episode 1842', duration: '24 min', contentType: 'podcast', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Radio' },
+  { id: 'sc-18', title: 'Huberman Lab: Focus & Soundscapes', artist: 'Dr. Andrew Huberman', album: 'Science & Health', duration: '1 hr 45 min', contentType: 'podcast', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Radio' },
+  { id: 'sc-19', title: 'How I Built This: Music Streaming', artist: 'Guy Raz · NPR', album: 'Business & Tech', duration: '48 min', contentType: 'podcast', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Radio' },
+  { id: 'sc-20', title: 'Hardcore History: Twilight of the Gods', artist: 'Dan Carlin', album: 'History Classic', duration: '4 hr 12 min', contentType: 'podcast', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Radio' },
+
+  // Spoken Word - Audiobooks
+  { id: 'sc-21', title: 'Atomic Habits (Unabridged)', artist: 'James Clear', album: 'Narrated by Author', duration: '5 hr 35 min', contentType: 'audiobook', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Radio' },
+  { id: 'sc-22', title: 'Project Hail Mary', artist: 'Andy Weir', album: 'Narrated by Ray Porter', duration: '16 hr 10 min', contentType: 'audiobook', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Radio' },
+  { id: 'sc-23', title: 'Steve Jobs', artist: 'Walter Isaacson', album: 'Narrated by Dylan Baker', duration: '25 hr 02 min', contentType: 'audiobook', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Radio' },
+];
+
+export const MOCK_NLU_LOOKUP: Record<string, { queryLabel: string; results: SearchCatalogItem[] }> = {
+  'indie rock': {
+    queryLabel: 'Indie Rock Curated Mix',
+    results: [
+      { id: 'sc-1', title: 'Salad Days', artist: 'Mac DeMarco', album: 'Salad Days', duration: '2:25', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+      { id: 'sc-2', title: 'Chamber of Reflection', artist: 'Mac DeMarco', album: 'Salad Days', duration: '3:51', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+      { id: 'sc-5', title: 'Midnight City', artist: 'M83', album: "Hurry Up, We're Dreaming", duration: '4:03', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+      { id: 'sc-15', title: 'Heat Waves', artist: 'Glass Animals', album: 'Alt Nation', duration: '3:58', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
+    ],
+  },
+  'workout hype': {
+    queryLabel: 'High Energy Workout Beats',
+    results: [
+      { id: 'sc-3', title: 'Starboy', artist: 'The Weeknd ft. Daft Punk', album: 'Starboy', duration: '3:50', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+      { id: 'sc-10', title: 'Levitating', artist: 'Dua Lipa', album: 'Future Nostalgia', duration: '3:23', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Zap' },
+      { id: 'sc-11', title: 'Get Lucky', artist: 'Daft Punk ft. Pharrell', album: 'Random Access Memories', duration: '4:08', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Sparkles' },
+    ],
+  },
+  'something chill for the drive': {
+    queryLabel: 'Chill Drive Soundscape',
+    results: [
+      { id: 'sc-6', title: 'Resonance', artist: 'HOME', album: 'Odyssey', duration: '3:32', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Disc' },
+      { id: 'sc-7', title: 'After Dark', artist: 'Mr.Kitty', album: 'Time', duration: '4:17', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+      { id: 'sc-12', title: 'Pacific Coast Highway', artist: 'Kavinsky', album: 'OutRun', duration: '4:18', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Compass' },
+      { id: 'sc-13', title: 'KEXP 90.3 FM Live', artist: 'Where the Music Matters', album: 'Seattle Radio', duration: 'Live', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
+    ],
+  },
+};
+

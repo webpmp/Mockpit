@@ -212,6 +212,7 @@ export type ComponentType =
   | 'nowPlaying'
   | 'mediaPlaylists'
   | 'mediaDiscovery'
+  | 'mediaSearch'
   | 'climate'
   | 'phone'
   | 'driveMode'
@@ -330,6 +331,7 @@ export const APP_SCREEN_VIEWS: Record<string, string> = {
   nowPlaying: 'media',
   mediaPlaylists: 'media',
   mediaDiscovery: 'media',
+  mediaSearch: 'media',
   phone: 'phone',
   phoneContacts: 'phone',
   phoneDialPad: 'phone',

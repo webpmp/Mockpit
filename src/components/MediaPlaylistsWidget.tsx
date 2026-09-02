@@ -46,24 +46,11 @@ export const MediaPlaylistsWidget: React.FC<MediaPlaylistsWidgetProps> = ({
         opacity: styleOpacity,
       }}
     >
-      {/* Component Header with Read-Only Provider Reflection Badge */}
+      {/* Component Header */}
       <ComponentHeader
         type="mediaPlaylists"
         label={headerLabel || 'Playlists'}
         customColor={customColor}
-        rightElement={
-          <div
-            className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border transition-colors shadow-sm"
-            style={{
-              color: customColor || '#38bdf8',
-              borderColor: `${customColor || '#38bdf8'}40`,
-              backgroundColor: `${customColor || '#38bdf8'}15`,
-            }}
-            title={`Active streaming service: ${activeService}`}
-          >
-            {activeService}
-          </div>
-        }
       />
 
       {/* Playlists Grid: 3 columns, 96x96px art thumbnails, track count */}

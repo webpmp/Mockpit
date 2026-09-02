@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, Sparkles, TrendingUp } from 'lucide-react';
 import { ComponentInstance } from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
@@ -8,6 +8,7 @@ import {
   DISCOVERY_TRACKS_FORYOU,
   renderCoverIcon,
 } from '../data/mediaData';
+import { getCoverArtCacheKey } from '../services/musicBrainzService';
 
 interface MediaDiscoveryWidgetProps {
   component: ComponentInstance;
@@ -25,6 +26,10 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
   headerLabel,
 }) => {
   const updateComponentStaticProps = useMockpitStore((s) => s.updateComponentStaticProps);
+  const coverArtCache = useMockpitStore((s) => s.coverArtCache);
+  const resolveCoverArt = useMockpitStore((s) => s.resolveCoverArt);
+  const markCoverArtStatus = useMockpitStore((s) => s.markCoverArtStatus);
+  const advanceCoverArtCandidate = useMockpitStore((s) => s.advanceCoverArtCandidate);
 
   const mode = (component.staticProps?.mode as 'trending' | 'foryou') || 'trending';
   const layout = (component.staticProps?.layout as 'horizontal' | 'vertical') || 'horizontal';
@@ -33,6 +38,15 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
   const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
 
   const tracks = mode === 'trending' ? DISCOVERY_TRACKS_TRENDING : DISCOVERY_TRACKS_FORYOU;
+
+  // Resolve cover art for all discovery tracks
+  useEffect(() => {
+    [...DISCOVERY_TRACKS_TRENDING, ...DISCOVERY_TRACKS_FORYOU].forEach((track) => {
+      if (track.artist && track.album) {
+        resolveCoverArt(track.artist, track.album);
+      }
+    });
+  }, [resolveCoverArt]);
 
   const handleSelectMode = (newMode: 'trending' | 'foryou') => {
     updateComponentStaticProps(component.id, { mode: newMode });
@@ -141,6 +155,8 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
         <div className="flex-1 min-h-0 mt-3 overflow-x-auto overflow-y-hidden pr-1 pb-1 flex flex-row gap-3 custom-scrollbar items-center">
           {tracks.map((track) => {
             const isCardSelected = selectedTrackId === track.id;
+            const cacheKey = getCoverArtCacheKey(track.artist, track.album);
+            const coverArt = coverArtCache[cacheKey];
 
             return (
               <button
@@ -176,8 +192,17 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                     </div>
                   )}
 
-                  {/* Centered Icon */}
-                  {renderCoverIcon(track.iconName, 'w-10 h-10 text-white/95 drop-shadow')}
+                  {/* Artwork Image or Centered Icon */}
+                  {coverArt?.status === 'found' && coverArt?.coverUrl ? (
+                    <img
+                      src={coverArt.coverUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={() => advanceCoverArtCandidate(cacheKey)}
+                    />
+                  ) : (
+                    renderCoverIcon(track.iconName, 'w-10 h-10 text-white/95 drop-shadow')
+                  )}
                 </div>
 
                 {/* Track Title (1 line, truncate) & Artist (1 line, truncate) */}
@@ -204,6 +229,8 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
         <div className="flex-1 min-h-0 mt-3 overflow-y-auto pr-1 flex flex-col gap-2 custom-scrollbar">
           {tracks.map((track) => {
             const isCardSelected = selectedTrackId === track.id;
+            const cacheKey = getCoverArtCacheKey(track.artist, track.album);
+            const coverArt = coverArtCache[cacheKey];
 
             return (
               <button
@@ -239,8 +266,17 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                     </div>
                   )}
 
-                  {/* Centered Icon */}
-                  {renderCoverIcon(track.iconName, 'w-6 h-6 text-white/95 drop-shadow')}
+                  {/* Artwork Image or Centered Icon */}
+                  {coverArt?.status === 'found' && coverArt?.coverUrl ? (
+                    <img
+                      src={coverArt.coverUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={() => advanceCoverArtCandidate(cacheKey)}
+                    />
+                  ) : (
+                    renderCoverIcon(track.iconName, 'w-6 h-6 text-white/95 drop-shadow')
+                  )}
                 </div>
 
                 {/* Track Details */}

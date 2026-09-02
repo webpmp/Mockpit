@@ -150,6 +150,12 @@ const MEDIA_WIDGET_ITEMS: ComponentLibraryItem[] = [
           description: 'Visual album-art discovery with Trending ranks and For You suggestions',
           defaultBindingDesc: 'Trending and curated suggestions discovery',
         },
+        {
+          type: 'mediaSearch' as ComponentType,
+          title: 'Music Search',
+          description: 'Resizable cross-source music, podcast & audiobook search simulating NLU lookup, voice input & ambient recognition',
+          defaultBindingDesc: 'Simulated cross-source catalog search & mocked NLU lookup',
+        },
       ]
     : []),
 ];

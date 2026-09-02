@@ -49,6 +49,7 @@ import { MusicMediaPlayer } from './MusicMediaPlayer';
 import { NowPlayingWidget } from './NowPlayingWidget';
 import { MediaPlaylistsWidget } from './MediaPlaylistsWidget';
 import { MediaDiscoveryWidget } from './MediaDiscoveryWidget';
+import { MusicSearchWidget } from './MusicSearchWidget';
 import { MockpitInput } from './MockpitInput';
 import { AddressGeocodeInput } from './navigation/AddressGeocodeInput';
 import { OverheadDrivingVisualization } from './OverheadDrivingVisualization';
@@ -84,34 +85,35 @@ interface ComponentRendererProps {
 }
 
 export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
-  battery: 'Battery',
-  gear: 'Gear',
+  battery: 'Battery Indicator',
+  gear: 'Gear Indicator',
   speed: 'Speedometer',
   warning: 'Warning Alert Overlay',
   map: 'Navigation Map',
   media: 'Music Media Player',
-  nowPlaying: 'Now Playing',
+  nowPlaying: 'Now Playing Card',
   mediaPlaylists: 'Playlists',
   mediaDiscovery: 'Discovery',
+  mediaSearch: 'Music Search',
   climate: 'Climate Control',
   phone: 'Phone & Contacts',
   driveMode: 'Drive Mode Selector',
   tirePressure: 'Tire Pressure Monitor',
-  navHome: 'Home Location',
-  navFavorites: 'Favorites',
+  navHome: 'Favorites & Recents',
+  navFavorites: 'Favorites & Recents',
   navDestination: 'Trip Planner',
   navSearch: 'Navigation Search',
-  navTripEstimate: 'Trip Estimate',
+  navTripEstimate: 'Trip Planner',
   overheadVisualization: 'Overhead Driving Visualization',
-  miniNav: 'Mini Nav',
+  miniNav: 'Mini Nav (Glanceable Maneuver)',
   phoneContacts: 'Contacts',
   phoneDialPad: 'Dial Pad',
   phoneMessaging: 'Messaging',
   climateVent: 'Vent Dashboard',
-  climateTemp: 'Temperature',
-  climateSeats: 'Seat Climate',
-  vehicleExplodedView: 'Vehicle Exploded View',
-  vehicleStatusCallout: 'Vehicle Status Callout',
+  climateTemp: 'Temperature Slider',
+  climateSeats: 'Seat Climate (Heat/Cool)',
+  vehicleExplodedView: 'Exploded View Chassis',
+  vehicleStatusCallout: 'Status Callout',
   sendToServiceCenter: 'Send Vehicle Diagnostics',
 };
 
@@ -1933,6 +1935,19 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           customColor={customColor}
           styleOpacity={styleOpacity}
           headerLabel={headerLabel}
+        />
+      );
+    }
+
+    case 'mediaSearch': {
+      return (
+        <MusicSearchWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
         />
       );
     }

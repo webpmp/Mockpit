@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Delete, Mic, MicOff } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { KeyboardSlideDirection } from '../types';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 export const VirtualKeyboard: React.FC = () => {
   const isKeyboardVisible = useMockpitStore((s) => s.isKeyboardVisible);
@@ -46,64 +47,21 @@ export const VirtualKeyboard: React.FC = () => {
     }
   }, [isKeyboardVisible]);
 
-  // Speech Recognition state
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
-  const recognitionRef = useRef<any>(null);
-
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setIsSpeechSupported(!!SpeechRecognition);
-  }, []);
+  // Speech Recognition hook
+  const {
+    isListening,
+    isSpeechSupported,
+    toggleListening: rawToggleListening,
+  } = useSpeechRecognition({
+    onTranscript: (transcript) => {
+      if (transcript) {
+        typeKeyboardKey(transcript);
+      }
+    },
+  });
 
   const toggleListening = () => {
-    if (!isSpeechSupported) return;
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    if (isListening) {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (_) {}
-      }
-      setIsListening(false);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0]?.[0]?.transcript;
-        if (transcript) {
-          typeKeyboardKey(transcript);
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        console.warn('Speech recognition error:', event.error);
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch (err) {
-      console.warn('Speech recognition initialization error:', err);
-      setIsListening(false);
-    }
+    rawToggleListening();
   };
 
   // Physical keyboard passthrough & pressed key state tracking

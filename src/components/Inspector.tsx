@@ -1410,6 +1410,17 @@ export const Inspector: React.FC = () => {
               </div>
             )}
 
+            {selectedComp.type === 'mediaSearch' && (
+              <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
+                  Media Search Mode
+                </label>
+                <div className="text-xs text-slate-300 font-mono">
+                  Federated cross-source search across Spotify, Apple Music & Radio with Mocked NLU + Voice query.
+                </div>
+              </div>
+            )}
+
             {selectedComp.type === 'mediaDiscovery' && (
               <div className="space-y-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
                 <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">

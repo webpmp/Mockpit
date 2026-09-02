@@ -52,6 +52,15 @@ import {
   recordRuntimeInteraction as recordRuntimeLoggerEntry,
   clearRuntimeLog as clearRuntimeLogger,
 } from '../lib/hmiRules/runtimeInstrumenter';
+import {
+  CoverArtCacheEntry,
+  CoverArtStatus,
+  loadSavedCoverArtCache,
+  saveCoverArtCache,
+  getCoverArtCacheKey,
+  searchReleaseGroupQueued,
+  coverArtUrl,
+} from '../services/musicBrainzService';
 
 const LOCAL_STORAGE_KEY = 'mockpit_components_v1';
 const LOCAL_STORAGE_KEY_V2 = 'mockpit_components_by_screen_v2';
@@ -492,6 +501,7 @@ export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number
   nowPlaying: { width: 420, height: 180, maxHeight: 1080 },
   mediaPlaylists: { width: 540, height: 420, maxHeight: 1080 },
   mediaDiscovery: { width: 620, height: 260, maxHeight: 1080 },
+  mediaSearch: { width: 580, height: 220, maxHeight: 1080 },
   climate: { width: 320, height: 150, maxHeight: 1080 },
   phone: { width: 340, height: 150, maxHeight: 1080 },
   driveMode: { width: 320, height: 160, maxHeight: 1080 },
@@ -1003,9 +1013,13 @@ interface MockpitStore {
   // Ambient Simulation
   ambientTick: () => void;
 
-  // Shared Music Provider State
+  // Shared Music Provider State & Cover Art Resolution
   selectedMusicService: MusicServiceType;
   setSelectedMusicService: (service: MusicServiceType | string) => void;
+  coverArtCache: Record<string, CoverArtCacheEntry>;
+  resolveCoverArt: (artist: string, album: string) => Promise<void>;
+  advanceCoverArtCandidate: (cacheKey: string) => void;
+  markCoverArtStatus: (cacheKey: string, status: CoverArtStatus, coverUrl?: string | null) => void;
 
   // Vehicle State Actions
   setVehicleState: (partial: Partial<VehicleState>) => void;
@@ -1381,6 +1395,145 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       console.error('Failed to save selected music service to localStorage', e);
     }
     set({ selectedMusicService: validService });
+  },
+
+  coverArtCache: loadSavedCoverArtCache(),
+
+  resolveCoverArt: async (artist: string, album: string) => {
+    if (!artist || !album) return;
+    const key = getCoverArtCacheKey(artist, album);
+    const current = get().coverArtCache[key];
+
+    // If already resolved or in flight, avoid duplicate network calls
+    if (current && (current.status === 'found' || current.status === 'not-found' || current.status === 'loading')) {
+      return;
+    }
+
+    const loadingEntry: CoverArtCacheEntry = {
+      candidates: [],
+      candidateIndex: 0,
+      mbid: null,
+      coverUrl: null,
+      status: 'loading',
+      resolvedAt: Date.now(),
+    };
+
+    set((state) => ({
+      coverArtCache: { ...state.coverArtCache, [key]: loadingEntry },
+    }));
+
+    try {
+      const candidates = await searchReleaseGroupQueued(artist, album);
+      if (candidates && candidates.length > 0) {
+        const mbid = candidates[0];
+        const url = coverArtUrl(mbid, 250);
+        const foundEntry: CoverArtCacheEntry = {
+          candidates,
+          candidateIndex: 0,
+          mbid,
+          coverUrl: url,
+          status: 'found',
+          resolvedAt: Date.now(),
+        };
+        set((state) => {
+          const updated = { ...state.coverArtCache, [key]: foundEntry };
+          saveCoverArtCache(updated);
+          return { coverArtCache: updated };
+        });
+      } else {
+        const notFoundEntry: CoverArtCacheEntry = {
+          candidates: [],
+          candidateIndex: 0,
+          mbid: null,
+          coverUrl: null,
+          status: 'not-found',
+          resolvedAt: Date.now(),
+        };
+        set((state) => {
+          const updated = { ...state.coverArtCache, [key]: notFoundEntry };
+          saveCoverArtCache(updated);
+          return { coverArtCache: updated };
+        });
+      }
+    } catch (err) {
+      console.error(`Failed to resolve cover art for ${artist} - ${album}:`, err);
+      const errorEntry: CoverArtCacheEntry = {
+        candidates: [],
+        candidateIndex: 0,
+        mbid: null,
+        coverUrl: null,
+        status: 'not-found',
+        resolvedAt: Date.now(),
+      };
+      set((state) => {
+        const updated = { ...state.coverArtCache, [key]: errorEntry };
+        saveCoverArtCache(updated);
+        return { coverArtCache: updated };
+      });
+    }
+  },
+
+  advanceCoverArtCandidate: (cacheKey: string) => {
+    set((state) => {
+      const prev = state.coverArtCache[cacheKey];
+      if (!prev || !prev.candidates) return state;
+
+      const nextIndex = (prev.candidateIndex ?? 0) + 1;
+      if (nextIndex < prev.candidates.length) {
+        const nextMbid = prev.candidates[nextIndex];
+        const updatedEntry: CoverArtCacheEntry = {
+          ...prev,
+          candidateIndex: nextIndex,
+          mbid: nextMbid,
+          coverUrl: coverArtUrl(nextMbid, 250),
+          status: 'found',
+          resolvedAt: Date.now(),
+        };
+        const updated = { ...state.coverArtCache, [cacheKey]: updatedEntry };
+        saveCoverArtCache(updated);
+        return { coverArtCache: updated };
+      } else {
+        const updatedEntry: CoverArtCacheEntry = {
+          ...prev,
+          candidateIndex: nextIndex,
+          mbid: null,
+          coverUrl: null,
+          status: 'not-found',
+          resolvedAt: Date.now(),
+        };
+        const updated = { ...state.coverArtCache, [cacheKey]: updatedEntry };
+        saveCoverArtCache(updated);
+        return { coverArtCache: updated };
+      }
+    });
+  },
+
+  markCoverArtStatus: (cacheKey: string, status: CoverArtStatus, coverUrl: string | null = null) => {
+    const current = get().coverArtCache[cacheKey];
+    if (
+      status === 'not-found' &&
+      current &&
+      current.candidates &&
+      (current.candidateIndex ?? 0) + 1 < current.candidates.length
+    ) {
+      get().advanceCoverArtCandidate(cacheKey);
+      return;
+    }
+
+    set((state) => {
+      const prev = state.coverArtCache[cacheKey];
+      const updatedEntry: CoverArtCacheEntry = {
+        candidates: prev?.candidates || [],
+        candidateIndex: prev?.candidateIndex || 0,
+        mbid: status === 'found' ? prev?.mbid || null : null,
+        coverUrl: coverUrl !== undefined ? coverUrl : (status === 'found' ? prev?.coverUrl || null : null),
+        status,
+        resolvedAt: Date.now(),
+      };
+      const updated = { ...state.coverArtCache, [cacheKey]: updatedEntry };
+      saveCoverArtCache(updated);
+      return { coverArtCache: updated };
+    });
   },
 
   isSettingsOpen: false,
@@ -2556,6 +2709,14 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         };
         bindings = [];
         break;
+      case 'mediaSearch':
+        width = 580;
+        height = 220;
+        staticProps = {
+          label: 'Music Search',
+        };
+        bindings = [];
+        break;
       case 'climate':
         width = 320;
         height = 150;
@@ -2887,11 +3048,12 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       const currentList = state.componentsByScreen[activeScreen] || [];
       const updatedList = currentList.map((c) => {
         if (c.id === id) {
-          const maxW = Math.max(40, 1920 - (c.x || 0));
+          const minW = c.type === 'mediaSearch' ? 550 : 40;
+          const maxW = Math.max(minW, 1920 - (c.x || 0));
           const maxH = Math.max(40, 1080 - (c.y || 0));
           return {
             ...c,
-            width: Math.min(maxW, Math.max(40, finalW)),
+            width: Math.min(maxW, Math.max(minW, finalW)),
             height: Math.min(maxH, Math.max(40, finalH)),
           };
         }

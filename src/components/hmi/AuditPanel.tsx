@@ -19,6 +19,7 @@ import {
   generateAuditReportHtml,
 } from '../../lib/hmiRules/auditEngine';
 import { recordRuntimeInteraction, getRuntimeLog, clearRuntimeLog } from '../../lib/hmiRules/runtimeInstrumenter';
+import { getComponentDisplayName } from '../../utils/componentDisplayNames';
 import { RuleInfoAffordance } from './RuleInfoAffordance';
 import {
   ShieldCheck,
@@ -269,7 +270,7 @@ export const AuditPanel: React.FC = () => {
       if (b.fails.length !== a.fails.length) {
         return b.fails.length - a.fails.length;
       }
-      return a.componentType.localeCompare(b.componentType);
+      return getComponentDisplayName(a.componentType).localeCompare(getComponentDisplayName(b.componentType));
     });
 
     const screenLevelGroup = {
@@ -481,7 +482,8 @@ export const AuditPanel: React.FC = () => {
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const compText = `${comp.componentType} ${comp.instanceId} ${comp.screenName || ''}`.toLowerCase();
+        const displayName = getComponentDisplayName(comp.componentType);
+        const compText = `${displayName} ${comp.componentType} ${comp.instanceId} ${comp.screenName || ''}`.toLowerCase();
         const ruleMatch = [...comp.issues, ...comp.passes].some((f) => {
           const rule = HMI_RULES.find((r) => r.id === f.ruleId);
           return (
@@ -606,9 +608,6 @@ export const AuditPanel: React.FC = () => {
                 <h2 className="text-sm sm:text-base font-bold font-mono tracking-tight text-slate-100">
                   HMI Compliance & Safety Audit
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40">
-                  v1.0 Advisory
-                </span>
               </div>
               <p className="text-xs text-slate-400">
                 Research-backed automotive timing, IA, legibility, and distraction standards
@@ -947,9 +946,9 @@ export const AuditPanel: React.FC = () => {
                   key={comp.instanceId}
                   onClick={() => handleChipClick(comp.instanceId, comp.screenId)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer shrink-0"
-                  title={`Select ${comp.type} on canvas and jump to findings`}
+                  title={`Select ${getComponentDisplayName(comp.type)} on canvas and jump to findings`}
                 >
-                  <span className="font-semibold">{comp.type}</span>
+                  <span className="font-semibold">{getComponentDisplayName(comp.type)}</span>
                   {comp.failCount > 0 && (
                     <span className="w-4 h-4 rounded-full bg-rose-500/30 text-rose-300 text-xs font-bold flex items-center justify-center">
                       {comp.failCount}
@@ -1143,7 +1142,7 @@ export const AuditPanel: React.FC = () => {
                         <div className="flex items-center justify-between gap-3 flex-wrap">
                           <div className="flex items-center gap-2.5">
                             <div className="font-mono font-bold text-lg text-slate-100">
-                              {comp.componentType}
+                              {getComponentDisplayName(comp.componentType)}
                             </div>
                             {auditTargetScreenId === 'all' && comp.screenName && (
                               <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 border border-slate-700">
@@ -1327,7 +1326,7 @@ export const AuditPanel: React.FC = () => {
                               <div className="flex items-center gap-2 min-w-0">
                                 <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                                 <span className="font-semibold text-sm text-rose-200 shrink-0">
-                                  {fFinding.instanceId ? (auditContext.instances.find((i) => i.id === fFinding.instanceId)?.type || fFinding.instanceId) : 'Screen'}
+                                  {fFinding.instanceId ? getComponentDisplayName(auditContext.instances.find((i) => i.id === fFinding.instanceId)?.type || fFinding.instanceId) : 'Screen'}
                                 </span>
                                 <span className="text-slate-300 text-sm truncate">
                                   {fFinding.measured ? `${fFinding.measured} (${fFinding.threshold ? `needs ${fFinding.threshold}` : fFinding.message})` : fFinding.message}
@@ -1354,7 +1353,7 @@ export const AuditPanel: React.FC = () => {
                               <div className="flex items-center gap-2 min-w-0">
                                 <AlertTriangle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                 <span className="font-semibold text-sm text-slate-300 shrink-0">
-                                  {wFinding.instanceId ? (auditContext.instances.find((i) => i.id === wFinding.instanceId)?.type || wFinding.instanceId) : 'Screen'}
+                                  {wFinding.instanceId ? getComponentDisplayName(auditContext.instances.find((i) => i.id === wFinding.instanceId)?.type || wFinding.instanceId) : 'Screen'}
                                 </span>
                                 <span className="text-slate-300 text-sm truncate">
                                   {wFinding.measured ? `${wFinding.measured} (${wFinding.threshold ? `needs ${wFinding.threshold}` : wFinding.message})` : wFinding.message}
@@ -1397,7 +1396,7 @@ export const AuditPanel: React.FC = () => {
                                       <div className="flex items-center gap-1.5">
                                         <Check className="w-3.5 h-3.5 text-slate-400" />
                                         <span className="text-slate-300 font-semibold text-sm">
-                                          {pFinding.instanceId ? (auditContext.instances.find((i) => i.id === pFinding.instanceId)?.type || pFinding.instanceId) : 'Screen'}
+                                          {pFinding.instanceId ? getComponentDisplayName(auditContext.instances.find((i) => i.id === pFinding.instanceId)?.type || pFinding.instanceId) : 'Screen'}
                                         </span>
                                         {pFinding.measured && <span className="text-slate-500 text-xs">({pFinding.measured})</span>}
                                       </div>

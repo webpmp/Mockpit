@@ -13,6 +13,7 @@ export interface MockpitInputProps extends Omit<React.InputHTMLAttributes<HTMLIn
   componentId?: string;
   keyboardSlideDirection?: KeyboardSlideDirection | 'default';
   icon?: React.ReactNode;
+  rightElement?: React.ReactNode;
   wrapperClassName?: string;
 }
 
@@ -25,6 +26,7 @@ export const MockpitInput: React.FC<MockpitInputProps> = ({
   componentId,
   keyboardSlideDirection = 'default',
   icon,
+  rightElement,
   wrapperClassName = '',
   className = '',
   placeholder = 'Type here...',
@@ -119,10 +121,15 @@ export const MockpitInput: React.FC<MockpitInputProps> = ({
         placeholder={placeholder}
         style={isActive ? { borderColor: 'var(--color-primary, #38bdf8)' } : undefined}
         className={`w-full h-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--color-primary,#38bdf8)] font-mono antialiased transition-colors ${
-          icon ? 'pl-8 pr-2.5' : ''
-        } ${className}`}
+          icon ? 'pl-8' : ''
+        } ${rightElement ? 'pr-9' : 'pr-2.5'} ${className}`}
         {...props}
       />
+      {rightElement && (
+        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center z-10">
+          {rightElement}
+        </div>
+      )}
     </div>
   );
 };

@@ -8,6 +8,7 @@ import {
 } from './types';
 import { isStandardAutomotiveIcon } from './iconDictionary';
 import { ComponentInstance, ComponentType } from '../../types';
+import { getComponentDisplayName } from '../../utils/componentDisplayNames';
 
 export * from './types';
 export * from './iconDictionary';
@@ -107,7 +108,7 @@ export function calculateGlanceHeuristic(instance: ComponentInstance): number {
 export const CRITICAL_TASK_COMPONENT_TYPES: ComponentType[] = [
   'climate', 'climateTemp', 'climateVent', 'climateSeats',
   'map', 'miniNav', 'overheadVisualization', 'navDestination', 'navTripEstimate',
-  'media', 'nowPlaying', 'mediaPlaylists', 'mediaDiscovery',
+  'media', 'nowPlaying', 'mediaPlaylists', 'mediaDiscovery', 'mediaSearch',
   'phone', 'phoneDialPad',
   'warning', 'driveMode', 'battery', 'gear', 'speed', 'tirePressure', 'vehicleExplodedView'
 ];
@@ -118,6 +119,7 @@ export const CRITICAL_TASK_COMPONENT_TYPES: ComponentType[] = [
 export const HIGH_DEMAND_TASK_TYPES: ComponentType[] = [
   'phoneMessaging',
   'navSearch',
+  'mediaSearch',
   'sendToServiceCenter'
 ];
 
@@ -162,7 +164,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'fail',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" size is ${inst.width}×${inst.height}px (requires ≥44×44px).`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" size is ${inst.width}×${inst.height}px (requires ≥44×44px).`,
             measured: `${inst.width}×${inst.height}px`,
             threshold: '≥44×44px',
           });
@@ -172,7 +174,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'warning',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" has ${minGap}px gap to nearest neighbor (requires ≥8px).`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" has ${minGap}px gap to nearest neighbor (requires ≥8px).`,
             measured: `${minGap}px`,
             threshold: '≥8px gap',
           });
@@ -223,7 +225,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'fail',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" uses forbidden blinking or animate-pulse animation.`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" uses forbidden blinking or animate-pulse animation.`,
             measured: 'animate-pulse detected',
             threshold: 'Static or gentle transition only',
           });
@@ -233,7 +235,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'pass',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" uses steady, non-blinking visual indicators.`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" uses steady, non-blinking visual indicators.`,
             threshold: 'No animate-pulse',
           });
         }
@@ -263,7 +265,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'fail',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" occupies full screen (${inst.width}×${inst.height}px). Driver confirmations must be inline in-card.`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" occupies full screen (${inst.width}×${inst.height}px). Driver confirmations must be inline in-card.`,
             measured: `${inst.width}×${inst.height}px`,
             threshold: 'Inline card (width < 1200px)',
           });
@@ -273,7 +275,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'pass',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" renders inline without blocking driving context.`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" renders inline without blocking driving context.`,
             measured: `${inst.width}×${inst.height}px`,
             threshold: 'Inline card',
           });
@@ -351,7 +353,7 @@ export const HMI_RULES: HMIRule[] = [
           status: isPass ? 'pass' : 'fail',
           instanceId: entry.targetId,
           screenId: entry.screenId,
-          message: `${entry.eventType.toUpperCase()} on "${entry.targetType || 'control'}" completed in ${entry.responseTimeMs}ms.`,
+          message: `${entry.eventType.toUpperCase()} on "${entry.targetType ? getComponentDisplayName(entry.targetType) : 'control'}" completed in ${entry.responseTimeMs}ms.`,
           measured: `${entry.responseTimeMs}ms`,
           threshold: '100–2500ms',
         });
@@ -457,7 +459,7 @@ export const HMI_RULES: HMIRule[] = [
           status: isPass ? 'pass' : 'fail',
           instanceId: entry.targetId,
           screenId: entry.screenId,
-          message: `Touch event on "${entry.targetType || 'control'}" rendered feedback in ${entry.latencyMs}ms.`,
+          message: `Touch event on "${entry.targetType ? getComponentDisplayName(entry.targetType) : 'control'}" rendered feedback in ${entry.latencyMs}ms.`,
           measured: `${entry.latencyMs}ms`,
           threshold: '<100ms',
         });
@@ -605,7 +607,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'warning',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" uses monochrome color (${color || 'default'}). Recommend semantic accent.`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" uses monochrome color (${color || 'default'}). Recommend semantic accent.`,
             measured: color || 'monochrome',
             threshold: 'Chromatic accent (e.g. sky, amber, emerald)',
           });
@@ -615,7 +617,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'pass',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" uses chromatic encoding (${color || 'primary'}).`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" uses chromatic encoding (${color || 'primary'}).`,
             measured: color || 'accented',
             threshold: 'Chromatic token',
           });
@@ -656,7 +658,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'warning',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" uses icon token "${iconProp}" which is not mapped to ISO 2575 / SAE J2364.`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" uses icon token "${iconProp}" which is not mapped to ISO 2575 / SAE J2364.`,
             measured: iconProp,
             threshold: 'ISO 2575 / SAE J2364 allowlist',
           });
@@ -666,7 +668,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'pass',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" uses standardized automotive symbol "${iconProp}".`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" uses standardized automotive symbol "${iconProp}".`,
             measured: iconProp,
             threshold: 'ISO 2575 / SAE J2364',
           });
@@ -724,7 +726,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'fail',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" typography subtends ${computedArcmin} arcmin (requires ≥${minArcminRequired} arcmin at ${cfg.viewingDistanceMM}mm viewing distance).`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" typography subtends ${computedArcmin} arcmin (requires ≥${minArcminRequired} arcmin at ${cfg.viewingDistanceMM}mm viewing distance).`,
             measured: `${computedArcmin} arcmin`,
             threshold: `≥${minArcminRequired} arcmin`,
           });
@@ -734,7 +736,7 @@ export const HMI_RULES: HMIRule[] = [
             status: 'pass',
             instanceId: inst.id,
             screenId: ctx.screenId,
-            message: `Component "${inst.type}" text subtends ${computedArcmin} arcmin (satisfies ≥${minArcminRequired} arcmin standard).`,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" text subtends ${computedArcmin} arcmin (satisfies ≥${minArcminRequired} arcmin standard).`,
             measured: `${computedArcmin} arcmin`,
             threshold: `≥${minArcminRequired} arcmin`,
           });
@@ -778,7 +780,7 @@ export const HMI_RULES: HMIRule[] = [
               status: 'pass',
               instanceId: inst.id,
               screenId: ctx.screenId,
-              message: `High-demand task "${inst.type}" has moving lockouts configured for driving safety.`,
+              message: `High-demand task "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" has moving lockouts configured for driving safety.`,
               measured: 'Lockout active when speed > 0',
               threshold: 'Locked while moving',
             });
@@ -788,7 +790,7 @@ export const HMI_RULES: HMIRule[] = [
               status: 'fail',
               instanceId: inst.id,
               screenId: ctx.screenId,
-              message: `High-demand component "${inst.type}" lacks speed lockout protection while vehicle is in motion.`,
+              message: `High-demand component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" lacks speed lockout protection while vehicle is in motion.`,
               measured: 'No lockout flag',
               threshold: 'Speed > 0 lockout required',
             });

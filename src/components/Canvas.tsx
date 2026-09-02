@@ -506,8 +506,9 @@ export const Canvas: React.FC = () => {
         const comp = currentComps.find((c) => c.id === resizeInfo.id);
         const compX = comp?.x ?? 0;
         const compY = comp?.y ?? 0;
+        const compMinW = comp?.type === 'mediaSearch' ? 550 : 40;
 
-        const maxW = Math.max(40, CANVAS_WIDTH - compX);
+        const maxW = Math.max(compMinW, CANVAS_WIDTH - compX);
         const maxH = Math.max(40, CANVAS_HEIGHT - compY);
 
         let newW: number;
@@ -516,11 +517,11 @@ export const Canvas: React.FC = () => {
         if (gridConfig.snapToGrid && gridConfig.size > 0) {
           newW = Math.round(rawW / gridConfig.size) * gridConfig.size;
           newH = Math.round(rawH / gridConfig.size) * gridConfig.size;
-          const minSize = Math.max(gridConfig.size, 40);
+          const minSize = Math.max(gridConfig.size, compMinW);
           newW = Math.max(minSize, Math.min(maxW, newW));
-          newH = Math.max(minSize, Math.min(maxH, newH));
+          newH = Math.max(Math.max(gridConfig.size, 40), Math.min(maxH, newH));
         } else {
-          newW = Math.round(Math.max(40, Math.min(maxW, rawW)));
+          newW = Math.round(Math.max(compMinW, Math.min(maxW, rawW)));
           newH = Math.round(Math.max(40, Math.min(maxH, rawH)));
         }
 

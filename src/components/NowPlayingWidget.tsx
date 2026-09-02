@@ -18,6 +18,8 @@ import {
   renderCoverIcon,
   formatMediaTime,
 } from '../data/mediaData';
+import { useMockpitStore } from '../store/useMockpitStore';
+import { getCoverArtCacheKey } from '../services/musicBrainzService';
 import { resolveNowPlayingLayout } from '../utils/nowPlayingLayout';
 
 export type DismissDirection = 'up' | 'down' | 'left' | 'right';
@@ -514,6 +516,20 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
   const [slideDirection, setSlideDirection] = useState<'next' | 'prev'>('next');
   const prefersReducedMotion = useReducedMotion() ?? false;
 
+  const coverArtCache = useMockpitStore((s) => s.coverArtCache);
+  const resolveCoverArt = useMockpitStore((s) => s.resolveCoverArt);
+  const markCoverArtStatus = useMockpitStore((s) => s.markCoverArtStatus);
+  const advanceCoverArtCandidate = useMockpitStore((s) => s.advanceCoverArtCandidate);
+
+  const currentCoverKey = getCoverArtCacheKey(currentTrack.artist, currentTrack.album);
+  const currentCoverArt = coverArtCache[currentCoverKey];
+
+  useEffect(() => {
+    if (currentTrack.artist && currentTrack.album) {
+      resolveCoverArt(currentTrack.artist, currentTrack.album);
+    }
+  }, [currentTrack.artist, currentTrack.album, resolveCoverArt]);
+
   const isFavorited = favoritedTrackIds.has(currentTrack.id);
 
   const toggleFavorite = (e?: React.MouseEvent) => {
@@ -785,9 +801,18 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                         minHeight: '26px',
                       }}
                     >
-                      {renderCoverIcon(
-                        currentTrack.iconName,
-                        'w-3.5 h-3.5 text-white/90'
+                      {currentCoverArt?.status === 'found' && currentCoverArt?.coverUrl ? (
+                        <img
+                          src={currentCoverArt.coverUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={() => advanceCoverArtCandidate(currentCoverKey)}
+                        />
+                      ) : (
+                        renderCoverIcon(
+                          currentTrack.iconName,
+                          'w-3.5 h-3.5 text-white/90'
+                        )
                       )}
                     </div>
                   )}
@@ -932,9 +957,18 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       maxHeight: '48px',
                     }}
                   >
-                    {renderCoverIcon(
-                      currentTrack.iconName,
-                      'w-[50%] h-[50%] max-w-[22px] max-h-[22px] min-w-[14px] min-h-[14px] text-white/90'
+                    {currentCoverArt?.status === 'found' && currentCoverArt?.coverUrl ? (
+                      <img
+                        src={currentCoverArt.coverUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={() => advanceCoverArtCandidate(currentCoverKey)}
+                      />
+                    ) : (
+                      renderCoverIcon(
+                        currentTrack.iconName,
+                        'w-[50%] h-[50%] max-w-[22px] max-h-[22px] min-w-[14px] min-h-[14px] text-white/90'
+                      )
                     )}
                   </div>
                 )}
@@ -1166,9 +1200,18 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                         maxHeight: '44px',
                       }}
                     >
-                      {renderCoverIcon(
-                        currentTrack.iconName,
-                        'w-[50%] h-[50%] max-w-[20px] max-h-[20px] min-w-[12px] min-h-[12px] text-white/90'
+                      {currentCoverArt?.status === 'found' && currentCoverArt?.coverUrl ? (
+                        <img
+                          src={currentCoverArt.coverUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={() => advanceCoverArtCandidate(currentCoverKey)}
+                        />
+                      ) : (
+                        renderCoverIcon(
+                          currentTrack.iconName,
+                          'w-[50%] h-[50%] max-w-[20px] max-h-[20px] min-w-[12px] min-h-[12px] text-white/90'
+                        )
                       )}
                     </div>
                   )}
