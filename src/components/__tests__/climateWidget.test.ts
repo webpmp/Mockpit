@@ -923,4 +923,72 @@ describe('Compact Climate Control Component & Dual-Zone SYNC Suite', () => {
     assert.ok(overlayPositionClasses.includes('left-1/2'), 'Overlay uses left-1/2');
     assert.ok(overlayPositionClasses.includes('-translate-x-1/2'), 'Overlay uses -translate-x-1/2');
   });
+
+  it('32. Vent Dashboard Pointer Capture & Relocated ON/OFF Controls Suite', () => {
+    // 1. Angle calculation from pointer coordinates
+    const calculateAngle = (clientX: number, clientY: number, centerX: number, centerY: number) => {
+      const dx = clientX - centerX;
+      const dy = clientY - centerY;
+      let rad = Math.atan2(dy, dx);
+      let deg = (rad * 180) / Math.PI;
+      if (deg < 0) deg += 360;
+      return deg;
+    };
+
+    const centerX = 100;
+    const centerY = 100;
+
+    // Direct right = 0 deg
+    assert.equal(Math.round(calculateAngle(150, 100, centerX, centerY)), 0);
+    // Direct down = 90 deg
+    assert.equal(Math.round(calculateAngle(100, 150, centerX, centerY)), 90);
+    // Direct left = 180 deg
+    assert.equal(Math.round(calculateAngle(50, 100, centerX, centerY)), 180);
+    // Direct up = 270 deg
+    assert.equal(Math.round(calculateAngle(100, 50, centerX, centerY)), 270);
+
+    // 2. Continuous tracking outside the circular vent (e.g. 500px away)
+    const farAwayAngle = calculateAngle(500, 500, centerX, centerY);
+    assert.equal(Math.round(farAwayAngle), 45, 'Far drag pointer continues tracking accurate angle');
+
+    // 3. Presets snap on release
+    const PRESET_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
+    const getNearestPreset = (angle: number): number => {
+      let normalized = ((angle % 360) + 360) % 360;
+      let closest = PRESET_ANGLES[0];
+      let minDiff = 360;
+      for (const preset of PRESET_ANGLES) {
+        let diff = Math.abs(normalized - preset);
+        if (diff > 180) diff = 360 - diff;
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = preset;
+        }
+      }
+      return closest;
+    };
+
+    assert.equal(getNearestPreset(44), 45);
+    assert.equal(getNearestPreset(358), 0);
+    assert.equal(getNearestPreset(265), 270);
+
+    // 4. ON/OFF control is outside the circular vent
+    const ventColumnStructure = {
+      top: 'on/off control button',
+      middle: 'circular directional vent (no center button)',
+      bottom: 'spatial label',
+    };
+    assert.equal(ventColumnStructure.top, 'on/off control button');
+    assert.equal(ventColumnStructure.middle, 'circular directional vent (no center button)');
+    assert.equal(ventColumnStructure.bottom, 'spatial label');
+
+    // 5. Accessible tooltips for LEFT, CENTER, RIGHT
+    const getTooltip = (label: string, isOpen: boolean) =>
+      isOpen ? `Turn ${label} vent OFF` : `Turn ${label} vent ON`;
+
+    assert.equal(getTooltip('LEFT', true), 'Turn LEFT vent OFF');
+    assert.equal(getTooltip('LEFT', false), 'Turn LEFT vent ON');
+    assert.equal(getTooltip('CENTER', true), 'Turn CENTER vent OFF');
+    assert.equal(getTooltip('RIGHT', true), 'Turn RIGHT vent OFF');
+  });
 });

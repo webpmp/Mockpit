@@ -72,12 +72,6 @@ export const DebugStatePanel: React.FC = () => {
     if (vehicleState.gear !== 'D') return;
     const newCruise = !vehicleState.cruiseControlActive;
     setVehicleState({ cruiseControlActive: newCruise });
-    triggerNotification({
-      message: newCruise ? 'CRUISE CONTROL ENGAGED' : 'CRUISE CONTROL DISENGAGED',
-      icon: 'gauge',
-      color: newCruise ? '#10b981' : '#06b6d4',
-      severity: 'info',
-    });
   };
 
   const isHeadlightsOn = vehicleState.headlights === 'On';

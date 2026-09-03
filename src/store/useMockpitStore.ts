@@ -146,6 +146,12 @@ export const computeInitialClimateState = (): ClimateState => {
     driverSeatCool: initialCool,
     passengerSeatHeat: initialHeat,
     passengerSeatCool: initialCool,
+    driverLastHeat: initialHeat > 0 ? initialHeat : 2,
+    driverLastCool: initialCool > 0 ? initialCool : 2,
+    passengerLastHeat: initialHeat > 0 ? initialHeat : 2,
+    passengerLastCool: initialCool > 0 ? initialCool : 2,
+    driverTargetMode: initialCool > 0 ? 'cool' : 'heat',
+    passengerTargetMode: initialCool > 0 ? 'cool' : 'heat',
   };
 };
 
@@ -454,29 +460,27 @@ const DEFAULT_NOTIFICATION_COMPONENTS: ComponentInstance[] = [
       visible: 'false',
       color: '#10b981',
       severity: 'info',
-      triggerMode: 'event',
-      triggerEvent: 'cruise_on',
+      triggerMode: 'condition',
+      showBadgeOnMinimize: 'true',
     },
-    bindings: [],
-  },
-  {
-    id: 'comp-warning-cruise-off',
-    type: 'warning',
-    x: 0,
-    y: 0,
-    width: 380,
-    height: 120,
-    staticProps: {
-      label: 'CRUISE CONTROL',
-      icon: 'gauge',
-      message: 'CRUISE CONTROL DISENGAGED',
-      visible: 'false',
-      color: '#06b6d4',
-      severity: 'info',
-      triggerMode: 'event',
-      triggerEvent: 'cruise_off',
-    },
-    bindings: [],
+    bindings: [
+      {
+        id: 'bind-cruise-1',
+        stateField: 'cruiseControlActive',
+        condition: '=',
+        value: true,
+        targetProp: 'visible',
+        targetValue: 'true',
+      },
+      {
+        id: 'bind-cruise-2',
+        stateField: 'cruiseControlActive',
+        condition: '=',
+        value: false,
+        targetProp: 'visible',
+        targetValue: 'false',
+      },
+    ],
   },
 ];
 
@@ -668,11 +672,11 @@ function loadSavedNotificationComponents(): ComponentInstance[] {
                 details: c.staticProps?.details !== undefined ? c.staticProps.details : defaultComp.staticProps.details,
                 label: c.staticProps?.label || defaultComp.staticProps.label,
                 icon: c.staticProps?.icon || defaultComp.staticProps.icon,
-                triggerMode: c.staticProps?.triggerMode || defaultComp.staticProps.triggerMode,
-                triggerEvent: c.staticProps?.triggerEvent || defaultComp.staticProps.triggerEvent,
+                triggerMode: c.id === 'comp-warning-cruise-on' ? defaultComp.staticProps?.triggerMode : (c.staticProps?.triggerMode || defaultComp.staticProps?.triggerMode),
+                triggerEvent: c.staticProps?.triggerEvent || defaultComp.staticProps?.triggerEvent,
                 showBadgeOnMinimize: 'true',
               },
-              bindings: c.bindings && c.bindings.length > 0 ? c.bindings : defaultComp.bindings,
+              bindings: c.id === 'comp-warning-cruise-on' ? defaultComp.bindings : (c.bindings && c.bindings.length > 0 ? c.bindings : defaultComp.bindings),
             };
           }
           return c;
@@ -2292,7 +2296,15 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       if (vs.cruiseControlActive) {
         get().triggerEventNotification('cruise_on');
       } else {
-        get().triggerEventNotification('cruise_off');
+        // When cruise control is disengaged, remove the active/minimized CRUISE CONTROL ENGAGED notifications
+        set((state) => ({
+          activeEventNotifIds: state.activeEventNotifIds.filter(
+            (id) => id !== 'comp-warning-cruise-on' && id !== 'comp-warning-cruise-off'
+          ),
+          transientNotifications: state.transientNotifications.filter(
+            (n) => !n.staticProps?.message?.toUpperCase().includes('CRUISE') && !n.id.includes('cruise')
+          ),
+        }));
       }
     }
   },
@@ -2376,8 +2388,6 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   triggerNotification: (notif) => {
     if (notif.message.includes('ENGAGED') || notif.message.includes('SET')) {
       get().triggerEventNotification('cruise_on');
-    } else if (notif.message.includes('DISENGAGED') || notif.message.includes('OFF')) {
-      get().triggerEventNotification('cruise_off');
     }
 
     const severity = notif.severity || 'warning';

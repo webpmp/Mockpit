@@ -29,12 +29,12 @@ describe('Now Playing Layout Determinism & Progressive Content Removal Suite', (
     assert.equal(layout.showShuffleRepeat, true);
     assert.equal(layout.showHeaderIcon, false, 'Header icon removed at 264x270 to preserve action row');
     assert.equal(layout.showHeaderDivider, false, 'Header divider removed at 264x270 to preserve action row');
-    assert.equal(layout.showTimestamps, false, 'Timestamps removed at 264x270 to preserve action row');
+    assert.equal(layout.showTimestamps, true, 'Timestamps restored at 264x270 with threshold h >= 200');
   });
 
   it('3. Deterministically applies Progressive Removal for 242 × 220 (Compact Mode)', () => {
     // 242 × 220: Space is constrained
-    // Priority 1: Timestamps removed (showTimestamps = false)
+    // Timestamps are restored at h >= 190 and w >= 220 (showTimestamps = true)
     // Priority 2: Header Icon removed (showHeaderIcon = false)
     // Priority 3: Header Divider removed (showHeaderDivider = false)
     // Priority 4: Secondary actions (Favorite/Shuffle/Repeat) removed (showFavoriteButton = false, showShuffleRepeat = false)
@@ -43,7 +43,7 @@ describe('Now Playing Layout Determinism & Progressive Content Removal Suite', (
     assert.equal(layout.layoutMode, 'compact');
     assert.equal(layout.showHeaderIcon, false, 'Header icon removed at 242x220');
     assert.equal(layout.showHeaderDivider, false, 'Header divider removed at 242x220');
-    assert.equal(layout.showTimestamps, false, 'Timestamps removed at 242x220');
+    assert.equal(layout.showTimestamps, true, 'Timestamps restored at 242x220 with threshold h >= 190 and w >= 220');
     assert.equal(layout.showShuffleRepeat, false, 'Shuffle/Repeat removed at 242x220');
     assert.equal(layout.showFavoriteButton, false, 'Favorite button hidden at 242x220');
     assert.equal(layout.showSeekBar, true, 'Seek bar fits at 242x220');
@@ -72,12 +72,12 @@ describe('Now Playing Layout Determinism & Progressive Content Removal Suite', (
 
   it('5. Narrow but Tall Bidirectional Content Restoration Acceptance Test (280x220 -> 280x260 -> 280x300 -> 280x220 -> 280x300)', () => {
     // Phase 1: 280 × 220 (Narrow + Short)
-    // Not enough vertical space: TRACK INFO, SEEK BAR, BACK PAUSE NEXT. Secondary actions & timestamps hidden.
+    // 280x220 satisfies h >= 190 && w >= 220: TRACK INFO, SEEK BAR, TIMESTAMPS, BACK PAUSE NEXT shown. Secondary actions hidden.
     const step1 = resolveNowPlayingLayout(280, 220, 'horizontal');
     assert.equal(step1.layoutMode, 'compact');
     assert.equal(step1.showThumbnail, true, 'Track info artwork shown');
     assert.equal(step1.showSeekBar, true, 'Seek bar shown');
-    assert.equal(step1.showTimestamps, false, 'Timestamps hidden at 280x220');
+    assert.equal(step1.showTimestamps, true, 'Timestamps shown at 280x220 since h >= 190 and w >= 220');
     assert.equal(step1.showFavoriteButton, false, 'Secondary actions hidden at 280x220');
     assert.equal(step1.showShuffleRepeat, false, 'Secondary actions hidden at 280x220');
 
@@ -88,7 +88,7 @@ describe('Now Playing Layout Determinism & Progressive Content Removal Suite', (
     assert.equal(step2.isTallLayout, true);
     assert.equal(step2.showThumbnail, true, 'Track info artwork shown');
     assert.equal(step2.showSeekBar, true, 'Seek bar shown');
-    assert.equal(step2.showTimestamps, false, 'Timestamps still omitted at 260px to preserve control breathing room');
+    assert.equal(step2.showTimestamps, true, 'Timestamps restored at 280x260 since h >= 200 and w >= 240');
     assert.equal(step2.showFavoriteButton, true, 'Favorite restored in dedicated row at 280x260');
     assert.equal(step2.showShuffleRepeat, true, 'Shuffle/Repeat restored in dedicated row at 280x260');
 
@@ -104,10 +104,10 @@ describe('Now Playing Layout Determinism & Progressive Content Removal Suite', (
     assert.equal(step3.showShuffleRepeat, true, 'Shuffle/Repeat restored at 280x300');
 
     // Phase 4: Reduce height back down -> 280 × 220
-    // Content removal is not permanent - automatically removes timestamps & secondary actions again
+    // Content removal is not permanent - automatically removes secondary actions, retains timestamps
     const step4 = resolveNowPlayingLayout(280, 220, 'horizontal');
     assert.equal(step4.layoutMode, 'compact');
-    assert.equal(step4.showTimestamps, false);
+    assert.equal(step4.showTimestamps, true);
     assert.equal(step4.showFavoriteButton, false);
     assert.equal(step4.showShuffleRepeat, false);
 
@@ -222,5 +222,63 @@ describe('Now Playing Layout Determinism & Progressive Content Removal Suite', (
     assert.equal(standardStacked.isWideShort, false);
     assert.equal(standardStacked.showTimestamps, true);
     assert.equal(standardStacked.showHeaderIcon, true);
+  });
+
+  it('12. Verifies timestamps threshold at default 242x242 and height boundary (185 vs 195/220 vs 242 vs 280)', () => {
+    // Default authored size: 242 x 242 -> resolves to Tall layout, h >= 200 && w >= 240 is satisfied
+    const defaultLayout = resolveNowPlayingLayout(242, 242, 'horizontal');
+    assert.equal(defaultLayout.layoutMode, 'tall');
+    assert.equal(defaultLayout.showTimestamps, true, 'Timestamps render at default 242x242');
+
+    // Height below compact threshold (e.g. 242 x 185): timestamps must NOT render
+    const underThreshold = resolveNowPlayingLayout(242, 185, 'horizontal');
+    assert.equal(underThreshold.layoutMode, 'compact');
+    assert.equal(underThreshold.showTimestamps, false, 'Timestamps hidden when h < 190');
+
+    // Height at or above compact threshold (e.g. 242 x 195 and 242 x 220): timestamps render cleanly
+    const atOrAboveThreshold = resolveNowPlayingLayout(242, 195, 'horizontal');
+    assert.equal(atOrAboveThreshold.layoutMode, 'compact');
+    assert.equal(atOrAboveThreshold.showTimestamps, true, 'Timestamps render when h >= 190 and w >= 220');
+
+    const at220 = resolveNowPlayingLayout(242, 220, 'horizontal');
+    assert.equal(at220.layoutMode, 'compact');
+    assert.equal(at220.showTimestamps, true, 'Timestamps render at 242x220');
+
+    // Height well above in Tall layout (e.g. 242 x 280): timestamps must render cleanly
+    const wellAbove = resolveNowPlayingLayout(242, 280, 'horizontal');
+    assert.equal(wellAbove.layoutMode, 'tall');
+    assert.equal(wellAbove.showTimestamps, true, 'Timestamps render when h >= 200 in tall');
+  });
+
+  it('13. Verifies secondary controls meet 44px minimum tap-target mandate in branches 2-5 and remain disabled in branch 1', () => {
+    // Branch 1: Extremely Constrained (h < 125)
+    const branch1 = resolveNowPlayingLayout(264, 112, 'horizontal');
+    assert.equal(branch1.isExtremelyConstrained, true);
+    assert.equal(branch1.showFavoriteButton, false, 'Favorite button disabled in branch 1');
+    assert.equal(branch1.showShuffleRepeat, false, 'Shuffle/Repeat disabled in branch 1');
+
+    // Branch 2: Tall Layout (e.g. 264 x 352 or 242 x 280)
+    const branch2 = resolveNowPlayingLayout(264, 352, 'horizontal');
+    assert.equal(branch2.layoutMode, 'tall');
+    assert.equal(branch2.secondaryControlSizePx, 44, 'Secondary control size is 44px in tall layout');
+    assert.equal(branch2.secondaryIconSizePx, 18, 'Secondary icon size is 18px in tall layout');
+
+    // Branch 3: Wide + Short (e.g. 420 x 154)
+    const branch3 = resolveNowPlayingLayout(420, 154, 'horizontal');
+    assert.equal(branch3.layoutMode, 'wide_short');
+    assert.equal(branch3.secondaryControlSizePx, 44, 'Secondary control size is 44px in wide_short layout');
+    assert.equal(branch3.secondaryIconSizePx, 18, 'Secondary icon size is 18px in wide_short layout');
+
+    // Branch 4: Standard Stacked Horizontal (e.g. 400 x 220)
+    const branch4 = resolveNowPlayingLayout(400, 220, 'horizontal');
+    assert.equal(branch4.layoutMode, 'standard_horizontal');
+    assert.equal(branch4.secondaryControlSizePx, 44, 'Secondary control size is 44px in standard horizontal');
+    assert.equal(branch4.secondaryIconSizePx, 18, 'Secondary icon size is 18px in standard horizontal');
+
+    // Branch 5: Compact Layout (e.g. 242 x 220 or 280 x 220)
+    const branch5 = resolveNowPlayingLayout(242, 220, 'horizontal');
+    assert.equal(branch5.layoutMode, 'compact');
+    assert.equal(branch5.secondaryControlSizePx, 44, 'Secondary control size is 44px in compact layout');
+    assert.equal(branch5.secondaryIconSizePx, 18, 'Secondary icon size is 18px in compact layout');
   });
 });

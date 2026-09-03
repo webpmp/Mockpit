@@ -246,15 +246,15 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
     const targetLevel = level === 0 ? 1 : level;
     if (seat === 'driver') {
       if (mode === 'heat') {
-        setClimateState({ driverSeatHeat: targetLevel, driverSeatCool: 0 });
+        setClimateState({ driverSeatHeat: targetLevel, driverSeatCool: 0, driverLastHeat: targetLevel, driverTargetMode: 'heat' });
       } else {
-        setClimateState({ driverSeatCool: targetLevel, driverSeatHeat: 0 });
+        setClimateState({ driverSeatCool: targetLevel, driverSeatHeat: 0, driverLastCool: targetLevel, driverTargetMode: 'cool' });
       }
     } else {
       if (mode === 'heat') {
-        setClimateState({ passengerSeatHeat: targetLevel, passengerSeatCool: 0 });
+        setClimateState({ passengerSeatHeat: targetLevel, passengerSeatCool: 0, passengerLastHeat: targetLevel, passengerTargetMode: 'heat' });
       } else {
-        setClimateState({ passengerSeatCool: targetLevel, passengerSeatHeat: 0 });
+        setClimateState({ passengerSeatCool: targetLevel, passengerSeatHeat: 0, passengerLastCool: targetLevel, passengerTargetMode: 'cool' });
       }
     }
     // Explicitly dismiss the popover immediately after committing the selection
@@ -274,25 +274,16 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
   // Helper for seat button styling levels
   const getSeatButtonClasses = (heat: number, cool: number, isOpen: boolean): string => {
     if (isOpen) {
-      return 'bg-slate-950 border-cyan-500 text-cyan-300 ring-2 ring-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.3)]';
+      return 'bg-slate-950 border-orange-500 text-orange-300 ring-2 ring-orange-500/30 shadow-[0_0_12px_rgba(249,115,22,0.3)]';
     }
-    if (heat === 1) {
+    if (heat === 1 || cool === 1) {
       return 'bg-orange-500/15 border-orange-500/40 text-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.25)]';
     }
-    if (heat === 2) {
+    if (heat === 2 || cool === 2) {
       return 'bg-orange-500/25 border-orange-500/60 text-orange-300 shadow-[0_0_12px_rgba(249,115,22,0.4)] ring-1 ring-orange-500/30';
     }
-    if (heat === 3) {
+    if (heat === 3 || cool === 3) {
       return 'bg-orange-500/35 border-orange-400 text-orange-200 shadow-[0_0_18px_rgba(249,115,22,0.55)] ring-1 ring-orange-400/50';
-    }
-    if (cool === 1) {
-      return 'bg-cyan-500/15 border-cyan-500/40 text-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.25)]';
-    }
-    if (cool === 2) {
-      return 'bg-cyan-500/25 border-cyan-500/60 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)] ring-1 ring-cyan-500/30';
-    }
-    if (cool === 3) {
-      return 'bg-cyan-500/35 border-cyan-400 text-cyan-200 shadow-[0_0_18px_rgba(6,182,212,0.55)] ring-1 ring-cyan-400/50';
     }
     return 'bg-slate-950/50 border-slate-800/80 text-slate-500 hover:text-slate-300 hover:border-slate-700';
   };
@@ -300,39 +291,40 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
   const renderSeatIcon = (heat: number, cool: number) => {
     const iconClass = isComfortable ? 'w-5 h-5 sm:w-5.5 sm:h-5.5 shrink-0 transition-transform' : 'w-4.5 h-4.5 shrink-0 transition-transform';
     if (heat > 0) {
-      return <Flame className={`${iconClass} fill-current`} />;
+      return <Flame className={`${iconClass} fill-current text-orange-400`} />;
     }
     if (cool > 0) {
-      return <Snowflake className={`${iconClass} ${cool >= 2 ? 'stroke-[2.2]' : 'stroke-[1.8]'}`} />;
+      return <Snowflake className={`${iconClass} ${cool >= 2 ? 'stroke-[2.2]' : 'stroke-[1.8]'} text-orange-300`} />;
     }
     return <SeatIcon className={`${iconClass} text-slate-500`} />;
   };
 
   const getSeatButtonTitle = (seatLabel: string, heat: number, cool: number) => {
-    if (heat > 0) return `${seatLabel} seat climate: HEAT level ${heat}`;
-    if (cool > 0) return `${seatLabel} seat climate: COOL level ${cool}`;
+    const levelLabel = (lvl: number) => (lvl === 1 ? 'Low' : lvl === 2 ? 'Medium' : 'High');
+    if (heat > 0) return `${seatLabel} seat climate: HEAT ${levelLabel(heat)}`;
+    if (cool > 0) return `${seatLabel} seat climate: COOL ${levelLabel(cool)}`;
     return `${seatLabel} seat climate: OFF`;
   };
 
   const getSeatButtonAriaLabel = (seatLabel: string, heat: number, cool: number) => {
-    if (heat > 0) return `${seatLabel} seat climate: HEAT level ${heat}`;
-    if (cool > 0) return `${seatLabel} seat climate: COOL level ${cool}`;
-    return `${seatLabel} seat climate: OFF`;
+    const levelLabel = (lvl: number) => (lvl === 1 ? 'low' : lvl === 2 ? 'medium' : 'high');
+    if (heat > 0) return `${seatLabel} seat heat ${levelLabel(heat)}`;
+    if (cool > 0) return `${seatLabel} seat cool ${levelLabel(cool)}`;
+    return `${seatLabel} seat climate off`;
   };
 
   const SEAT_SELECTOR_OPTIONS = [
-    { type: 'heat' as const, level: 3 as Level, label: '3' },
-    { type: 'heat' as const, level: 2 as Level, label: '2' },
-    { type: 'heat' as const, level: 1 as Level, label: '1' },
-    { type: 'off' as const, level: 0 as Level, label: 'OFF' },
-    { type: 'cool' as const, level: 1 as Level, label: '1' },
-    { type: 'cool' as const, level: 2 as Level, label: '2' },
-    { type: 'cool' as const, level: 3 as Level, label: '3' },
+    { type: 'heat' as const, level: 1 as Level, label: 'LOW', titleSuffix: 'low', ariaSuffix: 'low' },
+    { type: 'heat' as const, level: 2 as Level, label: 'MED', titleSuffix: 'medium', ariaSuffix: 'medium' },
+    { type: 'heat' as const, level: 3 as Level, label: 'HIGH', titleSuffix: 'high', ariaSuffix: 'high' },
+    { type: 'off' as const, level: 0 as Level, label: 'OFF', titleSuffix: 'off', ariaSuffix: 'off' },
+    { type: 'cool' as const, level: 1 as Level, label: 'LOW', titleSuffix: 'low', ariaSuffix: 'low' },
+    { type: 'cool' as const, level: 2 as Level, label: 'MED', titleSuffix: 'medium', ariaSuffix: 'medium' },
+    { type: 'cool' as const, level: 3 as Level, label: 'HIGH', titleSuffix: 'high', ariaSuffix: 'high' },
   ];
 
   const renderSeatSelector = (seat: 'driver' | 'passenger', heat: Level, cool: Level) => {
     const seatLabel = seat === 'driver' ? 'Driver' : 'Passenger';
-    const isVertical = seatOrientation === 'vertical';
 
     return (
       <AnimatePresence>
@@ -342,11 +334,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.95 }}
             transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className={`absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-50 p-1 rounded-2xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden select-none ${
-              isVertical
-                ? 'flex flex-col gap-1 w-[52px] sm:w-[56px]'
-                : 'flex flex-row gap-1 h-[52px] sm:h-[56px] w-auto'
-            }`}
+            className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-50 p-1.5 sm:p-2 rounded-2xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden select-none flex flex-row items-center gap-1.5 sm:gap-2 w-max max-w-none whitespace-nowrap"
             onClick={(e) => e.stopPropagation()}
           >
             {SEAT_SELECTOR_OPTIONS.map((opt) => {
@@ -358,48 +346,38 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
 
               if (opt.type === 'heat') {
                 isSelected = heat === opt.level;
-                itemTitle = `${seatLabel} Heat ${opt.level}`;
-                itemAriaLabel = `${seatLabel} seat heat level ${opt.level}`;
+                itemTitle = `${seatLabel} seat heat ${opt.titleSuffix}`;
+                itemAriaLabel = `${seatLabel} seat heat ${opt.ariaSuffix}`;
                 itemClasses = isSelected
-                  ? 'bg-orange-500/25 border-orange-500/60 text-orange-300 shadow-[0_0_8px_rgba(249,115,22,0.3)]'
-                  : 'text-slate-400 hover:text-orange-300 hover:bg-slate-800/60 border-transparent';
-                iconElement = isVertical ? (
+                  ? 'bg-slate-950 border-orange-500 text-orange-300 ring-2 ring-orange-500/30 shadow-[0_0_12px_rgba(249,115,22,0.3)]'
+                  : 'text-slate-400 hover:text-orange-300 hover:bg-slate-800/60 border-slate-800/80 bg-slate-900/50';
+                iconElement = (
                   <>
-                    <Flame className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'fill-current text-orange-400' : 'text-slate-400'}`} />
-                    <span className="font-mono text-xs font-bold leading-none">{opt.label}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-mono text-xs font-bold leading-none">{opt.label}</span>
-                    <Flame className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'fill-current text-orange-400' : 'text-slate-400'}`} />
+                    <span className="font-mono text-[10.5px] sm:text-xs font-bold leading-none tracking-wider">{opt.label}</span>
+                    <Flame className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isSelected ? 'fill-current text-orange-400' : 'text-slate-400'}`} />
                   </>
                 );
               } else if (opt.type === 'off') {
                 isSelected = heat === 0 && cool === 0;
-                itemTitle = `${seatLabel} Climate Off`;
+                itemTitle = `${seatLabel} seat climate off`;
                 itemAriaLabel = `${seatLabel} seat climate off`;
                 itemClasses = isSelected
-                  ? 'bg-slate-800 border-slate-600 text-slate-200 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 border-transparent';
+                  ? 'bg-slate-800/90 border-slate-600 text-slate-200 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 border-slate-800/80 bg-slate-900/50';
                 iconElement = (
                   <span className="font-mono text-[11px] sm:text-xs font-bold leading-none tracking-wider">OFF</span>
                 );
               } else {
                 isSelected = cool === opt.level;
-                itemTitle = `${seatLabel} Cool ${opt.level}`;
-                itemAriaLabel = `${seatLabel} seat cool level ${opt.level}`;
+                itemTitle = `${seatLabel} seat cool ${opt.titleSuffix}`;
+                itemAriaLabel = `${seatLabel} seat cool ${opt.ariaSuffix}`;
                 itemClasses = isSelected
-                  ? 'bg-cyan-500/25 border-cyan-500/60 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
-                  : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 border-transparent';
-                iconElement = isVertical ? (
+                  ? 'bg-slate-950 border-orange-500 text-orange-300 ring-2 ring-orange-500/30 shadow-[0_0_12px_rgba(249,115,22,0.3)]'
+                  : 'text-slate-400 hover:text-orange-300 hover:bg-slate-800/60 border-slate-800/80 bg-slate-900/50';
+                iconElement = (
                   <>
-                    <Snowflake className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-cyan-400 stroke-[2.2]' : 'text-slate-400'}`} />
-                    <span className="font-mono text-xs font-bold leading-none">{opt.label}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-mono text-xs font-bold leading-none">{opt.label}</span>
-                    <Snowflake className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-cyan-400 stroke-[2.2]' : 'text-slate-400'}`} />
+                    <span className="font-mono text-[10.5px] sm:text-xs font-bold leading-none tracking-wider">{opt.label}</span>
+                    <Snowflake className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isSelected ? 'text-orange-300 stroke-[2.2]' : 'text-slate-400'}`} />
                   </>
                 );
               }
@@ -418,9 +396,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                     }
                     setOpenSeatPopover(null);
                   }}
-                  className={`${
-                    isVertical ? 'h-8 sm:h-8.5 w-full flex-row gap-1' : 'w-8.5 sm:w-9 h-full flex-col justify-center gap-0.5'
-                  } rounded-xl border flex items-center justify-center transition-all cursor-pointer select-none active:scale-95 box-border overflow-hidden ${itemClasses}`}
+                  className={`w-12 sm:w-14 h-12 sm:h-14 rounded-xl border flex flex-col items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer select-none active:scale-95 shrink-0 box-border overflow-hidden ${itemClasses}`}
                   title={itemTitle}
                   aria-label={itemAriaLabel}
                 >

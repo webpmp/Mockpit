@@ -48,9 +48,23 @@ describe('Now Playing Timestamps Row & Music Player Visual Parity Suite', () => 
     const tallLayout = resolveNowPlayingLayout(264, 352, 'horizontal');
     assert.equal(tallLayout.showTimestamps, true);
 
-    // Constrained compact layout (e.g. 264x180) sheds timestamps first to prevent clipping
+    // Constrained compact layout (e.g. 264x180, 242x185) sheds timestamps below h >= 190 threshold
     const compactLayout = resolveNowPlayingLayout(264, 180, 'horizontal');
     assert.equal(compactLayout.showTimestamps, false);
+
+    const belowThreshold = resolveNowPlayingLayout(242, 185, 'horizontal');
+    assert.equal(belowThreshold.showTimestamps, false);
+
+    // Narrow width (< 220) sheds timestamps even if height >= 190
+    const narrowLayout = resolveNowPlayingLayout(200, 200, 'horizontal');
+    assert.equal(narrowLayout.showTimestamps, false);
+
+    // Compact layout with sufficient height and width (e.g. 242x195, 242x220) displays timestamps
+    const compactFit195 = resolveNowPlayingLayout(242, 195, 'horizontal');
+    assert.equal(compactFit195.showTimestamps, true);
+
+    const compactFit220 = resolveNowPlayingLayout(242, 220, 'horizontal');
+    assert.equal(compactFit220.showTimestamps, true);
 
     // Single-row constrained (h < 125) surrenders timestamps gracefully
     const constrainedLayout = resolveNowPlayingLayout(264, 110, 'horizontal');

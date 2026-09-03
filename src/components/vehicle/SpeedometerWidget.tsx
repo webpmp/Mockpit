@@ -225,8 +225,8 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
 
         {/* Central Interactive Gauge Area with Drag-to-Adjust Speed */}
         <div
-          className={`relative w-full flex-1 flex items-center justify-center my-auto z-10 min-h-0 touch-none select-none ${
-            isDragging ? 'cursor-grabbing scale-[1.02] brightness-110' : 'cursor-grab hover:brightness-105'
+          className={`relative w-full flex-1 flex items-center justify-center my-auto z-10 min-h-0 touch-none select-none cursor-ns-resize ${
+            isDragging ? 'scale-[1.02] brightness-110' : 'hover:brightness-105'
           } transition-transform duration-100`}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -416,8 +416,8 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
 
         {/* Central Interactive Gauge Area with Drag-to-Adjust Speed */}
         <div
-          className={`relative w-full flex-1 flex items-center justify-center my-auto z-10 min-h-0 touch-none select-none ${
-            isDragging ? 'cursor-grabbing scale-[1.02] brightness-110' : 'cursor-grab hover:brightness-105'
+          className={`relative w-full flex-1 flex items-center justify-center my-auto z-10 min-h-0 touch-none select-none cursor-ns-resize ${
+            isDragging ? 'scale-[1.02] brightness-110' : 'hover:brightness-105'
           } transition-transform duration-100`}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -555,8 +555,8 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
 
       {/* Central Interactive Numeric Speed Area with Drag-to-Adjust Speed */}
       <div
-        className={`my-auto z-10 flex flex-col items-center justify-center touch-none select-none ${
-          isDragging ? 'cursor-grabbing scale-[1.04] brightness-110' : 'cursor-grab hover:brightness-105'
+        className={`my-auto z-10 flex flex-col items-center justify-center touch-none select-none cursor-ns-resize ${
+          isDragging ? 'scale-[1.04] brightness-110' : 'hover:brightness-105'
         } transition-transform duration-100 px-4 py-2 rounded-xl`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

@@ -124,8 +124,8 @@ export function resolveNowPlayingLayout(
     const playButtonHeightPx = isMediumTall ? 46 : 50;
     const iconSizePx = isMediumTall ? 20 : 22;
     const controlGapPx = 6;
-    const secondaryControlSizePx = h >= 280 ? 36 : 30;
-    const secondaryIconSizePx = Math.max(12, Math.round(secondaryControlSizePx * 0.44));
+    const secondaryControlSizePx = 44;
+    const secondaryIconSizePx = 18; // ~0.41x, consistent with prior ratio at this branch's larger end
 
     // Progressive feature restoration in Tall mode:
     // - Secondary actions (Favorite, Shuffle, Repeat) are restored at h >= 240
@@ -134,8 +134,8 @@ export function resolveNowPlayingLayout(
     const showSeekBar = true;
     const showThumbnail = true;
 
-    // - Timestamps are restored at h >= 285 and w >= 240 (at 240-260px height they are omitted to give room to buttons)
-    const showTimestamps = h >= 285 && w >= 240;
+    // - Timestamps are restored at h >= 200 and w >= 240
+    const showTimestamps = h >= 200 && w >= 240;
 
     // - Header icon and divider are restored when container is spacious
     const showHeaderIcon = (w >= 300 && h >= 280) || h >= 320;
@@ -188,8 +188,8 @@ export function resolveNowPlayingLayout(
     const playButtonHeightPx = playButtonSize;
     const iconSizePx = isFullSized ? 22 : isMediumCompact ? 20 : 18;
     const controlGapPx = isFullSized ? 6 : 5;
-    const secondaryControlSizePx = h >= 170 ? 32 : h >= 140 ? 28 : 24;
-    const secondaryIconSizePx = Math.max(12, Math.round(secondaryControlSizePx * 0.44));
+    const secondaryControlSizePx = 44;
+    const secondaryIconSizePx = 18;
 
     const showHeaderIcon = w >= 360 && h >= 155;
     const showHeaderDivider = h >= 185 && w >= 450;
@@ -236,8 +236,8 @@ export function resolveNowPlayingLayout(
     const playButtonHeightPx = 50;
     const iconSizePx = 22;
     const controlGapPx = 6;
-    const secondaryControlSizePx = 32;
-    const secondaryIconSizePx = 14;
+    const secondaryControlSizePx = 44;
+    const secondaryIconSizePx = 18;
 
     const showHeaderIcon = w >= 320 || h >= 220;
     const showHeaderDivider = h >= 225 && w >= 340;
@@ -289,12 +289,12 @@ export function resolveNowPlayingLayout(
   const playButtonHeightPx = playButtonSize;
   const iconSizePx = isFullSized ? 20 : isMediumCompact ? 18 : 16;
   const controlGapPx = isFullSized ? 6 : 5;
-  const secondaryControlSizePx = h >= 175 ? 30 : h >= 140 ? 26 : 24;
-  const secondaryIconSizePx = Math.max(11, Math.round(secondaryControlSizePx * 0.45));
+  const secondaryControlSizePx = 44;
+  const secondaryIconSizePx = 18;
 
   // Progressive content removal & restoration evaluations for compact:
-  // 1. Timestamps: only if height >= 235 and width >= 300
-  const showTimestamps = h >= 235 && w >= 300;
+  // 1. Timestamps: only if height >= 190 and width >= 220
+  const showTimestamps = h >= 190 && w >= 220;
   // 2. NOW PLAYING Header Icon: only if width >= 300 and height >= 210
   const showHeaderIcon = w >= 300 && h >= 210;
   // 3. Header Divider: only if height >= 230 and width >= 320

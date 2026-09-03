@@ -21,6 +21,7 @@ import {
 import { useMockpitStore } from '../store/useMockpitStore';
 import { getCoverArtCacheKey } from '../services/musicBrainzService';
 import { resolveNowPlayingLayout } from '../utils/nowPlayingLayout';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants';
 
 export type DismissDirection = 'up' | 'down' | 'left' | 'right';
 
@@ -118,25 +119,28 @@ const getDismissTransform = (
   direction: DismissDirection = 'down',
   comp: { x?: number; y?: number; width?: number; height?: number } = {}
 ): string => {
+  const x = comp.x ?? 0;
+  const y = comp.y ?? 0;
   const w = comp.width ?? 400;
   const h = comp.height ?? 200;
+  const BUFFER = 30;
 
   switch (direction) {
     case 'left': {
-      const dist = Math.max(w + 30, 100);
+      const dist = Math.max(x + w + BUFFER, 100);
       return `translate3d(-${dist}px, 0, 0)`;
     }
     case 'right': {
-      const dist = Math.max(w + 30, 100);
+      const dist = Math.max(CANVAS_WIDTH - x + BUFFER, 100);
       return `translate3d(${dist}px, 0, 0)`;
     }
     case 'up': {
-      const dist = Math.max(h + 30, 100);
+      const dist = Math.max(y + h + BUFFER, 100);
       return `translate3d(0, -${dist}px, 0)`;
     }
     case 'down':
     default: {
-      const dist = Math.max(h + 30, 100);
+      const dist = Math.max(CANVAS_HEIGHT - y + BUFFER, 100);
       return `translate3d(0, ${dist}px, 0)`;
     }
   }
@@ -719,7 +723,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
     <div
       id={`component-${component.type}`}
       data-component-type="nowPlaying"
-      className="w-full h-full min-w-0 min-h-0 relative select-none overflow-hidden"
+      className="w-full h-full min-w-0 min-h-0 relative select-none"
     >
       {/* Editor Ghost Placeholder: Shown in Editor mode when dismissed & unselected */}
       {!isPresentation && isActuallyDismissed && !isSelected && (
@@ -764,7 +768,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
         }}
       >
       {/* 1. COMPONENT HEADER GROUP (shrink-0) */}
-      <div className={`shrink-0 ${showHeaderDivider ? 'mb-1' : 'mb-0.5'}`}>
+      <div className={`shrink-0 ${showHeaderDivider ? 'mb-1' : 'mb-2'}`}>
         <ComponentHeader
           type="nowPlaying"
           label={headerLabel}
@@ -776,7 +780,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
 
       {/* 1. EXTREMELY CONSTRAINED LAYOUT (Height < 125px) */}
       {isExtremelyConstrained ? (
-        <div className="flex-1 min-h-0 min-w-0 flex items-center justify-center relative overflow-hidden pt-0.5">
+        <div className="flex-1 min-h-0 min-w-0 flex items-center justify-center relative overflow-hidden pt-1">
           <AnimatePresence mode="wait" initial={false}>
             {isMetadataRevealing ? (
               /* Song-change brief metadata reveal with selected song transition */
@@ -927,7 +931,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
         </div>
       ) : isTallLayout ? (
         /* 2. TALL / SPACIOUS MEDIA PLAYER LAYOUT (Explicit sequential vertical groups with proportional flexible spacing) */
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col pt-0.5">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col pt-1">
           {/* TRACK INFORMATION GROUP (shrinkable, min-h-0) */}
           <div className="grid grid-cols-1 grid-rows-1 relative w-full min-w-0 min-h-0 overflow-hidden items-center shrink-0">
             <AnimatePresence
@@ -1169,7 +1173,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
         </div>
       ) : (
         /* 3. RESPONSIVE HORIZONTAL / COMPACT LAYOUT (Dynamic Stacked vs Wide + Short Compact Layout) */
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col pt-0.5">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col pt-1">
           {/* TRACK INFORMATION GROUP (shrinkable, min-h-0) */}
           <div className="flex items-center justify-between gap-2 min-h-0 min-w-0 shrink-0">
             <div className="grid grid-cols-1 grid-rows-1 relative min-w-0 flex-1 overflow-hidden items-center">
@@ -1241,7 +1245,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
 
             {/* Secondary Controls Inline (Favorite, Shuffle, Repeat) */}
             {(showFavoriteButton || showShuffleRepeat) && (
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 {showFavoriteButton && (
                   <button
                     onClick={toggleFavorite}
@@ -1264,7 +1268,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 )}
 
                 {showShuffleRepeat && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

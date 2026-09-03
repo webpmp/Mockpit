@@ -113,6 +113,12 @@ export interface ClimateState {
   driverSeatCool?: number;   // 0 - 3
   passengerSeatHeat?: number; // 0 - 3
   passengerSeatCool?: number; // 0 - 3
+  driverLastHeat?: number;    // 1 - 3 (preserved heat intensity)
+  driverLastCool?: number;    // 1 - 3 (preserved cool intensity)
+  passengerLastHeat?: number; // 1 - 3 (preserved heat intensity)
+  passengerLastCool?: number; // 1 - 3 (preserved cool intensity)
+  driverTargetMode?: 'heat' | 'cool';
+  passengerTargetMode?: 'heat' | 'cool';
 }
 
 export type VehicleState = {
