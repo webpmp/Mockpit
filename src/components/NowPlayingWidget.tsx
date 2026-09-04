@@ -455,7 +455,9 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
   );
 
   const {
+    layoutMode,
     isExtremelyConstrained,
+    showPermanentTitleArtist,
     isTallLayout,
     isStandardHorizontal,
     isWideShort,
@@ -479,6 +481,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
     secondaryControlSizePx,
     secondaryIconSizePx,
   } = layout;
+
+  const thumbnailSizePx = componentHeight < 95 ? 22 : 26;
 
   const headerLabel =
     resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.nowPlaying || 'Now Playing';
@@ -505,18 +509,20 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
   const titleFontSizeClasses = getTitleFontSizeClasses(isPresetTitleSize ? titleFontSizeProp : 'default');
   const artistFontSizeClasses = getArtistFontSizeClasses(isPresetArtistSize ? artistFontSizeProp : 'default');
 
-  // Active track and playback state
-  const initialTrackId = component.staticProps?.trackId || SAMPLE_TRACKS[0].id;
-  const initialTrack = SAMPLE_TRACKS.find((t) => t.id === initialTrackId) || SAMPLE_TRACKS[0];
+  // Active track and playback state from shared store
+  const currentTrackId = useMockpitStore((s) => s.currentTrackId);
+  const currentTrack = SAMPLE_TRACKS.find((t) => t.id === currentTrackId) || SAMPLE_TRACKS[0];
+  const isPlaying = useMockpitStore((s) => s.isPlaying);
+  const progressSec = useMockpitStore((s) => s.progressSec);
+  const favoritedTrackIds = useMockpitStore((s) => s.favoritedTrackIds);
+  const storeTogglePlay = useMockpitStore((s) => s.togglePlay);
+  const storeSeekTo = useMockpitStore((s) => s.seekTo);
+  const storeNextTrack = useMockpitStore((s) => s.nextTrack);
+  const storePrevTrack = useMockpitStore((s) => s.prevTrack);
+  const storeToggleFavorite = useMockpitStore((s) => s.toggleFavorite);
 
-  const [currentTrack, setCurrentTrack] = useState<Track>(initialTrack);
-  const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [progressSec, setProgressSec] = useState<number>(102);
   const [isShuffle, setIsShuffle] = useState<boolean>(false);
   const [isRepeat, setIsRepeat] = useState<boolean>(false);
-  const [favoritedTrackIds, setFavoritedTrackIds] = useState<Set<string>>(
-    () => new Set(['t1', 't7'])
-  );
   const [slideDirection, setSlideDirection] = useState<'next' | 'prev'>('next');
   const prefersReducedMotion = useReducedMotion() ?? false;
 
@@ -534,19 +540,11 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
     }
   }, [currentTrack.artist, currentTrack.album, resolveCoverArt]);
 
-  const isFavorited = favoritedTrackIds.has(currentTrack.id);
+  const isFavorited = favoritedTrackIds.includes(currentTrack.id);
 
   const toggleFavorite = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setFavoritedTrackIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(currentTrack.id)) {
-        next.delete(currentTrack.id);
-      } else {
-        next.add(currentTrack.id);
-      }
-      return next;
-    });
+    storeToggleFavorite(currentTrack.id);
     resetDismissTimer();
   };
 
@@ -574,16 +572,16 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
     };
   }, []);
 
-  // When resizing out of extremely constrained mode, cancel the reveal timer and reset state
+  // When resizing out of reveal-mode extremely constrained mode, cancel the reveal timer and reset state
   useEffect(() => {
-    if (!isExtremelyConstrained && isMetadataRevealing) {
+    if ((!isExtremelyConstrained || showPermanentTitleArtist) && isMetadataRevealing) {
       setIsMetadataRevealing(false);
       if (revealTimerRef.current) {
         clearTimeout(revealTimerRef.current);
         revealTimerRef.current = null;
       }
     }
-  }, [isExtremelyConstrained, isMetadataRevealing]);
+  }, [isExtremelyConstrained, showPermanentTitleArtist, isMetadataRevealing]);
 
   // Function to show/reset the auto-dismiss timer whenever track starts or user interacts
   const resetDismissTimer = (customDuration?: number) => {
@@ -634,88 +632,57 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
     }
   }, [isSelected, isPresentation, autoDismissEnabled]);
 
-  // When track prop changes in inspector/props, start track and slide back in
+  // Track change animation and auto-dismiss reset watcher
+  const prevTrackIdRef = useRef(currentTrack.id);
   useEffect(() => {
-    if (component.staticProps?.trackId) {
-      const trk = SAMPLE_TRACKS.find((t) => t.id === component.staticProps.trackId);
-      if (trk && trk.id !== currentTrack.id) {
-        const curIdx = SAMPLE_TRACKS.findIndex((t) => t.id === currentTrack.id);
-        const newIdx = SAMPLE_TRACKS.findIndex((t) => t.id === trk.id);
-        const dir: 'next' | 'prev' = newIdx < curIdx ? 'prev' : 'next';
-        handleSelectTrack(trk, dir);
-      }
-    }
-  }, [component.staticProps?.trackId]);
+    if (prevTrackIdRef.current !== currentTrack.id) {
+      const curIdx = SAMPLE_TRACKS.findIndex((t) => t.id === prevTrackIdRef.current);
+      const newIdx = SAMPLE_TRACKS.findIndex((t) => t.id === currentTrack.id);
+      const dir: 'next' | 'prev' = newIdx < curIdx ? 'prev' : 'next';
+      setSlideDirection(dir);
+      prevTrackIdRef.current = currentTrack.id;
+      resetDismissTimer();
 
-  // Handle new track selection / song start (reappears and resets auto-dismiss)
-  const handleSelectTrack = (track: Track, dir: 'next' | 'prev' = 'next') => {
-    setSlideDirection(dir);
-    setCurrentTrack(track);
-    setProgressSec(0);
-    setIsPlaying(true);
-    resetDismissTimer();
-
-    if (isExtremelyConstrained) {
-      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-      setIsMetadataRevealing(true);
-      revealTimerRef.current = setTimeout(() => {
+      if (isExtremelyConstrained && !showPermanentTitleArtist) {
+        if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+        setIsMetadataRevealing(true);
+        revealTimerRef.current = setTimeout(() => {
+          setIsMetadataRevealing(false);
+          revealTimerRef.current = null;
+        }, songInfoDisplayDurationSec * 1000);
+      } else {
         setIsMetadataRevealing(false);
-        revealTimerRef.current = null;
-      }, songInfoDisplayDurationSec * 1000);
-    } else {
-      setIsMetadataRevealing(false);
-      if (revealTimerRef.current) {
-        clearTimeout(revealTimerRef.current);
-        revealTimerRef.current = null;
+        if (revealTimerRef.current) {
+          clearTimeout(revealTimerRef.current);
+          revealTimerRef.current = null;
+        }
       }
     }
-  };
+  }, [currentTrack.id, isExtremelyConstrained, showPermanentTitleArtist, songInfoDisplayDurationSec]);
 
   const handleNextTrack = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const currentIndex = SAMPLE_TRACKS.findIndex((t) => t.id === currentTrack.id);
-    const nextIndex = (currentIndex + 1) % SAMPLE_TRACKS.length;
-    handleSelectTrack(SAMPLE_TRACKS[nextIndex], 'next');
+    setSlideDirection('next');
+    storeNextTrack();
   };
 
   const handlePrevTrack = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const currentIndex = SAMPLE_TRACKS.findIndex((t) => t.id === currentTrack.id);
-    const prevIndex = (currentIndex - 1 + SAMPLE_TRACKS.length) % SAMPLE_TRACKS.length;
-    handleSelectTrack(SAMPLE_TRACKS[prevIndex], 'prev');
+    setSlideDirection('prev');
+    storePrevTrack();
   };
 
   const handleTogglePlay = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setIsPlaying((prev) => {
-      const next = !prev;
-      if (next) resetDismissTimer();
-      return next;
-    });
+    storeTogglePlay();
+    if (!isPlaying) resetDismissTimer();
   };
 
   // Handle seeking: update progressSec and reset auto dismiss timer without altering play/pause state
   const handleSeek = (newSec: number) => {
-    setProgressSec(newSec);
+    storeSeekTo(newSec);
     resetDismissTimer();
   };
-
-  // Progress timer: when song completes, automatically advances to next song & slides back in
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setProgressSec((prev) => {
-          if (prev >= currentTrack.durationSec) {
-            handleNextTrack();
-            return 0;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, currentTrack.durationSec, currentTrack.id]);
 
   const isActuallyDismissed = isDismissed && autoDismissEnabled && (!isSelected || isPresentation);
 
@@ -768,7 +735,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
         }}
       >
       {/* 1. COMPONENT HEADER GROUP (shrink-0) */}
-      <div className={`shrink-0 ${showHeaderDivider ? 'mb-1' : 'mb-2'}`}>
+      <div className={`shrink-0 ${showHeaderDivider ? 'mb-1' : isExtremelyConstrained ? 'mb-1' : 'mb-2'}`}>
         <ComponentHeader
           type="nowPlaying"
           label={headerLabel}
@@ -780,155 +747,276 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
 
       {/* 1. EXTREMELY CONSTRAINED LAYOUT (Height < 125px) */}
       {isExtremelyConstrained ? (
-        <div className="flex-1 min-h-0 min-w-0 flex items-center justify-center relative overflow-hidden pt-1">
-          <AnimatePresence mode="wait" initial={false}>
-            {isMetadataRevealing ? (
-              /* Song-change brief metadata reveal with selected song transition */
-              <motion.div
-                key={`reveal-${currentTrack.id}`}
-                custom={slideDirection}
-                variants={transitionVariants}
-                initial={songTransition === 'none' || prefersReducedMotion ? false : 'initial'}
-                animate="animate"
-                exit="exit"
-                transition={transitionConfig}
-                className="flex items-center justify-between gap-2 w-full h-full min-w-0 px-0.5"
+        showPermanentTitleArtist ? (
+          /* 87 <= h < 125: Permanent single horizontal row */
+          <div className="flex-1 min-h-0 min-w-0 flex items-center gap-2 relative overflow-hidden">
+            {showThumbnail && (
+              <div
+                className={`rounded-lg bg-gradient-to-br ${currentTrack.coverBg} flex items-center justify-center shrink-0 shadow-sm border border-white/20 overflow-hidden aspect-square`}
+                style={{ width: `${thumbnailSizePx}px`, height: `${thumbnailSizePx}px`, minWidth: `${thumbnailSizePx}px`, minHeight: `${thumbnailSizePx}px` }}
               >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  {showThumbnail && (
-                    <div
-                      className={`rounded-lg bg-gradient-to-br ${currentTrack.coverBg} flex items-center justify-center shrink-0 shadow-sm border border-white/20 overflow-hidden aspect-square`}
-                      style={{
-                        width: '26px',
-                        height: '26px',
-                        minWidth: '26px',
-                        minHeight: '26px',
-                      }}
-                    >
-                      {currentCoverArt?.status === 'found' && currentCoverArt?.coverUrl ? (
-                        <img
-                          src={currentCoverArt.coverUrl}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          onError={() => advanceCoverArtCandidate(currentCoverKey)}
-                        />
-                      ) : (
-                        renderCoverIcon(
-                          currentTrack.iconName,
-                          'w-3.5 h-3.5 text-white/90'
-                        )
-                      )}
+                {currentCoverArt?.status === 'found' && currentCoverArt?.coverUrl ? (
+                  <img
+                    src={currentCoverArt.coverUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={() => advanceCoverArtCandidate(currentCoverKey)}
+                  />
+                ) : (
+                  renderCoverIcon(
+                    currentTrack.iconName,
+                    componentHeight < 95 ? 'w-3 h-3 text-white/90' : 'w-3.5 h-3.5 text-white/90'
+                  )
+                )}
+              </div>
+            )}
+
+            <div
+              className="min-w-0 flex flex-col justify-center leading-tight gap-0.5 shrink-0"
+              style={{ width: 'clamp(48px, 22cqw, 110px)' }}
+            >
+              <div
+                className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-slate-100' : ''}`}
+                style={{
+                  color: titleColorProp || undefined,
+                  ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+                }}
+              >
+                {currentTrack.title}
+              </div>
+              <div
+                className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-slate-400' : ''}`}
+                style={{
+                  color: artistColorProp || undefined,
+                  ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+                }}
+              >
+                {currentTrack.artist}
+              </div>
+            </div>
+
+            {showSeekBar && (
+              <div className="flex-1 min-w-0 flex items-center">
+                <PlaybackScrubber
+                  currentTime={progressSec}
+                  duration={currentTrack.durationSec}
+                  customColor={customColor}
+                  showTimestamps={false}
+                  onSeek={handleSeek}
+                  onUserInteraction={() => resetDismissTimer()}
+                />
+              </div>
+            )}
+
+            {/* Primary Playback Controls */}
+            <div className="flex items-center shrink-0" style={{ gap: `${controlGapPx}px` }}>
+              <button
+                onClick={handlePrevTrack}
+                style={{
+                  width: `${buttonWidthPx}px`,
+                  height: `${buttonHeightPx}px`,
+                  minWidth: `${buttonWidthPx}px`,
+                  minHeight: `${buttonHeightPx}px`,
+                  aspectRatio: '1 / 1',
+                }}
+                className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                title="Previous track"
+                aria-label="Previous track"
+              >
+                <SkipBack style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
+              </button>
+
+              <button
+                onClick={handleTogglePlay}
+                style={{
+                  width: `${playButtonWidthPx}px`,
+                  height: `${playButtonHeightPx}px`,
+                  minWidth: `${playButtonWidthPx}px`,
+                  minHeight: `${playButtonHeightPx}px`,
+                  aspectRatio: '1 / 1',
+                  backgroundColor: customColor,
+                  boxShadow: `0 0 12px ${customColor}60`,
+                }}
+                className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
+                title={isPlaying ? 'Pause' : 'Play'}
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? (
+                  <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
+                ) : (
+                  <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+                )}
+              </button>
+
+              <button
+                onClick={handleNextTrack}
+                style={{
+                  width: `${buttonWidthPx}px`,
+                  height: `${buttonHeightPx}px`,
+                  minWidth: `${buttonWidthPx}px`,
+                  minHeight: `${buttonHeightPx}px`,
+                  aspectRatio: '1 / 1',
+                }}
+                className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                title="Next track"
+                aria-label="Next track"
+              >
+                <SkipForward style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* h < 87: True floor. Unchanged: AnimatePresence with isMetadataRevealing */
+          <div className="flex-1 min-h-0 min-w-0 flex flex-col justify-center relative overflow-hidden pt-1">
+            <AnimatePresence mode="wait" initial={false}>
+              {isMetadataRevealing ? (
+                /* Song-change brief metadata reveal with selected song transition */
+                <motion.div
+                  key={`reveal-${currentTrack.id}`}
+                  custom={slideDirection}
+                  variants={transitionVariants}
+                  initial={songTransition === 'none' || prefersReducedMotion ? false : 'initial'}
+                  animate="animate"
+                  exit="exit"
+                  transition={transitionConfig}
+                  className="flex items-center justify-between gap-2 w-full h-full min-w-0 px-0.5"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {showThumbnail && (
+                      <div
+                        className={`rounded-lg bg-gradient-to-br ${currentTrack.coverBg} flex items-center justify-center shrink-0 shadow-sm border border-white/20 overflow-hidden aspect-square`}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          minWidth: '26px',
+                          minHeight: '26px',
+                        }}
+                      >
+                        {currentCoverArt?.status === 'found' && currentCoverArt?.coverUrl ? (
+                          <img
+                            src={currentCoverArt.coverUrl}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={() => advanceCoverArtCandidate(currentCoverKey)}
+                          />
+                        ) : (
+                          renderCoverIcon(
+                            currentTrack.iconName,
+                            'w-3.5 h-3.5 text-white/90'
+                          )
+                        )}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
+                      <div
+                        className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-slate-100' : ''}`}
+                        style={{
+                          color: titleColorProp || undefined,
+                          ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+                        }}
+                      >
+                        {currentTrack.title}
+                      </div>
+                      <div
+                        className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-slate-400' : ''}`}
+                        style={{
+                          color: artistColorProp || undefined,
+                          ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+                        }}
+                      >
+                        {currentTrack.artist}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
+                    Now Playing
+                  </div>
+                </motion.div>
+              ) : (
+                /* Normal state: Scrubber + Dedicated Playback Controls */
+                <motion.div
+                  key="constrained-controls-row"
+                  initial={prefersReducedMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="flex items-center gap-2 sm:gap-2.5 w-full h-full min-w-0"
+                >
+                  {/* Scrubber (Surrenders width gracefully before controls shrink) */}
+                  {showSeekBar && (
+                    <div className="flex-1 min-w-0 flex items-center">
+                      <PlaybackScrubber
+                        currentTime={progressSec}
+                        duration={currentTrack.durationSec}
+                        customColor={customColor}
+                        showTimestamps={false}
+                        onSeek={handleSeek}
+                        onUserInteraction={() => resetDismissTimer()}
+                      />
                     </div>
                   )}
-                  <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
-                    <div
-                      className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-slate-100' : ''}`}
+
+                  {/* Primary Playback Controls */}
+                  <div className="flex items-center shrink-0" style={{ gap: `${controlGapPx}px` }}>
+                    <button
+                      onClick={handlePrevTrack}
                       style={{
-                        color: titleColorProp || undefined,
-                        ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+                        width: `${buttonWidthPx}px`,
+                        height: `${buttonHeightPx}px`,
+                        minWidth: `${buttonWidthPx}px`,
+                        minHeight: `${buttonHeightPx}px`,
+                        aspectRatio: '1 / 1',
                       }}
+                      className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                      title="Previous track"
+                      aria-label="Previous track"
                     >
-                      {currentTrack.title}
-                    </div>
-                    <div
-                      className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-slate-400' : ''}`}
+                      <SkipBack style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
+                    </button>
+
+                    <button
+                      onClick={handleTogglePlay}
                       style={{
-                        color: artistColorProp || undefined,
-                        ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+                        width: `${playButtonWidthPx}px`,
+                        height: `${playButtonHeightPx}px`,
+                        minWidth: `${playButtonWidthPx}px`,
+                        minHeight: `${playButtonHeightPx}px`,
+                        aspectRatio: '1 / 1',
+                        backgroundColor: customColor,
+                        boxShadow: `0 0 12px ${customColor}60`,
                       }}
+                      className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
+                      title={isPlaying ? 'Pause' : 'Play'}
+                      aria-label={isPlaying ? 'Pause' : 'Play'}
                     >
-                      {currentTrack.artist}
-                    </div>
+                      {isPlaying ? (
+                        <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
+                      ) : (
+                        <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={handleNextTrack}
+                      style={{
+                        width: `${buttonWidthPx}px`,
+                        height: `${buttonHeightPx}px`,
+                        minWidth: `${buttonWidthPx}px`,
+                        minHeight: `${buttonHeightPx}px`,
+                        aspectRatio: '1 / 1',
+                      }}
+                      className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                      title="Next track"
+                      aria-label="Next track"
+                    >
+                      <SkipForward style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
+                    </button>
                   </div>
-                </div>
-                <div className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
-                  Now Playing
-                </div>
-              </motion.div>
-            ) : (
-              /* Normal state: Scrubber + Dedicated Playback Controls */
-              <motion.div
-                key="constrained-controls-row"
-                initial={prefersReducedMotion ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                className="flex items-center gap-2 sm:gap-2.5 w-full h-full min-w-0"
-              >
-                {/* Scrubber (Surrenders width gracefully before controls shrink) */}
-                {showSeekBar && (
-                  <div className="flex-1 min-w-0 flex items-center">
-                    <PlaybackScrubber
-                      currentTime={progressSec}
-                      duration={currentTrack.durationSec}
-                      customColor={customColor}
-                      showTimestamps={false}
-                      onSeek={handleSeek}
-                      onUserInteraction={() => resetDismissTimer()}
-                    />
-                  </div>
-                )}
-
-                {/* Primary Playback Controls */}
-                <div className="flex items-center shrink-0" style={{ gap: `${controlGapPx}px` }}>
-                  <button
-                    onClick={handlePrevTrack}
-                    style={{
-                      width: `${buttonWidthPx}px`,
-                      height: `${buttonHeightPx}px`,
-                      minWidth: `${buttonWidthPx}px`,
-                      minHeight: `${buttonHeightPx}px`,
-                      aspectRatio: '1 / 1',
-                    }}
-                    className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
-                    title="Previous track"
-                    aria-label="Previous track"
-                  >
-                    <SkipBack style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
-                  </button>
-
-                  <button
-                    onClick={handleTogglePlay}
-                    style={{
-                      width: `${playButtonWidthPx}px`,
-                      height: `${playButtonHeightPx}px`,
-                      minWidth: `${playButtonWidthPx}px`,
-                      minHeight: `${playButtonHeightPx}px`,
-                      aspectRatio: '1 / 1',
-                      backgroundColor: customColor,
-                      boxShadow: `0 0 12px ${customColor}60`,
-                    }}
-                    className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
-                    title={isPlaying ? 'Pause' : 'Play'}
-                    aria-label={isPlaying ? 'Pause' : 'Play'}
-                  >
-                    {isPlaying ? (
-                      <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
-                    ) : (
-                      <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={handleNextTrack}
-                    style={{
-                      width: `${buttonWidthPx}px`,
-                      height: `${buttonHeightPx}px`,
-                      minWidth: `${buttonWidthPx}px`,
-                      minHeight: `${buttonHeightPx}px`,
-                      aspectRatio: '1 / 1',
-                    }}
-                    className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
-                    title="Next track"
-                    aria-label="Next track"
-                  >
-                    <SkipForward style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} />
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )
       ) : isTallLayout ? (
         /* 2. TALL / SPACIOUS MEDIA PLAYER LAYOUT (Explicit sequential vertical groups with proportional flexible spacing) */
         <div className="flex-1 min-h-0 min-w-0 flex flex-col pt-1">
@@ -1099,8 +1187,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     }}
                     className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                       isFavorited
-                        ? 'text-rose-500 bg-rose-500/15 border border-rose-500/30'
-                        : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800/60'
+                        ? 'text-white bg-slate-700/40 border border-slate-500/40'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                     }`}
                     title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
                     aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
@@ -1257,8 +1345,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     }}
                     className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                       isFavorited
-                        ? 'text-rose-500 bg-rose-500/15 border border-rose-500/30'
-                        : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800/40'
+                        ? 'text-white bg-slate-700/40 border border-slate-500/40'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                     }`}
                     title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
                     aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}

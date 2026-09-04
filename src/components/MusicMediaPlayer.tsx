@@ -66,9 +66,22 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
     (selectedMusicService as ServiceType) || (component.staticProps?.service as ServiceType) || 'Spotify';
 
   const [activeTab, setActiveTab] = useState<'lastPlayed' | 'library'>('lastPlayed');
-  const [currentTrack, setCurrentTrack] = useState<Track>(SAMPLE_TRACKS[0]);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [progressSec, setProgressSec] = useState<number>(102);
+
+  // Shared playback state and actions from useMockpitStore
+  const currentTrackId = useMockpitStore((s) => s.currentTrackId);
+  const currentTrack = SAMPLE_TRACKS.find((t) => t.id === currentTrackId) || SAMPLE_TRACKS[0];
+  const isPlaying = useMockpitStore((s) => s.isPlaying);
+  const progressSec = useMockpitStore((s) => s.progressSec);
+  const favoritedTrackIds = useMockpitStore((s) => s.favoritedTrackIds);
+  const storeSetCurrentTrack = useMockpitStore((s) => s.setCurrentTrack);
+  const togglePlay = useMockpitStore((s) => s.togglePlay);
+  const seekTo = useMockpitStore((s) => s.seekTo);
+  const nextTrack = useMockpitStore((s) => s.nextTrack);
+  const prevTrack = useMockpitStore((s) => s.prevTrack);
+  const toggleFavorite = useMockpitStore((s) => s.toggleFavorite);
+
+  const isFavorited = favoritedTrackIds.includes(currentTrack.id);
+
   const [isShuffle, setIsShuffle] = useState<boolean>(false);
   const [isRepeat, setIsRepeat] = useState<boolean>(false);
   const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState<boolean>(false);
@@ -88,47 +101,25 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
     });
   }, [resolveCoverArt]);
 
-  // Simulated progress timer when playing
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setProgressSec((prev) => {
-          if (prev >= currentTrack.durationSec) {
-            return 0;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, currentTrack.durationSec]);
-
   const handleSelectService = (serviceName: ServiceType) => {
     setSelectedMusicService(serviceName);
     updateComponentStaticProps(component.id, { service: serviceName });
   };
 
   const handleSelectTrack = (track: Track) => {
-    setCurrentTrack(track);
-    setProgressSec(Math.floor(track.durationSec * 0.25));
-    setIsPlaying(true);
+    storeSetCurrentTrack(track.id);
   };
 
   const handleTogglePlay = () => {
-    setIsPlaying((prev) => !prev);
+    togglePlay();
   };
 
   const handleNextTrack = () => {
-    const currentIndex = SAMPLE_TRACKS.findIndex((t) => t.id === currentTrack.id);
-    const nextIndex = (currentIndex + 1) % SAMPLE_TRACKS.length;
-    handleSelectTrack(SAMPLE_TRACKS[nextIndex]);
+    nextTrack();
   };
 
   const handlePrevTrack = () => {
-    const currentIndex = SAMPLE_TRACKS.findIndex((t) => t.id === currentTrack.id);
-    const prevIndex = (currentIndex - 1 + SAMPLE_TRACKS.length) % SAMPLE_TRACKS.length;
-    handleSelectTrack(SAMPLE_TRACKS[prevIndex]);
+    prevTrack();
   };
 
   const formatTime = (seconds: number) => {
@@ -291,6 +282,21 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                     )}
                     <span>{track.duration}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(track.id);
+                      }}
+                      className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                        favoritedTrackIds.includes(track.id)
+                          ? 'text-white'
+                          : 'text-slate-500 hover:text-slate-300 opacity-0 group-hover:opacity-100'
+                      }`}
+                      title={favoritedTrackIds.includes(track.id) ? 'Remove from favorites' : 'Add to favorites'}
+                      aria-label={favoritedTrackIds.includes(track.id) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${favoritedTrackIds.includes(track.id) ? 'fill-current' : ''}`} />
+                    </button>
                   </div>
                 </div>
               );
@@ -423,6 +429,21 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
             >
               <Repeat className="w-4 h-4" />
             </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFavorite(currentTrack.id);
+              }}
+              className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
+                isFavorited
+                  ? 'text-white bg-slate-700/40 border border-slate-500/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              }`}
+              title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+              aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
+            </button>
           </div>
         </div>
 
@@ -434,7 +455,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
               const rect = e.currentTarget.getBoundingClientRect();
               const clickX = e.clientX - rect.left;
               const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-              setProgressSec(Math.floor(ratio * currentTrack.durationSec));
+              seekTo(Math.floor(ratio * currentTrack.durationSec));
             }}
           >
             <div

@@ -40,7 +40,7 @@ import {
   DEFAULT_TEMP_GRADIENT_COLORS,
 } from '../utils/tempGradient';
 import { Conversation, INITIAL_CONVERSATIONS, CONTACT_PHOTO_MAP } from '../data/mockPhoneData';
-import { MusicServiceType, MUSIC_SERVICES } from '../data/mediaData';
+import { MusicServiceType, MUSIC_SERVICES, SAMPLE_TRACKS, Track } from '../data/mediaData';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants';
 import { useWeatherStore } from './useWeatherStore';
 import {
@@ -1025,6 +1025,19 @@ interface MockpitStore {
   advanceCoverArtCandidate: (cacheKey: string) => void;
   markCoverArtStatus: (cacheKey: string, status: CoverArtStatus, coverUrl?: string | null) => void;
 
+  // Shared Playback State & Actions
+  currentTrackId: string;
+  isPlaying: boolean;
+  progressSec: number;
+  favoritedTrackIds: string[];
+  setCurrentTrack: (trackId: string) => void;
+  togglePlay: () => void;
+  setIsPlaying: (playing: boolean) => void;
+  seekTo: (sec: number) => void;
+  nextTrack: () => void;
+  prevTrack: () => void;
+  toggleFavorite: (trackId: string) => void;
+
   // Vehicle State Actions
   setVehicleState: (partial: Partial<VehicleState>) => void;
   resetVehicleState: () => void;
@@ -1104,6 +1117,61 @@ const initialScreensList = loadSavedScreens();
 const initialScreens = loadSavedComponentsByScreen();
 const initialNotifs = loadSavedNotificationComponents();
 const initialPalette = loadSavedPalette();
+
+function getInitialPlaybackTrackId(screens: Record<string, ComponentInstance[]>): string {
+  try {
+    const allComps = Object.values(screens).flat();
+    const np = allComps.find((c) => c.type === 'nowPlaying' && c.staticProps?.trackId);
+    if (np?.staticProps?.trackId && SAMPLE_TRACKS.some((t) => t.id === np.staticProps?.trackId)) {
+      return np.staticProps.trackId;
+    }
+  } catch (e) {
+    // Ignore error in non-browser env
+  }
+  return SAMPLE_TRACKS[0].id;
+}
+
+const initialPlaybackTrackId = getInitialPlaybackTrackId(initialScreens);
+
+let playbackInterval: NodeJS.Timeout | null = null;
+
+function syncPlaybackInterval(
+  storeGet: () => MockpitStore,
+  storeSet: (partial: Partial<MockpitStore> | ((state: MockpitStore) => Partial<MockpitStore>)) => void
+) {
+  const current = storeGet();
+  if (current.isPlaying) {
+    if (!playbackInterval) {
+      playbackInterval = setInterval(() => {
+        const state = storeGet();
+        if (!state.isPlaying) {
+          if (playbackInterval) {
+            clearInterval(playbackInterval);
+            playbackInterval = null;
+          }
+          return;
+        }
+        const track = SAMPLE_TRACKS.find((t) => t.id === state.currentTrackId) || SAMPLE_TRACKS[0];
+        if (state.progressSec >= track.durationSec) {
+          const currentIndex = SAMPLE_TRACKS.findIndex((t) => t.id === state.currentTrackId);
+          const nextIndex = (currentIndex + 1) % SAMPLE_TRACKS.length;
+          storeSet({
+            currentTrackId: SAMPLE_TRACKS[nextIndex].id,
+            progressSec: 0,
+            isPlaying: true,
+          });
+        } else {
+          storeSet({ progressSec: state.progressSec + 1 });
+        }
+      }, 1000);
+    }
+  } else {
+    if (playbackInterval) {
+      clearInterval(playbackInterval);
+      playbackInterval = null;
+    }
+  }
+}
 
 let neutralCoastingInterval: NodeJS.Timeout | null = null;
 let lastDrainTime: number = Date.now();
@@ -1537,6 +1605,70 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       const updated = { ...state.coverArtCache, [cacheKey]: updatedEntry };
       saveCoverArtCache(updated);
       return { coverArtCache: updated };
+    });
+  },
+
+  // Shared Playback State & Actions
+  currentTrackId: initialPlaybackTrackId,
+  isPlaying: true,
+  progressSec: 102,
+  favoritedTrackIds: ['t1', 't7'],
+
+  setCurrentTrack: (trackId: string) => {
+    set({
+      currentTrackId: trackId,
+      progressSec: 0,
+      isPlaying: true,
+    });
+    syncPlaybackInterval(get, set);
+  },
+
+  togglePlay: () => {
+    set((state) => ({ isPlaying: !state.isPlaying }));
+    syncPlaybackInterval(get, set);
+  },
+
+  setIsPlaying: (playing: boolean) => {
+    set({ isPlaying: playing });
+    syncPlaybackInterval(get, set);
+  },
+
+  seekTo: (sec: number) => {
+    set({ progressSec: Math.max(0, sec) });
+  },
+
+  nextTrack: () => {
+    const { currentTrackId } = get();
+    const currentIndex = SAMPLE_TRACKS.findIndex((t) => t.id === currentTrackId);
+    const nextIndex = (currentIndex + 1) % SAMPLE_TRACKS.length;
+    set({
+      currentTrackId: SAMPLE_TRACKS[nextIndex].id,
+      progressSec: 0,
+      isPlaying: true,
+    });
+    syncPlaybackInterval(get, set);
+  },
+
+  prevTrack: () => {
+    const { currentTrackId } = get();
+    const currentIndex = SAMPLE_TRACKS.findIndex((t) => t.id === currentTrackId);
+    const prevIndex = (currentIndex - 1 + SAMPLE_TRACKS.length) % SAMPLE_TRACKS.length;
+    set({
+      currentTrackId: SAMPLE_TRACKS[prevIndex].id,
+      progressSec: 0,
+      isPlaying: true,
+    });
+    syncPlaybackInterval(get, set);
+  },
+
+  toggleFavorite: (trackId: string) => {
+    set((state) => {
+      const exists = state.favoritedTrackIds.includes(trackId);
+      return {
+        favoritedTrackIds: exists
+          ? state.favoritedTrackIds.filter((id) => id !== trackId)
+          : [...state.favoritedTrackIds, trackId],
+      };
     });
   },
 
@@ -3614,7 +3746,22 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         selectedMessagingThreadId: null,
         queuedMessageToasts: [],
         activeTrip: null,
+        currentTrackId: SAMPLE_TRACKS[0].id,
+        isPlaying: false,
+        progressSec: 102,
+        favoritedTrackIds: ['t1', 't7'],
       };
     });
+    if (playbackInterval) {
+      clearInterval(playbackInterval);
+      playbackInterval = null;
+    }
   },
 }));
+
+if (typeof window !== 'undefined') {
+  // Start playback ticker if initial state is playing
+  setTimeout(() => {
+    syncPlaybackInterval(useMockpitStore.getState, useMockpitStore.setState);
+  }, 0);
+}

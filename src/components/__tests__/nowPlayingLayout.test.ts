@@ -120,17 +120,21 @@ describe('Now Playing Layout Determinism & Progressive Content Removal Suite', (
     assert.equal(step5.showShuffleRepeat, true);
   });
 
-  it('6. Deterministically applies Progressive Removal for 200 × 140', () => {
-    // 200 × 140: Height < 150px removes seek bar, preserving essential title, artist, artwork and controls
+  it('6. Deterministically applies Progressive Removal for 200 × 140 and 180 × 140', () => {
+    // 200 × 140: Height >= 125px and width >= 190px preserves seek bar, eliminating dead zone between 125-149px
     const layout = resolveNowPlayingLayout(200, 140, 'horizontal');
     assert.equal(layout.layoutMode, 'compact');
     assert.equal(layout.showHeaderIcon, false);
     assert.equal(layout.showHeaderDivider, false);
     assert.equal(layout.showTimestamps, false);
-    assert.equal(layout.showSeekBar, false, 'Seek bar removed when height < 150');
+    assert.equal(layout.showSeekBar, true, 'Seek bar preserved when height >= 125 and width >= 190');
     assert.equal(layout.showFavoriteButton, false);
     assert.equal(layout.showShuffleRepeat, false);
     assert.equal(layout.showThumbnail, true);
+
+    // 180 × 140: Width < 190 removes seek bar
+    const layoutNarrow = resolveNowPlayingLayout(180, 140, 'horizontal');
+    assert.equal(layoutNarrow.showSeekBar, false, 'Seek bar removed when width < 190');
   });
 
   it('7. Deterministically resolves Extremely Constrained Layout for 264 × 112', () => {
@@ -280,5 +284,32 @@ describe('Now Playing Layout Determinism & Progressive Content Removal Suite', (
     assert.equal(branch5.layoutMode, 'compact');
     assert.equal(branch5.secondaryControlSizePx, 44, 'Secondary control size is 44px in compact layout');
     assert.equal(branch5.secondaryIconSizePx, 18, 'Secondary icon size is 18px in compact layout');
+  });
+
+  it('14. Verifies showPermanentTitleArtist threshold (87 <= h < 125 vs h < 87)', () => {
+    // 87 <= h < 125: Extremely constrained with permanent title/artist stacked layout
+    const at110 = resolveNowPlayingLayout(264, 110, 'horizontal');
+    assert.equal(at110.layoutMode, 'extremely_constrained');
+    assert.equal(at110.isExtremelyConstrained, true);
+    assert.equal(at110.showPermanentTitleArtist, true, 'Permanent title/artist active at h = 110');
+
+    const at87 = resolveNowPlayingLayout(264, 87, 'horizontal');
+    assert.equal(at87.layoutMode, 'extremely_constrained');
+    assert.equal(at87.showPermanentTitleArtist, true, 'Permanent title/artist active at boundary h = 87');
+
+    // h < 87: Transient flash metadata reveal mode
+    const at86 = resolveNowPlayingLayout(264, 86, 'horizontal');
+    assert.equal(at86.layoutMode, 'extremely_constrained');
+    assert.equal(at86.showPermanentTitleArtist, false, 'Transient reveal mode below h = 87');
+
+    const at70 = resolveNowPlayingLayout(264, 70, 'horizontal');
+    assert.equal(at70.showPermanentTitleArtist, false, 'Transient reveal mode at h = 70');
+
+    // h >= 125: Compact mode (already permanently displays metadata, showPermanentTitleArtist is false)
+    const at132 = resolveNowPlayingLayout(264, 132, 'horizontal');
+    assert.equal(at132.layoutMode, 'compact');
+    assert.equal(at132.showPermanentTitleArtist, false);
+    assert.equal(at132.showThumbnail, true);
+    assert.equal(at132.showSeekBar, true, 'Seek bar visible at h = 132 in compact mode');
   });
 });

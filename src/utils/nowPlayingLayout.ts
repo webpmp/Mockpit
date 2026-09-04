@@ -12,6 +12,7 @@ export interface NowPlayingLayoutConfig {
   showHeaderIcon: boolean;
   showHeaderDivider: boolean;
   showThumbnail: boolean;
+  showPermanentTitleArtist: boolean;
   showSeekBar: boolean;
   showTimestamps: boolean;
   showFavoriteButton: boolean;
@@ -64,21 +65,23 @@ export function resolveNowPlayingLayout(
   const w = Math.max(40, width);
   const h = Math.max(40, height);
 
-  // 1. Extremely Constrained: height < 125px (Single row: Scrubber/Track + Playback controls)
+  // 1. Extremely Constrained: height < 125px (Single row or two stacked rows when h >= 87)
   if (h < 125) {
+    const showPermanentTitleArtist = h >= 87;
     const paddingClass = h < 105 ? 'p-1.5' : 'p-2';
-    const buttonSize = h >= 105 ? (w < 220 ? 32 : 36) : (w < 220 ? 28 : 30);
-    const playButtonSize = h >= 105 ? (w < 220 ? 36 : 40) : (w < 220 ? 32 : 34);
+    const buttonSize = h >= 105 ? (w < 220 ? 32 : 36) : h >= 95 ? (w < 220 ? 28 : 30) : (w < 220 ? 24 : 26);
+    const playButtonSize = h >= 105 ? (w < 220 ? 36 : 40) : h >= 95 ? (w < 220 ? 32 : 34) : (w < 220 ? 28 : 30);
     const buttonHeightPx = buttonSize;
     const buttonWidthPx = buttonSize;
     const playButtonHeightPx = playButtonSize;
     const playButtonWidthPx = playButtonSize;
-    const iconSizePx = h >= 105 ? 18 : 15;
-    const controlGapPx = 5;
+    const iconSizePx = h >= 105 ? 18 : h >= 95 ? 15 : 13;
+    const controlGapPx = w < 220 ? 4 : 5;
 
     return {
       layoutMode: 'extremely_constrained',
       isExtremelyConstrained: true,
+      showPermanentTitleArtist,
       isTallLayout: false,
       isStandardHorizontal: false,
       isWideShort: false,
@@ -144,6 +147,7 @@ export function resolveNowPlayingLayout(
     return {
       layoutMode: 'tall',
       isExtremelyConstrained: false,
+      showPermanentTitleArtist: false,
       isTallLayout: true,
       isStandardHorizontal: false,
       isWideShort: false,
@@ -202,6 +206,7 @@ export function resolveNowPlayingLayout(
     return {
       layoutMode: 'wide_short',
       isExtremelyConstrained: false,
+      showPermanentTitleArtist: false,
       isTallLayout: false,
       isStandardHorizontal: false,
       isWideShort: true,
@@ -250,6 +255,7 @@ export function resolveNowPlayingLayout(
     return {
       layoutMode: 'standard_horizontal',
       isExtremelyConstrained: false,
+      showPermanentTitleArtist: false,
       isTallLayout: false,
       isStandardHorizontal: true,
       isWideShort: false,
@@ -299,8 +305,8 @@ export function resolveNowPlayingLayout(
   const showHeaderIcon = w >= 300 && h >= 210;
   // 3. Header Divider: only if height >= 230 and width >= 320
   const showHeaderDivider = h >= 230 && w >= 320;
-  // 4. Seek Bar: fits if height >= 150 and width >= 190
-  const showSeekBar = h >= 150 && w >= 190;
+  // 4. Seek Bar: fits if height >= 125 and width >= 190 (lowered to h >= 125 to eliminate dead zone between 125-149px)
+  const showSeekBar = h >= 125 && w >= 190;
   // 5. Favorite Button: at narrow widths (w < 300) secondary actions are hidden when h < 250; inline favorite fits if width >= 300 and height >= 160
   const showFavoriteButton = w >= 300 && h >= 160;
   // 6. Shuffle & Repeat: hidden in compact (restored in tall or standard horizontal)
@@ -311,6 +317,7 @@ export function resolveNowPlayingLayout(
   return {
     layoutMode: 'compact',
     isExtremelyConstrained: false,
+    showPermanentTitleArtist: false,
     isTallLayout: false,
     isStandardHorizontal: false,
     isWideShort: false,
