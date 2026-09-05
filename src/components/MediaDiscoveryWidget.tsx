@@ -31,8 +31,10 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
   const markCoverArtStatus = useMockpitStore((s) => s.markCoverArtStatus);
   const advanceCoverArtCandidate = useMockpitStore((s) => s.advanceCoverArtCandidate);
 
+  const setCurrentTrack = useMockpitStore((s) => s.setCurrentTrack);
+
   const mode = (component.staticProps?.mode as 'trending' | 'foryou') || 'trending';
-  const layout = (component.staticProps?.layout as 'horizontal' | 'vertical') || 'horizontal';
+  const layout = (component.staticProps?.layout as 'horizontal' | 'vertical' | 'grid') || 'horizontal';
 
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
@@ -53,8 +55,82 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
     setIsModeDropdownOpen(false);
   };
 
-  const handleCardClick = (trackId: string) => {
-    setSelectedTrackId((prev) => (prev === trackId ? null : trackId));
+  const handleCardClick = (track: typeof tracks[number]) => {
+    setSelectedTrackId((prev) => (prev === track.id ? null : track.id));
+    if (track.linkedTrackId) {
+      setCurrentTrack(track.linkedTrackId);
+    }
+  };
+
+  const renderTrackCard = (track: typeof tracks[number]) => {
+    const isCardSelected = selectedTrackId === track.id;
+    const cacheKey = getCoverArtCacheKey(track.artist, track.album);
+    const coverArt = coverArtCache[cacheKey];
+
+    return (
+      <button
+        key={track.id}
+        type="button"
+        data-track-id={track.id}
+        onClick={() => handleCardClick(track)}
+        className={`w-[148px] shrink-0 flex flex-col items-start p-2 rounded-xl border transition-all cursor-pointer group text-left ${
+          isCardSelected
+            ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/50 shadow-md'
+            : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/40'
+        }`}
+        style={
+          isCardSelected
+            ? {
+                borderColor: customColor || '#38bdf8',
+                boxShadow: `0 0 0 1px ${customColor || '#38bdf8'}50`,
+              }
+            : undefined
+        }
+      >
+        {/* 120x120px Album Art Block */}
+        <div
+          className={`w-[120px] h-[120px] mx-auto rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0 group-hover:scale-[1.02] transition-transform`}
+        >
+          {/* Trending Static Rank Badge - strictly no animate-pulse */}
+          {mode === 'trending' && track.rank && (
+            <div
+              className="absolute top-1.5 left-1.5 bg-amber-500 text-slate-950 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded shadow-md z-10 select-none"
+              title={`Rank #${track.rank}`}
+            >
+              #{track.rank}
+            </div>
+          )}
+
+          {/* Artwork Image or Centered Icon */}
+          {coverArt?.status === 'found' && coverArt?.coverUrl ? (
+            <img
+              src={coverArt.coverUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              onError={() => advanceCoverArtCandidate(cacheKey)}
+            />
+          ) : (
+            renderCoverIcon(track.iconName, 'w-10 h-10 text-white/95 drop-shadow')
+          )}
+        </div>
+
+        {/* Track Title (1 line, truncate) & Artist (1 line, truncate) */}
+        <div className="w-full mt-2 space-y-0.5 px-0.5">
+          <div
+            className="text-sm font-semibold text-slate-100 truncate w-full"
+            title={track.title}
+          >
+            {track.title}
+          </div>
+          <div
+            className="text-xs text-slate-400 truncate w-full"
+            title={track.artist}
+          >
+            {track.artist}
+          </div>
+        </div>
+      </button>
+    );
   };
 
   const modeLabel = mode === 'trending' ? 'Trending' : 'For You';
@@ -150,79 +226,16 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
         }
       />
 
-      {/* Main Track Display: Horizontal (default) vs Vertical */}
+      {/* Main Track Display: Horizontal (default) vs Grid vs Vertical */}
       {layout === 'horizontal' ? (
         <div className="flex-1 min-h-0 mt-3 overflow-x-auto overflow-y-hidden pr-1 pb-1 flex flex-row gap-3 custom-scrollbar items-center">
-          {tracks.map((track) => {
-            const isCardSelected = selectedTrackId === track.id;
-            const cacheKey = getCoverArtCacheKey(track.artist, track.album);
-            const coverArt = coverArtCache[cacheKey];
-
-            return (
-              <button
-                key={track.id}
-                type="button"
-                data-track-id={track.id}
-                onClick={() => handleCardClick(track.id)}
-                className={`w-[148px] shrink-0 flex flex-col items-start p-2 rounded-xl border transition-all cursor-pointer group text-left ${
-                  isCardSelected
-                    ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/50 shadow-md'
-                    : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/40'
-                }`}
-                style={
-                  isCardSelected
-                    ? {
-                        borderColor: customColor || '#38bdf8',
-                        boxShadow: `0 0 0 1px ${customColor || '#38bdf8'}50`,
-                      }
-                    : undefined
-                }
-              >
-                {/* 120x120px Album Art Block */}
-                <div
-                  className={`w-[120px] h-[120px] mx-auto rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0 group-hover:scale-[1.02] transition-transform`}
-                >
-                  {/* Trending Static Rank Badge - strictly no animate-pulse */}
-                  {mode === 'trending' && track.rank && (
-                    <div
-                      className="absolute top-1.5 left-1.5 bg-amber-500 text-slate-950 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded shadow-md z-10 select-none"
-                      title={`Rank #${track.rank}`}
-                    >
-                      #{track.rank}
-                    </div>
-                  )}
-
-                  {/* Artwork Image or Centered Icon */}
-                  {coverArt?.status === 'found' && coverArt?.coverUrl ? (
-                    <img
-                      src={coverArt.coverUrl}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      onError={() => advanceCoverArtCandidate(cacheKey)}
-                    />
-                  ) : (
-                    renderCoverIcon(track.iconName, 'w-10 h-10 text-white/95 drop-shadow')
-                  )}
-                </div>
-
-                {/* Track Title (1 line, truncate) & Artist (1 line, truncate) */}
-                <div className="w-full mt-2 space-y-0.5 px-0.5">
-                  <div
-                    className="text-sm font-semibold text-slate-100 truncate w-full"
-                    title={track.title}
-                  >
-                    {track.title}
-                  </div>
-                  <div
-                    className="text-xs text-slate-400 truncate w-full"
-                    title={track.artist}
-                  >
-                    {track.artist}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+          {tracks.map(renderTrackCard)}
+        </div>
+      ) : layout === 'grid' ? (
+        <div className="flex-1 min-h-0 mt-3 overflow-y-auto pr-1">
+          <div className="flex flex-wrap content-start gap-3">
+            {tracks.map(renderTrackCard)}
+          </div>
         </div>
       ) : (
         /* Vertical Stacked Rows */
@@ -237,7 +250,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                 key={track.id}
                 type="button"
                 data-track-id={track.id}
-                onClick={() => handleCardClick(track.id)}
+                onClick={() => handleCardClick(track)}
                 className={`flex items-center gap-3 p-2 rounded-xl border transition-all cursor-pointer group text-left min-h-[76px] w-full ${
                   isCardSelected
                     ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/50 shadow-md'

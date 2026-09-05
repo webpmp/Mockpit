@@ -17,7 +17,7 @@ export interface MockpitInputProps extends Omit<React.InputHTMLAttributes<HTMLIn
   wrapperClassName?: string;
 }
 
-export const MockpitInput: React.FC<MockpitInputProps> = ({
+export const MockpitInput = React.forwardRef<HTMLInputElement, MockpitInputProps>(({
   value,
   onChange,
   onSubmit,
@@ -33,7 +33,7 @@ export const MockpitInput: React.FC<MockpitInputProps> = ({
   type = 'text',
   onFocus,
   ...props
-}) => {
+}, forwardedRef) => {
   const generatedId = useId();
   const inputId = props.id || generatedId;
   const openKeyboard = useMockpitStore((s) => s.openKeyboard);
@@ -42,6 +42,7 @@ export const MockpitInput: React.FC<MockpitInputProps> = ({
   const isKeyboardVisible = useMockpitStore((s) => s.isKeyboardVisible);
 
   const inputRef = React.useRef<HTMLInputElement>(null);
+  React.useImperativeHandle(forwardedRef, () => inputRef.current as HTMLInputElement);
   const isActive = isKeyboardVisible && activeInputState?.inputId === inputId;
 
   React.useEffect(() => {
@@ -132,4 +133,6 @@ export const MockpitInput: React.FC<MockpitInputProps> = ({
       )}
     </div>
   );
-};
+});
+
+MockpitInput.displayName = 'MockpitInput';

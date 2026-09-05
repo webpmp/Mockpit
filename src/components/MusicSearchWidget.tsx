@@ -14,11 +14,12 @@ import { ComponentInstance } from '../types';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { MockpitInput } from './MockpitInput';
 import {
-  MOCK_SEARCH_CATALOG,
+  SEARCHABLE_CATALOG,
   MOCK_NLU_LOOKUP,
   SearchCatalogItem,
 } from '../data/mediaData';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useMockpitStore } from '../store/useMockpitStore';
 
 export interface MusicSearchWidgetProps {
   component: ComponentInstance;
@@ -44,6 +45,10 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
   const [lastPlayedId, setLastPlayedId] = useState<string | null>(null);
   const [isSpokenWordExpanded, setIsSpokenWordExpanded] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+
+  const setCurrentTrack = useMockpitStore((s) => s.setCurrentTrack);
+  const closeKeyboard = useMockpitStore((s) => s.closeKeyboard);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number>(component.width || 580);
@@ -152,7 +157,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
     }
 
     // Direct federated catalog search (title, artist, album)
-    const matched = MOCK_SEARCH_CATALOG.filter((item) => {
+    const matched = SEARCHABLE_CATALOG.filter((item) => {
       const matchText = `${item.title} ${item.artist} ${item.album || ''}`.toLowerCase();
       return matchText.includes(cleanQuery);
     });
@@ -225,17 +230,23 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
     }
   };
 
-  const handlePlayItem = (item: SearchCatalogItem) => {
-    setLastPlayedId(item.id);
-    setTimeout(() => {
-      setLastPlayedId(null);
-    }, 2000);
-  };
-
   const clearSearch = () => {
     setQuery('');
     setRecognizedResult(null);
     setFocusedIndex(-1);
+  };
+
+  const handlePlayItem = (item: SearchCatalogItem) => {
+    setLastPlayedId(item.id);
+    if (item.linkedTrackId) {
+      setCurrentTrack(item.linkedTrackId);
+    }
+    setTimeout(() => {
+      setLastPlayedId(null);
+    }, 2000);
+    clearSearch();
+    closeKeyboard({ isCancelled: false });
+    searchInputRef.current?.blur();
   };
 
   const headerLabel =
@@ -254,7 +265,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
       data-component-type="mediaSearch"
       onKeyDown={handleContainerKeyDown}
       tabIndex={0}
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 outline-none ${baseOpacity}`}
+      className={`relative w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 outline-none ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       {/* Header Row (shown at wider sizes, §3) */}
@@ -276,6 +287,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
       <div className="my-1.5 flex items-center gap-2.5 shrink-0">
         <div className="flex-1 min-w-0">
           <MockpitInput
+            ref={searchInputRef}
             value={query}
             onChange={(val) => {
               setQuery(val);
@@ -352,95 +364,37 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
         </div>
       </div>
 
-      {/* Dynamic Content / Hint Row (§5) */}
-      {isListening ? (
-        <div className="flex-1 min-h-0 flex items-center justify-center text-xs font-mono text-amber-400 bg-amber-950/30 border border-amber-800/40 rounded-xl my-1 p-2">
-          <span className="font-bold">Listening…</span>
-          <span className="ml-2 text-[0.6875rem] text-amber-300/80">Speak a song title, artist, or genre</span>
-        </div>
-      ) : isRecognizingAudio ? (
-        <div className="flex-1 min-h-0 flex items-center justify-center text-xs font-mono text-cyan-400 bg-cyan-950/30 border border-cyan-800/40 rounded-xl my-1 p-2">
-          <span className="font-bold">Identifying song…</span>
-          <span className="ml-2 text-[0.6875rem] text-cyan-300/80">Listening to ambient audio</span>
-        </div>
-      ) : hasQuery ? (
-        /* Results View (§8 & §9) */
-        <div className="flex-1 min-h-0 flex flex-col justify-between mt-1">
-          {nluMatchTitle && (
-            <div className="text-[0.6875rem] font-mono text-sky-400 mb-1 flex items-center gap-1.5">
-              <span>Smart Intent: {nluMatchTitle}</span>
+      {/* Floating Results Dropdown (replaces inline Dynamic Content / Hint Row) */}
+      {(isListening || isRecognizingAudio || hasQuery || (isFocused && autocompleteSuggestions.length > 0)) && (
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl p-2 max-h-[320px] overflow-hidden">
+          {isListening ? (
+            <div className="w-full flex items-center justify-center text-xs font-mono text-amber-400 bg-amber-950/30 border border-amber-800/40 rounded-xl p-2">
+              <span className="font-bold">Listening…</span>
+              <span className="ml-2 text-[0.6875rem] text-amber-300/80">Speak a song title, artist, or genre</span>
             </div>
-          )}
-
-          <div className="flex-1 min-h-0 my-1 space-y-2 overflow-y-auto pr-1 custom-scrollbar max-h-[160px]">
-            {/* Songs Section (Music only, §8) */}
-            {musicResults.length > 0 && (
-              <div className="space-y-1.5">
-                <div className="text-[0.625rem] font-mono uppercase tracking-wider text-slate-400 px-1">
-                  Songs & Tracks ({musicResults.length})
+          ) : isRecognizingAudio ? (
+            <div className="w-full flex items-center justify-center text-xs font-mono text-cyan-400 bg-cyan-950/30 border border-cyan-800/40 rounded-xl p-2">
+              <span className="font-bold">Identifying song…</span>
+              <span className="ml-2 text-[0.6875rem] text-cyan-300/80">Listening to ambient audio</span>
+            </div>
+          ) : hasQuery ? (
+            /* Results View (§8 & §9) */
+            <div className="w-full flex flex-col">
+              {nluMatchTitle && (
+                <div className="text-[0.6875rem] font-mono text-sky-400 mb-1 flex items-center gap-1.5 px-1">
+                  <span>Smart Intent: {nluMatchTitle}</span>
                 </div>
-                {musicResults.map((item, idx) => {
-                  const isItemFocused = focusedIndex === idx;
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => handlePlayItem(item)}
-                      className={`p-2 rounded-xl border flex items-center justify-between cursor-pointer transition-colors group min-h-[44px] ${
-                        isItemFocused
-                          ? 'bg-slate-800 border-sky-500'
-                          : 'bg-slate-950/60 hover:bg-slate-800/80 border-slate-800/80'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                        <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700">
-                          {lastPlayedId === item.id ? (
-                            <Volume2 className="w-4 h-4 text-emerald-400" />
-                          ) : (
-                            <Play className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-400 fill-current" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-slate-200 truncate group-hover:text-white">
-                            {item.title}
-                          </div>
-                          <div className="text-[0.625rem] text-slate-400 font-mono truncate">
-                            {item.artist} {item.album ? `· ${item.album}` : ''} · {item.sourceLabel}
-                          </div>
-                        </div>
-                      </div>
+              )}
 
-                      {item.duration && (
-                        <span className="text-[0.625rem] font-mono text-slate-400 shrink-0">
-                          {item.duration}
-                        </span>
-                      )}
+              <div className="space-y-2 overflow-y-auto pr-1 custom-scrollbar max-h-[280px]">
+                {/* Songs Section (Music only, §8) */}
+                {musicResults.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="text-[0.625rem] font-mono uppercase tracking-wider text-slate-400 px-1">
+                      Songs & Tracks ({musicResults.length})
                     </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Spoken Word Section (Podcasts & Audiobooks, collapsed by default, §8) */}
-            {spokenWordResults.length > 0 && (
-              <div className="space-y-1.5 pt-1 border-t border-slate-800/60">
-                <button
-                  type="button"
-                  onClick={() => setIsSpokenWordExpanded((prev) => !prev)}
-                  className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/80 text-[0.6875rem] font-mono text-slate-300 transition-colors min-h-[36px]"
-                >
-                  <span>Podcasts & audiobooks ({spokenWordResults.length})</span>
-                  {isSpokenWordExpanded ? (
-                    <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  )}
-                </button>
-
-                {isSpokenWordExpanded && (
-                  <div className="space-y-1.5 pl-1">
-                    {spokenWordResults.map((item, idx) => {
-                      const overallIdx = musicResults.length + idx;
-                      const isItemFocused = focusedIndex === overallIdx;
+                    {musicResults.map((item, idx) => {
+                      const isItemFocused = focusedIndex === idx;
                       return (
                         <div
                           key={item.id}
@@ -464,7 +418,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
                                 {item.title}
                               </div>
                               <div className="text-[0.625rem] text-slate-400 font-mono truncate">
-                                {item.artist} · {item.sourceLabel}
+                                {item.artist} {item.album ? `· ${item.album}` : ''} · {item.sourceLabel}
                               </div>
                             </div>
                           </div>
@@ -479,44 +433,106 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
                     })}
                   </div>
                 )}
-              </div>
-            )}
 
-            {musicResults.length === 0 && spokenWordResults.length === 0 && (
-              <div className="text-[0.6875rem] text-slate-500 italic p-2 text-center font-mono">
-                No matching music, podcasts, or audiobooks found
+                {/* Spoken Word Section (Podcasts & Audiobooks, collapsed by default, §8) */}
+                {spokenWordResults.length > 0 && (
+                  <div className="space-y-1.5 pt-1 border-t border-slate-800/60">
+                    <button
+                      type="button"
+                      onClick={() => setIsSpokenWordExpanded((prev) => !prev)}
+                      className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/80 text-[0.6875rem] font-mono text-slate-300 transition-colors min-h-[36px]"
+                    >
+                      <span>Podcasts & audiobooks ({spokenWordResults.length})</span>
+                      {isSpokenWordExpanded ? (
+                        <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                    </button>
+
+                    {isSpokenWordExpanded && (
+                      <div className="space-y-1.5 pl-1">
+                        {spokenWordResults.map((item, idx) => {
+                          const overallIdx = musicResults.length + idx;
+                          const isItemFocused = focusedIndex === overallIdx;
+                          return (
+                            <div
+                              key={item.id}
+                              onClick={() => handlePlayItem(item)}
+                              className={`p-2 rounded-xl border flex items-center justify-between cursor-pointer transition-colors group min-h-[44px] ${
+                                isItemFocused
+                                  ? 'bg-slate-800 border-sky-500'
+                                  : 'bg-slate-950/60 hover:bg-slate-800/80 border-slate-800/80'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700">
+                                  {lastPlayedId === item.id ? (
+                                    <Volume2 className="w-4 h-4 text-emerald-400" />
+                                  ) : (
+                                    <Play className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-400 fill-current" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-slate-200 truncate group-hover:text-white">
+                                    {item.title}
+                                  </div>
+                                  <div className="text-[0.625rem] text-slate-400 font-mono truncate">
+                                    {item.artist} · {item.sourceLabel}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {item.duration && (
+                                <span className="text-[0.625rem] font-mono text-slate-400 shrink-0">
+                                  {item.duration}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {musicResults.length === 0 && spokenWordResults.length === 0 && (
+                  <div className="text-[0.6875rem] text-slate-500 italic p-2 text-center font-mono">
+                    No matching music, podcasts, or audiobooks found
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            /* Autocomplete List (§10) */
+            <div className="space-y-2 overflow-y-auto pr-1 custom-scrollbar max-h-[280px]">
+              <div className="text-[0.625rem] font-mono text-slate-500 uppercase tracking-wider px-1">
+                Suggestions
+              </div>
+              <div className="space-y-2">
+                {autocompleteSuggestions.map((suggestion, idx) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => {
+                      setQuery(suggestion);
+                      setFocusedIndex(-1);
+                    }}
+                    className={`w-full p-2.5 rounded-xl border text-left font-mono text-xs flex items-center justify-between min-h-[44px] transition-colors ${
+                      focusedIndex === idx
+                        ? 'bg-slate-800 border-sky-500 text-sky-300'
+                        : 'bg-slate-950/70 hover:bg-slate-800/80 border-slate-800 text-slate-300'
+                    }`}
+                  >
+                    <span className="truncate">{suggestion}</span>
+                    <span className="text-[0.625rem] text-slate-500 font-mono">Search</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      ) : isFocused && autocompleteSuggestions.length > 0 ? (
-        /* Autocomplete List (§10) */
-        <div className="flex-1 min-h-0 my-1 space-y-2 overflow-y-auto pr-1 custom-scrollbar max-h-[140px]">
-          <div className="text-[0.625rem] font-mono text-slate-500 uppercase tracking-wider px-1">
-            Suggestions
-          </div>
-          <div className="space-y-2">
-            {autocompleteSuggestions.map((suggestion, idx) => (
-              <button
-                key={suggestion}
-                type="button"
-                onClick={() => {
-                  setQuery(suggestion);
-                  setFocusedIndex(-1);
-                }}
-                className={`w-full p-2.5 rounded-xl border text-left font-mono text-xs flex items-center justify-between min-h-[44px] transition-colors ${
-                  focusedIndex === idx
-                    ? 'bg-slate-800 border-sky-500 text-sky-300'
-                    : 'bg-slate-950/70 hover:bg-slate-800/80 border-slate-800 text-slate-300'
-                }`}
-              >
-                <span className="truncate">{suggestion}</span>
-                <span className="text-[0.625rem] text-slate-500 font-mono">Search</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      )}
     </div>
   );
 };

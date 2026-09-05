@@ -412,6 +412,21 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
 
           <div className="flex items-center gap-1.5">
             <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFavorite(currentTrack.id);
+              }}
+              className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
+                isFavorited
+                  ? 'text-white'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              }`}
+              title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+              aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
+            </button>
+            <button
               onClick={() => setIsShuffle((p) => !p)}
               className={`p-2 rounded-xl transition-colors cursor-pointer ${
                 isShuffle ? 'text-slate-100 bg-slate-800 border border-slate-700' : 'text-slate-400 hover:text-slate-200'
@@ -428,21 +443,6 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
               title="Repeat"
             >
               <Repeat className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFavorite(currentTrack.id);
-              }}
-              className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
-                isFavorited
-                  ? 'text-white bg-slate-700/40 border border-slate-500/40'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-              }`}
-              title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-              aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
             </button>
           </div>
         </div>

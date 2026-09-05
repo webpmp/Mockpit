@@ -1388,25 +1388,57 @@ export const Inspector: React.FC = () => {
             )}
 
             {selectedComp.type === 'mediaPlaylists' && (
-              <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
-                <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
-                  Synchronized Music Service
-                </label>
-                <select
-                  value={selectedMusicService || 'Spotify'}
-                  onChange={(e) => {
-                    setSelectedMusicService(e.target.value);
-                  }}
-                  className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
-                >
-                  <option value="Spotify">Spotify</option>
-                  <option value="Apple Music">Apple Music</option>
-                  <option value="YouTube Music">YouTube Music</option>
-                  <option value="Amazon Music">Amazon Music</option>
-                </select>
-                <span className="text-[10px] font-mono text-slate-400 block">
-                  Synchronized across Media components
-                </span>
+              <div className="space-y-3">
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                  <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
+                    Layout
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleStaticPropChange('cardLayoutMode', 'grid')}
+                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                        (selectedComp.staticProps?.cardLayoutMode || 'grid') === 'grid'
+                          ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      Grid
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStaticPropChange('cardLayoutMode', 'carousel')}
+                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                        selectedComp.staticProps?.cardLayoutMode === 'carousel'
+                          ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      Carousel
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                  <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
+                    Synchronized Music Service
+                  </label>
+                  <select
+                    value={selectedMusicService || 'Spotify'}
+                    onChange={(e) => {
+                      setSelectedMusicService(e.target.value);
+                    }}
+                    className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                  >
+                    <option value="Spotify">Spotify</option>
+                    <option value="Apple Music">Apple Music</option>
+                    <option value="YouTube Music">YouTube Music</option>
+                    <option value="Amazon Music">Amazon Music</option>
+                  </select>
+                  <span className="text-[10px] font-mono text-slate-400 block">
+                    Synchronized across Media components
+                  </span>
+                </div>
               </div>
             )}
 
@@ -1463,7 +1495,7 @@ export const Inspector: React.FC = () => {
                   <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
                     Layout
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => handleStaticPropChange('layout', 'horizontal')}
@@ -1485,6 +1517,17 @@ export const Inspector: React.FC = () => {
                       }`}
                     >
                       Vertical
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStaticPropChange('layout', 'grid')}
+                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                        selectedComp.staticProps?.layout === 'grid'
+                          ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      Grid
                     </button>
                   </div>
                 </div>
@@ -3068,6 +3111,7 @@ export const Inspector: React.FC = () => {
                   key !== 'successLabel' &&
                   !(selectedComp.type === 'nowPlaying' && (key === 'orientation' || key === 'autoDismissEnabled' || key === 'autoDismissSeconds' || key === 'dismissDirection' || key === 'slideDurationMs' || key === 'trackId' || key === 'songTransition' || key === 'songInfoDisplayDuration' || key === 'titleFontSize' || key === 'artistFontSize' || key === 'titleColor' || key === 'artistColor')) &&
                   !(selectedComp.type === 'mediaDiscovery' && (key === 'mode' || key === 'layout')) &&
+                  !(selectedComp.type === 'mediaPlaylists' && key === 'cardLayoutMode') &&
                   !(selectedComp.type === 'overheadVisualization' && key === 'color')
               )
               .map(([key, val]) => {

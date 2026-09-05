@@ -33,6 +33,8 @@ export const MOCK_PLAYLISTS: Record<MusicServiceType, PlaylistMock[]> = {
     { id: 'sp-4', name: 'Road Trip Radio', trackCount: 42, iconName: 'Flame', gradientBg: 'from-emerald-500 to-teal-800', accentColor: '#1DB954' },
     { id: 'sp-5', name: 'Release Radar', trackCount: 30, iconName: 'Sparkles', gradientBg: 'from-green-700 to-teal-950', accentColor: '#1DB954' },
     { id: 'sp-6', name: 'Chill Vibes', trackCount: 65, iconName: 'Music', gradientBg: 'from-emerald-700 to-slate-900', accentColor: '#1DB954' },
+    { id: 'sp-7', name: 'Throwback Jams', trackCount: 55, iconName: 'Disc', gradientBg: 'from-teal-700 to-emerald-950', accentColor: '#1DB954' },
+    { id: 'sp-8', name: 'Workout Power', trackCount: 40, iconName: 'Zap', gradientBg: 'from-green-500 to-teal-900', accentColor: '#1DB954' },
   ],
   'Apple Music': [
     { id: 'am-1', name: 'Favorites Mix', trackCount: 25, iconName: 'Heart', gradientBg: 'from-rose-600 to-pink-900', accentColor: '#FA243C' },
@@ -41,6 +43,8 @@ export const MOCK_PLAYLISTS: Record<MusicServiceType, PlaylistMock[]> = {
     { id: 'am-4', name: 'Heavy Rotation', trackCount: 40, iconName: 'Flame', gradientBg: 'from-rose-500 to-red-950', accentColor: '#FA243C' },
     { id: 'am-5', name: 'Chill Mix', trackCount: 25, iconName: 'Disc', gradientBg: 'from-pink-700 to-rose-950', accentColor: '#FA243C' },
     { id: 'am-6', name: 'Spatial Audio Showcase', trackCount: 32, iconName: 'Zap', gradientBg: 'from-rose-700 to-slate-900', accentColor: '#FA243C' },
+    { id: 'am-7', name: 'Throwback Essentials', trackCount: 45, iconName: 'Disc', gradientBg: 'from-red-600 to-pink-950', accentColor: '#FA243C' },
+    { id: 'am-8', name: 'Focus Mix', trackCount: 30, iconName: 'Compass', gradientBg: 'from-rose-600 to-red-900', accentColor: '#FA243C' },
   ],
   'YouTube Music': [
     { id: 'yt-1', name: 'My Supermix', trackCount: 100, iconName: 'Zap', gradientBg: 'from-red-600 to-amber-900', accentColor: '#FF0000' },
@@ -49,6 +53,8 @@ export const MOCK_PLAYLISTS: Record<MusicServiceType, PlaylistMock[]> = {
     { id: 'yt-4', name: 'Energy Booster', trackCount: 35, iconName: 'Flame', gradientBg: 'from-orange-600 to-red-900', accentColor: '#FF0000' },
     { id: 'yt-5', name: 'Focus Flow', trackCount: 48, iconName: 'Disc', gradientBg: 'from-red-800 to-slate-900', accentColor: '#FF0000' },
     { id: 'yt-6', name: 'Commute Beats', trackCount: 28, iconName: 'Radio', gradientBg: 'from-amber-700 to-red-950', accentColor: '#FF0000' },
+    { id: 'yt-7', name: 'Late Night Drive', trackCount: 38, iconName: 'Music', gradientBg: 'from-red-600 to-orange-900', accentColor: '#FF0000' },
+    { id: 'yt-8', name: 'Throwback Hits', trackCount: 60, iconName: 'TrendingUp', gradientBg: 'from-amber-600 to-red-950', accentColor: '#FF0000' },
   ],
   'Amazon Music': [
     { id: 'az-1', name: 'My Discovery Mix', trackCount: 30, iconName: 'Sparkles', gradientBg: 'from-cyan-600 to-blue-900', accentColor: '#00A8E1' },
@@ -57,6 +63,8 @@ export const MOCK_PLAYLISTS: Record<MusicServiceType, PlaylistMock[]> = {
     { id: 'az-4', name: 'Acoustic Chill', trackCount: 40, iconName: 'Music', gradientBg: 'from-cyan-700 to-sky-950', accentColor: '#00A8E1' },
     { id: 'az-5', name: 'Road Trip USA', trackCount: 60, iconName: 'Compass', gradientBg: 'from-sky-500 to-blue-900', accentColor: '#00A8E1' },
     { id: 'az-6', name: 'Ultra HD Hits', trackCount: 25, iconName: 'Zap', gradientBg: 'from-blue-700 to-slate-900', accentColor: '#00A8E1' },
+    { id: 'az-7', name: 'Feel Good Friday', trackCount: 42, iconName: 'Sparkles', gradientBg: 'from-cyan-600 to-sky-900', accentColor: '#00A8E1' },
+    { id: 'az-8', name: 'Workout Energy', trackCount: 33, iconName: 'Flame', gradientBg: 'from-blue-600 to-cyan-950', accentColor: '#00A8E1' },
   ],
 };
 
@@ -77,6 +85,7 @@ export interface DiscoveryTrack {
   gradientTo: string;
   iconName: string;
   rank?: number;
+  linkedTrackId?: string; // NEW — maps this Discovery card to a real SAMPLE_TRACKS id
 }
 
 export const DISCOVERY_TRACKS_TRENDING: DiscoveryTrack[] = [
@@ -90,6 +99,7 @@ export const DISCOVERY_TRACKS_TRENDING: DiscoveryTrack[] = [
     gradientFrom: 'from-pink-600',
     gradientTo: 'to-rose-900',
     iconName: 'Flame',
+    linkedTrackId: 't7',
   },
   {
     id: 'tr-2',
@@ -101,6 +111,7 @@ export const DISCOVERY_TRACKS_TRENDING: DiscoveryTrack[] = [
     gradientFrom: 'from-red-600',
     gradientTo: 'to-amber-950',
     iconName: 'Sparkles',
+    linkedTrackId: 't23',
   },
   {
     id: 'tr-3',
@@ -112,6 +123,7 @@ export const DISCOVERY_TRACKS_TRENDING: DiscoveryTrack[] = [
     gradientFrom: 'from-purple-600',
     gradientTo: 'to-indigo-950',
     iconName: 'TrendingUp',
+    linkedTrackId: 't24',
   },
   {
     id: 'tr-4',
@@ -123,6 +135,7 @@ export const DISCOVERY_TRACKS_TRENDING: DiscoveryTrack[] = [
     gradientFrom: 'from-cyan-600',
     gradientTo: 'to-blue-950',
     iconName: 'Zap',
+    linkedTrackId: 't25',
   },
   {
     id: 'tr-5',
@@ -134,6 +147,7 @@ export const DISCOVERY_TRACKS_TRENDING: DiscoveryTrack[] = [
     gradientFrom: 'from-teal-600',
     gradientTo: 'to-emerald-950',
     iconName: 'Compass',
+    linkedTrackId: 't26',
   },
   {
     id: 'tr-6',
@@ -145,6 +159,31 @@ export const DISCOVERY_TRACKS_TRENDING: DiscoveryTrack[] = [
     gradientFrom: 'from-amber-600',
     gradientTo: 'to-red-950',
     iconName: 'Radio',
+    linkedTrackId: 't27',
+  },
+  {
+    id: 'tr-7',
+    rank: 7,
+    title: 'Good Days',
+    artist: 'SZA',
+    album: 'Good Days',
+    duration: '4:39',
+    gradientFrom: 'from-fuchsia-600',
+    gradientTo: 'to-purple-950',
+    iconName: 'Sparkles',
+    linkedTrackId: 't28',
+  },
+  {
+    id: 'tr-8',
+    rank: 8,
+    title: 'Flowers',
+    artist: 'Miley Cyrus',
+    album: 'Endless Summer Vacation',
+    duration: '3:20',
+    gradientFrom: 'from-pink-500',
+    gradientTo: 'to-orange-600',
+    iconName: 'Flame',
+    linkedTrackId: 't29',
   },
 ];
 
@@ -158,6 +197,7 @@ export const DISCOVERY_TRACKS_FORYOU: DiscoveryTrack[] = [
     gradientFrom: 'from-indigo-600',
     gradientTo: 'to-purple-950',
     iconName: 'Disc',
+    linkedTrackId: 't15',
   },
   {
     id: 'fy-2',
@@ -168,6 +208,7 @@ export const DISCOVERY_TRACKS_FORYOU: DiscoveryTrack[] = [
     gradientFrom: 'from-violet-600',
     gradientTo: 'to-slate-950',
     iconName: 'Music',
+    linkedTrackId: 't16',
   },
   {
     id: 'fy-3',
@@ -178,6 +219,7 @@ export const DISCOVERY_TRACKS_FORYOU: DiscoveryTrack[] = [
     gradientFrom: 'from-rose-600',
     gradientTo: 'to-orange-950',
     iconName: 'Compass',
+    linkedTrackId: 't17',
   },
   {
     id: 'fy-4',
@@ -188,6 +230,7 @@ export const DISCOVERY_TRACKS_FORYOU: DiscoveryTrack[] = [
     gradientFrom: 'from-amber-500',
     gradientTo: 'to-pink-900',
     iconName: 'Sparkles',
+    linkedTrackId: 't19',
   },
   {
     id: 'fy-5',
@@ -198,6 +241,7 @@ export const DISCOVERY_TRACKS_FORYOU: DiscoveryTrack[] = [
     gradientFrom: 'from-emerald-600',
     gradientTo: 'to-cyan-950',
     iconName: 'Heart',
+    linkedTrackId: 't20',
   },
   {
     id: 'fy-6',
@@ -208,6 +252,29 @@ export const DISCOVERY_TRACKS_FORYOU: DiscoveryTrack[] = [
     gradientFrom: 'from-purple-600',
     gradientTo: 'to-pink-900',
     iconName: 'Zap',
+    linkedTrackId: 't1',
+  },
+  {
+    id: 'fy-7',
+    title: 'Electric Feel',
+    artist: 'MGMT',
+    album: 'Oracular Spectaculor',
+    duration: '3:49',
+    gradientFrom: 'from-lime-600',
+    gradientTo: 'to-emerald-950',
+    iconName: 'Zap',
+    linkedTrackId: 't21',
+  },
+  {
+    id: 'fy-8',
+    title: 'Nights',
+    artist: 'Frank Ocean',
+    album: 'Blonde',
+    duration: '5:07',
+    gradientFrom: 'from-slate-600',
+    gradientTo: 'to-indigo-950',
+    iconName: 'Music',
+    linkedTrackId: 't22',
   },
 ];
 
@@ -359,6 +426,176 @@ export const SAMPLE_TRACKS: Track[] = [
     coverBg: 'from-cyan-600 to-blue-600',
     iconName: 'Music',
   },
+  {
+    id: 't13',
+    title: 'Salad Days',
+    artist: 'Mac DeMarco',
+    album: 'Salad Days',
+    duration: '2:25',
+    durationSec: 145,
+    coverBg: 'from-lime-500 to-emerald-700',
+    iconName: 'Music',
+  },
+  {
+    id: 't14',
+    title: 'Chamber of Reflection',
+    artist: 'Mac DeMarco',
+    album: 'Salad Days',
+    duration: '3:51',
+    durationSec: 231,
+    coverBg: 'from-indigo-500 to-violet-800',
+    iconName: 'Music',
+  },
+  {
+    id: 't15',
+    title: 'Resonance',
+    artist: 'HOME',
+    album: 'Odyssey',
+    duration: '3:32',
+    durationSec: 212,
+    coverBg: 'from-indigo-600 to-purple-950',
+    iconName: 'Disc',
+  },
+  {
+    id: 't16',
+    title: 'After Dark',
+    artist: 'Mr.Kitty',
+    album: 'Time',
+    duration: '4:17',
+    durationSec: 257,
+    coverBg: 'from-violet-600 to-slate-950',
+    iconName: 'Music',
+  },
+  {
+    id: 't17',
+    title: 'Pacific Coast Highway',
+    artist: 'Kavinsky',
+    album: 'OutRun',
+    duration: '4:18',
+    durationSec: 258,
+    coverBg: 'from-rose-600 to-orange-950',
+    iconName: 'Compass',
+  },
+  {
+    id: 't18',
+    title: 'Sunroof',
+    artist: 'Nicky Youre & dazy',
+    album: 'Sunroof',
+    duration: '2:43',
+    durationSec: 163,
+    coverBg: 'from-sky-400 to-cyan-600',
+    iconName: 'Radio',
+  },
+  {
+    id: 't19',
+    title: 'Sunset Lover',
+    artist: 'Petit Biscuit',
+    album: 'Presence',
+    duration: '3:57',
+    durationSec: 237,
+    coverBg: 'from-amber-500 to-pink-900',
+    iconName: 'Sparkles',
+  },
+  {
+    id: 't20',
+    title: 'Daylight',
+    artist: 'David Kushner',
+    album: 'Daylight',
+    duration: '3:32',
+    durationSec: 212,
+    coverBg: 'from-emerald-600 to-cyan-950',
+    iconName: 'Heart',
+  },
+  {
+    id: 't21',
+    title: 'Electric Feel',
+    artist: 'MGMT',
+    album: 'Oracular Spectacular',
+    duration: '3:49',
+    durationSec: 229,
+    coverBg: 'from-lime-600 to-emerald-950',
+    iconName: 'Zap',
+  },
+  {
+    id: 't22',
+    title: 'Nights',
+    artist: 'Frank Ocean',
+    album: 'Blonde',
+    duration: '5:07',
+    durationSec: 307,
+    coverBg: 'from-slate-600 to-indigo-950',
+    iconName: 'Music',
+  },
+  {
+    id: 't23',
+    title: 'Paint The Town Red',
+    artist: 'Doja Cat',
+    album: 'Scarlet',
+    duration: '3:51',
+    durationSec: 231,
+    coverBg: 'from-red-600 to-amber-950',
+    iconName: 'Sparkles',
+  },
+  {
+    id: 't24',
+    title: 'Greedy',
+    artist: 'Tate McRae',
+    album: 'THINK LATER',
+    duration: '2:11',
+    durationSec: 131,
+    coverBg: 'from-purple-600 to-indigo-950',
+    iconName: 'TrendingUp',
+  },
+  {
+    id: 't25',
+    title: 'Strangers',
+    artist: 'Kenya Grace',
+    album: 'After Thought',
+    duration: '2:52',
+    durationSec: 172,
+    coverBg: 'from-cyan-600 to-blue-950',
+    iconName: 'Zap',
+  },
+  {
+    id: 't26',
+    title: 'Water',
+    artist: 'Tyla',
+    album: 'TYLA',
+    duration: '3:20',
+    durationSec: 200,
+    coverBg: 'from-teal-600 to-emerald-950',
+    iconName: 'Compass',
+  },
+  {
+    id: 't27',
+    title: 'Lovin On Me',
+    artist: 'Jack Harlow',
+    album: 'Lovin On Me',
+    duration: '2:18',
+    durationSec: 138,
+    coverBg: 'from-amber-600 to-red-950',
+    iconName: 'Radio',
+  },
+  {
+    id: 't28',
+    title: 'Good Days',
+    artist: 'SZA',
+    album: 'Good Days',
+    duration: '4:39',
+    durationSec: 279,
+    coverBg: 'from-fuchsia-600 to-purple-950',
+    iconName: 'Sparkles',
+  },
+  {
+    id: 't29',
+    title: 'Flowers',
+    artist: 'Miley Cyrus',
+    album: 'Endless Summer Vacation',
+    duration: '3:20',
+    durationSec: 200,
+    coverBg: 'from-pink-500 to-orange-600',
+    iconName: 'Flame',
+  },
 ];
 
 export const SAMPLE_PLAYLISTS: Playlist[] = [
@@ -433,30 +670,31 @@ export interface SearchCatalogItem {
   source: MediaSearchSource;
   sourceLabel: string;
   iconName?: string;
+  linkedTrackId?: string; // NEW — maps this catalog item to a real SAMPLE_TRACKS id
 }
 
 export const MOCK_SEARCH_CATALOG: SearchCatalogItem[] = [
   // Music - Spotify
-  { id: 'sc-1', title: 'Salad Days', artist: 'Mac DeMarco', album: 'Salad Days', duration: '2:25', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-  { id: 'sc-2', title: 'Chamber of Reflection', artist: 'Mac DeMarco', album: 'Salad Days', duration: '3:51', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-  { id: 'sc-3', title: 'Starboy', artist: 'The Weeknd ft. Daft Punk', album: 'Starboy', duration: '3:50', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-  { id: 'sc-4', title: 'Blinding Lights', artist: 'The Weeknd', album: 'After Hours', duration: '3:20', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-  { id: 'sc-5', title: 'Midnight City', artist: 'M83', album: "Hurry Up, We're Dreaming", duration: '4:03', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-  { id: 'sc-6', title: 'Resonance', artist: 'HOME', album: 'Odyssey', duration: '3:32', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Disc' },
-  { id: 'sc-7', title: 'After Dark', artist: 'Mr.Kitty', album: 'Time', duration: '4:17', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
+  { id: 'sc-1', title: 'Salad Days', artist: 'Mac DeMarco', album: 'Salad Days', duration: '2:25', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't13' },
+  { id: 'sc-2', title: 'Chamber of Reflection', artist: 'Mac DeMarco', album: 'Salad Days', duration: '3:51', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't14' },
+  { id: 'sc-3', title: 'Starboy', artist: 'The Weeknd ft. Daft Punk', album: 'Starboy', duration: '3:50', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't1' },
+  { id: 'sc-4', title: 'Blinding Lights', artist: 'The Weeknd', album: 'After Hours', duration: '3:20', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't3' },
+  { id: 'sc-5', title: 'Midnight City', artist: 'M83', album: "Hurry Up, We're Dreaming", duration: '4:03', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't2' },
+  { id: 'sc-6', title: 'Resonance', artist: 'HOME', album: 'Odyssey', duration: '3:32', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Disc', linkedTrackId: 't15' },
+  { id: 'sc-7', title: 'After Dark', artist: 'Mr.Kitty', album: 'Time', duration: '4:17', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't16' },
   
   // Music - Apple Music
-  { id: 'sc-8', title: 'As It Was', artist: 'Harry Styles', album: "Harry's House", duration: '2:47', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Disc' },
-  { id: 'sc-9', title: 'Cruel Summer', artist: 'Taylor Swift', album: 'Lover', duration: '2:58', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Heart' },
-  { id: 'sc-10', title: 'Levitating', artist: 'Dua Lipa', album: 'Future Nostalgia', duration: '3:23', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Zap' },
-  { id: 'sc-11', title: 'Get Lucky', artist: 'Daft Punk ft. Pharrell', album: 'Random Access Memories', duration: '4:08', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Sparkles' },
-  { id: 'sc-12', title: 'Pacific Coast Highway', artist: 'Kavinsky', album: 'OutRun', duration: '4:18', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Compass' },
+  { id: 'sc-8', title: 'As It Was', artist: 'Harry Styles', album: "Harry's House", duration: '2:47', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Disc', linkedTrackId: 't4' },
+  { id: 'sc-9', title: 'Cruel Summer', artist: 'Taylor Swift', album: 'Lover', duration: '2:58', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Heart', linkedTrackId: 't7' },
+  { id: 'sc-10', title: 'Levitating', artist: 'Dua Lipa', album: 'Future Nostalgia', duration: '3:23', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Zap', linkedTrackId: 't5' },
+  { id: 'sc-11', title: 'Get Lucky', artist: 'Daft Punk ft. Pharrell', album: 'Random Access Memories', duration: '4:08', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Sparkles', linkedTrackId: 't6' },
+  { id: 'sc-12', title: 'Pacific Coast Highway', artist: 'Kavinsky', album: 'OutRun', duration: '4:18', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Compass', linkedTrackId: 't17' },
   
   // Music - Radio
   { id: 'sc-13', title: 'KEXP 90.3 FM Live', artist: 'Where the Music Matters', album: 'Seattle Radio', duration: 'Live', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
   { id: 'sc-14', title: 'NPR Music Live Sessions', artist: 'Tiny Desk Concerts', album: 'NPR Radio', duration: 'Live', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
-  { id: 'sc-15', title: 'Heat Waves', artist: 'Glass Animals', album: 'Alt Nation', duration: '3:58', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
-  { id: 'sc-16', title: 'Sunroof', artist: 'Nicky Youre & dazy', album: 'Top Hits Radio', duration: '2:43', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
+  { id: 'sc-15', title: 'Heat Waves', artist: 'Glass Animals', album: 'Alt Nation', duration: '3:58', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio', linkedTrackId: 't11' },
+  { id: 'sc-16', title: 'Sunroof', artist: 'Nicky Youre & dazy', album: 'Top Hits Radio', duration: '2:43', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio', linkedTrackId: 't18' },
 
   // Spoken Word - Podcasts (Spotify / Apple Music)
   { id: 'sc-17', title: 'The Daily: Behind the Wheel', artist: 'The New York Times', album: 'Episode 1842', duration: '24 min', contentType: 'podcast', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Radio' },
@@ -474,28 +712,52 @@ export const MOCK_NLU_LOOKUP: Record<string, { queryLabel: string; results: Sear
   'indie rock': {
     queryLabel: 'Indie Rock Curated Mix',
     results: [
-      { id: 'sc-1', title: 'Salad Days', artist: 'Mac DeMarco', album: 'Salad Days', duration: '2:25', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-      { id: 'sc-2', title: 'Chamber of Reflection', artist: 'Mac DeMarco', album: 'Salad Days', duration: '3:51', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-      { id: 'sc-5', title: 'Midnight City', artist: 'M83', album: "Hurry Up, We're Dreaming", duration: '4:03', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-      { id: 'sc-15', title: 'Heat Waves', artist: 'Glass Animals', album: 'Alt Nation', duration: '3:58', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
+      { id: 'sc-1', title: 'Salad Days', artist: 'Mac DeMarco', album: 'Salad Days', duration: '2:25', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't13' },
+      { id: 'sc-2', title: 'Chamber of Reflection', artist: 'Mac DeMarco', album: 'Salad Days', duration: '3:51', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't14' },
+      { id: 'sc-5', title: 'Midnight City', artist: 'M83', album: "Hurry Up, We're Dreaming", duration: '4:03', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't2' },
+      { id: 'sc-15', title: 'Heat Waves', artist: 'Glass Animals', album: 'Alt Nation', duration: '3:58', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio', linkedTrackId: 't11' },
     ],
   },
   'workout hype': {
     queryLabel: 'High Energy Workout Beats',
     results: [
-      { id: 'sc-3', title: 'Starboy', artist: 'The Weeknd ft. Daft Punk', album: 'Starboy', duration: '3:50', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-      { id: 'sc-10', title: 'Levitating', artist: 'Dua Lipa', album: 'Future Nostalgia', duration: '3:23', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Zap' },
-      { id: 'sc-11', title: 'Get Lucky', artist: 'Daft Punk ft. Pharrell', album: 'Random Access Memories', duration: '4:08', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Sparkles' },
+      { id: 'sc-3', title: 'Starboy', artist: 'The Weeknd ft. Daft Punk', album: 'Starboy', duration: '3:50', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't1' },
+      { id: 'sc-10', title: 'Levitating', artist: 'Dua Lipa', album: 'Future Nostalgia', duration: '3:23', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Zap', linkedTrackId: 't5' },
+      { id: 'sc-11', title: 'Get Lucky', artist: 'Daft Punk ft. Pharrell', album: 'Random Access Memories', duration: '4:08', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Sparkles', linkedTrackId: 't6' },
     ],
   },
   'something chill for the drive': {
     queryLabel: 'Chill Drive Soundscape',
     results: [
-      { id: 'sc-6', title: 'Resonance', artist: 'HOME', album: 'Odyssey', duration: '3:32', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Disc' },
-      { id: 'sc-7', title: 'After Dark', artist: 'Mr.Kitty', album: 'Time', duration: '4:17', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music' },
-      { id: 'sc-12', title: 'Pacific Coast Highway', artist: 'Kavinsky', album: 'OutRun', duration: '4:18', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Compass' },
+      { id: 'sc-6', title: 'Resonance', artist: 'HOME', album: 'Odyssey', duration: '3:32', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Disc', linkedTrackId: 't15' },
+      { id: 'sc-7', title: 'After Dark', artist: 'Mr.Kitty', album: 'Time', duration: '4:17', contentType: 'music', source: 'spotify', sourceLabel: 'Spotify', iconName: 'Music', linkedTrackId: 't16' },
+      { id: 'sc-12', title: 'Pacific Coast Highway', artist: 'Kavinsky', album: 'OutRun', duration: '4:18', contentType: 'music', source: 'apple_music', sourceLabel: 'Apple Music', iconName: 'Compass', linkedTrackId: 't17' },
       { id: 'sc-13', title: 'KEXP 90.3 FM Live', artist: 'Where the Music Matters', album: 'Seattle Radio', duration: 'Live', contentType: 'music', source: 'radio', sourceLabel: 'Radio', iconName: 'Radio' },
     ],
   },
 };
+
+const linkedIdsInCatalog = new Set(
+  MOCK_SEARCH_CATALOG.filter((item) => item.linkedTrackId).map((item) => item.linkedTrackId)
+);
+
+const derivedFromSampleTracks: SearchCatalogItem[] = SAMPLE_TRACKS.filter(
+  (track) => !linkedIdsInCatalog.has(track.id)
+).map((track) => ({
+  id: track.id,
+  title: track.title,
+  artist: track.artist,
+  album: track.album,
+  duration: track.duration,
+  contentType: 'music',
+  source: 'spotify',
+  sourceLabel: 'Spotify',
+  iconName: track.iconName,
+  linkedTrackId: track.id,
+}));
+
+export const SEARCHABLE_CATALOG: SearchCatalogItem[] = [
+  ...MOCK_SEARCH_CATALOG,
+  ...derivedFromSampleTracks,
+];
 

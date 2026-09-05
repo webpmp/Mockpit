@@ -1187,7 +1187,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     }}
                     className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                       isFavorited
-                        ? 'text-white bg-slate-700/40 border border-slate-500/40'
+                        ? 'text-white'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                     }`}
                     title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
@@ -1345,7 +1345,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     }}
                     className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                       isFavorited
-                        ? 'text-white bg-slate-700/40 border border-slate-500/40'
+                        ? 'text-white'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                     }`}
                     title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
