@@ -19,6 +19,7 @@ import {
   FolderTree,
   Trash2,
   ShieldCheck,
+  Move,
 } from 'lucide-react';
 
 export const HeaderNav: React.FC = () => {
@@ -35,6 +36,9 @@ export const HeaderNav: React.FC = () => {
   const moveScreen = useMockpitStore((s) => s.moveScreen);
   const isSettingsOpen = useMockpitStore((s) => s.isSettingsOpen);
   const toggleSettingsModal = useMockpitStore((s) => s.toggleSettingsModal);
+  const backgroundMode = useMockpitStore((s) => s.backgroundMode);
+  const isAdjustingBackground = useMockpitStore((s) => s.isAdjustingBackground);
+  const setIsAdjustingBackground = useMockpitStore((s) => s.setIsAdjustingBackground);
   const resetToSeedData = useMockpitStore((s) => s.resetToSeedData);
   const copiedComponent = useMockpitStore((s) => s.copiedComponent);
   const pasteComponent = useMockpitStore((s) => s.pasteComponent);
@@ -540,6 +544,21 @@ export const HeaderNav: React.FC = () => {
               title={`Paste: ${DEFAULT_COMPONENT_LABELS[copiedComponent.component.type] || copiedComponent.component.type} (Ctrl/Cmd+V)`}
             >
               <Clipboard className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Adjust Background Direct Manipulation Toggle (Dashboard Mode) */}
+          {backgroundMode === 'dashboard' && (
+            <button
+              onClick={() => setIsAdjustingBackground(!isAdjustingBackground)}
+              className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
+                isAdjustingBackground
+                  ? 'bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-[0_0_12px_rgba(56,189,248,0.3)]'
+                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-sky-300 hover:border-sky-500/30'
+              }`}
+              title={isAdjustingBackground ? 'Done Adjusting Dashboard Background' : 'Adjust Dashboard Background Position & Scale'}
+            >
+              <Move className="w-4 h-4" />
             </button>
           )}
 

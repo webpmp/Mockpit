@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1080" width="2560" height="1080">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#475569" />
+      <stop offset="40%" stop-color="#64748b" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+    <linearGradient id="dashSurface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="30%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="trimWood" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1e1b18" />
+      <stop offset="50%" stop-color="#292524" />
+      <stop offset="100%" stop-color="#1c1917" />
+    </linearGradient>
+    <linearGradient id="ventGlow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000000" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <radialGradient id="cutoutShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="60%" stop-color="#000000" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="pillarL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+  </defs>
+
+  <!-- Windshield background view -->
+  <rect x="0" y="0" width="2560" height="520" fill="url(#sky)" />
+
+  <!-- Road / Horizon subtle gradient -->
+  <polygon points="0,400 2560,400 2560,520 0,520" fill="#1e293b" opacity="0.7" />
+  <line x1="0" y1="400" x2="2560" y2="400" stroke="#334155" stroke-width="3" />
+
+  <!-- Windshield wiper cowl & base -->
+  <path d="M 0,380 Q 1280,320 2560,380 L 2560,460 Q 1280,420 0,460 Z" fill="#090d16" />
+
+  <!-- A-Pillar Left -->
+  <polygon points="0,0 260,0 480,480 0,540" fill="url(#pillarL)" />
+  <polygon points="0,0 180,0 360,480 0,540" fill="#0b101b" />
+
+  <!-- A-Pillar Right -->
+  <polygon points="2300,0 2560,0 2560,540 2080,480" fill="url(#pillarL)" />
+  <polygon points="2380,0 2560,0 2560,540 2200,480" fill="#0b101b" />
+
+  <!-- Windshield bottom curve / hood line -->
+  <path d="M 0,460 Q 1280,410 2560,460 L 2560,1080 L 0,1080 Z" fill="url(#dashSurface)" />
+
+  <!-- Continuous HVAC Vent slot across dashboard -->
+  <path d="M 200,480 Q 1280,450 2360,480 L 2360,505 Q 1280,475 200,505 Z" fill="url(#ventGlow)" stroke="#334155" stroke-width="1.5" />
+  <path d="M 220,492 Q 1280,462 2340,492" stroke="#475569" stroke-width="1.5" opacity="0.5" />
+
+  <!-- Matte Dashboard Trim Strip (horizontal luxury architectural beam) -->
+  <path d="M 100,515 Q 1280,485 2460,515 L 2460,565 Q 1280,535 100,565 Z" fill="url(#trimWood)" stroke="#3f3f46" stroke-width="1" />
+
+  <!-- Lower Dash Shelf -->
+  <path d="M 0,565 Q 1280,535 2560,565 L 2560,1080 L 0,1080 Z" fill="#080c14" />
+  <path d="M 0,566 Q 1280,536 2560,566" stroke="#1e293b" stroke-width="3" />
+
+  <!-- Center Console Structure Base & Ambient Glow -->
+  <polygon points="1060,540 1500,540 1620,1080 940,1080" fill="#05080f" stroke="#1e293b" stroke-width="2" />
+  <polygon points="1100,680 1460,680 1540,1080 1020,1080" fill="#090d16" />
+  <!-- Wireless phone charger shelf outline -->
+  <rect x="1140" y="720" width="280" height="180" rx="16" fill="#04060a" stroke="#1e293b" stroke-width="1.5" />
+  <!-- Armrest seam -->
+  <line x1="1280" y1="940" x2="1280" y2="1080" stroke="#1e293b" stroke-width="3" />
+
+  <!-- Steering Wheel Rim Left Preview Hint -->
+  <circle cx="520" cy="780" r="260" fill="none" stroke="#0f172a" stroke-width="48" />
+  <circle cx="520" cy="780" r="260" fill="none" stroke="#1e293b" stroke-width="2" />
+  <!-- Steering Wheel Hub -->
+  <circle cx="520" cy="780" r="90" fill="#090d16" stroke="#1e293b" stroke-width="3" />
+  <line x1="430" y1="780" x2="260" y2="780" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+  <line x1="610" y1="780" x2="780" y2="780" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+  <line x1="520" y1="870" x2="520" y2="1040" stroke="#1e293b" stroke-width="24" stroke-linecap="round" />
+
+  <!-- Passenger Dash Area subtle crease & glovebox line -->
+  <line x1="1600" y1="680" x2="2400" y2="680" stroke="#0f172a" stroke-width="2" />
+
+  <!-- Center Screen Cutout Area Bezel & Ambient Shadow (centered around 1280, 540) -->
+  <rect x="300" y="40" width="1960" height="1120" rx="36" fill="none" stroke="#000000" stroke-width="40" opacity="0.4" filter="blur(20px)" />
+  
+  <!-- Subtle center screen stand/pedestal behind the display cutout -->
+  <rect x="1190" y="600" width="180" height="160" rx="12" fill="#1e293b" stroke="#0f172a" stroke-width="2" />
+  <path d="M 1190,750 L 1150,820 L 1410,820 L 1370,750 Z" fill="#0d131f" />
+
+  <!-- Soft vignette around full cockpit perimeter -->
+  <rect x="0" y="0" width="2560" height="1080" fill="url(#cutoutShadow)" pointer-events="none" opacity="0.3" />
+</svg>

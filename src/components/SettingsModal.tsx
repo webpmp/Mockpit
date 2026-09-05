@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, X, Palette, Check, Info, Sparkles, RefreshCw, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2, Car, Keyboard, Type, Thermometer } from 'lucide-react';
+import { Settings, X, Palette, Check, Info, Sparkles, RefreshCw, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2, Car, Keyboard, Type, Thermometer, Sliders, RotateCcw, Monitor, Move, ZoomIn } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { BUILTIN_PALETTES, PaletteConfig, PalettePresetId, VehicleBackgroundPosition, KeyboardSlideDirection, TextScalePreset, TEXT_SCALE_FACTORS } from '../types';
 import { getAvailableVehicles } from '../utils/vehicleAssets';
@@ -31,6 +31,17 @@ export const SettingsModal: React.FC = () => {
   const setEgoVehicleType = useMockpitStore((s) => s.setEgoVehicleType);
   const tempGradientColors = useMockpitStore((s) => s.tempGradientColors);
   const setTempGradientColors = useMockpitStore((s) => s.setTempGradientColors);
+
+  const backgroundMode = useMockpitStore((s) => s.backgroundMode);
+  const backgroundColor = useMockpitStore((s) => s.backgroundColor);
+  const backgroundImage = useMockpitStore((s) => s.backgroundImage);
+  const backgroundImageScale = useMockpitStore((s) => s.backgroundImageScale);
+  const backgroundImagePositionX = useMockpitStore((s) => s.backgroundImagePositionX);
+  const backgroundImagePositionY = useMockpitStore((s) => s.backgroundImagePositionY);
+  const isAdjustingBackground = useMockpitStore((s) => s.isAdjustingBackground);
+  const setAppShellBackground = useMockpitStore((s) => s.setAppShellBackground);
+  const setIsAdjustingBackground = useMockpitStore((s) => s.setIsAdjustingBackground);
+  const resetAppShellBackgroundAlignment = useMockpitStore((s) => s.resetAppShellBackgroundAlignment);
 
   const availableVehicles = getAvailableVehicles();
 
@@ -957,6 +968,271 @@ export const SettingsModal: React.FC = () => {
                 Automatically slides on-screen QWERTY keyboard into view when typing in canvas input fields.
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Global Vehicle Dashboard Environment / App Shell Background Section */}
+        <div className="space-y-3.5 pt-4 border-t border-slate-800/80">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-200 font-mono">
+              <Monitor className="w-4 h-4 text-sky-400" />
+              <span>VEHICLE DASHBOARD ENVIRONMENT</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono">
+              App shell background
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3.5">
+            {/* Mode Segmented Control: Solid Color vs Vehicle Dashboard */}
+            <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-200 font-mono block">
+                  Background Mode
+                </label>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {backgroundMode === 'dashboard' ? 'Vehicle Cockpit Trim' : 'Minimal Solid Fill'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setAppShellBackground({ backgroundMode: 'color' })}
+                  className={`py-2 px-3 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer border flex items-center justify-center gap-2 ${
+                    backgroundMode === 'color'
+                      ? 'bg-sky-500/20 border-sky-500 text-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Palette className="w-3.5 h-3.5" />
+                  <span>Solid Color</span>
+                </button>
+
+                <button
+                  onClick={() => setAppShellBackground({ backgroundMode: 'dashboard' })}
+                  className={`py-2 px-3 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer border flex items-center justify-center gap-2 ${
+                    backgroundMode === 'dashboard'
+                      ? 'bg-sky-500/20 border-sky-500 text-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Car className="w-3.5 h-3.5" />
+                  <span>Vehicle Dashboard</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Solid Color Mode Controls */}
+            {backgroundMode === 'color' && (
+              <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-slate-200 font-mono block">
+                    Shell Color
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    Outside 1920×1080 canvas
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={backgroundColor}
+                    onChange={(e) => setAppShellBackground({ backgroundColor: e.target.value })}
+                    className="w-8 h-8 rounded border-0 bg-transparent cursor-pointer shrink-0"
+                    title="Pick App Shell Background Color"
+                  />
+                  <input
+                    type="text"
+                    value={backgroundColor}
+                    onChange={(e) => setAppShellBackground({ backgroundColor: e.target.value })}
+                    className="w-24 bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-sky-500"
+                  />
+                  <button
+                    onClick={() => setAppShellBackground({ backgroundColor: '#020617' })}
+                    className="px-2 py-1 text-[11px] font-mono text-slate-400 hover:text-slate-200 bg-slate-950 rounded border border-slate-800 ml-auto transition-colors cursor-pointer"
+                    title="Default Slate-950"
+                  >
+                    Reset Default
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Vehicle Dashboard Mode Controls */}
+            {backgroundMode === 'dashboard' && (
+              <div className="space-y-3">
+                {/* Direct Manipulation Launcher & Reset Action Bar */}
+                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-bold font-mono text-slate-200">
+                      Interactive Alignment
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-400">
+                      Drag to position, scroll to zoom
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => resetAppShellBackgroundAlignment()}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 hover:text-slate-100 text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Reset Scale to 100% and Offset to (0, 0)"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsAdjustingBackground(true);
+                        setSettingsModalOpen(false); // close modal so user can directly manipulate on canvas
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500 text-sky-300 hover:bg-sky-500/30 text-xs font-bold font-mono flex items-center gap-1.5 shadow-[0_0_12px_rgba(56,189,248,0.25)] transition-all cursor-pointer"
+                      title="Enable full canvas direct drag & scroll alignment"
+                    >
+                      <Move className="w-3.5 h-3.5" />
+                      <span>ADJUST ON CANVAS</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fine-Tuning Sliders */}
+                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-3">
+                  <div className="text-[11px] font-bold text-slate-200 font-mono">
+                    Manual Sliders &amp; Coordinates
+                  </div>
+
+                  {/* Scale Slider */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-300 flex items-center gap-1.5">
+                        <ZoomIn className="w-3 h-3 text-sky-400" />
+                        Dashboard Scale
+                      </span>
+                      <span className="text-sky-400 font-bold">
+                        {Math.round(backgroundImageScale * 100)}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={20}
+                        max={500}
+                        step={1}
+                        value={Math.round(backgroundImageScale * 100)}
+                        onChange={(e) =>
+                          setAppShellBackground({
+                            backgroundImageScale: Math.max(0.2, Math.min(5, parseInt(e.target.value, 10) / 100)),
+                          })
+                        }
+                        className="w-full accent-sky-400 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Horizontal Position Slider */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-300">Horizontal Position (X)</span>
+                      <span className="text-sky-400 font-bold">{backgroundImagePositionX}px</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={-1500}
+                        max={1500}
+                        step={5}
+                        value={backgroundImagePositionX}
+                        onChange={(e) =>
+                          setAppShellBackground({
+                            backgroundImagePositionX: parseInt(e.target.value, 10),
+                          })
+                        }
+                        className="w-full accent-sky-400 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Vertical Position Slider */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-300">Vertical Position (Y)</span>
+                      <span className="text-sky-400 font-bold">{backgroundImagePositionY}px</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={-1000}
+                        max={1000}
+                        step={5}
+                        value={backgroundImagePositionY}
+                        onChange={(e) =>
+                          setAppShellBackground({
+                            backgroundImagePositionY: parseInt(e.target.value, 10),
+                          })
+                        }
+                        className="w-full accent-sky-400 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dashboard Photo Source / Upload Option */}
+                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-200 font-mono block">
+                      Dashboard Photo Asset
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      High-res cockpit photo
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 hover:bg-sky-500/25 text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              if (evt.target?.result) {
+                                setAppShellBackground({ backgroundImage: evt.target.result as string });
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+
+                    <input
+                      type="text"
+                      placeholder="e.g. /backgrounds/dashboard-01.png"
+                      value={backgroundImage}
+                      onChange={(e) => setAppShellBackground({ backgroundImage: e.target.value })}
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                    />
+
+                    {backgroundImage !== '/backgrounds/dashboard-01.png' && (
+                      <button
+                        onClick={() => setAppShellBackground({ backgroundImage: '/backgrounds/dashboard-01.png' })}
+                        className="px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono transition-colors cursor-pointer"
+                        title="Reset to default cockpit asset"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ComponentRenderer, renderNotificationIcon } from './ComponentRenderer';
 import { BottomDock } from './BottomDock';
 import { VehicleBackground } from './VehicleBackground';
+import { AppShellBackground } from './AppShellBackground';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { ConnectorLayer } from './vehicle/ConnectorLayer';
 import { useMockpitStore } from '../store/useMockpitStore';
@@ -248,6 +249,7 @@ export const Canvas: React.FC = () => {
   const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
   const screenMode = useMockpitStore((s) => s.screenMode);
   const activeView = useMockpitStore((s) => s.activeView);
+  const backgroundMode = useMockpitStore((s) => s.backgroundMode);
   const gridConfig = useMockpitStore((s) => s.gridConfig);
   const textScale = useMockpitStore((s) => s.textScale);
   const conversations = useMockpitStore((s) => s.conversations);
@@ -585,14 +587,19 @@ export const Canvas: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full flex flex-col items-center justify-center relative overflow-hidden select-none bg-slate-950 ${
+      className={`w-full h-full flex flex-col items-center justify-center relative overflow-hidden select-none ${
         isPresentation ? 'p-0' : 'p-4 gap-3'
       }`}
       onClick={() => selectComponent(null)}
     >
+      {/* Global App Shell Background (Solid Color or Vehicle Dashboard Environment) */}
+      <AppShellBackground canvasScale={scale} />
+
       {/* Outer Vehicle Center Display Frame */}
       <div
-        className="relative bg-slate-950 border-8 border-slate-900 rounded-[32px] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex-shrink-0 transition-all duration-300 overflow-hidden"
+        className={`relative bg-slate-950 border-8 border-black rounded-[32px] flex-shrink-0 transition-all duration-300 overflow-hidden ${
+          backgroundMode === 'color' ? 'shadow-[0_0_50px_rgba(0,0,0,0.8)]' : ''
+        }`}
         style={{
           width: `${CANVAS_WIDTH * scale}px`,
           height: `${CANVAS_HEIGHT * scale}px`,

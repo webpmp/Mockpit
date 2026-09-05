@@ -33,6 +33,8 @@ import {
   ClimateState,
   ClimateFanSpeed,
   ClimateSeat,
+  AppShellBackgroundMode,
+  AppShellBackgroundConfig,
 } from '../types';
 
 import {
@@ -83,6 +85,38 @@ const LOCAL_STORAGE_CLIMATE_STATE_KEY = 'mockpit_climate_state_v1';
 const LOCAL_STORAGE_DISPLAY_CONFIG_KEY = 'mockpit_display_config_v1';
 const LOCAL_STORAGE_HMI_AUDIT_NOTES_KEY = 'mockpit_hmi_audit_notes_v1';
 const LOCAL_STORAGE_SELECTED_MUSIC_SERVICE_KEY = 'mockpit_selected_music_service_v1';
+const LOCAL_STORAGE_SHELL_BG_KEY = 'mockpit_shell_background_v1';
+
+export const DEFAULT_SHELL_BACKGROUND: AppShellBackgroundConfig = {
+  backgroundMode: 'color',
+  backgroundColor: '#020617', // slate-950
+  backgroundImage: '/backgrounds/dashboard-01.png',
+  backgroundImageScale: 1,
+  backgroundImagePositionX: 0,
+  backgroundImagePositionY: 0,
+};
+
+const loadSavedShellBackground = (): AppShellBackgroundConfig => {
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_SHELL_BG_KEY);
+    if (val) {
+      const parsed = JSON.parse(val);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return {
+          backgroundMode: parsed.backgroundMode === 'dashboard' ? 'dashboard' : 'color',
+          backgroundColor: typeof parsed.backgroundColor === 'string' && parsed.backgroundColor ? parsed.backgroundColor : '#020617',
+          backgroundImage: typeof parsed.backgroundImage === 'string' && parsed.backgroundImage ? parsed.backgroundImage : '/backgrounds/dashboard-01.png',
+          backgroundImageScale: typeof parsed.backgroundImageScale === 'number' && !isNaN(parsed.backgroundImageScale) ? Math.max(0.2, Math.min(5, parsed.backgroundImageScale)) : 1,
+          backgroundImagePositionX: typeof parsed.backgroundImagePositionX === 'number' && !isNaN(parsed.backgroundImagePositionX) ? parsed.backgroundImagePositionX : 0,
+          backgroundImagePositionY: typeof parsed.backgroundImagePositionY === 'number' && !isNaN(parsed.backgroundImagePositionY) ? parsed.backgroundImagePositionY : 0,
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load shell background from localStorage', e);
+  }
+  return DEFAULT_SHELL_BACKGROUND;
+};
 
 const loadSavedSelectedMusicService = (): MusicServiceType => {
   try {
@@ -953,6 +987,18 @@ interface MockpitStore {
   tempGradientColors: TempGradientColors;
   setTempGradientColors: (colors: Partial<TempGradientColors>) => void;
 
+  // App Shell Global Background (Color or Vehicle Dashboard Environment)
+  backgroundMode: AppShellBackgroundMode;
+  backgroundColor: string;
+  backgroundImage: string;
+  backgroundImageScale: number;
+  backgroundImagePositionX: number;
+  backgroundImagePositionY: number;
+  isAdjustingBackground: boolean;
+  setAppShellBackground: (config: Partial<AppShellBackgroundConfig>) => void;
+  setIsAdjustingBackground: (adjusting: boolean) => void;
+  resetAppShellBackgroundAlignment: () => void;
+
   // Shared Climate State & Actions
   climateState: ClimateState;
   setClimateState: (partial: Partial<ClimateState>) => void;
@@ -1821,6 +1867,36 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         console.error('Failed to save temp gradient colors', e);
       }
       return { tempGradientColors: updated };
+    });
+  },
+
+  // App Shell Background (Color or Vehicle Dashboard Environment)
+  ...loadSavedShellBackground(),
+  isAdjustingBackground: false, // strictly non-persisted per direct manipulation requirements
+  setAppShellBackground: (partial) => {
+    set((state) => {
+      const updatedConfig: AppShellBackgroundConfig = {
+        backgroundMode: partial.backgroundMode !== undefined ? partial.backgroundMode : state.backgroundMode,
+        backgroundColor: partial.backgroundColor !== undefined ? partial.backgroundColor : state.backgroundColor,
+        backgroundImage: partial.backgroundImage !== undefined ? partial.backgroundImage : state.backgroundImage,
+        backgroundImageScale: partial.backgroundImageScale !== undefined ? partial.backgroundImageScale : state.backgroundImageScale,
+        backgroundImagePositionX: partial.backgroundImagePositionX !== undefined ? partial.backgroundImagePositionX : state.backgroundImagePositionX,
+        backgroundImagePositionY: partial.backgroundImagePositionY !== undefined ? partial.backgroundImagePositionY : state.backgroundImagePositionY,
+      };
+      try {
+        localStorage.setItem(LOCAL_STORAGE_SHELL_BG_KEY, JSON.stringify(updatedConfig));
+      } catch (e) {
+        console.error('Failed to save shell background to localStorage', e);
+      }
+      return updatedConfig;
+    });
+  },
+  setIsAdjustingBackground: (adjusting) => set({ isAdjustingBackground: adjusting }),
+  resetAppShellBackgroundAlignment: () => {
+    get().setAppShellBackground({
+      backgroundImageScale: 1,
+      backgroundImagePositionX: 0,
+      backgroundImagePositionY: 0,
     });
   },
 

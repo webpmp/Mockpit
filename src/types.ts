@@ -50,6 +50,17 @@ export type GridConfig = {
   bgOpacity?: number;
 };
 
+export type AppShellBackgroundMode = 'color' | 'dashboard';
+
+export interface AppShellBackgroundConfig {
+  backgroundMode: AppShellBackgroundMode;
+  backgroundColor: string;
+  backgroundImage: string;
+  backgroundImageScale: number;
+  backgroundImagePositionX: number;
+  backgroundImagePositionY: number;
+}
+
 export type TextScalePreset = 'small' | 'medium' | 'large' | 'xlarge';
 
 export const TEXT_SCALE_FACTORS: Record<TextScalePreset, number> = {
