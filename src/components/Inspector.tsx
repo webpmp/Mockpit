@@ -1216,7 +1216,7 @@ export const Inspector: React.FC = () => {
                         }));
                       } else {
                         stops = [
-                          { id: 'stop-1', name: 'EV Supercharger (Merced)', lat: '37.3022', lng: '-120.4830' },
+                          { id: 'stop-1', name: 'Merced, CA', lat: '37.3022', lng: '-120.4830' },
                           { id: 'stop-2', name: 'Mariposa, CA', lat: '37.4849', lng: '-119.9663' },
                         ];
                       }

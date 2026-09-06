@@ -76,7 +76,7 @@ import { calculateTripEstimate, calculateStopLegs, haversineMiles } from '../uti
 import { searchNearbyPOIs } from '../utils/poiSearch';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { GeocodeResult } from '../utils/geocoding';
-import { abbreviateState } from '../utils/usStates';
+import { abbreviateState, formatWaypointName, recomputeChainNames } from '../utils/usStates';
 
 interface ComponentRendererProps {
   component: ComponentInstance;
@@ -765,6 +765,9 @@ const NavDestinationWidget: React.FC<{
   const [primaryDest, setPrimaryDest] = React.useState(initialPrimaryDest);
   const [destLat, setDestLat] = React.useState(initialDestLat);
   const [destLng, setDestLng] = React.useState(initialDestLng);
+  const [destState, setDestState] = React.useState<string | undefined>(
+    resolved.destState || component.staticProps?.destState
+  );
   const [showCancelConfirm, setShowCancelConfirm] = React.useState(false);
 
   const activeTrip = useMockpitStore((s) => s.activeTrip);
@@ -798,7 +801,7 @@ const NavDestinationWidget: React.FC<{
       }
     }
     return [
-      { id: 'stop-1', name: 'EV Supercharger (Merced)', lat: '37.3022', lng: '-120.4830' },
+      { id: 'stop-1', name: 'Merced, CA', lat: '37.3022', lng: '-120.4830' },
       { id: 'stop-2', name: 'Mariposa, CA', lat: '37.4849', lng: '-119.9663' },
     ];
   };
@@ -825,47 +828,37 @@ const NavDestinationWidget: React.FC<{
 
   // Unified auto-resize effect for stops and activeTrip metrics
   const CANVAS_HEIGHT = 1080;
-  const CANVAS_EDGE_MARGIN = 16;
+  const CANVAS_EDGE_MARGIN = 100; // 84px Dock height + 16px visual gap
+  const MIN_HEIGHT = 240; // matches DEFAULT_SIZES.navDestination.height
 
+  const cardRef = React.useRef<HTMLDivElement>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
-  const autoGrowRef = React.useRef(0); // px currently added on top of the user's manual height
-  const lastAppliedHeightRef = React.useRef(component.height);
 
   React.useLayoutEffect(() => {
+    const cardEl = cardRef.current;
     const contentEl = contentRef.current;
-    if (!contentEl) return;
+    if (!cardEl || !contentEl) return;
 
-    // If component.height changed since we last set it, someone else (a manual
-    // drag-resize) moved it — treat the current height as the new manual baseline.
-    if (Math.abs(component.height - lastAppliedHeightRef.current) > 0.5) {
-      autoGrowRef.current = 0;
-    }
-
-    const manualHeight = component.height - autoGrowRef.current;
-    const overflow = contentEl.scrollHeight - contentEl.clientHeight;
+    // Measure the actual chrome (header + footer + margins) rather than hardcoding it,
+    // so this stays correct if the header/footer ever change independently.
+    const chromeHeight = cardEl.offsetHeight - contentEl.clientHeight;
+    const naturalContentHeight = contentEl.scrollHeight;
     const canvasLimit = CANVAS_HEIGHT - CANVAS_EDGE_MARGIN - (component.y ?? 0);
-    const maxHeight = Math.max(manualHeight, canvasLimit);
 
-    let desiredHeight = component.height;
-    if (overflow > 1) {
-      desiredHeight = Math.min(component.height + overflow, maxHeight);
-    } else if (autoGrowRef.current > 0) {
-      // Content shrank (e.g. a stop was removed) — release unused auto-grown height,
-      // never below the user's manual baseline.
-      desiredHeight = Math.max(manualHeight, component.height + overflow);
-    }
+    const desiredHeight = Math.min(
+      Math.max(chromeHeight + naturalContentHeight, MIN_HEIGHT),
+      Math.max(canvasLimit, MIN_HEIGHT)
+    );
 
     if (Math.abs(desiredHeight - component.height) > 0.5) {
-      autoGrowRef.current = Math.max(0, desiredHeight - manualHeight);
-      lastAppliedHeightRef.current = desiredHeight;
       updateComponentSize(component.id, component.width, desiredHeight);
     }
   }, [
     currentStops.length,
     !!activeTrip,
     estimate?.isUnresolved,
-    component.height,
     component.width,
+    component.height,
     component.id,
     component.y,
     updateComponentSize,
@@ -882,20 +875,39 @@ const NavDestinationWidget: React.FC<{
     }
   };
 
-  const handleUpdateDestCoords = (lat: number, lng: number, displayName?: string) => {
+  const handleUpdateDestCoords = (
+    lat: number,
+    lng: number,
+    displayName?: string,
+    geocode?: GeocodeResult
+  ) => {
     setDestGeocoded(true);
+    const destCity = geocode?.cityName || (displayName ? displayName.split(',')[0].trim() : primaryDest);
+    const state = geocode?.state;
+    const baseStops = activeTrip ? activeTrip.stops : draftStops;
+
+    const { updatedStops, destName } = recomputeChainNames(
+      baseStops,
+      destCity,
+      state
+    );
+
     if (activeTrip) {
       startTripGuidance({
         ...activeTrip,
-        destinationName: displayName || activeTrip.destinationName,
+        destinationName: destName,
         destLat: lat,
         destLng: lng,
+        destState: state,
         destGeocoded: true,
+        stops: updatedStops,
       });
     } else {
       setDestLat(lat.toString());
       setDestLng(lng.toString());
-      if (displayName) setPrimaryDest(displayName);
+      setDestState(state);
+      setPrimaryDest(destName);
+      setDraftStops(updatedStops);
     }
   };
 
@@ -924,30 +936,41 @@ const NavDestinationWidget: React.FC<{
     }
   };
 
-  const handleUpdateStopCoords = (index: number, lat: number, lng: number, displayName?: string) => {
+  const handleUpdateStopCoords = (
+    index: number,
+    lat: number,
+    lng: number,
+    displayName?: string,
+    geocode?: GeocodeResult
+  ) => {
+    const cityName = geocode?.cityName || displayName || '';
+    const state = geocode?.state;
+    const baseStops = activeTrip ? activeTrip.stops : draftStops;
+    const updatedRaw = [...baseStops];
+    updatedRaw[index] = {
+      ...updatedRaw[index],
+      lat: lat.toString(),
+      lng: lng.toString(),
+      name: cityName,
+      state,
+      geocoded: true,
+    };
+
+    const { updatedStops, destName } = recomputeChainNames(
+      updatedRaw,
+      activeTrip ? activeTrip.destinationName : primaryDest,
+      activeTrip ? activeTrip.destState : destState
+    );
+
     if (activeTrip) {
-      const updated = [...activeTrip.stops];
-      updated[index] = {
-        ...updated[index],
-        lat: lat.toString(),
-        lng: lng.toString(),
-        name: displayName || updated[index].name,
-        geocoded: true,
-      };
       startTripGuidance({
         ...activeTrip,
-        stops: updated,
+        stops: updatedStops,
+        destinationName: destName,
       });
     } else {
-      const updated = [...draftStops];
-      updated[index] = {
-        ...updated[index],
-        lat: lat.toString(),
-        lng: lng.toString(),
-        name: displayName || updated[index].name,
-        geocoded: true,
-      };
-      setDraftStops(updated);
+      setDraftStops(updatedStops);
+      setPrimaryDest(destName);
     }
   };
 
@@ -990,19 +1013,32 @@ const NavDestinationWidget: React.FC<{
   };
 
   const handleRemoveStop = (index: number) => {
+    const baseStops = activeTrip ? activeTrip.stops : draftStops;
+    const nextRawStops = baseStops.filter((_, i) => i !== index);
+    const currentDest = activeTrip ? activeTrip.destinationName : primaryDest;
+    const currentDState = activeTrip ? activeTrip.destState : destState;
+
+    const { updatedStops, destName } = recomputeChainNames(
+      nextRawStops,
+      currentDest,
+      currentDState
+    );
+
     if (activeTrip) {
-      const nextStops = activeTrip.stops.filter((_, i) => i !== index);
       startTripGuidance({
         ...activeTrip,
-        stops: nextStops,
+        stops: updatedStops,
+        destinationName: destName,
       });
     } else {
-      setDraftStops(draftStops.filter((_, i) => i !== index));
+      setDraftStops(updatedStops);
+      setPrimaryDest(destName);
     }
   };
 
   return (
     <div
+      ref={cardRef}
       id={`component-${component.type}`}
       data-component-type="navDestination"
       className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
@@ -1084,7 +1120,7 @@ const NavDestinationWidget: React.FC<{
           <AddressGeocodeInput
             value={currentDestName}
             onChange={(val) => handleUpdateDestName(val)}
-            onResolved={(lat, lng, displayName) => handleUpdateDestCoords(lat, lng, displayName)}
+            onResolved={(lat, lng, displayName, geocode) => handleUpdateDestCoords(lat, lng, displayName, geocode)}
             onUnresolved={handleDestUnresolved}
             placeholder="Destination address or city..."
             componentId={component.id}
@@ -1118,7 +1154,7 @@ const NavDestinationWidget: React.FC<{
             <AddressGeocodeInput
               value={stop.name}
               onChange={(val) => handleUpdateStopName(i, val)}
-              onResolved={(lat, lng, displayName) => handleUpdateStopCoords(i, lat, lng, displayName)}
+              onResolved={(lat, lng, displayName, geocode) => handleUpdateStopCoords(i, lat, lng, displayName, geocode)}
               onUnresolved={() => handleStopUnresolved(i)}
               placeholder={`Stop ${i + 1} address or city...`}
               componentId={component.id}
@@ -1172,7 +1208,9 @@ const NavDestinationWidget: React.FC<{
                 destinationName: primaryDest,
                 destLat: Number(destLat) || 37.7456,
                 destLng: Number(destLng) || -119.5936,
+                destState: destState,
                 stops: draftStops,
+                destGeocoded: destGeocoded,
               })
             }
             className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
@@ -1671,15 +1709,15 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
         </span>
         {estimate.isUnresolved ? (
           <span
-            ref={statBlockRef}
-            className={`text-[0.625rem] font-mono text-amber-300 shrink-0 ${stackedLayout ? '' : 'text-right'}`}
+            ref={statBlockRef as any}
+            className={`self-start text-[0.625rem] font-mono text-amber-300 shrink-0 ${stackedLayout ? '' : 'text-right'}`}
           >
             {estimate.unresolvedMessage}
           </span>
         ) : (
           <div
             ref={statBlockRef}
-            className={`shrink-0 leading-tight ${stackedLayout ? 'text-left' : 'text-right'}`}
+            className={`self-start shrink-0 leading-tight ${stackedLayout ? 'text-left' : 'text-right'}`}
           >
             <div className="text-xs font-bold text-slate-100 font-mono">{estimate.formattedDuration}</div>
             <div className="text-[0.625rem] text-slate-400 font-mono">{roundedDistance}</div>

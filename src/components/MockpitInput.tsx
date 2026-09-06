@@ -121,7 +121,7 @@ export const MockpitInput = React.forwardRef<HTMLInputElement, MockpitInputProps
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         style={isActive ? { borderColor: 'var(--color-primary, #38bdf8)' } : undefined}
-        className={`w-full h-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--color-primary,#38bdf8)] font-mono antialiased transition-colors ${
+        className={`w-full h-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--color-primary,#38bdf8)] font-sans antialiased transition-colors ${
           icon ? 'pl-8' : ''
         } ${rightElement ? 'pr-9' : 'pr-2.5'} ${className}`}
         {...props}

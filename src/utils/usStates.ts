@@ -1,3 +1,5 @@
+import { TripStop } from '../types';
+
 // Full state/territory name (lowercase) -> USPS abbreviation.
 // Note: useWeatherStore.ts has a similar map running the opposite direction
 // (abbreviation -> full name), scoped locally to that file. Not consolidating
@@ -30,16 +32,42 @@ export function abbreviateState(stateName?: string): string | undefined {
 export function formatWaypointName(
   cityName: string,
   state: string | undefined,
-  prevState: string | undefined
+  previousState?: string
 ): string {
-  const normState = state?.trim().toLowerCase();
-  const normPrevState = prevState?.trim().toLowerCase();
+  if (!state) return cityName;
+  if (previousState && state.trim().toLowerCase() === previousState.trim().toLowerCase()) {
+    return cityName; // same state as previous waypoint in the chain — omit it
+  }
+  const abbr = abbreviateState(state) || state;
+  return `${cityName}, ${abbr}`;
+}
 
-  if (normState && normPrevState && normState === normPrevState) {
-    return cityName;
+/**
+ * Recomputes the display names for the entire waypoint chain:
+ * Stop 1 -> Stop 2 -> ... -> Destination
+ */
+export function recomputeChainNames(
+  stops: TripStop[],
+  destCityName: string,
+  destState?: string
+): { updatedStops: TripStop[]; destName: string } {
+  let previousState: string | undefined;
+  const updatedStops = stops.map((s) => {
+    if (!s.state) {
+      return s;
+    }
+    const cityName = s.name.split(',')[0].trim();
+    const name = formatWaypointName(cityName, s.state, previousState);
+    previousState = s.state;
+    return { ...s, name };
+  });
+
+  if (!destState) {
+    return { updatedStops, destName: destCityName };
   }
 
-  const abbr = abbreviateState(state);
-  return abbr ? `${cityName}, ${abbr}` : cityName;
+  const cleanDestCity = destCityName.split(',')[0].trim();
+  const destName = formatWaypointName(cleanDestCity, destState, previousState);
+  return { updatedStops, destName };
 }
 
