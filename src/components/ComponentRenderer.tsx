@@ -72,9 +72,11 @@ import { SpeedometerWidget } from './vehicle/SpeedometerWidget';
 import { MiniNav } from './navigation/MiniNav';
 import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ComponentInstance, ComponentType, DriveModeState, VehicleState, TripStop } from '../types';
-import { calculateTripEstimate, haversineMiles } from '../utils/tripCalculations';
+import { calculateTripEstimate, calculateStopLegs, haversineMiles } from '../utils/tripCalculations';
 import { searchNearbyPOIs } from '../utils/poiSearch';
 import { useMockpitStore } from '../store/useMockpitStore';
+import { GeocodeResult } from '../utils/geocoding';
+import { abbreviateState } from '../utils/usStates';
 
 interface ComponentRendererProps {
   component: ComponentInstance;
@@ -104,6 +106,7 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   navDestination: 'Trip Planner',
   navSearch: 'Navigation Search',
   navTripEstimate: 'Trip Planner',
+  navTripSummary: 'Trip Summary',
   overheadVisualization: 'Overhead Driving Visualization',
   miniNav: 'Mini Nav (Glanceable Maneuver)',
   phoneContacts: 'Contacts',
@@ -769,31 +772,6 @@ const NavDestinationWidget: React.FC<{
   const cancelTripGuidance = useMockpitStore((s) => s.cancelTripGuidance);
   const updateComponentSize = useMockpitStore((s) => s.updateComponentSize);
 
-  const metricsGridRef = React.useRef<HTMLDivElement>(null);
-  const prevActiveRef = React.useRef<boolean>(!!activeTrip);
-  const lastGridDeltaRef = React.useRef<number>(90);
-
-  React.useEffect(() => {
-    const wasActive = prevActiveRef.current;
-    const isActive = !!activeTrip;
-
-    if (wasActive !== isActive) {
-      if (isActive && metricsGridRef.current) {
-        const gridHeight = metricsGridRef.current.offsetHeight || 82;
-        const gap = 8;
-        const delta = gridHeight + gap;
-        lastGridDeltaRef.current = delta;
-        const newHeight = component.height + delta;
-        updateComponentSize(component.id, component.width, newHeight);
-      } else if (!isActive) {
-        const delta = lastGridDeltaRef.current || 90;
-        const newHeight = Math.max(component.height - delta, 240);
-        updateComponentSize(component.id, component.width, newHeight);
-      }
-    }
-    prevActiveRef.current = isActive;
-  }, [activeTrip, component.id, component.width, component.height, updateComponentSize]);
-
   // Parse waypoints / stops for draft mode
   const parseInitialStops = (): TripStop[] => {
     if (component.staticProps?.tripStops) {
@@ -820,8 +798,8 @@ const NavDestinationWidget: React.FC<{
       }
     }
     return [
-      { id: 'stop-1', name: 'EV Supercharger Bay (Merced)', lat: '37.3022', lng: '-120.4830' },
-      { id: 'stop-2', name: 'Scenic Overlook Rest Area', lat: '37.7158', lng: '-119.6775' },
+      { id: 'stop-1', name: 'EV Supercharger (Merced)', lat: '37.3022', lng: '-120.4830' },
+      { id: 'stop-2', name: 'Mariposa, CA', lat: '37.4849', lng: '-119.9663' },
     ];
   };
 
@@ -833,6 +811,65 @@ const NavDestinationWidget: React.FC<{
   const currentStops = activeTrip ? activeTrip.stops : draftStops;
 
   const [destGeocoded, setDestGeocoded] = React.useState<boolean | undefined>(undefined);
+
+  // Live estimate calculation for Active Mode & Stop Legs
+  const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
+  const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
+  const consumptionRate = Number(resolved.consumptionRate || component.staticProps?.consumptionRate) || 0.32;
+
+  const estimate = activeTrip
+    ? calculateTripEstimate(originLat, originLng, activeTrip, consumptionRate, vehicleState.batteryPercent)
+    : null;
+
+  const stopLegs = calculateStopLegs(originLat, originLng, currentStops, 45, 1.3);
+
+  // Unified auto-resize effect for stops and activeTrip metrics
+  const CANVAS_HEIGHT = 1080;
+  const CANVAS_EDGE_MARGIN = 16;
+
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const autoGrowRef = React.useRef(0); // px currently added on top of the user's manual height
+  const lastAppliedHeightRef = React.useRef(component.height);
+
+  React.useLayoutEffect(() => {
+    const contentEl = contentRef.current;
+    if (!contentEl) return;
+
+    // If component.height changed since we last set it, someone else (a manual
+    // drag-resize) moved it — treat the current height as the new manual baseline.
+    if (Math.abs(component.height - lastAppliedHeightRef.current) > 0.5) {
+      autoGrowRef.current = 0;
+    }
+
+    const manualHeight = component.height - autoGrowRef.current;
+    const overflow = contentEl.scrollHeight - contentEl.clientHeight;
+    const canvasLimit = CANVAS_HEIGHT - CANVAS_EDGE_MARGIN - (component.y ?? 0);
+    const maxHeight = Math.max(manualHeight, canvasLimit);
+
+    let desiredHeight = component.height;
+    if (overflow > 1) {
+      desiredHeight = Math.min(component.height + overflow, maxHeight);
+    } else if (autoGrowRef.current > 0) {
+      // Content shrank (e.g. a stop was removed) — release unused auto-grown height,
+      // never below the user's manual baseline.
+      desiredHeight = Math.max(manualHeight, component.height + overflow);
+    }
+
+    if (Math.abs(desiredHeight - component.height) > 0.5) {
+      autoGrowRef.current = Math.max(0, desiredHeight - manualHeight);
+      lastAppliedHeightRef.current = desiredHeight;
+      updateComponentSize(component.id, component.width, desiredHeight);
+    }
+  }, [
+    currentStops.length,
+    !!activeTrip,
+    estimate?.isUnresolved,
+    component.height,
+    component.width,
+    component.id,
+    component.y,
+    updateComponentSize,
+  ]);
 
   const handleUpdateDestName = (name: string) => {
     if (activeTrip) {
@@ -964,15 +1001,6 @@ const NavDestinationWidget: React.FC<{
     }
   };
 
-  // Live estimate calculation for Active Mode
-  const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
-  const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
-  const consumptionRate = Number(resolved.consumptionRate || component.staticProps?.consumptionRate) || 0.32;
-
-  const estimate = activeTrip
-    ? calculateTripEstimate(originLat, originLng, activeTrip, consumptionRate, vehicleState.batteryPercent)
-    : null;
-
   return (
     <div
       id={`component-${component.type}`}
@@ -986,18 +1014,18 @@ const NavDestinationWidget: React.FC<{
         customColor={customColor}
       />
 
-      <div className="flex-1 min-h-0 my-1.5 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+      <div ref={contentRef} className="flex-1 min-h-0 my-1.5 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
         {/* Active Mode: Live Trip Estimate 2x2 Grid */}
         {activeTrip && estimate && (
           estimate.isUnresolved ? (
-            <div ref={metricsGridRef} className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-amber-300">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-amber-300">
               <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
               <span className="text-[0.6875rem] font-mono font-medium leading-tight">
                 {estimate.unresolvedMessage}
               </span>
             </div>
           ) : (
-            <div ref={metricsGridRef} className="grid grid-cols-2 gap-1.5 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+            <div className="grid grid-cols-2 gap-1.5 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
               <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
                 <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
                   Distance
@@ -1041,12 +1069,17 @@ const NavDestinationWidget: React.FC<{
         <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-200 font-mono">
-              <Flag className="w-3.5 h-3.5 text-amber-400" />
+              <Flag className="w-3.5 h-3.5 text-sky-400" />
               <span>DESTINATION</span>
             </div>
-            <span className="text-[0.5625rem] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
-              FINAL
-            </span>
+            <button
+              type="button"
+              onClick={handleAddStop}
+              className="min-h-[44px] px-2.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-[0.625rem] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer border border-dashed border-slate-700/80 hover:border-slate-600"
+            >
+              <Plus className="w-3.5 h-3.5 text-slate-400" />
+              <span>Add Stop</span>
+            </button>
           </div>
           <AddressGeocodeInput
             value={currentDestName}
@@ -1074,10 +1107,11 @@ const NavDestinationWidget: React.FC<{
               </div>
               <button
                 onClick={() => handleRemoveStop(i)}
-                className="p-0.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer rounded hover:bg-slate-900"
+                aria-label={`Remove stop ${i + 1}`}
                 title="Remove Stop"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 hover:text-rose-400 transition-colors cursor-pointer rounded-lg hover:bg-slate-900"
               >
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
 
@@ -1090,18 +1124,15 @@ const NavDestinationWidget: React.FC<{
               componentId={component.id}
               keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
             />
+            {stopLegs[i] && (
+              <div className="text-[0.5625rem] font-mono text-slate-400 pl-0.5">
+                {stopLegs[i].isUnresolved
+                  ? '--'
+                  : `${stopLegs[i].formattedDistance} · est. ${stopLegs[i].formattedDuration}`}
+              </div>
+            )}
           </div>
         ))}
-
-        {/* Full-width Add Stop Button with min-h-[44px] */}
-        <button
-          type="button"
-          onClick={handleAddStop}
-          className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-slate-950/40 hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-2 cursor-pointer border border-dashed border-slate-700/80 hover:border-slate-600 shadow-sm"
-        >
-          <Plus className="w-4 h-4 text-slate-400" />
-          <span>Add Stop</span>
-        </button>
       </div>
 
       <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
@@ -1516,6 +1547,163 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+};
+
+interface TripSummaryWidgetProps {
+  component: ComponentInstance;
+  resolved: Record<string, any>;
+  isSelected?: boolean;
+  customColor: string;
+  baseOpacity: string;
+  styleOpacity?: number;
+}
+
+const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
+  component,
+  resolved,
+  isSelected,
+  customColor,
+  baseOpacity,
+  styleOpacity,
+}) => {
+  const activeTrip = useMockpitStore((s) => s.activeTrip);
+  const vehicleState = useMockpitStore((s) => s.vehicleState);
+  const setActiveView = useMockpitStore((s) => s.setActiveView);
+
+  const headerLabel =
+    resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navTripSummary;
+
+  // Fit check: rather than truncating the destination name, switch to a stacked layout
+  // (name on its own row, stats below) when the name + stats block can't both fit on one
+  // row. Mirrors TirePressureWidget's hidden-measurement pattern in this same file.
+  const nameRowRef = React.useRef<HTMLDivElement>(null);
+  const nameMeasureRef = React.useRef<HTMLSpanElement>(null);
+  const statBlockRef = React.useRef<HTMLDivElement>(null);
+  const [stackedLayout, setStackedLayout] = React.useState(false);
+
+  const checkNameFit = React.useCallback(() => {
+    const rowEl = nameRowRef.current;
+    const nameEl = nameMeasureRef.current;
+    const statEl = statBlockRef.current;
+    if (!rowEl || !nameEl || !statEl) return;
+    const gap = 8; // matches gap-2
+    const available = rowEl.clientWidth - statEl.offsetWidth - gap;
+    setStackedLayout(nameEl.scrollWidth > available);
+  }, []);
+
+  React.useLayoutEffect(() => {
+    checkNameFit();
+  }, [activeTrip?.destinationName, checkNameFit]);
+
+  React.useEffect(() => {
+    const el = nameRowRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => checkNameFit());
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [checkNameFit]);
+
+  const goToTripPlanner = () => {
+    setActiveView('navigation');
+    setTimeout(() => {
+      const el =
+        document.getElementById('component-navDestination') ||
+        document.querySelector('[data-component-type="navDestination"]');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
+  };
+
+  const wrapperClasses = `w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`;
+  const wrapperStyle = { borderColor: isSelected ? customColor : undefined, opacity: styleOpacity };
+
+  if (!activeTrip) {
+    return (
+      <div className={wrapperClasses} style={wrapperStyle}>
+        <ComponentHeader type="navTripSummary" label={headerLabel} customColor={customColor} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center p-3 my-auto">
+          <span className="text-xs font-mono text-slate-400">No active trip.</span>
+          <button
+            onClick={goToTripPlanner}
+            className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold border border-slate-700 cursor-pointer transition-colors shadow-sm"
+          >
+            Set Destination
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
+  const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
+  const consumptionRate = Number(resolved.consumptionRate || component.staticProps?.consumptionRate) || 0.32;
+  const estimate = calculateTripEstimate(originLat, originLng, activeTrip, consumptionRate, vehicleState.batteryPercent);
+  const stopCount = activeTrip.stops?.length || 0;
+
+  // Whole-number miles for this glance card only — calculateTripEstimate's shared
+  // `formattedDistance` (1 decimal, "total"/"est." phrasing) stays untouched everywhere
+  // else it's used (navTripEstimate, active-trip metrics grid on navDestination).
+  const roundedDistance = `${Math.round(estimate.distanceMiles)} miles`;
+
+  return (
+    <div className={wrapperClasses} style={wrapperStyle}>
+      <ComponentHeader type="navTripSummary" label={headerLabel} customColor={customColor} />
+
+      {/* Hidden offscreen measurement element — same convention as TirePressureWidget */}
+      <span
+        ref={nameMeasureRef}
+        aria-hidden="true"
+        className="absolute -top-9999 left-0 pointer-events-none opacity-0 invisible whitespace-nowrap text-sm font-bold font-mono"
+      >
+        {activeTrip.destinationName}
+      </span>
+
+      <div
+        ref={nameRowRef}
+        className={`px-0.5 gap-2 ${stackedLayout ? 'flex flex-col' : 'flex items-center justify-between'}`}
+      >
+        <span className="text-sm font-bold text-slate-100 font-mono whitespace-nowrap">
+          {activeTrip.destinationName}
+        </span>
+        {estimate.isUnresolved ? (
+          <span
+            ref={statBlockRef}
+            className={`text-[0.625rem] font-mono text-amber-300 shrink-0 ${stackedLayout ? '' : 'text-right'}`}
+          >
+            {estimate.unresolvedMessage}
+          </span>
+        ) : (
+          <div
+            ref={statBlockRef}
+            className={`shrink-0 leading-tight ${stackedLayout ? 'text-left' : 'text-right'}`}
+          >
+            <div className="text-xs font-bold text-slate-100 font-mono">{estimate.formattedDuration}</div>
+            <div className="text-[0.625rem] text-slate-400 font-mono">{roundedDistance}</div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center pt-1 border-t border-slate-800/60">
+        <button
+          onClick={goToTripPlanner}
+          className="shrink-0 min-h-[36px] px-2.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-[0.625rem] font-bold font-mono border border-slate-700/60 flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          {stopCount === 0 ? (
+            <>
+              <Plus className="w-3 h-3 text-slate-400" />
+              <span>Add Stop</span>
+            </>
+          ) : (
+            <>
+              <MapPin className="w-3 h-3 text-slate-400" />
+              <span>{stopCount} Stop{stopCount > 1 ? 's' : ''}</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
@@ -2177,6 +2365,19 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             </div>
           </div>
         </div>
+      );
+    }
+
+    case 'navTripSummary': {
+      return (
+        <TripSummaryWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
       );
     }
 

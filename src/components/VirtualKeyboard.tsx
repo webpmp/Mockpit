@@ -192,7 +192,9 @@ export const VirtualKeyboard: React.FC = () => {
       break;
     case 'bottom':
     default:
-      basePositionClass = 'absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-[70%] max-w-none';
+      // Resting position: clears the 84px-tall Bottom Dock (Canvas.tsx) plus a 16px gap,
+      // horizontally centered, z-50.
+      basePositionClass = 'absolute bottom-[100px] left-1/2 -translate-x-1/2 z-50 w-[70%] max-w-none';
       transformClass = animateIn ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0';
       break;
   }

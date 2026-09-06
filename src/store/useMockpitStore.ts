@@ -549,6 +549,7 @@ export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number
   navDestination: { width: 380, height: 240, maxHeight: 1080 },
   navSearch: { width: 380, height: 220, maxHeight: 1080 },
   navTripEstimate: { width: 380, height: 200, maxHeight: 1080 },
+  navTripSummary: { width: 380, height: 150, maxHeight: 1080 },
   overheadVisualization: { width: 780, height: 480, maxHeight: 1080 },
   miniNav: { width: 320, height: 510, maxHeight: 1080 },
   phoneContacts: { width: 420, height: 480, maxHeight: 1080 },
@@ -2992,8 +2993,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           lat: '37.7456',
           lng: '-119.5936',
           tripStops: JSON.stringify([
-            { id: 'stop-1', name: 'EV Supercharger Bay (Merced)', lat: '37.3022', lng: '-120.4830' },
-            { id: 'stop-2', name: 'Scenic Overlook Rest Area', lat: '37.7158', lng: '-119.6775' },
+            { id: 'stop-1', name: 'EV Supercharger (Merced)', lat: '37.3022', lng: '-120.4830' },
+            { id: 'stop-2', name: 'Mariposa, CA', lat: '37.4849', lng: '-119.9663' },
           ]),
         };
         bindings = [];

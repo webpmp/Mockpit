@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MockpitInput } from '../MockpitInput';
-import { geocodeAddress } from '../../utils/geocoding';
+import { geocodeAddress, GeocodeResult } from '../../utils/geocoding';
 import { KeyboardSlideDirection } from '../../types';
 
 export interface AddressGeocodeInputProps {
   value: string;
   onChange: (value: string) => void;
-  onResolved: (lat: number, lng: number, displayName: string) => void;
+  onResolved: (lat: number, lng: number, displayName: string, geocode?: GeocodeResult) => void;
   onUnresolved?: () => void;
   componentId: string;
   placeholder?: string;
@@ -66,7 +66,7 @@ export const AddressGeocodeInput: React.FC<AddressGeocodeInputProps> = ({
         lastGeocodedQueryRef.current = trimmed;
         setStatus('success');
         setResolvedDisplay(res.displayName);
-        onResolved(res.lat, res.lng, res.displayName);
+        onResolved(res.lat, res.lng, res.displayName, res);
       } else {
         setStatus('failed');
         if (onUnresolved) onUnresolved();

@@ -1,4 +1,4 @@
-import { ActiveTrip } from '../types';
+import { ActiveTrip, TripStop } from '../types';
 
 export function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 3958.8; // Earth radius, miles
@@ -8,6 +8,65 @@ export function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: n
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export function formatDurationHours(hours: number): string {
+  const totalMins = Math.round(hours * 60);
+  const durHours = Math.floor(totalMins / 60);
+  const durMins = totalMins % 60;
+  if (durHours > 0) {
+    return `${durHours} hr${durHours > 1 ? 's' : ''}${durMins > 0 ? ` ${durMins} min${durMins > 1 ? 's' : ''}` : ''}`;
+  }
+  return `${durMins} min${durMins !== 1 ? 's' : ''}` || '0 mins';
+}
+
+export interface TripLegEstimate {
+  distanceMiles: number;
+  durationHours: number;
+  formattedDistance: string;
+  formattedDuration: string;
+  isUnresolved: boolean;
+}
+
+export function calculateStopLegs(
+  originLat: number,
+  originLng: number,
+  stops: TripStop[],
+  avgSpeedMph = 45,
+  roadFactor = 1.3
+): TripLegEstimate[] {
+  let prevLat = originLat;
+  let prevLng = originLng;
+
+  return (stops || []).map((stop) => {
+    const lat = Number(stop.lat);
+    const lng = Number(stop.lng);
+
+    if (stop.geocoded === false || isNaN(lat) || isNaN(lng)) {
+      // Unresolved stop: don't advance the chain, so a later resolved stop's
+      // leg still measures from the last known-good point.
+      return {
+        distanceMiles: 0,
+        durationHours: 0,
+        formattedDistance: '--',
+        formattedDuration: '--',
+        isUnresolved: true,
+      };
+    }
+
+    const legMiles = haversineMiles(prevLat, prevLng, lat, lng) * roadFactor;
+    const legHours = avgSpeedMph > 0 ? legMiles / avgSpeedMph : 0;
+    prevLat = lat;
+    prevLng = lng;
+
+    return {
+      distanceMiles: legMiles,
+      durationHours: legHours,
+      formattedDistance: `${legMiles.toFixed(0)} miles`,
+      formattedDuration: formatDurationHours(legHours),
+      isUnresolved: false,
+    };
+  });
 }
 
 export function calculateTripEstimate(
@@ -62,15 +121,7 @@ export function calculateTripEstimate(
   const energyKwh = totalMiles * safeConsumption;
   const arrivalPercent = Math.max(0, Math.round(batteryPercent - (energyKwh / packCapacityKwh) * 100));
 
-  const totalMins = Math.round(hours * 60);
-  const durHours = Math.floor(totalMins / 60);
-  const durMins = totalMins % 60;
-  let durationStr = '';
-  if (durHours > 0) {
-    durationStr = `${durHours} hr${durHours > 1 ? 's' : ''}${durMins > 0 ? ` ${durMins} min${durMins > 1 ? 's' : ''}` : ''}`;
-  } else {
-    durationStr = `${durMins} min${durMins !== 1 ? 's' : ''}`;
-  }
+  const durationStr = formatDurationHours(hours);
 
   return {
     distanceMiles: totalMiles,

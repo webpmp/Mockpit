@@ -104,6 +104,12 @@ const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [
     defaultBindingDesc: 'Multi-stop trip planner with live trip estimate sync',
   },
   {
+    type: 'navTripSummary',
+    title: 'Trip Summary',
+    description: 'Glanceable read-only trip overview for the Home screen — destination, stop count, and total distance/time',
+    defaultBindingDesc: 'Read-only trip summary synced to active trip state',
+  },
+  {
     type: 'navSearch',
     title: 'Navigation Search',
     description: 'POIs, chargers & restaurant search with mock results',

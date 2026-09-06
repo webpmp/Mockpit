@@ -239,6 +239,7 @@ export type ComponentType =
   | 'navDestination'
   | 'navSearch'
   | 'navTripEstimate'
+  | 'navTripSummary'
   | 'overheadVisualization'
   | 'miniNav'
   | 'phoneContacts'
@@ -293,12 +294,14 @@ export interface TripStop {
   lat: string;
   lng: string;
   geocoded?: boolean;
+  state?: string;   // raw state name, used for same-state suppression
 }
 
 export interface ActiveTrip {
   destinationName: string;
   destLat: number;
   destLng: number;
+  destState?: string;
   stops: TripStop[];
   startedAt: number;
   destGeocoded?: boolean;

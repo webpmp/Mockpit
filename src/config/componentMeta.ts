@@ -29,6 +29,7 @@ import {
   Navigation,
   ListMusic,
   Sparkles,
+  MapPinned,
 } from 'lucide-react';
 import { ComponentType } from '../types';
 
@@ -51,6 +52,7 @@ export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
   navDestination: { type: 'navDestination', icon: Flag, defaultColor: '#f59e0b' },
   navSearch: { type: 'navSearch', icon: Search, defaultColor: '#10b981' },
   navTripEstimate: { type: 'navTripEstimate', icon: Clock, defaultColor: '#a855f7' },
+  navTripSummary: { type: 'navTripSummary', icon: MapPinned, defaultColor: '#38bdf8' },
   overheadVisualization: { type: 'overheadVisualization', icon: Eye, defaultColor: '#38bdf8' },
   miniNav: { type: 'miniNav', icon: Navigation, defaultColor: '#38bdf8' },
   media: { type: 'media', icon: Music, defaultColor: '#ec4899' },

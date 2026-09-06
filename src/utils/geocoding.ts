@@ -1,7 +1,11 @@
+import { abbreviateState } from './usStates';
+
 export interface GeocodeResult {
   lat: number;
   lng: number;
   displayName: string;
+  cityName: string;
+  state?: string;       // raw state name from the API, e.g. "California"
 }
 
 export async function geocodeAddress(query: string): Promise<GeocodeResult | null> {
@@ -15,10 +19,15 @@ export async function geocodeAddress(query: string): Promise<GeocodeResult | nul
     const data = await res.json();
     const first = data?.results?.[0];
     if (!first) return null;
+
+    const stateAbbr = abbreviateState(first.admin1);
+
     return {
       lat: first.latitude,
       lng: first.longitude,
-      displayName: [first.name, first.admin1, first.country]
+      cityName: first.name,
+      state: first.admin1,
+      displayName: [first.name, stateAbbr || first.admin1, first.country]
         .filter(Boolean)
         .slice(0, 2)
         .join(', '),

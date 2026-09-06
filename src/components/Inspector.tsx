@@ -1216,8 +1216,8 @@ export const Inspector: React.FC = () => {
                         }));
                       } else {
                         stops = [
-                          { id: 'stop-1', name: 'EV Supercharger Bay (Merced)', lat: '37.3022', lng: '-120.4830' },
-                          { id: 'stop-2', name: 'Scenic Overlook Rest Area', lat: '37.7158', lng: '-119.6775' },
+                          { id: 'stop-1', name: 'EV Supercharger (Merced)', lat: '37.3022', lng: '-120.4830' },
+                          { id: 'stop-2', name: 'Mariposa, CA', lat: '37.4849', lng: '-119.9663' },
                         ];
                       }
                     } catch (e) {
@@ -1592,7 +1592,7 @@ export const Inspector: React.FC = () => {
                       }}
                       className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all border ${
                         selectedComp.staticProps.autoDismissEnabled === 'true'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/50'
                           : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
                       }`}
                     >
