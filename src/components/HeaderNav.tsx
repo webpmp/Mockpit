@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useMockpitStore, REQUIRED_DOCK_SCREEN_IDS } from '../store/useMockpitStore';
-import { ScreenDefinition } from '../types';
+import { ScreenDefinition, ComponentType } from '../types';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { getScreenIcon, SCREEN_ICON_OPTIONS } from '../config/screenIcons';
+import { QUICK_ACCESS_OPTIONS } from '../config/quickAccessConfig';
 import { MockpitLogo } from './MockpitLogo';
 import {
   Play,
@@ -353,6 +354,39 @@ export const HeaderNav: React.FC = () => {
                             </div>
                           )}
                         </div>
+
+                        {/* Row 3: Quick Access Configuration */}
+                        {!isHome && (
+                          <div className="pt-1.5 border-t border-slate-800/60 mt-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[9px] font-mono uppercase text-slate-400 font-bold">
+                                Quick Access
+                              </span>
+                              {parentScreen.quickAccessComponent && parentScreen.quickAccessComponent !== 'none' && (
+                                <span className="text-[8px] font-mono text-sky-400 bg-sky-500/10 px-1 py-0.2 rounded border border-sky-500/20">
+                                  Configured
+                                </span>
+                              )}
+                            </div>
+                            <select
+                              id={`qa-select-${parentScreen.id}`}
+                              value={parentScreen.quickAccessComponent || 'none'}
+                              onChange={(e) => {
+                                const val = e.target.value as ComponentType | 'none';
+                                updateScreen(parentScreen.id, { quickAccessComponent: val });
+                              }}
+                              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[10px] font-mono text-slate-200 focus:outline-none focus:border-sky-500 cursor-pointer"
+                              title="Quick Access component for this screen"
+                            >
+                              <option value="none">None</option>
+                              {QUICK_ACCESS_OPTIONS.map((opt) => (
+                                <option key={opt.type} value={opt.type}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
 
                       {/* Child Screens Column List */}

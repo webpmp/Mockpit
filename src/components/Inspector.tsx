@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS } from '../store/useMockpitStore';
 import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
-import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop } from '../types';
+import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType } from '../types';
+import { QUICK_ACCESS_OPTIONS, getDefaultQuickAccessDimensions } from '../config/quickAccessConfig';
 import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check } from 'lucide-react';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { LayersPanel } from './LayersPanel';
@@ -475,6 +476,117 @@ const ScreenPropertiesPanel: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* Quick Access Configuration */}
+      {!isHome && (
+        <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span className="text-[10px] font-mono text-sky-400 uppercase font-bold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+              Quick Access
+            </span>
+            {activeScreen.quickAccessComponent && activeScreen.quickAccessComponent !== 'none' && (
+              <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30 font-bold">
+                Active
+              </span>
+            )}
+          </div>
+
+          <div>
+            <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1.5 font-bold">
+              Quick Access Component
+            </label>
+            <select
+              id="inspector-quick-access-select"
+              value={activeScreen.quickAccessComponent || 'none'}
+              onChange={(e) => {
+                const val = e.target.value as ComponentType | 'none';
+                const defaultDims = val !== 'none' ? getDefaultQuickAccessDimensions(val) : undefined;
+                updateScreen(activeScreen.id, {
+                  quickAccessComponent: val,
+                  quickAccessWidth: activeScreen.quickAccessWidth || defaultDims?.width,
+                  quickAccessHeight: activeScreen.quickAccessHeight || defaultDims?.height,
+                });
+              }}
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-100 focus:outline-none focus:border-sky-500 font-mono cursor-pointer"
+            >
+              <option value="none">None</option>
+              {QUICK_ACCESS_OPTIONS.map((opt) => (
+                <option key={opt.type} value={opt.type}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-slate-500 font-mono mt-1 leading-relaxed">
+              Short press opens Quick Access above the dock. Long press navigates to the full screen.
+            </p>
+          </div>
+
+          {activeScreen.quickAccessComponent && activeScreen.quickAccessComponent !== 'none' && (
+            <div className="pt-2 border-t border-slate-800/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-slate-300 uppercase font-bold">
+                  Quick Access Geometry
+                </span>
+                <span className="text-[9px] font-mono text-slate-500">
+                  Anchored above dock
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[9px] font-mono text-slate-400 block mb-1">
+                    Width (W)
+                  </label>
+                  <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 focus-within:border-sky-500">
+                    <input
+                      type="number"
+                      min={260}
+                      max={1800}
+                      step={10}
+                      value={activeScreen.quickAccessWidth || getDefaultQuickAccessDimensions(activeScreen.quickAccessComponent).width}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        if (!isNaN(num)) {
+                          updateScreen(activeScreen.id, { quickAccessWidth: Math.max(260, Math.min(1800, num)) });
+                        }
+                      }}
+                      className="w-full bg-transparent text-xs font-mono font-bold text-slate-100 focus:outline-none"
+                    />
+                    <span className="text-[10px] font-mono text-slate-500 ml-1">px</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-mono text-slate-400 block mb-1">
+                    Height (H)
+                  </label>
+                  <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 focus-within:border-sky-500">
+                    <input
+                      type="number"
+                      min={120}
+                      max={800}
+                      step={10}
+                      value={activeScreen.quickAccessHeight || getDefaultQuickAccessDimensions(activeScreen.quickAccessComponent).height}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        if (!isNaN(num)) {
+                          updateScreen(activeScreen.id, { quickAccessHeight: Math.max(120, Math.min(800, num)) });
+                        }
+                      }}
+                      className="w-full bg-transparent text-xs font-mono font-bold text-slate-100 focus:outline-none"
+                    />
+                    <span className="text-[10px] font-mono text-slate-500 ml-1">px</span>
+                  </div>
+                </div>
+              </div>
+              <span className="text-[9px] font-mono text-slate-500 block">
+                Direct visual resizing is also available by dragging the bottom-right corner of the overlay.
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Weather Properties & Radar Configuration (Scoped exclusively to Weather screen) */}
       {activeScreen.id === 'weather' && (

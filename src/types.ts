@@ -283,7 +283,16 @@ export type ScreenDefinition = {
   transitionStyle: TransitionStyle;
   icon?: string;
   parentId: string | null;
+  quickAccessComponent?: ComponentType | 'none' | null;
+  quickAccessWidth?: number;
+  quickAccessHeight?: number;
 };
+
+export interface QuickAccessState {
+  screenId: string;
+  componentType: ComponentType;
+  isOpen: boolean;
+}
 
 export type ActiveView = string;
 export type ScreenId = string;

@@ -17,6 +17,7 @@ import {
   ScreenDefinition,
   ScreenMode,
   TransitionStyle,
+  QuickAccessState,
   VehicleState,
   VehicleBackgroundSettings,
   EgoVehicleType,
@@ -312,7 +313,7 @@ const loadSavedKeyboardSlideDirection = (): KeyboardSlideDirection => {
 export const DEFAULT_SCREENS: ScreenDefinition[] = [
   { id: 'home', name: 'Home', order: 0, transitionStyle: 'fade', parentId: null },
   { id: 'navigation', name: 'Navigation', order: 1, transitionStyle: 'fade', parentId: null },
-  { id: 'media', name: 'Media', order: 2, transitionStyle: 'fade', parentId: null },
+  { id: 'media', name: 'Media', order: 2, transitionStyle: 'fade', parentId: null, quickAccessComponent: 'media', quickAccessWidth: 540, quickAccessHeight: 320 },
   { id: 'phone', name: 'Phone', order: 3, transitionStyle: 'fade', parentId: null },
   { id: 'playlists', name: 'Playlists', order: 4, transitionStyle: 'fade', parentId: 'media' },
   { id: 'favorites', name: 'Favorites', order: 5, transitionStyle: 'fade', parentId: 'navigation' },
@@ -593,6 +594,15 @@ function loadSavedScreens(): ScreenDefinition[] {
             ...s,
             order: idx,
             parentId: s.parentId ?? null,
+            quickAccessComponent: s.quickAccessComponent !== undefined
+              ? s.quickAccessComponent
+              : (s.id === 'media' ? 'media' : 'none'),
+            quickAccessWidth: s.quickAccessWidth !== undefined
+              ? s.quickAccessWidth
+              : (s.id === 'media' ? 540 : undefined),
+            quickAccessHeight: s.quickAccessHeight !== undefined
+              ? s.quickAccessHeight
+              : (s.id === 'media' ? 320 : undefined),
           }));
         }
       }
@@ -1121,6 +1131,15 @@ interface MockpitStore {
   moveDockItem: (id: string, direction: 'left' | 'right') => void;
   toggleDockMembership: (id: string) => void;
 
+  // Quick Access Component System
+  activeQuickAccess: QuickAccessState | null;
+  quickAccessOriginRect: { x: number; y: number; width: number; height: number } | null;
+  openQuickAccess: (screenId: string, originRect?: { x: number; y: number; width: number; height: number }) => void;
+  closeQuickAccess: () => void;
+  toggleQuickAccess: (screenId: string, originRect?: { x: number; y: number; width: number; height: number }) => void;
+  updateScreenQuickAccess: (screenId: string, componentType: ComponentType | 'none' | null) => void;
+  updateScreenQuickAccessSize: (screenId: string, width: number, height: number) => void;
+
   // Component Actions
   addComponent: (type: ComponentType, x?: number, y?: number) => string;
   updateComponentPosition: (id: string, x: number, y: number) => void;
@@ -1286,6 +1305,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   debugPanelHeight: 45,
   dockOrder: loadSavedDockOrder(initialScreensList),
   copiedComponent: null,
+  activeQuickAccess: null,
+  quickAccessOriginRect: null,
 
   // HMI Compliance Rules & Audit System
   displayConfig: loadSavedDisplayConfig(),
@@ -2667,6 +2688,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       previousView: state.activeView !== view ? state.activeView : state.previousView,
       activeView: view,
       components: state.componentsByScreen[view] || [],
+      activeQuickAccess: null,
+      quickAccessOriginRect: null,
     })),
 
   setPreviousView: (view) => set({ previousView: view }),
@@ -2759,6 +2782,55 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       }
       return { dockOrder: newOrder };
     });
+  },
+
+  openQuickAccess: (screenId, originRect) => {
+    const screen = get().screens.find((s) => s.id === screenId);
+    if (!screen || !screen.quickAccessComponent || screen.quickAccessComponent === 'none') {
+      return;
+    }
+    set({
+      activeQuickAccess: {
+        screenId,
+        componentType: screen.quickAccessComponent,
+        isOpen: true,
+      },
+      quickAccessOriginRect: originRect || null,
+    });
+  },
+
+  closeQuickAccess: () => {
+    set({ activeQuickAccess: null, quickAccessOriginRect: null });
+  },
+
+  toggleQuickAccess: (screenId, originRect) => {
+    const current = get().activeQuickAccess;
+    if (current && current.isOpen && current.screenId === screenId) {
+      set({ activeQuickAccess: null, quickAccessOriginRect: null });
+      return;
+    }
+    const screen = get().screens.find((s) => s.id === screenId);
+    if (!screen || !screen.quickAccessComponent || screen.quickAccessComponent === 'none') {
+      set({ activeQuickAccess: null, quickAccessOriginRect: null });
+      get().setActiveView(screenId);
+      return;
+    }
+    set({
+      activeQuickAccess: {
+        screenId,
+        componentType: screen.quickAccessComponent,
+        isOpen: true,
+      },
+      quickAccessOriginRect: originRect || null,
+    });
+  },
+
+  updateScreenQuickAccess: (screenId, componentType) => {
+    get().updateScreen(screenId, { quickAccessComponent: componentType });
+  },
+
+  updateScreenQuickAccessSize: (screenId, width, height) => {
+    get().updateScreen(screenId, { quickAccessWidth: width, quickAccessHeight: height });
   },
 
   addComponent: (type, x = 760, y = 280) => {

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ComponentRenderer, renderNotificationIcon } from './ComponentRenderer';
 import { BottomDock } from './BottomDock';
+import { QuickAccessOverlay } from './QuickAccessOverlay';
 import { VehicleBackground } from './VehicleBackground';
 import { AppShellBackground } from './AppShellBackground';
 import { VirtualKeyboard } from './VirtualKeyboard';
@@ -1025,6 +1026,9 @@ export const Canvas: React.FC = () => {
               </div>
             );
           })()}
+
+          {/* Quick Access Component Overlay */}
+          <QuickAccessOverlay />
 
           {/* Bottom Dock Navigation - Permanent UI Chrome Layer (Always Topmost) */}
           <div
