@@ -7,6 +7,7 @@ import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { LayersPanel } from './LayersPanel';
 import { NumericStepper } from './NumericStepper';
 import { ManeuverGlyph } from './navigation/ManeuverGlyph';
+import { DEFAULT_MINI_NAV_COLORS } from './navigation/MiniNav';
 import { WeatherIcon } from './weather/WeatherIcon';
 import { SAMPLE_TRACKS } from '../data/mediaData';
 
@@ -2701,72 +2702,382 @@ export const Inspector: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Appearance Configuration (Arrow, Horizon & Guide Lane Colors) */}
+                  {/* Appearance Configuration (10 Configurable Colors & Reset to Default) */}
                   <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
-                    <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
-                      Appearance
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                        Appearance
+                      </span>
+                    </div>
 
                     <div className="flex flex-col gap-2">
+                      {/* 1. Ground Color */}
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Ground Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.groundColor || selectedComp.staticProps.backgroundColor || DEFAULT_MINI_NAV_COLORS.groundColor}
+                            onChange={(e) => handleStaticPropChange('groundColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.groundColor || selectedComp.staticProps.backgroundColor || DEFAULT_MINI_NAV_COLORS.groundColor}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 2. Sky Color */}
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Sky Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.skyColor || selectedComp.staticProps.backgroundColor || selectedComp.staticProps.horizonColor || DEFAULT_MINI_NAV_COLORS.skyColor}
+                            onChange={(e) => {
+                              handleStaticPropChange('skyColor', e.target.value);
+                            }}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.skyColor || selectedComp.staticProps.backgroundColor || selectedComp.staticProps.horizonColor || DEFAULT_MINI_NAV_COLORS.skyColor}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 3. Horizon Gradient */}
+                      <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                            Horizon Gradient
+                          </span>
+                        </div>
+
+                        {/* Horizon Glow Color */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-mono text-slate-300 font-medium">Horizon Glow Color</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={selectedComp.staticProps.horizonGlowColor || DEFAULT_MINI_NAV_COLORS.horizonGlowColor}
+                              onChange={(e) => handleStaticPropChange('horizonGlowColor', e.target.value)}
+                              className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                            />
+                            <span className="text-[10px] font-mono text-slate-400">
+                              {selectedComp.staticProps.horizonGlowColor || DEFAULT_MINI_NAV_COLORS.horizonGlowColor}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Horizon Glow Intensity */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono text-slate-300 font-medium">Horizon Glow Intensity</span>
+                            <span className="text-[10px] font-mono text-sky-400 font-bold">
+                              {selectedComp.staticProps.horizonGlowIntensity !== undefined
+                                ? Number(selectedComp.staticProps.horizonGlowIntensity)
+                                : DEFAULT_MINI_NAV_COLORS.horizonGlowIntensity}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value={
+                              selectedComp.staticProps.horizonGlowIntensity !== undefined
+                                ? Number(selectedComp.staticProps.horizonGlowIntensity)
+                                : DEFAULT_MINI_NAV_COLORS.horizonGlowIntensity
+                            }
+                            onChange={(e) => handleStaticPropChange('horizonGlowIntensity', e.target.value)}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+                          />
+                          <div className="flex justify-between text-[8px] font-mono text-slate-500">
+                            <span>0% (Off)</span>
+                            <span>30% (Default)</span>
+                            <span>100%</span>
+                          </div>
+                        </div>
+
+                        {/* Horizon Glow Spread */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono text-slate-300 font-medium">Horizon Glow Spread</span>
+                            <span className="text-[10px] font-mono text-sky-400 font-bold">
+                              {selectedComp.staticProps.horizonGlowSpread !== undefined
+                                ? Number(selectedComp.staticProps.horizonGlowSpread)
+                                : DEFAULT_MINI_NAV_COLORS.horizonGlowSpread}%
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value={
+                              selectedComp.staticProps.horizonGlowSpread !== undefined
+                                ? Number(selectedComp.staticProps.horizonGlowSpread)
+                                : DEFAULT_MINI_NAV_COLORS.horizonGlowSpread
+                            }
+                            onChange={(e) => handleStaticPropChange('horizonGlowSpread', e.target.value)}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+                          />
+                          <div className="flex justify-between text-[8px] font-mono text-slate-500">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100% (Default)</span>
+                          </div>
+                        </div>
+
+                        {/* Horizon Glow Position / Balance */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono text-slate-300 font-medium">Horizon Glow Position / Balance</span>
+                            <span className="text-[10px] font-mono text-sky-400 font-bold">
+                              {(() => {
+                                const bal =
+                                  selectedComp.staticProps.horizonGlowBalance !== undefined
+                                    ? Number(selectedComp.staticProps.horizonGlowBalance)
+                                    : DEFAULT_MINI_NAV_COLORS.horizonGlowBalance;
+                                return bal > 0 ? `+${bal}` : `${bal}`;
+                              })()}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-100"
+                            max="100"
+                            step="1"
+                            value={
+                              selectedComp.staticProps.horizonGlowBalance !== undefined
+                                ? Number(selectedComp.staticProps.horizonGlowBalance)
+                                : DEFAULT_MINI_NAV_COLORS.horizonGlowBalance
+                            }
+                            onChange={(e) => handleStaticPropChange('horizonGlowBalance', e.target.value)}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+                          />
+                          <div className="flex justify-between text-[8px] font-mono text-slate-500">
+                            <span>-100 (Upward)</span>
+                            <span>0 (Centered)</span>
+                            <span>+100 (Downward)</span>
+                          </div>
+                        </div>
+
+                        {/* Horizon Boundary Subsection */}
+                        <div className="pt-2.5 border-t border-slate-800/80 space-y-2.5">
+                          <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                            Horizon Boundary
+                          </span>
+
+                          {/* Boundary Color */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono text-slate-300 font-medium">Boundary Color</span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={selectedComp.staticProps.horizonBoundaryColor || DEFAULT_MINI_NAV_COLORS.horizonBoundaryColor}
+                                onChange={(e) => handleStaticPropChange('horizonBoundaryColor', e.target.value)}
+                                className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                              />
+                              <span className="text-[10px] font-mono text-slate-400">
+                                {selectedComp.staticProps.horizonBoundaryColor || DEFAULT_MINI_NAV_COLORS.horizonBoundaryColor}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Boundary Opacity */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-mono text-slate-300 font-medium">Boundary Opacity</span>
+                              <span className="text-[10px] font-mono text-sky-400 font-bold">
+                                {selectedComp.staticProps.horizonBoundaryOpacity !== undefined
+                                  ? Number(selectedComp.staticProps.horizonBoundaryOpacity)
+                                  : DEFAULT_MINI_NAV_COLORS.horizonBoundaryOpacity}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="1"
+                              value={
+                                selectedComp.staticProps.horizonBoundaryOpacity !== undefined
+                                  ? Number(selectedComp.staticProps.horizonBoundaryOpacity)
+                                  : DEFAULT_MINI_NAV_COLORS.horizonBoundaryOpacity
+                              }
+                              onChange={(e) => handleStaticPropChange('horizonBoundaryOpacity', e.target.value)}
+                              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+                            />
+                            <div className="flex justify-between text-[8px] font-mono text-slate-500">
+                              <span>0% (Hidden)</span>
+                              <span>50% (Default)</span>
+                              <span>100%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4. Road Color */}
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Road Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.roadColor || DEFAULT_MINI_NAV_COLORS.roadColor}
+                            onChange={(e) => handleStaticPropChange('roadColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.roadColor || DEFAULT_MINI_NAV_COLORS.roadColor}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 5. Arrow Color */}
                       <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
                         <span className="text-[11px] font-mono text-slate-300 font-medium">Arrow Color</span>
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
-                            value={selectedComp.staticProps.arrowColor || '#f59e0b'}
+                            value={selectedComp.staticProps.arrowColor || DEFAULT_MINI_NAV_COLORS.arrowColor}
                             onChange={(e) => handleStaticPropChange('arrowColor', e.target.value)}
                             className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
                           />
                           <span className="text-[10px] font-mono text-slate-400">
-                            {selectedComp.staticProps.arrowColor || '#f59e0b'}
+                            {selectedComp.staticProps.arrowColor || DEFAULT_MINI_NAV_COLORS.arrowColor}
                           </span>
                         </div>
                       </div>
 
-                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
-                        <span className="text-[11px] font-mono text-slate-300 font-medium">Horizon Color</span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={selectedComp.staticProps.horizonColor || '#f59e0b'}
-                            onChange={(e) => handleStaticPropChange('horizonColor', e.target.value)}
-                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
-                          />
-                          <span className="text-[10px] font-mono text-slate-400">
-                            {selectedComp.staticProps.horizonColor || '#f59e0b'}
-                          </span>
-                        </div>
-                      </div>
-
+                      {/* 6. Guide Lane Color */}
                       <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
                         <span className="text-[11px] font-mono text-slate-300 font-medium">Guide Lane Color</span>
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
-                            value={selectedComp.staticProps.guideLaneColor || selectedComp.staticProps.arrowColor || '#f59e0b'}
+                            value={selectedComp.staticProps.guideLaneColor || selectedComp.staticProps.arrowColor || DEFAULT_MINI_NAV_COLORS.guideLaneColor}
                             onChange={(e) => handleStaticPropChange('guideLaneColor', e.target.value)}
                             className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
                           />
                           <span className="text-[10px] font-mono text-slate-400">
-                            {selectedComp.staticProps.guideLaneColor || selectedComp.staticProps.arrowColor || '#f59e0b'}
+                            {selectedComp.staticProps.guideLaneColor || selectedComp.staticProps.arrowColor || DEFAULT_MINI_NAV_COLORS.guideLaneColor}
                           </span>
                         </div>
                       </div>
 
+                      {/* 7. Highway Badge Color */}
                       <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
                         <span className="text-[11px] font-mono text-slate-300 font-medium">Highway Badge Color</span>
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
-                            value={selectedComp.staticProps.highwayBadgeColor || activePalette?.primary || '#38bdf8'}
+                            value={selectedComp.staticProps.highwayBadgeColor || activePalette?.primary || DEFAULT_MINI_NAV_COLORS.highwayBadgeColor}
                             onChange={(e) => handleStaticPropChange('highwayBadgeColor', e.target.value)}
                             className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
                           />
                           <span className="text-[10px] font-mono text-slate-400">
-                            {selectedComp.staticProps.highwayBadgeColor || activePalette?.primary || '#38bdf8'}
+                            {selectedComp.staticProps.highwayBadgeColor || activePalette?.primary || DEFAULT_MINI_NAV_COLORS.highwayBadgeColor}
                           </span>
                         </div>
                       </div>
+
+                      {/* 8. Highway Badge Text Color */}
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Highway Badge Text Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.highwayBadgeTextColor || selectedComp.staticProps.highwayBadgeColor || activePalette?.primary || DEFAULT_MINI_NAV_COLORS.highwayBadgeTextColor}
+                            onChange={(e) => handleStaticPropChange('highwayBadgeTextColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.highwayBadgeTextColor || selectedComp.staticProps.highwayBadgeColor || activePalette?.primary || DEFAULT_MINI_NAV_COLORS.highwayBadgeTextColor}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 9. Street Title Color */}
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Street Title Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.streetTitleColor || DEFAULT_MINI_NAV_COLORS.streetTitleColor}
+                            onChange={(e) => handleStaticPropChange('streetTitleColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.streetTitleColor || DEFAULT_MINI_NAV_COLORS.streetTitleColor}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 10. Instruction Text Color */}
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Instruction Text Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.instructionTextColor || DEFAULT_MINI_NAV_COLORS.instructionTextColor}
+                            onChange={(e) => handleStaticPropChange('instructionTextColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.instructionTextColor || DEFAULT_MINI_NAV_COLORS.instructionTextColor}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 11. Distance Text Color */}
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Distance Text Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.distanceTextColor || DEFAULT_MINI_NAV_COLORS.distanceTextColor}
+                            onChange={(e) => handleStaticPropChange('distanceTextColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.distanceTextColor || DEFAULT_MINI_NAV_COLORS.distanceTextColor}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 12. Reset to Default Colors */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!selectedComp) return;
+                          updateComponentStaticProps(selectedComp.id, {
+                            groundColor: DEFAULT_MINI_NAV_COLORS.groundColor,
+                            skyColor: DEFAULT_MINI_NAV_COLORS.skyColor,
+                            horizonGlowColor: DEFAULT_MINI_NAV_COLORS.horizonGlowColor,
+                            horizonGlowIntensity: String(DEFAULT_MINI_NAV_COLORS.horizonGlowIntensity),
+                            horizonGlowSpread: String(DEFAULT_MINI_NAV_COLORS.horizonGlowSpread),
+                            horizonGlowBalance: String(DEFAULT_MINI_NAV_COLORS.horizonGlowBalance),
+                            horizonBoundaryColor: DEFAULT_MINI_NAV_COLORS.horizonBoundaryColor,
+                            horizonBoundaryOpacity: String(DEFAULT_MINI_NAV_COLORS.horizonBoundaryOpacity),
+                            roadColor: DEFAULT_MINI_NAV_COLORS.roadColor,
+                            arrowColor: DEFAULT_MINI_NAV_COLORS.arrowColor,
+                            guideLaneColor: DEFAULT_MINI_NAV_COLORS.guideLaneColor,
+                            highwayBadgeColor: DEFAULT_MINI_NAV_COLORS.highwayBadgeColor,
+                            highwayBadgeTextColor: DEFAULT_MINI_NAV_COLORS.highwayBadgeTextColor,
+                            streetTitleColor: DEFAULT_MINI_NAV_COLORS.streetTitleColor,
+                            instructionTextColor: DEFAULT_MINI_NAV_COLORS.instructionTextColor,
+                            distanceTextColor: DEFAULT_MINI_NAV_COLORS.distanceTextColor,
+                            // Clear legacy keys if present
+                            backgroundColor: undefined,
+                            horizonColor: undefined,
+                          });
+                        }}
+                        className="w-full mt-2 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono font-semibold text-slate-300 hover:text-white transition-colors flex items-center justify-center gap-2 border border-slate-700/60"
+                        title="Reset all configurable colors to default"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
+                        Reset to Default Colors
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -3101,6 +3412,20 @@ export const Inspector: React.FC = () => {
                   key !== 'horizonColor' &&
                   key !== 'guideLaneColor' &&
                   key !== 'highwayBadgeColor' &&
+                  key !== 'backgroundColor' &&
+                  key !== 'groundColor' &&
+                  key !== 'skyColor' &&
+                  key !== 'horizonGlowColor' &&
+                  key !== 'horizonGlowIntensity' &&
+                  key !== 'horizonGlowSpread' &&
+                  key !== 'horizonGlowBalance' &&
+                  key !== 'horizonBoundaryColor' &&
+                  key !== 'horizonBoundaryOpacity' &&
+                  key !== 'roadColor' &&
+                  key !== 'highwayBadgeTextColor' &&
+                  key !== 'streetTitleColor' &&
+                  key !== 'instructionTextColor' &&
+                  key !== 'distanceTextColor' &&
                   key !== 'trafficDensity' &&
                   key !== 'grayscaleTraffic' &&
                   key !== 'buttonLabel' &&

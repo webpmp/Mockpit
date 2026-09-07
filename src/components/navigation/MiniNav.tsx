@@ -3,6 +3,49 @@ import { useMockpitStore } from '../../store/useMockpitStore';
 import { ManeuverType } from '../../types';
 import { ManeuverGlyph } from './ManeuverGlyph';
 
+export interface MiniNavColors {
+  groundColor?: string;
+  skyColor?: string;
+  horizonGlowColor?: string;
+  horizonGlowIntensity?: number;
+  horizonGlowSpread?: number;
+  horizonGlowBalance?: number;
+  horizonBoundaryColor?: string;
+  horizonBoundaryOpacity?: number;
+  roadColor?: string;
+  arrowColor?: string;
+  guideLaneColor?: string;
+  highwayBadgeColor?: string;
+  highwayBadgeTextColor?: string;
+  streetTitleColor?: string;
+  instructionTextColor?: string;
+  distanceTextColor?: string;
+  // Deprecated legacy field for backward compatibility
+  horizonColor?: string;
+  backgroundColor?: string;
+}
+
+export const DEFAULT_MINI_NAV_COLORS = {
+  groundColor: '#020617', // slate-950
+  skyColor: '#020617',    // slate-950
+  horizonGlowColor: '#ffffff', // default white horizon glow
+  horizonGlowIntensity: 30, // 0 - 100 (%)
+  horizonGlowSpread: 100, // 0 - 100 (%)
+  horizonGlowBalance: 0, // -100 to +100
+  horizonBoundaryColor: '#334155', // slate-700 boundary line
+  horizonBoundaryOpacity: 50, // 0 - 100 (%)
+  roadColor: '#1e293b',   // slate-800
+  arrowColor: '#38bdf8',  // primary maneuver arrow color
+  guideLaneColor: '#38bdf8', // guide lane ribbon color
+  highwayBadgeColor: '#38bdf8', // badge background/border tint
+  highwayBadgeTextColor: '#38bdf8', // badge text color
+  streetTitleColor: '#e2e8f0', // slate-200
+  instructionTextColor: '#94a3b8', // slate-400
+  distanceTextColor: '#f8fafc', // slate-100
+};
+
+export const DEFAULT_MINI_NAV_APPEARANCE = DEFAULT_MINI_NAV_COLORS;
+
 interface MiniNavProps {
   highwayName?: string;
   nextExit?: string;
@@ -15,6 +58,22 @@ interface MiniNavProps {
   horizonColor?: string;
   guideLaneColor?: string;
   highwayBadgeColor?: string;
+  // Comprehensive color overrides
+  groundColor?: string;
+  skyColor?: string;
+  horizonGlowColor?: string;
+  horizonGlowIntensity?: number | string;
+  horizonGlowSpread?: number | string;
+  horizonGlowBalance?: number | string;
+  horizonBoundaryColor?: string;
+  horizonBoundaryOpacity?: number | string;
+  roadColor?: string;
+  highwayBadgeTextColor?: string;
+  streetTitleColor?: string;
+  instructionTextColor?: string;
+  distanceTextColor?: string;
+  // Deprecated backward compatibility
+  backgroundColor?: string;
   width?: number;
   height?: number;
 }
@@ -44,6 +103,20 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   horizonColor: propHorizonColor,
   guideLaneColor: propGuideLaneColor,
   highwayBadgeColor: propHighwayBadgeColor,
+  groundColor: propGroundColor,
+  skyColor: propSkyColor,
+  horizonGlowColor: propHorizonGlowColor,
+  horizonGlowIntensity: propHorizonGlowIntensity,
+  horizonGlowSpread: propHorizonGlowSpread,
+  horizonGlowBalance: propHorizonGlowBalance,
+  horizonBoundaryColor: propHorizonBoundaryColor,
+  horizonBoundaryOpacity: propHorizonBoundaryOpacity,
+  roadColor: propRoadColor,
+  highwayBadgeTextColor: propHighwayBadgeTextColor,
+  streetTitleColor: propStreetTitleColor,
+  instructionTextColor: propInstructionTextColor,
+  distanceTextColor: propDistanceTextColor,
+  backgroundColor: propBackgroundColor,
   width,
   height,
 }) => {
@@ -53,8 +126,8 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   // Viewport container measurement for 1:1 responsive scene rendering
   const viewportRef = useRef<HTMLDivElement>(null);
   const [viewportSize, setViewportSize] = useState<{ width: number; height: number }>({
-    width: 320,
-    height: 390,
+    width: 372,
+    height: 429,
   });
 
   useEffect(() => {
@@ -74,18 +147,76 @@ export const MiniNav: React.FC<MiniNavProps> = ({
     return () => ro.disconnect();
   }, []);
 
-  // Derived colors
+  // Derived colors with backwards compatibility
   const primaryPaletteColor = activePalette?.primary || '#38bdf8';
+
+  // Backward compatibility: if no groundColor or skyColor provided, fall back to legacy backgroundColor
+  const resolvedGroundColor = propGroundColor || (!propGroundColor && propBackgroundColor ? propBackgroundColor : undefined);
+  const resolvedSkyColor = propSkyColor || (!propSkyColor && propBackgroundColor ? propBackgroundColor : undefined);
+
+  // 1. Ground Color (region below horizon line)
+  const groundColor = resolvedGroundColor || DEFAULT_MINI_NAV_COLORS.groundColor;
+
+  // 2. Sky Color (region above horizon line)
+  const skyColor = resolvedSkyColor || DEFAULT_MINI_NAV_COLORS.skyColor;
+
+  // 3. Road Color (base tone for the road surface)
+  const roadColor = propRoadColor || DEFAULT_MINI_NAV_COLORS.roadColor;
+
+  // 4. Arrow Color
   const arrowColor = propArrowColor && propArrowColor !== '#f59e0b' && propArrowColor !== '#38bdf8' && propArrowColor !== 'var(--color-primary)'
     ? propArrowColor
     : primaryPaletteColor;
-  const horizonColor = propHorizonColor && propHorizonColor !== '#f59e0b' && propHorizonColor !== '#38bdf8' && propHorizonColor !== 'var(--color-primary)'
-    ? propHorizonColor
-    : primaryPaletteColor;
+
+  // 5. Guide Lane Color
   const guideLaneColor = propGuideLaneColor && propGuideLaneColor !== '#f59e0b' && propGuideLaneColor !== '#38bdf8' && propGuideLaneColor !== 'var(--color-primary)'
     ? propGuideLaneColor
     : arrowColor;
+
+  // 6. Highway Badge Color (border & background tint)
   const highwayBadgeColor = propHighwayBadgeColor || primaryPaletteColor;
+
+  // 7. Highway Badge Text Color
+  const highwayBadgeTextColor = propHighwayBadgeTextColor || highwayBadgeColor || primaryPaletteColor;
+
+  // 8. Street Title Color
+  const streetTitleColor = propStreetTitleColor || DEFAULT_MINI_NAV_COLORS.streetTitleColor;
+
+  // 9. Instruction Text Color
+  const instructionTextColor = propInstructionTextColor || DEFAULT_MINI_NAV_COLORS.instructionTextColor;
+
+  // 10. Distance Text Color
+  const distanceTextColor = propDistanceTextColor || DEFAULT_MINI_NAV_COLORS.distanceTextColor;
+
+  // Atmospheric horizon glow accent & boundary controls
+  // Independent from Sky Color and Ground Color
+  const horizonGlowColor =
+    propHorizonGlowColor ||
+    DEFAULT_MINI_NAV_COLORS.horizonGlowColor;
+
+  const horizonGlowIntensity =
+    propHorizonGlowIntensity !== undefined && propHorizonGlowIntensity !== ''
+      ? Math.max(0, Math.min(100, Number(propHorizonGlowIntensity)))
+      : DEFAULT_MINI_NAV_COLORS.horizonGlowIntensity;
+
+  const horizonGlowSpread =
+    propHorizonGlowSpread !== undefined && propHorizonGlowSpread !== ''
+      ? Math.max(0, Math.min(100, Number(propHorizonGlowSpread)))
+      : DEFAULT_MINI_NAV_COLORS.horizonGlowSpread;
+
+  const horizonGlowBalance =
+    propHorizonGlowBalance !== undefined && propHorizonGlowBalance !== ''
+      ? Math.max(-100, Math.min(100, Number(propHorizonGlowBalance)))
+      : DEFAULT_MINI_NAV_COLORS.horizonGlowBalance;
+
+  const horizonBoundaryColor =
+    propHorizonBoundaryColor ||
+    DEFAULT_MINI_NAV_COLORS.horizonBoundaryColor;
+
+  const horizonBoundaryOpacity =
+    propHorizonBoundaryOpacity !== undefined && propHorizonBoundaryOpacity !== ''
+      ? Math.max(0, Math.min(100, Number(propHorizonBoundaryOpacity)))
+      : DEFAULT_MINI_NAV_COLORS.horizonBoundaryOpacity;
 
   // Derived values favoring prop override or store journey state
   const currentManeuver = journey?.currentManeuver;
@@ -150,24 +281,53 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   const activeLane = getRecommendedLaneIndex(maneuverType, numLanes);
 
   // Dynamic SVG dimensions from measured viewport container
-  const W = viewportSize.width || 320;
-  const H = viewportSize.height || 390;
+  const W = viewportSize.width || 372;
+  const H = viewportSize.height || 429;
 
   // Vanishing perspective geometry derived proportionally from base 320x390 design
   // Ratios:
   // roadTopLeftX_r    = 138/320, roadTopRightX_r   = 182/320
   // roadBottomLeftX_r = 24/320,  roadBottomRightX_r= 296/320
-  // horizonLineY_r    = 120/390, roadBottomY_r     = 380/390
+  // horizonLineY_r    = 120/390, roadBottomY       = H (extends completely to bottom coordinate 429)
   // skyTopY_r         = 20/390
   const roadTopLeft = { x: W * (138 / 320), y: H * (120 / 390) };
   const roadTopRight = { x: W * (182 / 320), y: H * (120 / 390) };
-  const roadBottomLeft = { x: W * (24 / 320), y: H * (380 / 390) };
-  const roadBottomRight = { x: W * (296 / 320), y: H * (380 / 390) };
+  const roadBottomLeft = { x: W * (24 / 320), y: H };
+  const roadBottomRight = { x: W * (296 / 320), y: H };
 
   const horizonLineY = H * (120 / 390);
-  const skyTopY = H * (20 / 390);
-  const glowBottomY = H * (160 / 390);
-  const horizonGlowHeight = glowBottomY - skyTopY;
+
+  // Spread: 0% - 100% (default 100%).
+  // Controls how far the gradient extends above and below the horizon while preserving horizon at y=132.
+  // At 100% spread on base 372x429 viewport:
+  // extentAbove = 110 (top at y = 132 - 110 = 22)
+  // extentBelow = 44 (bottom at y = 132 + 44 = 176)
+  // glowHeight = 154
+  const spreadFactor = Math.max(0, Math.min(100, horizonGlowSpread)) / 100;
+  const scaleY = H / 429;
+  const extentAbove = 110 * scaleY * spreadFactor;
+  const extentBelow = 44 * scaleY * spreadFactor;
+  const glowTopY = horizonLineY - extentAbove;
+  const glowBottomY = horizonLineY + extentBelow;
+  const horizonGlowHeight = Math.max(0, glowBottomY - glowTopY);
+
+  // Horizon Glow Position / Balance: -100 to +100 (default 0).
+  // -100 = glow biased upward
+  // 0 = centered on horizon
+  // +100 = glow biased downward
+  // Modifies center stop distribution without moving the horizon line.
+  // Base offset where horizon line sits inside the glow rect: 110 / 154 = 71.42857%
+  const baseCenterOffset = 71.42857;
+  let centerStopOffset = baseCenterOffset;
+  if (horizonGlowBalance > 0) {
+    centerStopOffset = baseCenterOffset + (95 - baseCenterOffset) * (horizonGlowBalance / 100);
+  } else if (horizonGlowBalance < 0) {
+    centerStopOffset = baseCenterOffset + (baseCenterOffset - 5) * (horizonGlowBalance / 100);
+  }
+  centerStopOffset = Math.max(1, Math.min(99, centerStopOffset));
+
+  const centerStopOpacity = (Math.max(0, Math.min(100, horizonGlowIntensity)) / 100);
+  const boundaryStrokeOpacity = (Math.max(0, Math.min(100, horizonBoundaryOpacity)) / 100);
 
   // Programmatic calculation of Guide Lane Highlight Path Strip
   // Insets inward proportionally to lane width (default insetRatio = 0.28)
@@ -195,8 +355,9 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   return (
     <div
       id="mini-nav-container"
-      className="relative w-full h-full flex flex-col items-center justify-between select-none overflow-hidden rounded-2xl bg-slate-950/90 border border-slate-800/80 shadow-2xl backdrop-blur-md"
+      className="relative w-full h-full flex flex-col items-center justify-between select-none overflow-hidden rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-md"
       style={{
+        backgroundColor: skyColor,
         width: width ? `${width}px` : undefined,
         height: height ? `${height}px` : undefined,
       }}
@@ -204,7 +365,13 @@ export const MiniNav: React.FC<MiniNavProps> = ({
       {/* Top Header: Current Highway & Maneuver Distance */}
       <div
         id="mini-nav-header"
-        className="w-full px-5 pt-5 pb-4 z-10 flex flex-col items-start justify-start bg-gradient-to-b from-slate-900/90 to-transparent"
+        className="w-full px-5 pt-5 pb-4 z-10 flex flex-col items-start justify-start bg-gradient-to-b from-black/40 via-black/15 to-transparent transition-colors"
+        style={{
+          backgroundColor: skyColor,
+          borderBottom: 'none',
+          borderBottomWidth: 0,
+          boxShadow: 'none',
+        }}
       >
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
@@ -212,9 +379,9 @@ export const MiniNav: React.FC<MiniNavProps> = ({
               id="mini-nav-highway-badge"
               className="px-2.5 py-1 rounded text-sm font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400"
               style={{
-                borderColor: `color-mix(in srgb, ${highwayBadgeColor || 'var(--color-primary, #38bdf8)'} 40%, transparent)`,
-                backgroundColor: `color-mix(in srgb, ${highwayBadgeColor || 'var(--color-primary, #38bdf8)'} 15%, transparent)`,
-                color: highwayBadgeColor || 'var(--color-primary, #38bdf8)',
+                borderColor: `color-mix(in srgb, ${highwayBadgeColor} 40%, transparent)`,
+                backgroundColor: `color-mix(in srgb, ${highwayBadgeColor} 15%, transparent)`,
+                color: highwayBadgeTextColor,
               }}
             >
               {currentHighway}
@@ -236,7 +403,8 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             )}
             <span
               id="mini-nav-distance-text"
-              className="text-xl font-bold font-mono tracking-tight text-slate-100"
+              className="text-xl font-bold font-mono tracking-tight"
+              style={{ color: distanceTextColor }}
             >
               {distanceFormatted}
             </span>
@@ -245,7 +413,8 @@ export const MiniNav: React.FC<MiniNavProps> = ({
 
         <h3
           id="mini-nav-street-title"
-          className="mt-2 w-full text-lg font-semibold text-slate-200 tracking-tight leading-snug"
+          className="mt-2 w-full text-lg font-semibold tracking-tight leading-snug"
+          style={{ color: streetTitleColor }}
         >
           {exitOrStreetName}
         </h3>
@@ -253,7 +422,8 @@ export const MiniNav: React.FC<MiniNavProps> = ({
         {maneuverType !== 'straight' && (
           <span
             id="mini-nav-instruction-sub"
-            className="mt-1 text-[11px] font-mono text-slate-400"
+            className="mt-1 text-[11px] font-mono"
+            style={{ color: instructionTextColor }}
           >
             {maneuverInstruction}
           </span>
@@ -265,36 +435,41 @@ export const MiniNav: React.FC<MiniNavProps> = ({
         id="mini-nav-viewport"
         ref={viewportRef}
         className="relative flex-1 w-full flex items-center justify-center p-0 overflow-hidden"
+        style={{
+          borderTop: 'none',
+          borderTopWidth: 0,
+          boxShadow: 'none',
+        }}
       >
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          className="w-full h-full"
+          className="w-full h-full block"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
             {/* Perspective Road Surface Gradient */}
             <linearGradient id="roadGrad" x1={W * 0.5} y1={horizonLineY} x2={W * 0.5} y2={roadBottomLeft.y} gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#0f172a" stopOpacity="0.4" />
-              <stop offset="60%" stopColor="#1e293b" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#334155" stopOpacity="0.95" />
+              <stop offset="0%" stopColor={roadColor} stopOpacity="0.4" />
+              <stop offset="60%" stopColor={roadColor} stopOpacity="0.8" />
+              <stop offset="100%" stopColor={roadColor} stopOpacity="0.95" />
             </linearGradient>
 
-            {/* Horizon Glow Gradient: Dual fade spanning from skyTopY (sky), peaking at horizonLineY (horizon line), dissolving into glowBottomY (road) */}
-            <linearGradient id="horizonGlow" x1={W * 0.5} y1={skyTopY} x2={W * 0.5} y2={glowBottomY} gradientUnits="userSpaceOnUse">
+            {/* Horizon Glow Gradient: 3-stop model (top opacity 0% -> center opacity -> bottom opacity 0%) */}
+            <linearGradient id="horizonGlow" x1={W * 0.5} y1={glowTopY} x2={W * 0.5} y2={glowBottomY} gradientUnits="userSpaceOnUse">
               <stop
                 offset="0%"
-                stopColor={horizonColor}
+                stopColor={horizonGlowColor}
                 stopOpacity="0"
               />
               <stop
-                offset={`${(((horizonLineY - skyTopY) / (glowBottomY - skyTopY)) * 100).toFixed(1)}%`}
-                stopColor={horizonColor}
-                stopOpacity="0.3"
+                offset={`${centerStopOffset.toFixed(1)}%`}
+                stopColor={horizonGlowColor}
+                stopOpacity={centerStopOpacity}
               />
               <stop
                 offset="100%"
-                stopColor={horizonColor}
+                stopColor={horizonGlowColor}
                 stopOpacity="0"
               />
             </linearGradient>
@@ -305,14 +480,59 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             </filter>
           </defs>
 
-          {/* Horizon Background Mesh: Fills full width, spans from skyTopY to glowBottomY */}
-          <rect x="0" y={skyTopY} width={W} height={horizonGlowHeight} fill="url(#horizonGlow)" />
+          {/* 1. Sky Background (y=0 through y=horizonLineY) */}
+          <rect
+            id="mini-nav-sky-bg"
+            x="0"
+            y="0"
+            width={W}
+            height={horizonLineY}
+            fill={skyColor}
+          />
 
-          {/* Perspective Horizon Ground Lines */}
-          <line x1="0" y1={horizonLineY} x2={W} y2={horizonLineY} stroke="#334155" strokeWidth="1" strokeOpacity="0.5" />
+          {/* 2. Ground Background (y=horizonLineY through y=H) */}
+          <rect
+            id="mini-nav-ground-bg"
+            x="0"
+            y={horizonLineY}
+            width={W}
+            height={H - horizonLineY}
+            fill={groundColor}
+          />
 
-          {/* 3D Road Bed Polygon */}
+          {/* 3. Horizon Glow Overlay Mesh: Fills full width, spans from glowTopY to glowBottomY */}
+          <rect
+            id="mini-nav-horizon-glow"
+            x="0"
+            y={glowTopY}
+            width={W}
+            height={horizonGlowHeight}
+            fill="url(#horizonGlow)"
+          />
+
+          {/* 4. Perspective Horizon Boundary Line (Configurable boundary color & opacity, position fixed at y=132) */}
+          <line
+            id="mini-nav-horizon-boundary"
+            x1="0"
+            y1={horizonLineY}
+            x2={W}
+            y2={horizonLineY}
+            stroke={horizonBoundaryColor}
+            strokeWidth="1"
+            strokeOpacity={boundaryStrokeOpacity}
+          />
+
+          {/* 5. Opaque Road Base: establishes fully opaque road surface to mask Ground Color and Horizon Glow */}
           <polygon
+            id="mini-nav-road-base"
+            points={`${roadTopLeft.x},${roadTopLeft.y} ${roadTopRight.x},${roadTopRight.y} ${roadBottomRight.x},${roadBottomRight.y} ${roadBottomLeft.x},${roadBottomLeft.y}`}
+            fill={roadColor}
+            fillOpacity="1"
+          />
+
+          {/* 6. Road Shading: perspective gradient overlay composited above opaque Road Base */}
+          <polygon
+            id="mini-nav-road-shading"
             points={`${roadTopLeft.x},${roadTopLeft.y} ${roadTopRight.x},${roadTopRight.y} ${roadBottomRight.x},${roadBottomRight.y} ${roadBottomLeft.x},${roadBottomLeft.y}`}
             fill="url(#roadGrad)"
             stroke="#475569"
@@ -321,6 +541,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
 
           {/* Outer Road Edge Curbs / Perspective Markings */}
           <line
+            id="mini-nav-left-lane-edge"
             x1={roadTopLeft.x}
             y1={roadTopLeft.y}
             x2={roadBottomLeft.x}
@@ -330,6 +551,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             strokeOpacity="0.7"
           />
           <line
+            id="mini-nav-right-lane-edge"
             x1={roadTopRight.x}
             y1={roadTopRight.y}
             x2={roadBottomRight.x}
@@ -369,6 +591,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
           {/* Recommended Path Ribbon - Accurately aligned to guide lane boundaries */}
           {activeLane !== null && showGuideLane && (
             <polygon
+              id="mini-nav-guide-lane"
               points={guideLanePolygonPoints}
               fill={guideLaneColor}
               fillOpacity="0.16"

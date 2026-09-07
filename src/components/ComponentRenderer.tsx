@@ -108,7 +108,7 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   navTripEstimate: 'Trip Planner',
   navTripSummary: 'Trip Summary',
   overheadVisualization: 'Overhead Driving Visualization',
-  miniNav: 'Mini Nav (Glanceable Maneuver)',
+  miniNav: 'Mini Nav',
   phoneContacts: 'Contacts',
   phoneDialPad: 'Dial Pad',
   phoneMessaging: 'Messaging',
@@ -2477,6 +2477,20 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             horizonColor={resolved.horizonColor || component.staticProps?.horizonColor}
             guideLaneColor={resolved.guideLaneColor || component.staticProps?.guideLaneColor}
             highwayBadgeColor={resolved.highwayBadgeColor || component.staticProps?.highwayBadgeColor}
+            groundColor={resolved.groundColor || component.staticProps?.groundColor}
+            skyColor={resolved.skyColor || component.staticProps?.skyColor}
+            horizonGlowColor={resolved.horizonGlowColor || component.staticProps?.horizonGlowColor}
+            horizonGlowIntensity={resolved.horizonGlowIntensity ?? component.staticProps?.horizonGlowIntensity}
+            horizonGlowSpread={resolved.horizonGlowSpread ?? component.staticProps?.horizonGlowSpread}
+            horizonGlowBalance={resolved.horizonGlowBalance ?? component.staticProps?.horizonGlowBalance}
+            horizonBoundaryColor={resolved.horizonBoundaryColor || component.staticProps?.horizonBoundaryColor}
+            horizonBoundaryOpacity={resolved.horizonBoundaryOpacity ?? component.staticProps?.horizonBoundaryOpacity}
+            roadColor={resolved.roadColor || component.staticProps?.roadColor}
+            highwayBadgeTextColor={resolved.highwayBadgeTextColor || component.staticProps?.highwayBadgeTextColor}
+            streetTitleColor={resolved.streetTitleColor || component.staticProps?.streetTitleColor}
+            instructionTextColor={resolved.instructionTextColor || component.staticProps?.instructionTextColor}
+            distanceTextColor={resolved.distanceTextColor || component.staticProps?.distanceTextColor}
+            backgroundColor={resolved.backgroundColor || component.staticProps?.backgroundColor}
             width={component.width}
             height={component.height}
           />

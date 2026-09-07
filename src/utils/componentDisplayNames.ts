@@ -20,7 +20,7 @@ export const COMPONENT_DISPLAY_NAMES: Record<string, string> = {
   navDestination: 'Trip Planner',
   navSearch: 'Navigation Search',
   overheadVisualization: 'Overhead Driving Visualization',
-  miniNav: 'Mini Nav (Glanceable Maneuver)',
+  miniNav: 'Mini Nav',
 
   // Media & Entertainment
   media: 'Music Media Player',
