@@ -332,8 +332,8 @@ const INITIAL_VEHICLE_STATE: VehicleState = {
   driveMode: 'Normal',
   headlights: 'Off',
   signalBars: 4,
-  mapLat: 37.3318,
-  mapLng: -122.0311,
+  mapLat: 37.7749,
+  mapLng: -122.4194,
   cruiseControlActive: false,
   blindSpotWarning: true,
   proximityWarning: true,
@@ -2372,8 +2372,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
     // Map pan center proportional to speed while speed > 0
     if (effectiveSpeed > 0) {
-      const currentLat = currentVs.mapLat ?? 37.3318;
-      const currentLng = currentVs.mapLng ?? -122.0311;
+      const currentLat = currentVs.mapLat ?? 37.7749;
+      const currentLng = currentVs.mapLng ?? -122.4194;
       newVs.mapLat = currentLat + (effectiveSpeed * 0.00003);
       newVs.mapLng = currentLng + (effectiveSpeed * 0.00002);
     }
@@ -3837,6 +3837,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 }));
 
 if (typeof window !== 'undefined') {
+  (window as any).useMockpitStore = useMockpitStore;
   // Start playback ticker if initial state is playing
   setTimeout(() => {
     syncPlaybackInterval(useMockpitStore.getState, useMockpitStore.setState);

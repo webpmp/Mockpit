@@ -833,6 +833,7 @@ const NavDestinationWidget: React.FC<{
 
   const cardRef = React.useRef<HTMLDivElement>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
+  const innerContentRef = React.useRef<HTMLDivElement>(null);
 
   React.useLayoutEffect(() => {
     const cardEl = cardRef.current;
@@ -842,7 +843,7 @@ const NavDestinationWidget: React.FC<{
     // Measure the actual chrome (header + footer + margins) rather than hardcoding it,
     // so this stays correct if the header/footer ever change independently.
     const chromeHeight = cardEl.offsetHeight - contentEl.clientHeight;
-    const naturalContentHeight = contentEl.scrollHeight;
+    const naturalContentHeight = innerContentRef.current?.offsetHeight ?? contentEl.scrollHeight;
     const canvasLimit = CANVAS_HEIGHT - CANVAS_EDGE_MARGIN - (component.y ?? 0);
 
     const desiredHeight = Math.min(
@@ -1050,125 +1051,135 @@ const NavDestinationWidget: React.FC<{
         customColor={customColor}
       />
 
-      <div ref={contentRef} className="flex-1 min-h-0 my-1.5 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
-        {/* Active Mode: Live Trip Estimate 2x2 Grid */}
-        {activeTrip && estimate && (
-          estimate.isUnresolved ? (
-            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-amber-300">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
-              <span className="text-[0.6875rem] font-mono font-medium leading-tight">
-                {estimate.unresolvedMessage}
-              </span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-1.5 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
-              <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
-                <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
-                  Distance
-                </span>
-                <span className="text-xs font-bold text-slate-100 font-mono leading-tight">
-                  {estimate.formattedDistance}
+      <div ref={contentRef} className="flex-1 min-h-0 my-1.5 overflow-y-auto pr-1 custom-scrollbar">
+        <div ref={innerContentRef} className="space-y-2">
+          {/* Active Mode: Live Trip Estimate 2x2 Grid */}
+          {activeTrip && estimate && (
+            estimate.isUnresolved ? (
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-amber-300">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                <span className="text-[0.6875rem] font-mono font-medium leading-tight">
+                  {estimate.unresolvedMessage}
                 </span>
               </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-1.5 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
+                  <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                    Distance
+                  </span>
+                  <span className="text-xs font-bold text-slate-100 font-mono leading-tight">
+                    {estimate.formattedDistance}
+                  </span>
+                </div>
 
-              <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
-                <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
-                  Estimated Time
-                </span>
-                <span className="text-xs font-bold text-slate-100 font-mono leading-tight">
-                  {estimate.formattedDuration}
-                </span>
+                <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
+                  <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                    Estimated Time
+                  </span>
+                  <span className="text-xs font-bold text-slate-100 font-mono leading-tight">
+                    {estimate.formattedDuration}
+                  </span>
+                </div>
+
+                <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
+                  <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                    Energy Required
+                  </span>
+                  <span className="text-[0.6875rem] font-bold text-slate-100 font-mono leading-tight">
+                    {estimate.formattedEnergy}
+                  </span>
+                </div>
+
+                <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
+                  <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                    Arrival Charge
+                  </span>
+                  <span className={`text-[0.6875rem] font-bold font-mono leading-tight ${
+                    estimate.isOutOfRange ? 'text-amber-400' : 'text-emerald-400'
+                  }`}>
+                    {estimate.formattedArrivalBattery}
+                  </span>
+                </div>
               </div>
+            )
+          )}
 
-              <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
-                <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
-                  Energy Required
-                </span>
-                <span className="text-[0.6875rem] font-bold text-slate-100 font-mono leading-tight">
-                  {estimate.formattedEnergy}
-                </span>
-              </div>
-
-              <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
-                <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
-                  Arrival Charge
-                </span>
-                <span className="text-[0.6875rem] font-bold text-emerald-400 font-mono leading-tight">
-                  {estimate.formattedArrivalBattery}
-                </span>
-              </div>
-            </div>
-          )
-        )}
-
-        {/* Destination with Name and Address Geocode */}
-        <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-200 font-mono">
-              <Flag className="w-3.5 h-3.5 text-sky-400" />
-              <span>DESTINATION</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddStop}
-              className="min-h-[44px] px-2.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-[0.625rem] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer border border-dashed border-slate-700/80 hover:border-slate-600"
-            >
-              <Plus className="w-3.5 h-3.5 text-slate-400" />
-              <span>Add Stop</span>
-            </button>
-          </div>
-          <AddressGeocodeInput
-            value={currentDestName}
-            onChange={(val) => handleUpdateDestName(val)}
-            onResolved={(lat, lng, displayName, geocode) => handleUpdateDestCoords(lat, lng, displayName, geocode)}
-            onUnresolved={handleDestUnresolved}
-            placeholder="Destination address or city..."
-            componentId={component.id}
-            keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-          />
-        </div>
-
-        {/* Waypoint / Trip Stops with Address Geocode */}
-        {currentStops.map((stop, i) => (
-          <div
-            key={stop.id || i}
-            className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1.5 transition-all"
-          >
+          {/* Destination with Name and Address Geocode */}
+          <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-300 font-mono">
-                <span className="w-4 h-4 rounded-full bg-slate-800 text-[0.5625rem] font-bold font-mono flex items-center justify-center text-slate-300 shrink-0 border border-slate-700">
-                  {i + 1}
-                </span>
-                <span>STOP {i + 1}</span>
+              <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-200 font-mono">
+                <Flag className="w-3.5 h-3.5 text-sky-400" />
+                <span>DESTINATION</span>
               </div>
               <button
-                onClick={() => handleRemoveStop(i)}
-                aria-label={`Remove stop ${i + 1}`}
-                title="Remove Stop"
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 hover:text-rose-400 transition-colors cursor-pointer rounded-lg hover:bg-slate-900"
+                type="button"
+                onClick={handleAddStop}
+                className="min-h-[44px] px-2.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-[0.625rem] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer border border-dashed border-slate-700/80 hover:border-slate-600"
               >
-                <Trash2 className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5 text-slate-400" />
+                <span>Add Stop</span>
               </button>
             </div>
-
             <AddressGeocodeInput
-              value={stop.name}
-              onChange={(val) => handleUpdateStopName(i, val)}
-              onResolved={(lat, lng, displayName, geocode) => handleUpdateStopCoords(i, lat, lng, displayName, geocode)}
-              onUnresolved={() => handleStopUnresolved(i)}
-              placeholder={`Stop ${i + 1} address or city...`}
+              value={currentDestName}
+              onChange={(val) => handleUpdateDestName(val)}
+              onResolved={(lat, lng, displayName, geocode) => handleUpdateDestCoords(lat, lng, displayName, geocode)}
+              onUnresolved={handleDestUnresolved}
+              alreadyResolved={
+                (activeTrip ? activeTrip.destGeocoded !== false : destGeocoded !== false) &&
+                !isNaN(Number(activeTrip ? activeTrip.destLat : destLat)) &&
+                !isNaN(Number(activeTrip ? activeTrip.destLng : destLng))
+              }
+              placeholder="Destination address or city..."
               componentId={component.id}
               keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
             />
-            {stopLegs[i] && (
-              <div className="text-[0.5625rem] font-mono text-slate-400 pl-0.5">
-                {stopLegs[i].isUnresolved
-                  ? '--'
-                  : `${stopLegs[i].formattedDistance} · est. ${stopLegs[i].formattedDuration}`}
-              </div>
-            )}
           </div>
-        ))}
+
+          {/* Waypoint / Trip Stops with Address Geocode */}
+          {currentStops.map((stop, i) => (
+            <div
+              key={stop.id || i}
+              className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1.5 transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-300 font-mono">
+                  <span className="w-4 h-4 rounded-full bg-slate-800 text-[0.5625rem] font-bold font-mono flex items-center justify-center text-slate-300 shrink-0 border border-slate-700">
+                    {i + 1}
+                  </span>
+                  <span>STOP {i + 1}</span>
+                </div>
+                <button
+                  onClick={() => handleRemoveStop(i)}
+                  aria-label={`Remove stop ${i + 1}`}
+                  title="Remove Stop"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 hover:text-rose-400 transition-colors cursor-pointer rounded-lg hover:bg-slate-900"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+
+              <AddressGeocodeInput
+                value={stop.name}
+                onChange={(val) => handleUpdateStopName(i, val)}
+                onResolved={(lat, lng, displayName, geocode) => handleUpdateStopCoords(i, lat, lng, displayName, geocode)}
+                onUnresolved={() => handleStopUnresolved(i)}
+                alreadyResolved={stop.geocoded !== false && !isNaN(Number(stop.lat)) && !isNaN(Number(stop.lng))}
+                placeholder={`Stop ${i + 1} address or city...`}
+                componentId={component.id}
+                keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+              />
+              {stopLegs[i] && (
+                <div className="text-[0.5625rem] font-mono text-slate-400 pl-0.5">
+                  {stopLegs[i].isUnresolved
+                    ? '--'
+                    : `${stopLegs[i].formattedDistance} · est. ${stopLegs[i].formattedDuration}`}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
@@ -1597,6 +1608,7 @@ interface TripSummaryWidgetProps {
   customColor: string;
   baseOpacity: string;
   styleOpacity?: number;
+  isPresentation?: boolean;
 }
 
 const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
@@ -1606,6 +1618,7 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
   customColor,
   baseOpacity,
   styleOpacity,
+  isPresentation = false,
 }) => {
   const activeTrip = useMockpitStore((s) => s.activeTrip);
   const vehicleState = useMockpitStore((s) => s.vehicleState);
@@ -1660,6 +1673,12 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
   const wrapperStyle = { borderColor: isSelected ? customColor : undefined, opacity: styleOpacity };
 
   if (!activeTrip) {
+    if (isPresentation) {
+      return null; // Auto-hidden: nothing to show in presentation until a trip starts
+    }
+
+    // Editor mode: unchanged from v1 — this real "Set Destination" card is already a
+    // useful, functional placeholder for positioning; no ghost overlay needed.
     return (
       <div className={wrapperClasses} style={wrapperStyle}>
         <ComponentHeader type="navTripSummary" label={headerLabel} customColor={customColor} />
@@ -2399,7 +2418,11 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
                 {arrivalChargeLabel}
               </span>
-              <span className="text-[0.6875rem] font-bold text-emerald-400 font-mono leading-tight">{estimate.formattedArrivalBattery}</span>
+              <span className={`text-[0.6875rem] font-bold font-mono leading-tight ${
+                estimate.isOutOfRange ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
+                {estimate.formattedArrivalBattery}
+              </span>
             </div>
           </div>
         </div>
@@ -2415,6 +2438,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           customColor={customColor}
           baseOpacity={baseOpacity}
           styleOpacity={styleOpacity}
+          isPresentation={isPresentation}
         />
       );
     }

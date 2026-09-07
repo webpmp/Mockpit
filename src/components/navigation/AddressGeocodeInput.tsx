@@ -16,6 +16,7 @@ export interface AddressGeocodeInputProps {
   className?: string;
   id?: string;
   showStatus?: boolean;
+  alreadyResolved?: boolean;
 }
 
 export const AddressGeocodeInput: React.FC<AddressGeocodeInputProps> = ({
@@ -31,10 +32,11 @@ export const AddressGeocodeInput: React.FC<AddressGeocodeInputProps> = ({
   className = '',
   id,
   showStatus = true,
+  alreadyResolved = false,
 }) => {
   const [status, setStatus] = useState<'idle' | 'resolving' | 'success' | 'failed'>('idle');
   const [resolvedDisplay, setResolvedDisplay] = useState<string | null>(null);
-  const lastGeocodedQueryRef = useRef<string>('');
+  const lastGeocodedQueryRef = useRef<string>(alreadyResolved ? value.trim() : '');
   const isMountedRef = useRef<boolean>(true);
 
   useEffect(() => {

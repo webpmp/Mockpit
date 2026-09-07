@@ -77,7 +77,8 @@ export function calculateTripEstimate(
   batteryPercent: number = 80,
   avgSpeedMph = 45,
   roadFactor = 1.3,
-  packCapacityKwh = 75
+  packCapacityKwh = 75,
+  stopDwellMinutes = 30
 ) {
   // Check if trip or any stops have unresolved geocoding status
   const isDestUnresolved = trip.destGeocoded === false;
@@ -94,6 +95,7 @@ export function calculateTripEstimate(
       formattedDuration: '--',
       formattedEnergy: '--',
       formattedArrivalBattery: '--',
+      isOutOfRange: false,
       isUnresolved: true,
       unresolvedMessage: `Can't estimate — could not locate ${failedName || 'address'}`,
     };
@@ -116,10 +118,14 @@ export function calculateTripEstimate(
     }
   }
 
-  const hours = avgSpeedMph > 0 ? totalMiles / avgSpeedMph : 0;
+  const driveHours = avgSpeedMph > 0 ? totalMiles / avgSpeedMph : 0;
+  const dwellHours = ((trip.stops || []).length * stopDwellMinutes) / 60;
+  const hours = driveHours + dwellHours;
   const safeConsumption = typeof consumptionRate === 'number' && !isNaN(consumptionRate) && consumptionRate > 0 ? consumptionRate : 0.32;
   const energyKwh = totalMiles * safeConsumption;
-  const arrivalPercent = Math.max(0, Math.round(batteryPercent - (energyKwh / packCapacityKwh) * 100));
+  const rawArrivalPercent = Math.round(batteryPercent - (energyKwh / packCapacityKwh) * 100);
+  const isOutOfRange = rawArrivalPercent < 0;
+  const arrivalPercent = Math.max(0, rawArrivalPercent);
 
   const durationStr = formatDurationHours(hours);
 
@@ -128,9 +134,10 @@ export function calculateTripEstimate(
     durationHours: hours,
     energyKwh,
     arrivalPercent,
+    isOutOfRange,
     formattedDistance: `${totalMiles.toFixed(1)} miles`,
     formattedDuration: durationStr || '0 mins',
     formattedEnergy: `${energyKwh.toFixed(1)} kWh (${Math.round((energyKwh / packCapacityKwh) * 100)}%)`,
-    formattedArrivalBattery: `${arrivalPercent}% at Arrival`,
+    formattedArrivalBattery: isOutOfRange ? 'Add Charging Stop' : `${arrivalPercent}% at Arrival`,
   };
 }
