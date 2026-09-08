@@ -1622,7 +1622,7 @@ export const Inspector: React.FC = () => {
                           : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
                       }`}
                     >
-                      Horizontal
+                      Carousel
                     </button>
                     <button
                       type="button"
