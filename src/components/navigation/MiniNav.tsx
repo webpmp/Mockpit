@@ -625,8 +625,8 @@ export const MiniNav: React.FC<MiniNavProps> = ({
                 x2={botX}
                 y2={roadBottomLeft.y}
                 stroke="#64748b"
-                strokeWidth="1.5"
-                strokeDasharray="14 12"
+                strokeWidth="2.5"
+                strokeDasharray="28 28"
                 strokeDashoffset={scaledOffset}
                 strokeOpacity="0.6"
               />
