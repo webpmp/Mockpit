@@ -100,3 +100,79 @@ export function getAvailableVehicles(): VehicleAsset[] {
 
   return result;
 }
+
+export function resolveEgoVehicleType(
+  configuredType?: string,
+  vehicleBgAsset?: string | null,
+  storeEgoVehicleType?: EgoVehicleType
+): EgoVehicleType {
+  if (configuredType && configuredType !== 'auto') {
+    return configuredType as EgoVehicleType;
+  }
+  if (vehicleBgAsset) {
+    return getEgoVehicleTypeFromAsset(vehicleBgAsset);
+  }
+  return storeEgoVehicleType || 'midsizeSedan';
+}
+
+export function adjustHexBrightness(hex: string, percent: number): string {
+  if (!hex || typeof hex !== 'string') return '#2563eb';
+  const clean = hex.trim().replace(/^#/, '');
+  let fullHex = clean;
+  if (clean.length === 3) {
+    fullHex = clean.split('').map((c) => c + c).join('');
+  }
+  if (fullHex.length !== 6) return hex;
+  const num = parseInt(fullHex, 16);
+  if (isNaN(num)) return hex;
+  const r = Math.min(255, Math.max(0, Math.round(((num >> 16) & 255) + percent * 255)));
+  const g = Math.min(255, Math.max(0, Math.round(((num >> 8) & 255) + percent * 255)));
+  const b = Math.min(255, Math.max(0, Math.round((num & 255) + percent * 255)));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+export function isValidHexColor(val?: string | null): boolean {
+  if (!val || typeof val !== 'string') return false;
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(val.trim());
+}
+
+export type EgoVehicleRole = 'body' | 'trim' | 'windows' | 'lights';
+
+export const DEFAULT_VEHICLE_COLORS: Record<EgoVehicleType, {
+  body: string;
+  trim: string;
+  windows: string;
+  lights: string;
+}> = {
+  luxurySedan: {
+    body: '#000008',
+    trim: '#64748b',
+    windows: '#020617',
+    lights: '#fef08a',
+  },
+  compactSedan: {
+    body: '#1f2937',
+    trim: '#2d3748',
+    windows: '#0d131a',
+    lights: '#fef08a',
+  },
+  midsizeSedan: {
+    body: '#1f2937',
+    trim: '#2d3748',
+    windows: '#0d131a',
+    lights: '#fef08a',
+  },
+  coupe: {
+    body: '#1f2937',
+    trim: '#2d3748',
+    windows: '#0d131a',
+    lights: '#fef08a',
+  },
+  truck: {
+    body: '#2d3748',
+    trim: '#4a5568',
+    windows: '#080c10',
+    lights: '#fef08a',
+  },
+};
+

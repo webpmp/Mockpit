@@ -21,6 +21,7 @@ import {
   VehicleState,
   VehicleBackgroundSettings,
   EgoVehicleType,
+  EgoVehicleModel,
   TextScalePreset,
   TEXT_SCALE_FACTORS,
   VehicleStatusConnector,

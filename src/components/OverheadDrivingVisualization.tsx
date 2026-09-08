@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ComponentInstance, VehicleState, EgoVehicleType } from '../types';
+import {
+  ComponentInstance,
+  VehicleState,
+  EgoVehicleType,
+  EgoVehicleColors,
+} from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
-import { getEgoVehicleTypeFromAsset } from '../utils/vehicleAssets';
+import {
+  getEgoVehicleTypeFromAsset,
+  adjustHexBrightness,
+  isValidHexColor,
+  DEFAULT_VEHICLE_COLORS,
+} from '../utils/vehicleAssets';
 
 interface OverheadDrivingVisualizationProps {
   component: ComponentInstance;
@@ -61,104 +71,963 @@ const VehicleGraphic: React.FC<{
   egoType?: EgoVehicleType;
   accentColor?: string;
   headlightsOn?: boolean;
-}> = ({ type, w, l, color, isEgo = false, egoType = 'midsizeSedan', accentColor = '#38bdf8', headlightsOn = false }) => {
+  colors?: EgoVehicleColors;
+}> = ({
+  type,
+  w,
+  l,
+  color,
+  isEgo = false,
+  egoType = 'midsizeSedan',
+  accentColor = '#38bdf8',
+  headlightsOn = false,
+  colors: passedColors,
+}) => {
   if (isEgo) {
+    const modelDefault = DEFAULT_VEHICLE_COLORS[egoType] || DEFAULT_VEHICLE_COLORS.midsizeSedan;
+    const colors = {
+      body: isValidHexColor(passedColors?.body) ? passedColors!.body! : modelDefault.body,
+      trim: isValidHexColor(passedColors?.trim) ? passedColors!.trim! : modelDefault.trim,
+      windows: isValidHexColor(passedColors?.windows) ? passedColors!.windows! : modelDefault.windows,
+      lights: isValidHexColor(passedColors?.lights) ? passedColors!.lights! : modelDefault.lights,
+    };
+
     if (egoType === 'truck') {
       return (
-        <g id="ego-truck-graphic">
-          <rect x={-w / 2 + 3} y={-l / 2 + 4} width={w} height={l} rx="8" fill="#000000" opacity="0.65" />
-          <rect x={-w / 2 - 3} y={-l * 0.35} width="4" height={l * 0.18} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1} y={-l * 0.35} width="4" height={l * 0.18} rx="1" fill="#0f172a" />
-          <rect x={-w / 2 - 3} y={l * 0.22} width="4" height={l * 0.18} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1} y={l * 0.22} width="4" height={l * 0.18} rx="1" fill="#0f172a" />
-          <rect x={-w / 2} y={-l / 2} width={w} height={l} rx="8" fill="#f8fafc" stroke={accentColor} strokeWidth="2.5" />
-          <rect x={-w / 2 - 5} y={-l * 0.26} width="5" height="3" rx="1" fill="#94a3b8" />
-          <rect x={w / 2} y={-l * 0.26} width="5" height="3" rx="1" fill="#94a3b8" />
-          <rect x={-w * 0.42} y={-l * 0.46} width={w * 0.84} height={l * 0.48} rx="6" fill="#0f172a" stroke="#334155" strokeWidth="1.5" />
-          <path d={`M -${w * 0.32} -${l * 0.38} L ${w * 0.32} -${l * 0.38}`} stroke="#cbd5e1" strokeWidth="2" opacity="0.7" />
-          <rect x={-w * 0.38} y={l * 0.04} width={w * 0.76} height={l * 0.40} rx="3" fill="#1e293b" stroke="#334155" strokeWidth="1.5" />
-          <line x1={-w * 0.3} y1={l * 0.14} x2={w * 0.3} y2={l * 0.14} stroke="#0f172a" strokeWidth="1.5" />
-          <line x1={-w * 0.3} y1={l * 0.24} x2={w * 0.3} y2={l * 0.24} stroke="#0f172a" strokeWidth="1.5" />
-          <line x1={-w * 0.3} y1={l * 0.34} x2={w * 0.3} y2={l * 0.34} stroke="#0f172a" strokeWidth="1.5" />
-          <line x1={-w * 0.2} y1={l / 2 - 2} x2={w * 0.2} y2={l / 2 - 2} stroke={accentColor} strokeWidth="2" />
-          <circle cx="0" cy={-l * 0.42} r="3" fill={accentColor} />
-          <rect x={-w * 0.44} y={-l / 2 - 1.5} width={w * 0.28} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={w * 0.16} y={-l / 2 - 1.5} width={w * 0.28} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={-w * 0.42} y={l / 2 - 2.5} width={w * 0.24} height="3" fill="#ef4444" />
-          <rect x={w * 0.18} y={l / 2 - 2.5} width={w * 0.24} height="3" fill="#ef4444" />
+        <g
+          id="ego-truck-graphic"
+          transform="scale(1.24)"
+          filter="url(#ego-truck-nav-shadow)"
+        >
+          <defs>
+            <filter
+              id="ego-truck-nav-shadow"
+              x="-30%"
+              y="-30%"
+              width="160%"
+              height="160%"
+            >
+              <feDropShadow
+                dx="0"
+                dy="3"
+                stdDeviation="2"
+                floodColor="#000000"
+                floodOpacity="0.4"
+              />
+            </filter>
+            <linearGradient
+              id="ego-truck-car-body"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              {colors.body.toLowerCase() === DEFAULT_VEHICLE_COLORS.truck.body.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#2d3748" />
+                  <stop offset="25%" stopColor="#4a5568" />
+                  <stop offset="50%" stopColor="#718096" />
+                  <stop offset="75%" stopColor="#4a5568" />
+                  <stop offset="100%" stopColor="#2d3748" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                  <stop offset="25%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="50%" stopColor={adjustHexBrightness(colors.body, 0.15)} />
+                  <stop offset="75%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                </>
+              )}
+            </linearGradient>
+            <linearGradient
+              id="ego-truck-glass-grad"
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
+              {colors.windows.toLowerCase() === DEFAULT_VEHICLE_COLORS.truck.windows.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#080c10" />
+                  <stop offset="100%" stopColor="#121b24" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={colors.windows} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.windows, 0.12)} />
+                </>
+              )}
+            </linearGradient>
+            <pattern
+              id="ego-truck-bed-lines"
+              width="6"
+              height="10"
+              patternUnits="userSpaceOnUse"
+            >
+              <line
+                x1="3"
+                y1="0"
+                x2="3"
+                y2="10"
+                stroke="#1a202c"
+                strokeWidth="2"
+              />
+              <rect width="3" height="10" fill="#111622" />
+            </pattern>
+          </defs>
+          {/* Shadow Base Anchor */}
+          <rect
+            x="-30"
+            y="-55"
+            width="60"
+            height="110"
+            rx="8"
+            fill="#090d14"
+            opacity="0.3"
+          />
+          {/* Main Rugged Truck Chassis */}
+          <path
+            d="M -27,-44
+               C -27,-52 -18,-55 0,-55
+               C 18,-55 27,-52 27,-44
+               L 29,-18
+               L 28,-14
+               L 28,3
+               L 29,7
+               L 29,43
+               C 29,48 22,50 0,50
+               C -22,50 -29,48 -29,43
+               L -29,7
+               L -28,3
+               L -28,-14
+               L -29,-18
+               Z"
+            fill="url(#ego-truck-car-body)"
+            stroke="#1a202c"
+            strokeWidth="1.5"
+          />
+          {/* Blocky Hood Definition Creases */}
+          <path
+            d="M -20,-52 L -15,-25 L 15,-25 L 20,-52"
+            fill="none"
+            stroke={colors.trim}
+            strokeWidth="1.2"
+          />
+          <line
+            x1="-8"
+            y1="-51"
+            x2="-8"
+            y2="-26"
+            stroke={colors.trim}
+            strokeWidth="1"
+            opacity="0.6"
+          />
+          <line
+            x1="8"
+            y1="-51"
+            x2="8"
+            y2="-26"
+            stroke={colors.trim}
+            strokeWidth="1"
+            opacity="0.6"
+          />
+          {/* Front Headlights */}
+          <path d="M -26,-46 L -20,-53 L -13,-49 L -21,-41 Z" fill={colors.lights} opacity="0.95" />
+          <path d="M 26,-46 L 20,-53 L 13,-49 L 21,-41 Z" fill={colors.lights} opacity="0.95" />
+          {/* Heavy-Duty Side Tow Mirrors */}
+          <path
+            d="M -28,-18 L -37,-18 C -38,-18 -39,-19 -39,-21 L -39,-25 C -39,-26 -38,-27 -37,-27 L -28,-24 Z"
+            fill={colors.trim}
+            stroke="#1a202c"
+            strokeWidth="1"
+          />
+          <path
+            d="M 28,-18 L 37,-18 C 38,-18 39,-19 39,-21 L 39,-25 C 39,-26 38,-27 37,-27 L 28,-24 Z"
+            fill={colors.trim}
+            stroke="#1a202c"
+            strokeWidth="1"
+          />
+          {/* Wide Upright Windshield */}
+          <path
+            d="M -24,-24
+               C -18,-26 -9,-27 0,-27
+               C 9,-27 18,-26 24,-24
+               L 22,-10
+               C 16,-11 8,-12 0,-12
+               C -8,-12 -16,-11 -22,-10
+               Z"
+            fill="url(#ego-truck-glass-grad)"
+            stroke="#1a202c"
+            strokeWidth="1"
+          />
+          {/* Windshield Reflection Highlight */}
+          <path
+            d="M -20,-23
+               C -12,-25 0,-26 7,-25
+               L 5,-11
+               C -2,-11 -11,-10 -17,-9
+               Z"
+            fill="#ffffff"
+            opacity="0.08"
+          />
+          {/* Compact Truck Cab Roof */}
+          <path
+            d="M -22,-8
+               C -16,-9 -8,-10 0,-10
+               C 8,-10 16,-9 22,-8
+               L 22,2
+               C 16,3 8,3 0,3
+               C -8,3 -16,3 -22,2
+               Z"
+            fill="url(#ego-truck-car-body)"
+            stroke="#1a202c"
+            strokeWidth="1"
+          />
+          <line x1="-12" y1="-7" x2="-12" y2="1" stroke={colors.trim} strokeWidth="1" opacity="0.8" />
+          <line x1="12" y1="-7" x2="12" y2="1" stroke={colors.trim} strokeWidth="1" opacity="0.8" />
+          {/* Flat Rear Window */}
+          <rect
+            x="-19"
+            y="4"
+            width="38"
+            height="4"
+            rx="1"
+            fill="url(#ego-truck-glass-grad)"
+            stroke="#1a202c"
+            strokeWidth="1"
+          />
+          {/* Extended Truck Bed with Textured Bed Liner */}
+          <rect
+            x="-22"
+            y="10"
+            width="44"
+            height="36"
+            rx="2"
+            fill="url(#ego-truck-bed-lines)"
+            stroke="#1a202c"
+            strokeWidth="1.5"
+          />
+          {/* Inner Wheel Wells */}
+          <rect x="-22" y="22" width="4" height="12" rx="1" fill="#1a202c" />
+          <rect x="18" y="22" width="4" height="12" rx="1" fill="#1a202c" />
+          {/* Bed Rails */}
+          <line x1="-24" y1="9" x2="-24" y2="47" stroke={colors.trim} strokeWidth="1.5" />
+          <line x1="24" y1="9" x2="24" y2="47" stroke={colors.trim} strokeWidth="1.5" />
+          {/* Tailgate Handle */}
+          <rect
+            x="-6"
+            y="47"
+            width="12"
+            height="2"
+            rx="0.8"
+            fill="#1a202c"
+            stroke={colors.trim}
+            strokeWidth="0.5"
+          />
+          {/* Blocky Wrap-Around Red Tail Lights */}
+          <rect
+            x="-28"
+            y="40"
+            width="6"
+            height="9"
+            rx="1"
+            fill="#ff2233"
+            stroke="#990011"
+            strokeWidth="0.5"
+          />
+          <rect
+            x="22"
+            y="40"
+            width="6"
+            height="9"
+            rx="1"
+            fill="#ff2233"
+            stroke="#990011"
+            strokeWidth="0.5"
+          />
         </g>
       );
     } else if (egoType === 'coupe') {
       return (
-        <g id="ego-coupe-graphic">
-          <rect x={-w / 2 + 2} y={-l / 2 + 3} width={w} height={l} rx={w * 0.42} fill="#000000" opacity="0.65" />
-          <rect x={-w / 2 - 2} y={-l * 0.32} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1.5} y={-l * 0.32} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={-w / 2 - 2} y={l * 0.18} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1.5} y={l * 0.18} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={-w / 2} y={-l / 2} width={w} height={l} rx={w * 0.42} fill="#f8fafc" stroke={accentColor} strokeWidth="2.5" />
-          <rect x={-w / 2 - 4} y={-l * 0.20} width="4" height="2.5" rx="1" fill="#cbd5e1" />
-          <rect x={w / 2} y={-l * 0.20} width="4" height="2.5" rx="1" fill="#cbd5e1" />
-          <path d={`M -${w * 0.34} -${l * 0.22} L ${w * 0.34} -${l * 0.22} L ${w * 0.22} ${l * 0.28} L -${w * 0.22} ${l * 0.28} Z`} fill="#090d16" stroke="#334155" strokeWidth="1.5" />
-          <line x1={-w * 0.25} y1={-l * 0.05} x2={w * 0.25} y2={-l * 0.05} stroke="#1e293b" strokeWidth="1" />
-          <circle cx="0" cy={-l * 0.38} r="3" fill={accentColor} />
-          <rect x={-w * 0.42} y={-l / 2 - 1.5} width={w * 0.28} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={w * 0.14} y={-l / 2 - 1.5} width={w * 0.28} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={-w * 0.42} y={l / 2 - 2.5} width={w * 0.84} height="3" rx="1" fill="#f43f5e" />
+        <g id="ego-coupe-graphic" filter="url(#ego-nav-shadow)" transform="scale(1.24)">
+          <defs>
+            <filter id="ego-nav-shadow" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="3" stdDeviation="2" floodColor="#000000" floodOpacity="0.4" />
+            </filter>
+            <linearGradient id="ego-car-body" x1="0%" y1="0%" x2="100%" y2="0%">
+              {colors.body.toLowerCase() === DEFAULT_VEHICLE_COLORS.coupe.body.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#1f2937" />
+                  <stop offset="30%" stopColor="#374151" />
+                  <stop offset="50%" stopColor="#4b5563" />
+                  <stop offset="70%" stopColor="#374151" />
+                  <stop offset="100%" stopColor="#1f2937" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                  <stop offset="30%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="50%" stopColor={adjustHexBrightness(colors.body, 0.15)} />
+                  <stop offset="70%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                </>
+              )}
+            </linearGradient>
+            <linearGradient id="ego-glass-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+              {colors.windows.toLowerCase() === DEFAULT_VEHICLE_COLORS.coupe.windows.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#0d131a" />
+                  <stop offset="100%" stopColor="#1a2636" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={colors.windows} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.windows, 0.12)} />
+                </>
+              )}
+            </linearGradient>
+          </defs>
+          <rect x="-28" y="-55" width="56" height="110" rx="14" fill="#090d14" opacity="0.3" />
+          <path
+            d="M -25,-40 C -25,-53 -16,-55 0,-55 C 18,-55 25,-53 25,-40 L 27,31 C 27,46 16,50 0,50 C -16,50 -27,46 -27,31 Z"
+            fill="url(#ego-car-body)"
+            stroke="#111827"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M -16,-53 L -11,-30 L 11,-30 L 16,-53"
+            fill="none"
+            stroke={colors.trim}
+            strokeWidth="1.2"
+          />
+          {/* Front Headlights */}
+          <path d="M -24,-43 L -17,-53 L -11,-48 L -19,-38 Z" fill={colors.lights} opacity="0.95" />
+          <path d="M 24,-43 L 17,-53 L 11,-48 L 19,-38 Z" fill={colors.lights} opacity="0.95" />
+          <path
+            d="M -27,-20 C -32,-20 -34,-22 -34,-25 L -27,-27 Z"
+            fill={colors.trim}
+          />
+          <path
+            d="M 27,-20 C 32,-20 34,-22 34,-25 L 27,-27 Z"
+            fill={colors.trim}
+          />
+          <path
+            d="M -20,-27 C -18,-30 -9,-32 0,-32 C 9,-32 18,-30 20,-27 L 18,-11 C 13,-13 7,-14 0,-14 C -7,-14 -13,-13 -18,-11 Z"
+            fill="url(#ego-glass-grad)"
+            stroke="#111827"
+            strokeWidth="1"
+          />
+          <path
+            d="M -16,-26 C -9,-29 0,-30 5,-29 L 3,-14 C -2,-14 -9,-13 -14,-12 Z"
+            fill="#ffffff"
+            opacity="0.08"
+          />
+          <path
+            d="M -18,-9 C -16,-10 -9,-11 0,-11 C 9,-11 16,-10 18,-9 L 19,18 C 14,19 9,20 0,20 C -9,20 -14,19 -19,18 Z"
+            fill="url(#ego-car-body)"
+            stroke="#1c2431"
+            strokeWidth="1"
+          />
+          <path
+            d="M -17,21 C -11,20 0,20 0,20 C 0,20 11,20 17,21 L 15,34 C 11,35 5,36 0,36 C -5,36 -11,35 -15,34 Z"
+            fill="url(#ego-glass-grad)"
+            stroke="#111827"
+            strokeWidth="1"
+          />
+          <path
+            d="M -14,38 L -12,47 C -7,49 0,49 0,49 C 0,49 7,49 12,47 L 14,38"
+            fill="none"
+            stroke={colors.trim}
+            strokeWidth="1.2"
+          />
+          <rect x="-21" y="48" width="12" height="2.5" rx="1.2" fill="#ff2233" opacity="0.95" />
+          <rect x="9" y="48" width="12" height="2.5" rx="1.2" fill="#ff2233" opacity="0.95" />
         </g>
       );
     } else if (egoType === 'compactSedan') {
       return (
-        <g id="ego-compact-graphic">
-          <rect x={-w / 2 + 2} y={-l / 2 + 3} width={w} height={l} rx={w * 0.38} fill="#000000" opacity="0.65" />
-          <rect x={-w / 2 - 2} y={-l * 0.30} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1.5} y={-l * 0.30} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={-w / 2 - 2} y={l * 0.16} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1.5} y={l * 0.16} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={-w / 2} y={-l / 2} width={w} height={l} rx={w * 0.38} fill="#f8fafc" stroke={accentColor} strokeWidth="2.5" />
-          <rect x={-w * 0.36} y={-l * 0.24} width={w * 0.72} height={l * 0.50} rx={w * 0.18} fill="#090d16" stroke="#334155" strokeWidth="1.5" />
-          <circle cx="0" cy={-l * 0.38} r="3" fill={accentColor} />
-          <rect x={-w * 0.42} y={-l / 2 - 1.5} width={w * 0.28} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={w * 0.14} y={-l / 2 - 1.5} width={w * 0.28} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={-w * 0.42} y={l / 2 - 2.5} width={w * 0.84} height="3" rx="1" fill="#f43f5e" />
+        <g
+          id="ego-compact-graphic"
+          filter="url(#ego-compact-nav-shadow)"
+          transform="scale(1.24)"
+        >
+          <defs>
+            <filter
+              id="ego-compact-nav-shadow"
+              x="-30%"
+              y="-30%"
+              width="160%"
+              height="160%"
+            >
+              <feDropShadow
+                dx="0"
+                dy="3"
+                stdDeviation="2"
+                floodColor="#000000"
+                floodOpacity="0.4"
+              />
+            </filter>
+            <linearGradient
+              id="ego-compact-car-body"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              {colors.body.toLowerCase() === DEFAULT_VEHICLE_COLORS.compactSedan.body.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#1f2937" />
+                  <stop offset="30%" stopColor="#374151" />
+                  <stop offset="50%" stopColor="#4b5563" />
+                  <stop offset="70%" stopColor="#374151" />
+                  <stop offset="100%" stopColor="#1f2937" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                  <stop offset="30%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="50%" stopColor={adjustHexBrightness(colors.body, 0.15)} />
+                  <stop offset="70%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                </>
+              )}
+            </linearGradient>
+            <linearGradient
+              id="ego-compact-glass-grad"
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
+              {colors.windows.toLowerCase() === DEFAULT_VEHICLE_COLORS.compactSedan.windows.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#0d131a" />
+                  <stop offset="100%" stopColor="#1a2636" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={colors.windows} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.windows, 0.12)} />
+                </>
+              )}
+            </linearGradient>
+          </defs>
+          {/* Shadow Base Anchor */}
+          <rect
+            x="-26"
+            y="-55"
+            width="52"
+            height="110"
+            rx="12"
+            fill="#090d14"
+            opacity="0.3"
+          />
+          {/* Main Compact Sedan Chassis */}
+          <path
+            d="M -23,-38
+       C -23,-52 -15,-55 0,-55
+       C 15,-55 23,-52 23,-38
+       L 24,28
+       C 24,42 15,48 0,48
+       C -15,48 -24,42 -24,28
+       Z"
+            fill="url(#ego-compact-car-body)"
+            stroke="#111827"
+            strokeWidth="1.5"
+          />
+          {/* Front Hood Creases */}
+          <path
+            d="M -15,-53 L -11,-22 L 11,-22 L 15,-53"
+            fill="none"
+            stroke={colors.trim}
+            strokeWidth="1.2"
+          />
+          {/* Front Headlights */}
+          <path d="M -22,-44 L -17,-52 L -12,-48 L -19,-40 Z" fill={colors.lights} opacity="0.95" />
+          <path d="M 22,-44 L 17,-52 L 12,-48 L 19,-40 Z" fill={colors.lights} opacity="0.95" />
+          {/* Side Mirrors */}
+          <path
+            d="M -25,-15 C -30,-15 -32,-17 -32,-20 L -25,-22 Z"
+            fill={colors.trim}
+          />
+          <path
+            d="M 25,-15 C 30,-15 32,-17 32,-20 L 25,-22 Z"
+            fill={colors.trim}
+          />
+          {/* Windshield */}
+          <path
+            d="M -19,-19
+       C -17,-22 -9,-24 0,-24
+       C 9,-24 17,-22 19,-19
+       L 17,-4
+       C 13,-6 7,-7 0,-7
+       C -7,-7 -13,-6 -18,-4
+       Z"
+            fill="url(#ego-compact-glass-grad)"
+            stroke="#111827"
+            strokeWidth="1"
+          />
+          {/* Windshield Reflection Highlight */}
+          <path
+            d="M -15,-18
+       C -8,-21 0,-22 5,-21
+       L 3,-6
+       C -2,-6 -9,-5 -13,-4
+       Z"
+            fill="#ffffff"
+            opacity="0.08"
+          />
+          {/* Compact Roof Panel */}
+          <path
+            d="M -17,-2
+       C -15,-3 -8,-4 0,-4
+       C 8,-4 15,-3 17,-2
+       L 18,22
+       C 13,23 8,24 0,24
+       C -8,24 -13,23 -18,22
+       Z"
+            fill="url(#ego-compact-car-body)"
+            stroke="#1c2431"
+            strokeWidth="1"
+          />
+          {/* Rear Window */}
+          <path
+            d="M -16,25
+       C -11,24 0,24 0,24
+       C 0,24 11,24 16,25
+       L 14,36
+       C 10,37 5,38 0,38
+       C -5,38 -10,37 -14,36
+       Z"
+            fill="url(#ego-compact-glass-grad)"
+            stroke="#111827"
+            strokeWidth="1"
+          />
+          {/* Pronounced Sedan Trunk Lid */}
+          <path
+            d="M -13,40
+       L -11,46
+       C -7,47 0,47 0,47
+       C 0,47 7,47 11,46
+       L 13,40"
+            fill="none"
+            stroke={colors.trim}
+            strokeWidth="1.2"
+          />
+          {/* Red Laser Tail-lights */}
+          <rect
+            x="-19"
+            y="46"
+            width="10"
+            height="2.5"
+            rx="1.2"
+            fill="#ff2233"
+            opacity="0.9"
+          />
+          <rect
+            x="9"
+            y="46"
+            width="10"
+            height="2.5"
+            rx="1.2"
+            fill="#ff2233"
+            opacity="0.9"
+          />
         </g>
       );
     } else if (egoType === 'luxurySedan') {
       return (
-        <g id="ego-luxury-graphic">
-          <rect x={-w / 2 + 2} y={-l / 2 + 3} width={w} height={l} rx={w * 0.34} fill="#000000" opacity="0.65" />
-          <rect x={-w / 2 - 2} y={-l * 0.32} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1.5} y={-l * 0.32} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={-w / 2 - 2} y={l * 0.18} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1.5} y={l * 0.18} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={-w / 2} y={-l / 2} width={w} height={l} rx={w * 0.34} fill="#f8fafc" stroke={accentColor} strokeWidth="2.5" />
-          <rect x={-w / 2 - 4} y={-l * 0.22} width="4" height="2.5" rx="1" fill="#cbd5e1" />
-          <rect x={w / 2} y={-l * 0.22} width="4" height="2.5" rx="1" fill="#cbd5e1" />
-          <rect x={-w * 0.36} y={-l * 0.28} width={w * 0.72} height={l * 0.26} rx="4" fill="#090d16" stroke="#334155" strokeWidth="1.2" />
-          <rect x={-w * 0.36} y={0} width={w * 0.72} height={l * 0.26} rx="4" fill="#090d16" stroke="#334155" strokeWidth="1.2" />
-          <circle cx="0" cy={-l * 0.40} r="3" fill={accentColor} />
-          <rect x={-w * 0.44} y={-l / 2 - 1.5} width={w * 0.32} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={w * 0.12} y={-l / 2 - 1.5} width={w * 0.32} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={-w * 0.44} y={l / 2 - 2.5} width={w * 0.88} height="3" rx="1" fill="#f43f5e" />
+        <g
+          id="ego-luxury-graphic"
+          transform="scale(1.24)"
+          filter="url(#ego-luxury-nav-shadow)"
+        >
+          <defs>
+            <filter
+              id="ego-luxury-nav-shadow"
+              x="-30%"
+              y="-30%"
+              width="160%"
+              height="160%"
+            >
+              <feDropShadow
+                dx="0"
+                dy="3"
+                stdDeviation="2"
+                floodColor="#000000"
+                floodOpacity="0.4"
+              />
+            </filter>
+            <linearGradient
+              id="ego-luxury-car-body"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              {colors.body.toLowerCase() === DEFAULT_VEHICLE_COLORS.luxurySedan.body.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#000008" />
+                  <stop offset="25%" stopColor="#111c2e" />
+                  <stop offset="50%" stopColor="#444f61" />
+                  <stop offset="75%" stopColor="#111c2e" />
+                  <stop offset="100%" stopColor="#000008" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                  <stop offset="25%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="50%" stopColor={adjustHexBrightness(colors.body, 0.15)} />
+                  <stop offset="75%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                </>
+              )}
+            </linearGradient>
+            <linearGradient
+              id="ego-luxury-glass-grad"
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
+              {colors.windows.toLowerCase() === DEFAULT_VEHICLE_COLORS.luxurySedan.windows.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#020617" />
+                  <stop offset="100%" stopColor="#212536" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={colors.windows} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.windows, 0.12)} />
+                </>
+              )}
+            </linearGradient>
+          </defs>
+          {/* Shadow Base Anchor */}
+          <rect
+            x="-29"
+            y="-55"
+            width="58"
+            height="110"
+            rx="14"
+            fill="#090d14"
+            opacity="0.3"
+          />
+          {/* Main Luxury Sedan Chassis */}
+          <path
+            d="M -26,-38
+               C -26,-52 -18,-55 0,-55
+               C 18,-55 26,-52 26,-38
+               L 28,28
+               C 28,42 19,49 0,49
+               C -19,49 -28,42 -28,28
+               Z"
+            fill="url(#ego-luxury-car-body)"
+            stroke="#1a202c"
+            strokeWidth="1.5"
+          />
+          {/* Sculpted Hood Contours */}
+          <path
+            d="M -19,-52 L -14,-21 L 14,-21 L 19,-52"
+            fill="none"
+            stroke={colors.trim}
+            strokeWidth="1.2"
+          />
+          {/* Center Hood Line */}
+          <line
+            x1="0"
+            y1="-52"
+            x2="0"
+            y2="-22"
+            stroke={colors.trim}
+            strokeWidth="1"
+            opacity="0.65"
+          />
+          {/* Front Headlights */}
+          <path d="M -25,-42 L -19,-53 L -13,-49 L -20,-38 Z" fill={colors.lights} opacity="0.95" />
+          <path d="M 25,-42 L 19,-53 L 13,-49 L 20,-38 Z" fill={colors.lights} opacity="0.95" />
+          {/* Premium Side Mirrors */}
+          <path
+            d="M -28,-14 C -34,-14 -36,-16 -36,-19 L -28,-21 Z"
+            fill={colors.trim}
+          />
+          <path
+            d="M 28,-14 C 34,-14 36,-16 36,-19 L 28,-21 Z"
+            fill={colors.trim}
+          />
+          {/* Expansive Panoramic Windshield */}
+          <path
+            d="M -23,-18
+               C -20,-21 -10,-23 0,-23
+               C 10,-23 20,-21 23,-18
+               L 21,-2
+               C 16,-4 9,-5 0,-5
+               C -9,-5 -16,-4 -21,-2
+               Z"
+            fill="url(#ego-luxury-glass-grad)"
+            stroke="#1a202c"
+            strokeWidth="1"
+          />
+          {/* Windshield Highlight */}
+          <path
+            d="M -19,-17
+               C -11,-20 0,-21 7,-20
+               L 5,-4
+               C -1,-4 -9,-3 -16,-2
+               Z"
+            fill="#ffffff"
+            opacity="0.09"
+          />
+          {/* Seamless Metallic Roof Section (No Sunroof) */}
+          <path
+            d="M -21,2 C -18,1 -9,0 0,0 C 9,0 18,1 21,2 L 21,24 C 16,25 9,26 0,26 C -9,26 -16,25 -21,24 Z"
+            fill="url(#ego-luxury-car-body)"
+            stroke="#1a202c"
+            strokeWidth="1"
+          />
+          {/* Rear Window */}
+          <path
+            d="M -18,27
+               C -12,26 0,26 0,26
+               C 0,26 12,26 18,27
+               L 16,39
+               C 11,40 6,41 0,41
+               C -6,41 -11,40 -16,39
+               Z"
+            fill="url(#ego-luxury-glass-grad)"
+            stroke="#1a202c"
+            strokeWidth="1"
+          />
+          {/* Formal Trunk Deck */}
+          <path
+            d="M -16,42
+               L -14,47
+               C -9,48 0,48 0,48
+               C 0,48 9,48 14,47
+               L 16,42"
+            fill="none"
+            stroke={colors.trim}
+            strokeWidth="1.2"
+          />
+          <line
+            x1="-12"
+            y1="46"
+            x2="12"
+            y2="46"
+            stroke={colors.trim}
+            strokeWidth="0.8"
+          />
+          {/* Red Wrap-Around Tail Lights */}
+          <path
+            d="M -26,42 C -26,46 -24,47.5 -10,47.5 L -10,45 C -22,45 -23.5,44 -23.5,42 Z"
+            fill="#ff2233"
+            opacity="0.95"
+          />
+          <path
+            d="M 26,42 C 26,46 24,47.5 10,47.5 L 10,45 C 22,45 23.5,44 23.5,42 Z"
+            fill="#ff2233"
+            opacity="0.95"
+          />
+          <rect
+            x="-10"
+            y="46"
+            width="20"
+            height="1.5"
+            fill="#ff2233"
+            opacity="0.9"
+          />
         </g>
       );
     } else {
       return (
-        <g id="ego-midsize-graphic">
-          <rect x={-w / 2 + 2} y={-l / 2 + 3} width={w} height={l} rx={w * 0.36} fill="#000000" opacity="0.65" />
-          <rect x={-w / 2 - 2} y={-l * 0.32} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1.5} y={-l * 0.32} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={-w / 2 - 2} y={l * 0.16} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={w / 2 - 1.5} y={l * 0.16} width="3.5" height={l * 0.22} rx="1" fill="#0f172a" />
-          <rect x={-w / 2} y={-l / 2} width={w} height={l} rx={w * 0.36} fill="#f8fafc" stroke={accentColor} strokeWidth="2.5" />
-          <rect x={-w / 2 - 4} y={-l * 0.22} width="4" height="2.5" rx="1" fill="#cbd5e1" />
-          <rect x={w / 2} y={-l * 0.22} width="4" height="2.5" rx="1" fill="#cbd5e1" />
-          <rect x={-w * 0.36} y={-l * 0.26} width={w * 0.72} height={l * 0.54} rx={w * 0.18} fill="#090d16" stroke="#334155" strokeWidth="1.5" />
-          <line x1={-w * 0.3} y1={-l * 0.04} x2={w * 0.3} y2={-l * 0.04} stroke="#1e293b" strokeWidth="1" />
-          <circle cx="0" cy={-l * 0.38} r="3" fill={accentColor} />
-          <rect x={-w * 0.44} y={-l / 2 - 1.5} width={w * 0.3} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={w * 0.14} y={-l / 2 - 1.5} width={w * 0.3} height="3.5" fill={headlightsOn ? '#ffffff' : '#94a3b8'} filter={headlightsOn ? 'url(#ego-halo-glow)' : undefined} />
-          <rect x={-w * 0.44} y={l / 2 - 2.5} width={w * 0.88} height="3" rx="1" fill="#f43f5e" />
+        <g
+          id="ego-midsize-graphic"
+          transform="scale(1.24)"
+          filter="url(#ego-midsize-nav-shadow)"
+        >
+          <defs>
+            <filter
+              id="ego-midsize-nav-shadow"
+              x="-30%"
+              y="-30%"
+              width="160%"
+              height="160%"
+            >
+              <feDropShadow
+                dx="0"
+                dy="3"
+                stdDeviation="2"
+                floodColor="#000000"
+                floodOpacity="0.4"
+              />
+            </filter>
+            <linearGradient
+              id="ego-midsize-car-body"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              {colors.body.toLowerCase() === DEFAULT_VEHICLE_COLORS.midsizeSedan.body.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#1f2937" />
+                  <stop offset="30%" stopColor="#374151" />
+                  <stop offset="50%" stopColor="#4b5563" />
+                  <stop offset="70%" stopColor="#374151" />
+                  <stop offset="100%" stopColor="#1f2937" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                  <stop offset="30%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="50%" stopColor={adjustHexBrightness(colors.body, 0.15)} />
+                  <stop offset="70%" stopColor={adjustHexBrightness(colors.body, -0.05)} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.body, -0.2)} />
+                </>
+              )}
+            </linearGradient>
+            <linearGradient
+              id="ego-midsize-glass-grad"
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
+              {colors.windows.toLowerCase() === DEFAULT_VEHICLE_COLORS.midsizeSedan.windows.toLowerCase() ? (
+                <>
+                  <stop offset="0%" stopColor="#0d131a" />
+                  <stop offset="100%" stopColor="#1a2636" />
+                </>
+              ) : (
+                <>
+                  <stop offset="0%" stopColor={colors.windows} />
+                  <stop offset="100%" stopColor={adjustHexBrightness(colors.windows, 0.12)} />
+                </>
+              )}
+            </linearGradient>
+          </defs>
+          {/* Shadow Base Anchor */}
+          <rect
+            x="-29"
+            y="-55"
+            width="58"
+            height="110"
+            rx="14"
+            fill="#090d14"
+            opacity="0.3"
+          />
+          {/* Main Mid-Sized Sedan Chassis */}
+          <path
+            d="M -26,-36
+       C -26,-51 -17,-55 0,-55
+       C 17,-55 26,-51 26,-36
+       L 28,26
+       C 28,41 18,48 0,48
+       C -18,48 -28,41 -28,26
+       Z"
+            fill="url(#ego-midsize-car-body)"
+            stroke="#111827"
+            strokeWidth="1.5"
+          />
+          {/* Front Hood Creases */}
+          <path
+            d="M -18,-52 L -13,-20 L 13,-20 L 18,-52"
+            fill="none"
+            stroke={colors.trim}
+            strokeWidth="1.2"
+          />
+          {/* Front Headlights */}
+          <path d="M -25,-40 L -18,-52 L -12,-48 L -20,-36 Z" fill={colors.lights} opacity="0.95" />
+          <path d="M 25,-40 L 18,-52 L 12,-48 L 20,-36 Z" fill={colors.lights} opacity="0.95" />
+          {/* Side Mirrors */}
+          <path
+            d="M -28,-13 C -33,-13 -35,-15 -35,-18 L -28,-20 Z"
+            fill={colors.trim}
+          />
+          <path
+            d="M 28,-13 C 33,-13 35,-15 35,-18 L 28,-20 Z"
+            fill={colors.trim}
+          />
+          {/* Windshield */}
+          <path
+            d="M -22,-17
+       C -19,-20 -10,-22 0,-22
+       C 10,-22 19,-20 22,-17
+       L 20,-1
+       C 15,-3 8,-4 0,-4
+       C -8,-4 -15,-3 -20,-1
+       Z"
+            fill="url(#ego-midsize-glass-grad)"
+            stroke="#111827"
+            strokeWidth="1"
+          />
+          {/* Windshield Reflection */}
+          <path
+            d="M -18,-16
+       C -10,-19 0,-20 6,-19
+       L 4,-3
+       C -2,-3 -10,-2 -15,-1
+       Z"
+            fill="#ffffff"
+            opacity="0.08"
+          />
+          {/* Executive Roof Panel */}
+          <path
+            d="M -19,1
+       C -17,0 -9,-1 0,-1
+       C 9,-1 17,0 19,1
+       L 20,24
+       C 15,25 9,26 0,26
+       C -9,26 -15,25 -20,24
+       Z"
+            fill="url(#ego-midsize-car-body)"
+            stroke="#1c2431"
+            strokeWidth="1"
+          />
+          {/* Rear Window */}
+          <path
+            d="M -18,27
+       C -12,26 0,26 0,26
+       C 0,26 12,26 18,27
+       L 16,38
+       C 11,39 6,40 0,40
+       C -6,40 -11,39 -16,38
+       Z"
+            fill="url(#ego-midsize-glass-grad)"
+            stroke="#111827"
+            strokeWidth="1"
+          />
+          {/* Tailored Trunk Lid */}
+          <path
+            d="M -15,41
+       L -13,46
+       C -8,47 0,47 0,47
+       C 0,47 8,47 13,46
+       L 15,41"
+            fill="none"
+            stroke={colors.trim}
+            strokeWidth="1.2"
+          />
+          {/* Red Laser Tail-lights */}
+          <rect
+            x="-22"
+            y="46"
+            width="12"
+            height="2.5"
+            rx="1.2"
+            fill="#ff2233"
+            opacity="0.95"
+          />
+          <rect
+            x="10"
+            y="46"
+            width="12"
+            height="2.5"
+            rx="1.2"
+            fill="#ff2233"
+            opacity="0.95"
+          />
         </g>
       );
     }
@@ -557,6 +1426,25 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     return storeEgoVehicleType || 'midsizeSedan';
   }, [props.egoVehicleType, storeVehicleBg?.vehicle, storeEgoVehicleType]);
 
+  const activeColors: EgoVehicleColors = useMemo(() => {
+    const defaults = DEFAULT_VEHICLE_COLORS[activeEgoType] || DEFAULT_VEHICLE_COLORS.midsizeSedan;
+    let customMap = props.egoVehicleColors;
+    if (typeof customMap === 'string') {
+      try {
+        customMap = JSON.parse(customMap);
+      } catch {
+        customMap = undefined;
+      }
+    }
+    const modelCustom = customMap && typeof customMap === 'object' ? customMap[activeEgoType] : undefined;
+    return {
+      body: isValidHexColor(modelCustom?.body) ? modelCustom.body : defaults.body,
+      trim: isValidHexColor(modelCustom?.trim) ? modelCustom.trim : defaults.trim,
+      windows: isValidHexColor(modelCustom?.windows) ? modelCustom.windows : defaults.windows,
+      lights: isValidHexColor(modelCustom?.lights) ? modelCustom.lights : defaults.lights,
+    };
+  }, [props.egoVehicleColors, activeEgoType]);
+
   const getEgoDims = (eType: EgoVehicleType) => {
     switch (eType) {
       case 'compactSedan':
@@ -761,10 +1649,10 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
   }, [traffic, absEgoX, egoL]);
 
   const isLeftZoneActive =
-    isBlindSpotEnabled && (props.leftBlindSpot === 'true' || isLeftOccupied);
+    isBlindSpotEnabled && (props.blindSpotWarning === 'true' || props.leftBlindSpot === 'true' || isLeftOccupied);
 
   const isRightZoneActive =
-    isBlindSpotEnabled && (props.rightBlindSpot === 'true' || isRightOccupied);
+    isBlindSpotEnabled && (props.blindSpotWarning === 'true' || props.rightBlindSpot === 'true' || isRightOccupied);
 
   const isProximityZoneActive =
     isProximityEnabled && (props.sensorWarning === 'true' || isProximityOccupied);
@@ -1456,20 +2344,25 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           </filter>
 
           {/* ADAS Hazard Glow Filter */}
-          <filter id="hazard-glow-red" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="7" result="blur" />
+          <filter id="hazard-glow-red" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feFlood floodColor="#ef4444" floodOpacity="0.8" result="color" />
+            <feComposite in="color" in2="blur" operator="in" result="glow" />
             <feMerge>
-              <feMergeNode in="blur" />
+              <feMergeNode in="glow" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
 
           {/* Forward Headlight Beam Gradient */}
-          <radialGradient id="ego-headlight-beam" cx="50%" cy="0%" r="100%">
-            <stop offset="0%" stopColor="#f0f9ff" stopOpacity="0.80" />
-            <stop offset="45%" stopColor={customAccentColor} stopOpacity="0.35" />
-            <stop offset="100%" stopColor={customAccentColor} stopOpacity="0" />
-          </radialGradient>
+          <linearGradient id="ego-headlight-beam" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="#fffde7" stopOpacity="0.8" />
+            <stop offset="40%" stopColor="#fffde7" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#fffde7" stopOpacity="0" />
+          </linearGradient>
+          <filter id="soft-edges" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="10" />
+          </filter>
 
           {/* Median High-Mast Street Light Ambient Pool */}
           <radialGradient id="median-light-pool" cx="50%" cy="50%" r="50%">
@@ -1549,31 +2442,118 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
 
         {/* HIGH-MAST MEDIAN STREET LIGHT FIXTURE (Centered at x=483.0 in median, scrolling smoothly) */}
         <g id="median-light-fixture" transform={`translate(483, ${medianLightY})`}>
-          {/* Ambient Ground Light Pool beneath lamp */}
-          <ellipse cx="0" cy="18" rx="130" ry="150" fill="url(#median-light-pool)" opacity="0.25" />
-          <ellipse cx="0" cy="18" rx="70" ry="90" fill="url(#median-light-pool)" opacity="0.4" />
-
-          {/* Pole Concrete Base Flange on Median */}
-          <circle cx="0" cy="38" r="7" fill="#0f172a" stroke="#475569" strokeWidth="2" />
+          <defs>
+            <radialGradient id="median-light-pool-warm" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#ffd166" stopOpacity="0.65" />
+              <stop offset="45%" stopColor="#f59e0b" stopOpacity="0.32" />
+              <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          {/* Warm light cast onto the ground */}
+          <ellipse
+            cx="0"
+            cy="18"
+            rx="130"
+            ry="150"
+            fill="url(#median-light-pool-warm)"
+            opacity="0.28"
+          />
+          <ellipse
+            cx="0"
+            cy="18"
+            rx="70"
+            ry="90"
+            fill="url(#median-light-pool-warm)"
+            opacity="0.45"
+          />
+          {/* Base of light pole */}
+          <circle
+            cx="0"
+            cy="38"
+            r="7"
+            fill="#0f172a"
+            stroke="#475569"
+            strokeWidth="2"
+          />
           <circle cx="0" cy="38" r="3" fill="#64748b" />
-
-          {/* High-Mast Tapered Shaft */}
-          <line x1="1" y1="38" x2="1" y2="-28" stroke="#0f172a" strokeWidth="4.5" />
-          <line x1="0" y1="38" x2="0" y2="-28" stroke="#334155" strokeWidth="3.5" strokeLinecap="round" />
-          <line x1="-0.8" y1="38" x2="-0.8" y2="-28" stroke="#64748b" strokeWidth="1.2" />
-
-          {/* Mast T-Bar Arm widening into Lamp Housing */}
-          <line x1="-16" y1="-28" x2="16" y2="-28" stroke="#475569" strokeWidth="3.5" strokeLinecap="round" />
-
-          {/* Left Lamp Housing & LED Glow */}
-          <rect x="-24" y="-33" width="12" height="8" rx="2" fill="#0f172a" stroke="#64748b" strokeWidth="1" />
-          <circle cx="-18" cy="-29" r="6.5" fill="#38bdf8" opacity="0.35" />
-          <circle cx="-18" cy="-29" r="2.5" fill="#fef08a" />
-
-          {/* Right Lamp Housing & LED Glow */}
-          <rect x="12" y="-33" width="12" height="8" rx="2" fill="#0f172a" stroke="#64748b" strokeWidth="1" />
-          <circle cx="18" cy="-29" r="6.5" fill="#38bdf8" opacity="0.35" />
-          <circle cx="18" cy="-29" r="2.5" fill="#fef08a" />
+          {/* Tall pole */}
+          <line
+            x1="1"
+            y1="38"
+            x2="1"
+            y2="-78"
+            stroke="#0f172a"
+            strokeWidth="4.5"
+          />
+          <line
+            x1="0"
+            y1="38"
+            x2="0"
+            y2="-78"
+            stroke="#334155"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+          />
+          <line
+            x1="-0.8"
+            y1="38"
+            x2="-0.8"
+            y2="-78"
+            stroke="#64748b"
+            strokeWidth="1.2"
+          />
+          {/* Double-arm fixture */}
+          <line
+            x1="-24"
+            y1="-78"
+            x2="24"
+            y2="-78"
+            stroke="#475569"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+          />
+          {/* Left downward-facing lamp housing */}
+          <path
+            d="M -27,-78 L -12,-78 L -13,-69 L -25,-69 Z"
+            fill="#0f172a"
+            stroke="#64748b"
+            strokeWidth="1"
+          />
+          <path
+            d="M -24,-69 L -14,-69 L -16,-66 L -22,-66 Z"
+            fill="#78350f"
+          />
+          {/* Right downward-facing lamp housing */}
+          <path
+            d="M 12,-78 L 27,-78 L 25,-69 L 13,-69 Z"
+            fill="#0f172a"
+            stroke="#64748b"
+            strokeWidth="1"
+          />
+          <path
+            d="M 14,-69 L 24,-69 L 22,-66 L 16,-66 Z"
+            fill="#78350f"
+          />
+          {/* Warm light emitted downward from fixtures */}
+          <ellipse
+            cx="-19"
+            cy="-64"
+            rx="8"
+            ry="4"
+            fill="#fbbf24"
+            opacity="0.38"
+          />
+          <ellipse
+            cx="19"
+            cy="-64"
+            rx="8"
+            ry="4"
+            fill="#fbbf24"
+            opacity="0.38"
+          />
+          {/* Subtle warm light cores underneath the housings */}
+          <ellipse cx="-19" cy="-65" rx="3.5" ry="1.5" fill="#fef3a8" />
+          <ellipse cx="19" cy="-65" rx="3.5" ry="1.5" fill="#fef3a8" />
         </g>
 
         {/* Ego Lanes Dashed Separator (x=730.8) */}
@@ -1658,34 +2638,35 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           {/* Forward Headlight Beam - Only rendered when Headlights are ON */}
           {isHeadlightsOn && (
             <polygon
-              points={`-${egoW * 0.85},-${egoL * 0.5} ${egoW * 0.85},-${egoL * 0.5} ${egoW * 3.2},-${egoL * 3.6} -${egoW * 3.2},-${egoL * 3.6}`}
+              points="-36,-75 36,-75 217.6,-540 -217.6,-540"
               fill="url(#ego-headlight-beam)"
+              filter="url(#soft-edges)"
             />
           )}
 
           {/* ADAS Blind Spot Warning Cones */}
-          {(isLeftZoneActive || isRightZoneActive) && (
+          {isLeftZoneActive && (
+            <g id="blind-spot-spatial-zone-left" transform="scale(-1, 1)">
+              <path
+                d="M 28 11.5 L 230 207 A 114 114 0 0 1 70 368 Z"
+                fill={blindSpotColor}
+                fillOpacity={blindSpotOpacity}
+                filter="url(#hazard-glow-red)"
+                stroke={blindSpotColor}
+                strokeWidth="2.5"
+              />
+            </g>
+          )}
+          {isRightZoneActive && (
             <g id="blind-spot-spatial-zone">
-              {isLeftZoneActive && (
-                <path
-                  d="M -28 11.5 L -230 207 A 100 100 0 0 1 -70 368 Z"
-                  fill={blindSpotColor}
-                  fillOpacity={blindSpotOpacity}
-                  filter="url(#hazard-glow-red)"
-                  stroke={blindSpotColor}
-                  strokeWidth="2.5"
-                />
-              )}
-              {isRightZoneActive && (
-                <path
-                  d="M 28 11.5 L 230 207 A 100 100 0 0 0 70 368 Z"
-                  fill={blindSpotColor}
-                  fillOpacity={blindSpotOpacity}
-                  filter="url(#hazard-glow-red)"
-                  stroke={blindSpotColor}
-                  strokeWidth="2.5"
-                />
-              )}
+              <path
+                d="M 28 11.5 L 230 207 A 114 114 0 0 1 70 368 Z"
+                fill={blindSpotColor}
+                fillOpacity={blindSpotOpacity}
+                filter="url(#hazard-glow-red)"
+                stroke={blindSpotColor}
+                strokeWidth="2.5"
+              />
             </g>
           )}
 
@@ -1716,6 +2697,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
             egoType={activeEgoType}
             accentColor={customAccentColor}
             headlightsOn={isHeadlightsOn}
+            colors={activeColors}
           />
         </g>
       </svg>

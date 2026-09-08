@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS } from '../store/useMockpitStore';
 import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
-import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType } from '../types';
+import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType, EgoVehicleType } from '../types';
 import { QUICK_ACCESS_OPTIONS, getDefaultQuickAccessDimensions } from '../config/quickAccessConfig';
 import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check } from 'lucide-react';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
@@ -11,6 +11,7 @@ import { ManeuverGlyph } from './navigation/ManeuverGlyph';
 import { DEFAULT_MINI_NAV_COLORS } from './navigation/MiniNav';
 import { WeatherIcon } from './weather/WeatherIcon';
 import { SAMPLE_TRACKS } from '../data/mediaData';
+import { DEFAULT_VEHICLE_COLORS, getEgoVehicleTypeFromAsset, isValidHexColor } from '../utils/vehicleAssets';
 
 const REFERENCE_ICONS: Array<{ key: WeatherConditionKey; label: string }> = [
   { key: 'clear-day', label: 'Clear' },
@@ -758,6 +759,9 @@ export const Inspector: React.FC = () => {
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
   const selectedMusicService = useMockpitStore((s) => s.selectedMusicService);
   const setSelectedMusicService = useMockpitStore((s) => s.setSelectedMusicService);
+  const vehicleBackground = useMockpitStore((s) => s.vehicleBackground);
+  const screenMode = useMockpitStore((s) => s.screenMode);
+  const isEditor = screenMode === 'editor';
 
   const selectedComp =
     components.find((c) => c.id === selectedComponentId) ||
@@ -811,7 +815,7 @@ export const Inspector: React.FC = () => {
     }));
   };
 
-  const handleStaticPropChange = (key: string, value: string) => {
+  const handleStaticPropChange = (key: string, value: any) => {
     if (!selectedComp) return;
     updateComponentStaticProps(selectedComp.id, { [key]: value });
   };
@@ -1997,35 +2001,193 @@ export const Inspector: React.FC = () => {
               </div>
             )}
 
-            {selectedComp.type === 'overheadVisualization' && (
-              <div className="space-y-3">
-                {/* Ego Vehicle Model */}
-                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
-                  <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
-                    Ego Vehicle Model
-                  </span>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-slate-300 font-mono font-semibold">Silhouette</span>
-                    <select
-                      value={selectedComp.staticProps.egoVehicleType || 'auto'}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        handleStaticPropChange('egoVehicleType', val);
-                        if (val !== 'auto') {
-                          setEgoVehicleType(val as any);
-                        }
-                      }}
-                      className="bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 font-semibold"
-                    >
-                      <option value="auto">Auto</option>
-                      <option value="compactSedan">Compact Sedan</option>
-                      <option value="midsizeSedan">Mid-size Sedan</option>
-                      <option value="luxurySedan">Luxury Sedan</option>
-                      <option value="truck">Truck</option>
-                      <option value="coupe">Coupe</option>
-                    </select>
+            {selectedComp.type === 'overheadVisualization' && (() => {
+              const selectedSilhouette = selectedComp.staticProps.egoVehicleType || 'auto';
+              let activeSilhouette: EgoVehicleType = 'midsizeSedan';
+              if (selectedSilhouette !== 'auto') {
+                activeSilhouette = selectedSilhouette as EgoVehicleType;
+              } else if (vehicleBackground?.vehicle) {
+                activeSilhouette = getEgoVehicleTypeFromAsset(vehicleBackground.vehicle);
+              } else if (egoVehicleType) {
+                activeSilhouette = egoVehicleType;
+              }
+
+              let customColorsMap: Record<string, any> | undefined = undefined;
+              if (selectedComp.staticProps.egoVehicleColors) {
+                if (typeof selectedComp.staticProps.egoVehicleColors === 'string') {
+                  try {
+                    const parsed = JSON.parse(selectedComp.staticProps.egoVehicleColors);
+                    if (parsed && typeof parsed === 'object') {
+                      customColorsMap = parsed;
+                    }
+                  } catch {
+                    customColorsMap = undefined;
+                  }
+                } else if (typeof selectedComp.staticProps.egoVehicleColors === 'object' && selectedComp.staticProps.egoVehicleColors !== null) {
+                  customColorsMap = selectedComp.staticProps.egoVehicleColors;
+                }
+              }
+              const modelColors = customColorsMap ? customColorsMap[activeSilhouette] : undefined;
+              const defaults = DEFAULT_VEHICLE_COLORS[activeSilhouette] || DEFAULT_VEHICLE_COLORS.midsizeSedan;
+
+              const currentColorValues = {
+                body: isValidHexColor(modelColors?.body) ? modelColors.body : defaults.body,
+                trim: isValidHexColor(modelColors?.trim) ? modelColors.trim : defaults.trim,
+                windows: isValidHexColor(modelColors?.windows) ? modelColors.windows : defaults.windows,
+                lights: isValidHexColor(modelColors?.lights) ? modelColors.lights : defaults.lights,
+              };
+
+              const handleVehicleColorChange = (part: 'body' | 'trim' | 'windows' | 'lights', val: string) => {
+                if (!isEditor) return;
+                const nextMap = { ...(typeof customColorsMap === 'object' && customColorsMap !== null ? customColorsMap : {}) };
+                const currentModelPart = { ...(nextMap[activeSilhouette] || {}) };
+                currentModelPart[part] = val;
+                nextMap[activeSilhouette] = currentModelPart;
+                handleStaticPropChange('egoVehicleColors', nextMap);
+              };
+
+              const hasCustomColors = Boolean(
+                modelColors && (modelColors.body || modelColors.trim || modelColors.windows || modelColors.lights)
+              );
+
+              const handleResetVehicleColors = () => {
+                if (!isEditor) return;
+                const nextMap = { ...(typeof customColorsMap === 'object' && customColorsMap !== null ? customColorsMap : {}) };
+                delete nextMap[activeSilhouette];
+                handleStaticPropChange('egoVehicleColors', nextMap);
+              };
+
+              return (
+                <div className="space-y-3">
+                  {/* Ego Vehicle Model */}
+                  <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                        Ego Vehicle Model
+                      </span>
+                      {hasCustomColors && (
+                        <button
+                          type="button"
+                          disabled={!isEditor}
+                          onClick={handleResetVehicleColors}
+                          title="Reset to vehicle's original default colors"
+                          className="text-[10px] text-slate-400 hover:text-sky-400 font-mono flex items-center gap-1 transition-colors disabled:opacity-50"
+                        >
+                          <RotateCcw className="w-2.5 h-2.5" />
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-300 font-mono font-semibold">Silhouette</span>
+                      <select
+                        disabled={!isEditor}
+                        value={selectedSilhouette}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          handleStaticPropChange('egoVehicleType', val);
+                          if (val !== 'auto') {
+                            setEgoVehicleType(val as any);
+                          }
+                        }}
+                        className="bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 font-semibold disabled:opacity-50"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="compactSedan">Compact Sedan</option>
+                        <option value="midsizeSedan">Mid-size Sedan</option>
+                        <option value="luxurySedan">Luxury Sedan</option>
+                        <option value="truck">Truck</option>
+                        <option value="coupe">Coupe</option>
+                      </select>
+                    </div>
+
+                    {/* Vehicle Silhouette Color Controls */}
+                    <div className="space-y-2 pt-2 border-t border-slate-700/40">
+                      {/* Body Color */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-300 font-mono">Body Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            disabled={!isEditor}
+                            value={isValidHexColor(currentColorValues.body) ? currentColorValues.body : defaults.body}
+                            onChange={(e) => handleVehicleColorChange('body', e.target.value)}
+                            className="w-6 h-6 rounded bg-transparent border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          />
+                          <input
+                            type="text"
+                            disabled={!isEditor}
+                            value={currentColorValues.body}
+                            onChange={(e) => handleVehicleColorChange('body', e.target.value)}
+                            className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Trim Color */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-300 font-mono">Trim Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            disabled={!isEditor}
+                            value={isValidHexColor(currentColorValues.trim) ? currentColorValues.trim : defaults.trim}
+                            onChange={(e) => handleVehicleColorChange('trim', e.target.value)}
+                            className="w-6 h-6 rounded bg-transparent border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          />
+                          <input
+                            type="text"
+                            disabled={!isEditor}
+                            value={currentColorValues.trim}
+                            onChange={(e) => handleVehicleColorChange('trim', e.target.value)}
+                            className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Window Color */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-300 font-mono">Window Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            disabled={!isEditor}
+                            value={isValidHexColor(currentColorValues.windows) ? currentColorValues.windows : defaults.windows}
+                            onChange={(e) => handleVehicleColorChange('windows', e.target.value)}
+                            className="w-6 h-6 rounded bg-transparent border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          />
+                          <input
+                            type="text"
+                            disabled={!isEditor}
+                            value={currentColorValues.windows}
+                            onChange={(e) => handleVehicleColorChange('windows', e.target.value)}
+                            className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Light Color */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-300 font-mono">Light Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            disabled={!isEditor}
+                            value={isValidHexColor(currentColorValues.lights) ? currentColorValues.lights : defaults.lights}
+                            onChange={(e) => handleVehicleColorChange('lights', e.target.value)}
+                            className="w-6 h-6 rounded bg-transparent border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          />
+                          <input
+                            type="text"
+                            disabled={!isEditor}
+                            value={currentColorValues.lights}
+                            onChange={(e) => handleVehicleColorChange('lights', e.target.value)}
+                            className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
                 {/* Traffic System */}
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
@@ -2293,7 +2455,7 @@ export const Inspector: React.FC = () => {
                   </div>
                 </div>
               </div>
-            )}
+            )})()}
 
             {/* Vehicle Exploded View Controls */}
             {selectedComp.type === 'vehicleExplodedView' && (() => {
@@ -3457,6 +3619,8 @@ export const Inspector: React.FC = () => {
                   key !== 'displayStyle' &&
                   key !== 'maxSpeed' &&
                   key !== 'label' &&
+                  key !== 'egoVehicleType' &&
+                  key !== 'egoVehicleColors' &&
                   key !== 'modes' &&
                   key !== 'service' &&
                   key !== 'seatOrientation' &&

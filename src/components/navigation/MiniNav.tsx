@@ -329,10 +329,20 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   const centerStopOpacity = (Math.max(0, Math.min(100, horizonGlowIntensity)) / 100);
   const boundaryStrokeOpacity = (Math.max(0, Math.min(100, horizonBoundaryOpacity)) / 100);
 
-  // Programmatic calculation of Guide Lane Highlight Path Strip
-  // Insets inward proportionally to lane width (default insetRatio = 0.28)
-  const guideLanePolygonPoints = useMemo(() => {
-    if (activeLane === null) return '';
+  // Guide-lane chevrons: a sequence of forward-pointing chevrons following
+  // the road's perspective trapezoid, replacing the flat tinted polygon.
+  // Chevrons narrow and fade toward the horizon (t=0) and grow/brighten
+  // toward the viewer (t=1), using the same inset-lane math the previous
+  // flat polygon used. Static — no animation, per HMI no-pulsing rule.
+  const CHEVRON_T_STEPS = [0, 0.03, 0.09, 0.17, 0.27, 0.39, 0.52, 0.67, 0.83, 1.00];
+  const CHEVRON_OPACITY_STEPS = [0.06, 0.12, 0.17, 0.23, 0.28, 0.34, 0.39, 0.45, 0.51, 0.56];
+  // Each chevron's height is capped at this fraction of the vertical gap to
+  // the chevron above it (toward the horizon), guaranteeing visible space
+  // between them regardless of chevron count or card size.
+  const CHEVRON_GAP_DUTY_CYCLE = 0.55;
+
+  const guideLaneChevrons = useMemo(() => {
+    if (activeLane === null) return [];
     const L = activeLane + 1; // 1-indexed lane (1 to numLanes)
     const N = numLanes;
     const topLeftX = roadTopLeft.x + (roadTopRight.x - roadTopLeft.x) * ((L - 1) / N);
@@ -340,16 +350,51 @@ export const MiniNav: React.FC<MiniNavProps> = ({
     const bottomLeftX = roadBottomLeft.x + (roadBottomRight.x - roadBottomLeft.x) * ((L - 1) / N);
     const bottomRightX = roadBottomLeft.x + (roadBottomRight.x - roadBottomLeft.x) * (L / N);
 
+    const insetRatio = 0.28;
     const laneTopWidth = topRightX - topLeftX;
     const laneBottomWidth = bottomRightX - bottomLeftX;
-    const insetRatio = 0.28;
 
     const insetTopLeftX = topLeftX + laneTopWidth * insetRatio;
     const insetTopRightX = topRightX - laneTopWidth * insetRatio;
     const insetBottomLeftX = bottomLeftX + laneBottomWidth * insetRatio;
     const insetBottomRightX = bottomRightX - laneBottomWidth * insetRatio;
 
-    return `${insetTopLeftX.toFixed(2)},${roadTopLeft.y.toFixed(2)} ${insetTopRightX.toFixed(2)},${roadTopLeft.y.toFixed(2)} ${insetBottomRightX.toFixed(2)},${roadBottomLeft.y.toFixed(2)} ${insetBottomLeftX.toFixed(2)},${roadBottomLeft.y.toFixed(2)}`;
+    const topCenterX = (insetTopLeftX + insetTopRightX) / 2;
+    const topHalfWidth = (insetTopRightX - insetTopLeftX) / 2;
+    const bottomCenterX = (insetBottomLeftX + insetBottomRightX) / 2;
+    const bottomHalfWidth = (insetBottomRightX - insetBottomLeftX) / 2;
+
+    const topY = roadTopLeft.y;
+    const bottomY = roadBottomLeft.y;
+
+    return CHEVRON_T_STEPS.map((t, i) => {
+      const y = topY + (bottomY - topY) * t;
+      const centerX = topCenterX + (bottomCenterX - topCenterX) * t;
+      // 0.9 = small inward margin so chevrons don't touch the ribbon edges
+      const halfWidth = (topHalfWidth + (bottomHalfWidth - topHalfWidth) * t) * 0.9;
+      // Ratios below match the reference chevron: outer half-width 180 ->
+      // apex height 100, inner half-width 75, inner cut height 45% of apex.
+      const widthBasedApex = halfWidth * (100 / 180);
+      let apexHeight = widthBasedApex;
+      if (i > 0) {
+        const prevT = CHEVRON_T_STEPS[i - 1];
+        const prevY = topY + (bottomY - topY) * prevT;
+        const gapToPrev = y - prevY;
+        apexHeight = Math.min(widthBasedApex, gapToPrev * CHEVRON_GAP_DUTY_CYCLE);
+      }
+      const innerHalfWidth = halfWidth * (75 / 180);
+      const innerCutHeight = apexHeight * 0.45;
+
+      const d =
+        `M ${(centerX - halfWidth).toFixed(2)},${y.toFixed(2)} ` +
+        `L ${centerX.toFixed(2)},${(y - apexHeight).toFixed(2)} ` +
+        `L ${(centerX + halfWidth).toFixed(2)},${y.toFixed(2)} ` +
+        `L ${(centerX + innerHalfWidth).toFixed(2)},${y.toFixed(2)} ` +
+        `L ${centerX.toFixed(2)},${(y - innerCutHeight).toFixed(2)} ` +
+        `L ${(centerX - innerHalfWidth).toFixed(2)},${y.toFixed(2)} Z`;
+
+      return { d, opacity: CHEVRON_OPACITY_STEPS[i] ?? 0.3, key: `chevron-${i}` };
+    });
   }, [activeLane, numLanes, roadTopLeft.x, roadTopLeft.y, roadTopRight.x, roadBottomLeft.x, roadBottomLeft.y, roadBottomRight.x]);
 
   return (
@@ -588,14 +633,13 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             );
           })}
 
-          {/* Recommended Path Ribbon - Accurately aligned to guide lane boundaries */}
+          {/* Recommended Path Chevrons - follow the road's perspective trapezoid */}
           {activeLane !== null && showGuideLane && (
-            <polygon
-              id="mini-nav-guide-lane"
-              points={guideLanePolygonPoints}
-              fill={guideLaneColor}
-              fillOpacity="0.16"
-            />
+            <g id="mini-nav-guide-lane">
+              {guideLaneChevrons.map((c) => (
+                <path key={c.key} d={c.d} fill={guideLaneColor} fillOpacity={c.opacity} />
+              ))}
+            </g>
           )}
         </svg>
       </div>
