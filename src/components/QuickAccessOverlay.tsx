@@ -142,7 +142,8 @@ export const QuickAccessOverlay: React.FC = () => {
       const deltaX = (moveEvent.clientX - resizeStartRef.current.startX) / scale;
       const deltaY = (moveEvent.clientY - resizeStartRef.current.startY) / scale;
 
-      const newWidth = Math.round(Math.max(260, Math.min(CANVAS_WIDTH - 48, resizeStartRef.current.startW + deltaX)));
+      const minOverlayW = activeQuickAccess.componentType === 'overheadVisualization' ? 400 : 260;
+      const newWidth = Math.round(Math.max(minOverlayW, Math.min(CANVAS_WIDTH - 48, resizeStartRef.current.startW + deltaX)));
       const newHeight = Math.round(Math.max(120, Math.min(CANVAS_HEIGHT - 180, resizeStartRef.current.startH + deltaY)));
 
       setResizeDimensions({ width: newWidth, height: newHeight });
@@ -264,43 +265,44 @@ export const QuickAccessOverlay: React.FC = () => {
         </>
       )}
 
-      {/* Caret Junction Mask: Erases the 1px bottom border of the overlay across the caret attachment span */}
-      <div
-        className="absolute -translate-x-1/2 pointer-events-none z-[9993] bg-[#020617]"
-        style={{
-          left: `${caretOffset}px`,
-          bottom: '0px',
-          width: '16px',
-          height: '1.5px',
-        }}
-      />
-
-      {/* Downward Anchor Caret: Visually merged extension of the overlay surface pointing directly to dock button */}
+      {/* Downward Anchor Caret: Layered tooltip attachment with parent border mask and 2:1 proportional caret */}
       <div
         id="quick-access-caret"
-        className="absolute -translate-x-1/2 pointer-events-none z-[9994] drop-shadow-md"
+        className="absolute -translate-x-1/2 pointer-events-none z-[9994]"
         style={{
           left: `${caretOffset}px`,
-          bottom: '-8px',
-          width: '18px',
-          height: '9px',
+          bottom: '-17px',
+          width: '36px',
+          height: '20px',
+          ['--quick-access-surface' as string]: 'rgba(15, 23, 42, 0.9)',
+          ['--quick-access-border' as string]: isComponentSelectedInEditor ? 'var(--color-primary, #38bdf8)' : '#1e293b',
         }}
       >
+        {/* Mask that covers the parent's bottom border */}
+        <div
+          className="absolute top-0 left-0 w-full"
+          style={{
+            height: '3px',
+            background: 'var(--quick-access-surface)',
+          }}
+        />
+        {/* Visible caret */}
         <svg
-          viewBox="0 0 18 9"
-          className="w-full h-full overflow-visible block"
+          viewBox="0 0 36 18"
+          className="absolute top-0 left-0 w-full h-[18px] block"
+          overflow="visible"
         >
-          {/* Seamless interior fill */}
+          {/* Interior */}
           <path
-            d="M 0,0.5 L 18,0.5 L 9,8.5 Z"
-            fill="#020617"
+            d="M 0,0 L 36,0 L 18,18 Z"
+            fill="var(--quick-access-surface)"
           />
-          {/* Diagonal borders only — NO horizontal top line across junction */}
+          {/* ONLY diagonal borders */}
           <path
-            d="M 0,0 L 9,8.5 L 18,0"
+            d="M 0,0 L 18,18 L 36,0"
             fill="none"
-            stroke={isComponentSelectedInEditor ? 'var(--color-primary, #38bdf8)' : 'rgba(51, 65, 85, 0.8)'}
-            strokeWidth={isComponentSelectedInEditor ? 2 : 1.2}
+            stroke="var(--quick-access-border)"
+            strokeWidth={isComponentSelectedInEditor ? 2 : 1}
             strokeLinecap="round"
             strokeLinejoin="round"
           />

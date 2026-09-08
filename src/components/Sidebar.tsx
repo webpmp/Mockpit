@@ -124,7 +124,7 @@ const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [
   {
     type: 'miniNav',
     title: 'Mini Nav',
-    description: 'First-person perspective road with bold glanceable maneuver arrow',
+    description: 'First-person perspective road with bold Mini Nav arrow',
     defaultBindingDesc: 'Perspective road maneuver guide linked to journey state',
   },
 ];

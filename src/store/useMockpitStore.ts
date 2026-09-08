@@ -3339,7 +3339,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       const currentList = state.componentsByScreen[activeScreen] || [];
       const updatedList = currentList.map((c) => {
         if (c.id === id) {
-          const minW = c.type === 'mediaSearch' ? 550 : 40;
+          const minW = c.type === 'mediaSearch' ? 550 : c.type === 'overheadVisualization' ? 400 : 40;
           const maxW = Math.max(minW, 1920 - (c.x || 0));
           const maxH = Math.max(40, 1080 - (c.y || 0));
           return {

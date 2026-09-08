@@ -403,7 +403,7 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
       for (const entry of entries) {
         if (entry.contentRect) {
           setDimensions({
-            width: Math.max(220, Math.round(entry.contentRect.width)),
+            width: Math.max(400, Math.round(entry.contentRect.width)),
             height: Math.max(180, Math.round(entry.contentRect.height)),
           });
         }
@@ -521,6 +521,9 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
   const ROAD_RIGHT = 896;
   const ROAD_WIDTH = 826;
   const LANE_WIDTH = 165.2;
+
+  const svgViewW = Math.max(ROAD_WIDTH, viewW);
+  const svgViewX = ROAD_RIGHT - svgViewW;
 
   // The 4 Explicit Driving Lanes
   // Opposing 2 (outer): 70.0 -> 235.2 (centerX = 152.6)
@@ -1431,9 +1434,9 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     >
       {/* SVG Canvas for Overhead Vector Driving Environment */}
       <svg
-        className="w-full absolute top-0 left-0 h-[calc(100%-15px)] z-0"
-        viewBox={`0 0 966 ${viewH}`}
-        preserveAspectRatio="xMidYMid slice"
+        className="w-full h-full absolute top-0 right-0 z-0"
+        viewBox={`${svgViewX} 0 ${svgViewW} ${viewH}`}
+        preserveAspectRatio="xMaxYMid slice"
       >
         <defs>
           {/* Asphalt Surface Pattern */}
@@ -1476,23 +1479,11 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           </radialGradient>
         </defs>
 
-        {/* Ground Background */}
-        <rect width="966" height={viewH} fill="#030712" />
-
-        {/* Outer Shoulders */}
+        {/* Full-bleed Asphalt Road Surface */}
         <rect
-          x={52}
+          x={svgViewX - 2000}
           y={0}
-          width={862}
-          height={viewH}
-          fill="#0f172a"
-        />
-
-        {/* Main Road Surface (826px width: x=70 to x=896) */}
-        <rect
-          x={70}
-          y={0}
-          width={826}
+          width={svgViewW + 4000}
           height={viewH}
           fill="url(#asphalt-pattern)"
         />
@@ -1732,8 +1723,8 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
       {/* Speed Limit Sign Overlay - Non-pulsating Edge-Triggered Flash */}
       {speedLimitVisible && (
         <div
-          className={`absolute z-10 p-2.5 pointer-events-none transition-all duration-300 ${
-            speedLimitPosition === 'bottom-left' ? 'bottom-3 left-3' : 'bottom-3 right-3'
+          className={`absolute z-10 pointer-events-none transition-all duration-300 ${
+            speedLimitPosition === 'bottom-left' ? 'bottom-2 left-2' : 'bottom-2 right-2'
           }`}
         >
           {speedLimitStyle === 'eu_circle' ? (

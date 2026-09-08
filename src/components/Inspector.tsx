@@ -970,7 +970,7 @@ export const Inspector: React.FC = () => {
               <GeometryInput
                 label="Width"
                 value={selectedComp.width}
-                min={100}
+                min={selectedComp.type === 'overheadVisualization' ? 400 : 100}
                 onChange={(val) => updateComponentSize(selectedComp.id, val, selectedComp.height)}
               />
               <GeometryInput

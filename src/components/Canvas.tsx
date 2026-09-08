@@ -509,7 +509,7 @@ export const Canvas: React.FC = () => {
         const comp = currentComps.find((c) => c.id === resizeInfo.id);
         const compX = comp?.x ?? 0;
         const compY = comp?.y ?? 0;
-        const compMinW = comp?.type === 'mediaSearch' ? 550 : 40;
+        const compMinW = comp?.type === 'mediaSearch' ? 550 : comp?.type === 'overheadVisualization' ? 400 : 40;
 
         const maxW = Math.max(compMinW, CANVAS_WIDTH - compX);
         const maxH = Math.max(40, CANVAS_HEIGHT - compY);

@@ -34,7 +34,7 @@ export const ManeuverGlyph: React.FC<ManeuverGlyphProps> = ({
         <g className={className} id="maneuver-glyph-slight-left">
           {/* Slight left curved diagonal arrow */}
           <path
-            d="M 120 140 L 180 150 L 158 178 Q 170 230 160 300 L 132 300 Q 138 238 128 198 L 100 206 Z"
+            d="M 100.4 161.7 L 100.7 214.5 L 118.1 201.1 Q 150.0 239.1 150.0 300.0 L 170.0 300.0 Q 170.0 239.1 133.9 188.9 L 151.3 175.5 Z"
             fill={color}
           />
         </g>
@@ -45,7 +45,7 @@ export const ManeuverGlyph: React.FC<ManeuverGlyphProps> = ({
         <g className={className} id="maneuver-glyph-slight-right">
           {/* Slight right curved diagonal arrow */}
           <path
-            d="M 200 140 L 220 206 L 192 198 Q 182 238 188 300 L 160 300 Q 150 230 162 178 L 140 150 Z"
+            d="M 219.6 161.7 L 168.7 175.5 L 186.1 188.9 Q 150.0 239.1 150.0 300.0 L 170.0 300.0 Q 170.0 239.1 201.9 201.1 L 219.3 214.5 Z"
             fill={color}
           />
         </g>

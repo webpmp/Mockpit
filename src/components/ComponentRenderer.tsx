@@ -2446,8 +2446,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     case 'overheadVisualization': {
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-950 border border-slate-800 flex flex-col overflow-hidden shadow-xl ${baseOpacity}`}
-          style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
+          className={`w-full h-full rounded-2xl bg-slate-950 flex flex-col overflow-hidden shadow-xl ${baseOpacity}`}
+          style={{ opacity: styleOpacity }}
         >
           <OverheadDrivingVisualization
             component={component}

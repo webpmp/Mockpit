@@ -1,6 +1,18 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #020617;
+  color: #f8fafc;
+}
+
 :root {
   --color-primary: #38bdf8;
   --color-secondary: #3b82f6;

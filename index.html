@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="bg-slate-950" style="background-color: #020617;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,8 +11,38 @@
     <meta property="og:title" content="Mockpit" />
     <meta property="og:description" content="Prototyping vehicle infotainment systems with component-based, behavior-driven HMI bindings." />
   </head>
-  <body>
-    <div id="root"></div>
+  <body class="bg-slate-950 text-slate-100 m-0 p-0 overflow-hidden" style="background-color: #020617; color: #f8fafc; margin: 0; padding: 0; min-height: 100vh;">
+    <script>
+      window.addEventListener('error', function(e) {
+        var fallback = document.getElementById('loading-fallback');
+        if (fallback) {
+          fallback.innerHTML = `
+            <div style="max-width: 420px; background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); text-align: center;">
+              <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); color: #f43f5e; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">!</div>
+              <h2 style="font-size: 18px; font-weight: 600; color: #f8fafc; margin: 0 0 8px 0;">Application Startup Issue</h2>
+              <p style="font-size: 13px; color: #94a3b8; margin: 0 0 16px 0;">An error occurred while loading the application scripts.</p>
+              <div style="background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 11px; color: #fca5a5; text-align: left; max-height: 120px; overflow: auto; margin-bottom: 20px; word-break: break-all;">` + (e.message || 'Script execution failed') + `</div>
+              <div style="display: flex; gap: 10px;">
+                <button onclick="window.location.reload()" style="flex: 1; padding: 10px 16px; background: #38bdf8; border: none; border-radius: 8px; color: #020617; font-weight: 600; font-size: 13px; cursor: pointer;">Reload</button>
+                <button onclick="try { localStorage.clear(); sessionStorage.clear(); } catch(err){} window.location.reload();" style="flex: 1; padding: 10px 16px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-weight: 600; font-size: 13px; cursor: pointer;">Reset Storage</button>
+              </div>
+            </div>
+          `;
+        }
+      });
+    </script>
+    <div id="root">
+      <div id="loading-fallback" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background-color: #020617; color: #94a3b8; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 24px;">
+        <div style="width: 44px; height: 44px; border: 3px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px;"></div>
+        <div style="font-size: 16px; font-weight: 600; color: #f8fafc; margin-bottom: 6px;">Loading Infotainment Workspace...</div>
+        <div style="font-size: 12px; color: #64748b; max-width: 300px;">Initializing vehicle canvas and reactive HMI bindings</div>
+      </div>
+      <style>
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      </style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

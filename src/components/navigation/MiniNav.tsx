@@ -373,11 +373,11 @@ export const MiniNav: React.FC<MiniNavProps> = ({
           boxShadow: 'none',
         }}
       >
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between w-full gap-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <span
               id="mini-nav-highway-badge"
-              className="px-2.5 py-1 rounded text-sm font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400"
+              className="px-2.5 py-1 rounded text-sm font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400 truncate"
               style={{
                 borderColor: `color-mix(in srgb, ${highwayBadgeColor} 40%, transparent)`,
                 backgroundColor: `color-mix(in srgb, ${highwayBadgeColor} 15%, transparent)`,
@@ -389,7 +389,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
           </div>
 
           {/* Wrap distance + icon together so both sit on the right */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {showManeuverDirection && (
               <svg
                 width="44"
