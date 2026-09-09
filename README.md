@@ -1,6 +1,13 @@
 # Mockpit
 
-<table align="right">
+Prototyping vehicle infotainment systems with component-based, behavior-driven Human-Machine Interface (HMI) bindings.
+
+![React](https://img.shields.io/badge/React-19-blue?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)
+![Vite](https://img.shields.io/badge/Vite-6.2-purple?logo=vite)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?logo=tailwindcss)
+
+<table align="center">
   <tr>
     <td align="center">
       <img src="/public/mockpit-editor.png" alt="Mockpit Editor" width="320">
@@ -10,13 +17,6 @@
     </td>
   </tr>
 </table>
-
-Prototyping vehicle infotainment systems with component-based, behavior-driven Human-Machine Interface (HMI) bindings.
-
-![React](https://img.shields.io/badge/React-19-blue?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)
-![Vite](https://img.shields.io/badge/Vite-6.2-purple?logo=vite)
-![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?logo=tailwindcss)
 
 ---
 
