@@ -7,13 +7,13 @@ Prototyping vehicle infotainment systems with component-based, behavior-driven H
 ![Vite](https://img.shields.io/badge/Vite-6.2-purple?logo=vite)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?logo=tailwindcss)
 
-<table align="center">
+<table align="center" style="border: 0;" cellspacing="0">
   <tr>
-    <td align="center">
-      <img src="/public/mockpit-editor.png" alt="Mockpit Editor" width="320">
+    <td align="center" style="border: 0;">
+      <img src="/public/mockpit-editor.png" alt="Mockpit Editor" width="400">
     </td>
-    <td align="center">
-      <img src="/public/mockpit-presentation.png" alt="Mockpit Presentation" width="320">
+    <td align="center" style="border: 0;">
+      <img src="/public/mockpit-presentation.png" alt="Mockpit Presentation" width="400">
     </td>
   </tr>
 </table>
