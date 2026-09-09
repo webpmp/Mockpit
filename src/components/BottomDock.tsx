@@ -266,19 +266,6 @@ export const BottomDock: React.FC = () => {
             <span className="text-[0.5625rem] font-bold tracking-wider uppercase font-mono max-w-[80px] truncate leading-none">
               {item.name}
             </span>
-
-            {/* Active Pill Indicator (Dock Active State) - Placed inside item padding to avoid any layout protrusion */}
-            {isItemActive && (
-              <span
-                className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full pointer-events-none transition-colors"
-                style={{
-                  backgroundColor: 'var(--color-primary)',
-                  boxShadow: isQuickAccessOwner
-                    ? '0 0 8px var(--color-primary)'
-                    : '0 0 6px var(--color-primary)',
-                }}
-              />
-            )}
           </div>
         );
       })}
