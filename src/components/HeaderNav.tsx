@@ -45,6 +45,7 @@ export const HeaderNav: React.FC = () => {
   const pasteComponent = useMockpitStore((s) => s.pasteComponent);
   const dockOrder = useMockpitStore((s) => s.dockOrder);
   const toggleDockMembership = useMockpitStore((s) => s.toggleDockMembership);
+  const setAboutModalOpen = useMockpitStore((s) => s.setAboutModalOpen);
 
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -164,26 +165,31 @@ export const HeaderNav: React.FC = () => {
   return (
     <header className="h-16 bg-slate-950 border-b border-slate-900 px-4 flex items-center justify-between shrink-0 select-none relative z-50">
       {/* App Branding */}
-      {!isPresentation && (
-        <div className="flex items-center gap-2.5">
-          <MockpitLogo
-            id="mockpit-header-logo"
-            width={40}
-            height={40}
-            className="w-[40px] h-[40px] min-w-[40px] min-h-[40px] object-contain select-none"
-          />
-          <span
-            id="mockpit-header-title"
-            className="text-[15px] font-black uppercase text-slate-100 select-none leading-none tracking-widest"
-            style={{
-              fontFamily: "'Montserrat', 'Proxima Nova', -apple-system, BlinkMacSystemFont, sans-serif",
-              letterSpacing: '0.08em', // Kerning: +80
-            }}
-          >
-            MOCKPIT
-          </span>
-        </div>
-      )}
+      <button
+        type="button"
+        id="mockpit-about-trigger"
+        onClick={() => setAboutModalOpen(true)}
+        className="flex items-center gap-2.5 min-h-[44px] min-w-[44px] px-2 py-1 rounded-xl transition-colors hover:bg-slate-900/80 cursor-pointer border border-transparent hover:border-slate-800 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500"
+        title="About Mockpit"
+        aria-label="About Mockpit"
+      >
+        <MockpitLogo
+          id="mockpit-header-logo"
+          width={40}
+          height={40}
+          className="w-[40px] h-[40px] min-w-[40px] min-h-[40px] object-contain select-none"
+        />
+        <span
+          id="mockpit-header-title"
+          className="text-[15px] font-black uppercase text-slate-100 select-none leading-none tracking-widest"
+          style={{
+            fontFamily: "'Montserrat', 'Proxima Nova', -apple-system, BlinkMacSystemFont, sans-serif",
+            letterSpacing: '0.08em', // Kerning: +80
+          }}
+        >
+          MOCKPIT
+        </span>
+      </button>
 
       {/* Center Controls: Mega-Menu Screen Selector & Mode Switcher */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">

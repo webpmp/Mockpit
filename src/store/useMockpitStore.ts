@@ -980,6 +980,9 @@ interface MockpitStore {
   clearRuntimeLog: () => void;
 
   // Settings, Palette & Canvas Grid
+  isAboutModalOpen: boolean;
+  toggleAboutModal: () => void;
+  setAboutModalOpen: (open: boolean) => void;
   isSettingsOpen: boolean;
   toggleSettingsModal: () => void;
   setSettingsModalOpen: (open: boolean) => void;
@@ -1741,6 +1744,10 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       };
     });
   },
+
+  isAboutModalOpen: false,
+  toggleAboutModal: () => set((state) => ({ isAboutModalOpen: !state.isAboutModalOpen })),
+  setAboutModalOpen: (open) => set({ isAboutModalOpen: open }),
 
   isSettingsOpen: false,
   toggleSettingsModal: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),

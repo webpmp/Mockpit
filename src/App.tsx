@@ -7,6 +7,7 @@ import { Inspector } from './components/Inspector';
 import { DebugStatePanel } from './components/DebugStatePanel';
 import { SettingsModal } from './components/SettingsModal';
 import { AuditPanel } from './components/hmi/AuditPanel';
+import { AboutModal } from './components/AboutModal';
 
 export default function App() {
   const screenMode = useMockpitStore((s) => s.screenMode);
@@ -88,6 +89,9 @@ export default function App() {
 
       {/* Automotive HMI Compliance & Safety Audit Panel */}
       <AuditPanel />
+
+      {/* About Mockpit Modal */}
+      <AboutModal />
     </div>
   );
 }
