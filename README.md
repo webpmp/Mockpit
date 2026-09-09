@@ -1,5 +1,16 @@
 # Mockpit
 
+<table align="right">
+  <tr>
+    <td align="center">
+      <img src="/public/mockpit-editor.png" alt="Mockpit Editor" width="320">
+    </td>
+    <td align="center">
+      <img src="/public/mockpit-presentation.png" alt="Mockpit Presentation" width="320">
+    </td>
+  </tr>
+</table>
+
 Prototyping vehicle infotainment systems with component-based, behavior-driven Human-Machine Interface (HMI) bindings.
 
 ![React](https://img.shields.io/badge/React-19-blue?logo=react)
@@ -9,13 +20,13 @@ Prototyping vehicle infotainment systems with component-based, behavior-driven H
 
 ---
 
-## 🚗 Overview
+## Overview
 
 **Mockpit** is an interactive prototyping application for designing, layout-testing, and simulating modern automotive digital cockpits and infotainment systems. It provides modular, highly-responsive HMI widgets with realistic behavior, live state management, and real-time canvas positioning.
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - 🌡️ **Climate Control Suite**
   - **Temperature Widget**: Dual-mode (horizontal/vertical) temperature slider with mercury color gradients, press-and-hold auto-repeat buttons, container query scaling, and precise puck bounds.
@@ -40,7 +51,7 @@ Prototyping vehicle infotainment systems with component-based, behavior-driven H
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend Framework**: React 19 + TypeScript
 - **Build Tool**: Vite 6
@@ -81,7 +92,7 @@ Prototyping vehicle infotainment systems with component-based, behavior-driven H
 
 ---
 
-## 📜 Available Scripts
+## Available Scripts
 
 - `npm run dev` – Launch the Vite development server on port 3000.
 - `npm run build` – Compile the production bundle into the `dist` directory.
@@ -90,7 +101,7 @@ Prototyping vehicle infotainment systems with component-based, behavior-driven H
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 src/
