@@ -1970,6 +1970,26 @@ export const Inspector: React.FC = () => {
               </div>
             )}
 
+            {selectedComp.type === 'phoneMessaging' && (
+              <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
+                <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">
+                  <span>Notification Privacy</span>
+                  <span className="text-[9px] text-sky-400 font-normal">Incoming Messages</span>
+                </label>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-slate-300 font-mono">Show Message Preview</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedComp.staticProps.showNotificationPreview !== 'false'}
+                    onChange={(e) =>
+                      handleStaticPropChange('showNotificationPreview', e.target.checked ? 'true' : 'false')
+                    }
+                    className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                  />
+                </div>
+              </div>
+            )}
+
             {selectedComp.type === 'climateTemp' && (
               <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
                 <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold flex items-center justify-between">

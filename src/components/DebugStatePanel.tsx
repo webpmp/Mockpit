@@ -132,7 +132,7 @@ export const DebugStatePanel: React.FC = () => {
                 window.dispatchEvent(
                   new CustomEvent('mockpit-inbound-message', {
                     detail: {
-                      threadId: 'm1',
+                      threadId: 'c1',
                       text: 'Are we still meeting at the charging station?',
                     },
                   })

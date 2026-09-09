@@ -332,6 +332,13 @@ export const Canvas: React.FC = () => {
       const isMinimized = !!minimizedNotifIds[comp.id];
       const hasTimer = !!autoMinimizeTimersRef.current[comp.id];
 
+      // If this notification requests to start minimized (privacy setting),
+      // mark it minimized immediately instead of starting the 6s display timer.
+      if (comp.staticProps?.startMinimized === 'true' && !isMinimized) {
+        setMinimizedNotifIds((prev) => ({ ...prev, [comp.id]: true }));
+        return;
+      }
+
       if (!isMinimized && !hasTimer) {
         autoMinimizeTimersRef.current[comp.id] = setTimeout(() => {
           if (useMockpitStore.getState().isKeyboardVisible) {
@@ -695,7 +702,10 @@ export const Canvas: React.FC = () => {
                           key={comp.id}
                           onClick={() => {
                             if (comp.staticProps?.threadId) {
-                              useMockpitStore.getState().setActiveView('phone');
+                              const targetScreen = useMockpitStore.getState().findScreenForComponentType('phoneMessaging');
+                              if (targetScreen) {
+                                useMockpitStore.getState().setActiveView(targetScreen);
+                              }
                               window.dispatchEvent(
                                 new CustomEvent('mockpit-open-thread', { detail: { threadId: comp.staticProps.threadId } })
                               );
@@ -708,7 +718,9 @@ export const Canvas: React.FC = () => {
                           title={`Click to view: ${message}`}
                         >
                           <span style={{ color }}>
-                            {avatarName ? (
+                            {iconKey === 'message-square' ? (
+                              renderNotificationIcon(iconKey, 'w-3.5 h-3.5')
+                            ) : avatarName ? (
                               <ContactAvatar
                                 name={avatarName}
                                 className="w-4 h-4"

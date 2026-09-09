@@ -364,8 +364,12 @@ export const MiniNav: React.FC<MiniNavProps> = ({
     const bottomCenterX = (insetBottomLeftX + insetBottomRightX) / 2;
     const bottomHalfWidth = (insetBottomRightX - insetBottomLeftX) / 2;
 
+    // Keeps the nearest chevron from touching the component's bottom edge.
+    // Local to chevron placement only — does not affect the road polygon,
+    // which still extends flush to the bottom as before.
+    const CHEVRON_BOTTOM_MARGIN = 14;
     const topY = roadTopLeft.y;
-    const bottomY = roadBottomLeft.y;
+    const bottomY = roadBottomLeft.y - CHEVRON_BOTTOM_MARGIN;
 
     return CHEVRON_T_STEPS.map((t, i) => {
       const y = topY + (bottomY - topY) * t;
@@ -422,7 +426,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span
               id="mini-nav-highway-badge"
-              className="px-2.5 py-1 rounded text-sm font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400 truncate"
+              className="px-2.5 py-1 rounded text-sm font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400"
               style={{
                 borderColor: `color-mix(in srgb, ${highwayBadgeColor} 40%, transparent)`,
                 backgroundColor: `color-mix(in srgb, ${highwayBadgeColor} 15%, transparent)`,

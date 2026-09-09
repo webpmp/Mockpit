@@ -26,10 +26,8 @@ import {
   Phone,
   Play,
   Plus,
-  Reply,
   Route,
   Search,
-  Send,
   ShieldAlert,
   Sliders,
   Star,
@@ -212,12 +210,11 @@ const MessageToastCard: React.FC<{
   styleOpacity,
   onMinimize,
 }) => {
-  const [isReplying, setIsReplying] = React.useState(false);
-  const [replyText, setReplyText] = React.useState('');
+  const isMessageIcon = iconKey === 'message-square';
 
-  const sendUserMessage = useMockpitStore((s) => s.sendUserMessage);
+  const setActiveView = useMockpitStore((s) => s.setActiveView);
+  const findScreenForComponentType = useMockpitStore((s) => s.findScreenForComponentType);
   const markThreadAsRead = useMockpitStore((s) => s.markThreadAsRead);
-  const closeKeyboard = useMockpitStore((s) => s.closeKeyboard);
   const clearTransientNotification = useMockpitStore((s) => s.clearTransientNotification);
 
   const dismissToast = () => {
@@ -229,48 +226,23 @@ const MessageToastCard: React.FC<{
   };
 
   const handleCardTap = () => {
-    if (isReplying) return;
-    setIsReplying(true);
-  };
-
-  const handleSendReply = (text: string) => {
-    const msgText = text.trim();
-    if (!msgText || !threadId) return;
-
-    sendUserMessage(threadId, msgText);
-    markThreadAsRead(threadId);
-
-    const activeInput = useMockpitStore.getState().activeInputState;
-    if (activeInput) {
-      useMockpitStore.setState({ activeInputState: { ...activeInput, onCancel: undefined } });
+    if (!threadId) return;
+    const targetScreen = findScreenForComponentType('phoneMessaging');
+    if (targetScreen) {
+      setActiveView(targetScreen);
     }
-
-    closeKeyboard();
-    dismissToast();
-  };
-
-  const handleCancelReply = () => {
+    // If no Messaging component exists on any screen, still dispatch the event
+    // (harmless no-op) but skip navigation
+    window.dispatchEvent(
+      new CustomEvent('mockpit-open-thread', { detail: { threadId } })
+    );
     markThreadAsRead(threadId);
-    closeKeyboard();
     dismissToast();
-  };
-
-  const handleToggleReply = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isReplying) {
-      handleCancelReply();
-    } else {
-      setIsReplying(true);
-    }
   };
 
   const handleDismissClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isReplying) {
-      handleCancelReply();
-    } else {
-      dismissToast();
-    }
+    dismissToast();
   };
 
   return (
@@ -288,36 +260,32 @@ const MessageToastCard: React.FC<{
         customColor={customColor}
         iconKey={iconKey}
         rightElement={
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={handleToggleReply}
-              className={`p-1 rounded bg-slate-900/90 border transition-colors cursor-pointer shrink-0 ${
-                isReplying
-                  ? 'border-sky-400 text-sky-400 bg-sky-950/80'
-                  : 'border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-              title="Quick Reply"
-            >
-              <Reply className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleDismissClick}
-              className="p-1 rounded bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-              title="Dismiss Alert (X)"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <button
+            onClick={handleDismissClick}
+            className="p-1 rounded bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            title="Dismiss Alert (X)"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         }
       />
 
       <div
         onClick={handleCardTap}
-        className={`flex items-center gap-3 min-w-0 w-full pr-16 my-auto ${
-          !isReplying ? 'cursor-pointer hover:opacity-90' : ''
-        }`}
+        className="flex items-center gap-3 min-w-0 w-full pr-16 my-auto cursor-pointer hover:opacity-90"
       >
-        {avatarName ? (
+        {isMessageIcon ? (
+          <div
+            className="p-2 rounded-xl shrink-0 flex items-center justify-center border"
+            style={{
+              backgroundColor: getAlphaColor(customColor, '25', 15),
+              borderColor: getAlphaColor(customColor, '50', 30),
+              color: customColor,
+            }}
+          >
+            <MessageSquare className="w-4 h-4" />
+          </div>
+        ) : avatarName ? (
           <ContactAvatar
             name={avatarName}
             className="w-9 h-9 border border-slate-700/80 shadow-md shrink-0"
@@ -343,36 +311,6 @@ const MessageToastCard: React.FC<{
           </p>
         </div>
       </div>
-
-      {isReplying && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80 mt-1 shrink-0 animate-in fade-in slide-in-from-top-1"
-        >
-          <MockpitInput
-            value={replyText}
-            onChange={setReplyText}
-            onSubmit={(val) => handleSendReply(val)}
-            onCancel={handleCancelReply}
-            placeholder={`Reply to ${title || avatarName || 'message'}...`}
-            componentId={component.id}
-            wrapperClassName="flex-1 min-w-0"
-            autoFocus
-          />
-          <button
-            onClick={() => handleSendReply(replyText)}
-            disabled={!replyText.trim()}
-            className={`p-2 rounded-xl transition-all shrink-0 cursor-pointer ${
-              replyText.trim()
-                ? 'bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold shadow-md'
-                : 'bg-slate-800 text-slate-600 border border-slate-700/50 cursor-not-allowed'
-            }`}
-            title="Send reply"
-          >
-            <Send className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
     </div>
   );
 };

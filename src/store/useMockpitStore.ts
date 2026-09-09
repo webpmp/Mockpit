@@ -43,7 +43,7 @@ import {
   TempGradientColors,
   DEFAULT_TEMP_GRADIENT_COLORS,
 } from '../utils/tempGradient';
-import { Conversation, INITIAL_CONVERSATIONS, CONTACT_PHOTO_MAP } from '../data/mockPhoneData';
+import { Conversation, INITIAL_CONVERSATIONS, CONTACT_PHOTO_MAP, INITIAL_CONTACTS } from '../data/mockPhoneData';
 import { MusicServiceType, MUSIC_SERVICES, SAMPLE_TRACKS, Track } from '../data/mediaData';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants';
 import { useWeatherStore } from './useWeatherStore';
@@ -1122,6 +1122,7 @@ interface MockpitStore {
   previousView: string | null;
   setPreviousView: (view: string | null) => void;
   setActiveView: (view: ActiveView) => void;
+  findScreenForComponentType: (type: ComponentType) => string | null;
   setNotificationStackPosition: (position: NotificationStackPosition) => void;
   reorderNotificationComponent: (id: string, direction: 'up' | 'down') => void;
   toggleDebugPanel: () => void;
@@ -1973,35 +1974,52 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
   sendInboundMessage: (threadId, text) => {
     const state = get();
-
-    // Find target conversation details
     const targetConv = state.conversations.find((c) => c.id === threadId);
-    const targetName = targetConv ? targetConv.name : 'Incoming Message';
 
-    // Check if thread is currently open AND user is on Phone view
+    const newMsg = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      sender: 'contact' as const,
+      text,
+      timestamp: 'Just now',
+    };
+
     const isThreadOpen = state.activeView === 'phone' && state.selectedMessagingThreadId === threadId;
 
-    // Update conversations model in store
-    const updatedConversations = state.conversations.map((c) => {
-      if (c.id === threadId) {
-        return {
-          ...c,
-          lastMessage: text,
-          lastTimestamp: 'Just now',
-          unreadCount: isThreadOpen ? 0 : c.unreadCount + 1,
-          messages: [
-            ...c.messages,
-            {
-              id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-              sender: 'contact' as const,
-              text,
-              timestamp: 'Just now',
-            },
-          ],
-        };
-      }
-      return c;
-    });
+    let updatedConversations: Conversation[];
+    let targetName: string;
+
+    if (targetConv) {
+      targetName = targetConv.name;
+      updatedConversations = state.conversations.map((c) =>
+        c.id === threadId
+          ? {
+              ...c,
+              lastMessage: text,
+              lastTimestamp: 'Just now',
+              unreadCount: isThreadOpen ? 0 : c.unreadCount + 1,
+              messages: [...c.messages, newMsg],
+            }
+          : c
+      );
+    } else {
+      // No existing thread — try to resolve a real contact for this id.
+      const matchedContact = INITIAL_CONTACTS.find((c) => c.id === threadId);
+      targetName = matchedContact?.name || 'Unknown';
+
+      const newConversation: Conversation = {
+        id: threadId,
+        contactId: matchedContact?.id || threadId,
+        name: targetName,
+        number: matchedContact?.number || '',
+        unreadCount: isThreadOpen ? 0 : 1,
+        lastMessage: text,
+        lastTimestamp: 'Just now',
+        avatarUrl: matchedContact?.avatarUrl || CONTACT_PHOTO_MAP[targetName],
+        messages: [newMsg],
+      };
+
+      updatedConversations = [newConversation, ...state.conversations];
+    }
 
     set({ conversations: updatedConversations });
 
@@ -2632,6 +2650,19 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       : `transient-notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
 
     const isMessageToast = !!threadId || !!notif.avatarName;
+
+    let startMinimized = false;
+    if (isMessageToast) {
+      const state = get();
+      const screenId = state.findScreenForComponentType('phoneMessaging');
+      if (screenId) {
+        const messagingComp = state.componentsByScreen[screenId]?.find(
+          (c) => c.type === 'phoneMessaging'
+        );
+        startMinimized = messagingComp?.staticProps?.showNotificationPreview === 'false';
+      }
+    }
+
     const toastWidth = isMessageToast ? 450 : 380;
     const toastHeight = isMessageToast ? 125 : 110;
 
@@ -2655,6 +2686,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         avatarName: notif.avatarName || '',
         threadId,
         showBadgeOnMinimize: 'true',
+        startMinimized: startMinimized ? 'true' : 'false',
       },
       bindings: [],
     };
@@ -2692,6 +2724,16 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       activeQuickAccess: null,
       quickAccessOriginRect: null,
     })),
+
+  findScreenForComponentType: (type: ComponentType): string | null => {
+    const { componentsByScreen } = get();
+    for (const [screenId, comps] of Object.entries(componentsByScreen)) {
+      if (comps.some((c) => c.type === type)) {
+        return screenId;
+      }
+    }
+    return null;
+  },
 
   setPreviousView: (view) => set({ previousView: view }),
 
