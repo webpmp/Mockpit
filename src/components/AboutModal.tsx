@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, ExternalLink, Mail, User, Github } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
-import { MockpitLogo } from './MockpitLogo';
 
 export const AboutModal: React.FC = () => {
   const isAboutModalOpen = useMockpitStore((s) => s.isAboutModalOpen);
@@ -33,14 +32,15 @@ export const AboutModal: React.FC = () => {
         {/* Header Bar */}
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
           <div className="flex items-center gap-3">
-            <MockpitLogo
-              width={36}
-              height={36}
-              className="w-9 h-9 min-w-9 min-h-9 object-contain"
-            />
             <div>
-              <h2 className="text-sm font-bold text-slate-100 font-mono tracking-wider uppercase">
-                Mockpit
+              <h2
+                className="text-[15px] font-black uppercase text-slate-100 select-none leading-none tracking-widest"
+                style={{
+                  fontFamily: "'Montserrat', 'Proxima Nova', -apple-system, BlinkMacSystemFont, sans-serif",
+                  letterSpacing: '0.08em',
+                }}
+              >
+                MOCKPIT
               </h2>
               <p className="text-[11px] text-slate-400 font-mono">
                 Automotive HMI Prototyping Tool

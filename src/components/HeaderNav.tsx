@@ -4,7 +4,6 @@ import { ScreenDefinition, ComponentType } from '../types';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { getScreenIcon, SCREEN_ICON_OPTIONS } from '../config/screenIcons';
 import { QUICK_ACCESS_OPTIONS } from '../config/quickAccessConfig';
-import { MockpitLogo } from './MockpitLogo';
 import {
   Play,
   Edit3,
@@ -169,16 +168,10 @@ export const HeaderNav: React.FC = () => {
         type="button"
         id="mockpit-about-trigger"
         onClick={() => setAboutModalOpen(true)}
-        className="flex items-center gap-2.5 min-h-[44px] min-w-[44px] px-2 py-1 rounded-xl transition-colors hover:bg-slate-900/80 cursor-pointer border border-transparent hover:border-slate-800 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500"
+        className="flex items-center gap-2.5 min-h-[44px] min-w-[44px] px-2 py-1 rounded-xl cursor-pointer border border-transparent text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500"
         title="About Mockpit"
         aria-label="About Mockpit"
       >
-        <MockpitLogo
-          id="mockpit-header-logo"
-          width={40}
-          height={40}
-          className="w-[40px] h-[40px] min-w-[40px] min-h-[40px] object-contain select-none"
-        />
         <span
           id="mockpit-header-title"
           className="text-[15px] font-black uppercase text-slate-100 select-none leading-none tracking-widest"

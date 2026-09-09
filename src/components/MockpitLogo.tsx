@@ -16,7 +16,7 @@ export const MockpitLogo: React.FC<MockpitLogoProps> = ({
   className = 'w-[40px] h-[40px] min-w-[40px] min-h-[40px]',
   width = 40,
   height = 40,
-  id = 'mockpit-header-logo',
+  id = 'mockpit-logo',
 }) => {
   const [hasError, setHasError] = useState(false);
 
@@ -35,13 +35,13 @@ export const MockpitLogo: React.FC<MockpitLogoProps> = ({
   return (
     <img
       id={id}
-      src="/logo/logo-mockpit-white.png"
+      src="/logo/logo-mockpit-small.png"
       alt="Mockpit Logo"
       width={width}
       height={height}
       referrerPolicy="no-referrer"
       onError={() => setHasError(true)}
-      className={`object-contain select-none pointer-events-none drop-shadow-[0_0_12px_rgba(56,189,248,0.3)] transition-transform hover:scale-105 ${className}`}
+      className={`object-contain select-none pointer-events-none drop-shadow-[0_0_12px_rgba(56,189,248,0.3)] ${className}`}
     />
   );
 };

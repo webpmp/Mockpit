@@ -38,8 +38,11 @@ describe('Copyright Attribution + About Overlay Suite', () => {
     assert.ok(fs.existsSync(modalPath), 'AboutModal.tsx must exist');
     const modalContent = fs.readFileSync(modalPath, 'utf8');
 
-    // Title (v1.1 patch: "Mockpit" with no "About" prefix)
-    assert.match(modalContent, /<h2[^>]*>\s*Mockpit\s*<\/h2>/);
+    // Title (v1.4 patch: uppercase "MOCKPIT" matching header font and styling)
+    assert.match(modalContent, /<h2[^>]*>\s*MOCKPIT\s*<\/h2>/);
+    assert.match(modalContent, /Montserrat/);
+    assert.match(modalContent, /text-\[15px\]/);
+    assert.match(modalContent, /font-black/);
     assert.doesNotMatch(modalContent, /About Mockpit/);
     // Name
     assert.match(modalContent, /Chris Adkins/);
@@ -54,7 +57,7 @@ describe('Copyright Attribution + About Overlay Suite', () => {
     assert.match(modalContent, /z-\[10000\]/);
   });
 
-  it('6. HeaderNav provides logo trigger with >= 44x44px minimum tap target in both modes', () => {
+  it('6. HeaderNav provides logo trigger with >= 44x44px minimum tap target in both modes and no hover effects', () => {
     const headerPath = path.resolve(process.cwd(), 'src/components/HeaderNav.tsx');
     const headerContent = fs.readFileSync(headerPath, 'utf8');
 
@@ -63,8 +66,26 @@ describe('Copyright Attribution + About Overlay Suite', () => {
     assert.match(headerContent, /min-w-\[44px\]/);
     assert.match(headerContent, /cursor-pointer/);
     assert.doesNotMatch(headerContent, /animate-pulse/);
+
+    // v1.2 patch: No hover background/border on the trigger button
+    assert.doesNotMatch(headerContent, /hover:bg-slate-900\/80/);
+    assert.doesNotMatch(headerContent, /hover:border-slate-800/);
+
     // Must not be gated by !isPresentation
     const logoBlockRegex = /\{!isPresentation\s*&&\s*\(?\s*<button[^>]*id="mockpit-about-trigger"/;
     assert.equal(logoBlockRegex.test(headerContent), false, 'Trigger must not be gated behind !isPresentation');
+  });
+
+  it('7. Logo images are removed from HeaderNav and AboutModal', () => {
+    const headerPath = path.resolve(process.cwd(), 'src/components/HeaderNav.tsx');
+    const headerContent = fs.readFileSync(headerPath, 'utf8');
+    const modalPath = path.resolve(process.cwd(), 'src/components/AboutModal.tsx');
+    const modalContent = fs.readFileSync(modalPath, 'utf8');
+
+    const targetId = ['mockpit', 'header', 'logo'].join('-');
+    assert.doesNotMatch(headerContent, new RegExp(targetId));
+    assert.doesNotMatch(modalContent, new RegExp(targetId));
+    assert.doesNotMatch(headerContent, /<img[^>]*src="\/logo\//);
+    assert.doesNotMatch(modalContent, /<img[^>]*src="\/logo\//);
   });
 });
