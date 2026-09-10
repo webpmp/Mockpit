@@ -17,7 +17,7 @@ export const AppShellBackground: React.FC<AppShellBackgroundProps> = ({ canvasSc
   const isAdjustingBackground = useMockpitStore((s) => s.isAdjustingBackground);
   const setIsAdjustingBackground = useMockpitStore((s) => s.setIsAdjustingBackground);
   const setAppShellBackground = useMockpitStore((s) => s.setAppShellBackground);
-  const resetAppShellBackgroundAlignment = useMockpitStore((s) => s.resetAppShellBackgroundAlignment);
+  const cancelBackgroundAdjustment = useMockpitStore((s) => s.cancelBackgroundAdjustment);
 
   // Drag state for Direct Manipulation mode
   const dragStartRef = useRef<{
@@ -174,7 +174,13 @@ export const AppShellBackground: React.FC<AppShellBackgroundProps> = ({ canvasSc
 
       {/* Floating Direct Manipulation Status Badge & Done Button */}
       {isAdjustingBackground && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-auto flex items-center gap-3 px-4 py-2 bg-slate-900/95 border border-sky-500/60 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.8)] backdrop-blur-md animate-in fade-in slide-in-from-top-3 duration-200">
+        <div
+          className="absolute top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-auto flex items-center gap-3 px-4 py-2 bg-slate-900/95 border border-sky-500/60 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.8)] backdrop-blur-md animate-in fade-in slide-in-from-top-3 duration-200"
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+          onWheel={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse" />
             <span className="text-xs font-bold font-mono text-sky-200 tracking-wider">
@@ -196,9 +202,9 @@ export const AppShellBackground: React.FC<AppShellBackgroundProps> = ({ canvasSc
           <div className="h-4 w-px bg-slate-700 mx-1" />
 
           <button
-            onClick={() => resetAppShellBackgroundAlignment()}
+            onClick={() => cancelBackgroundAdjustment()}
             className="px-2 py-1 text-[11px] font-mono text-slate-300 hover:text-slate-100 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-1 transition-colors cursor-pointer"
-            title="Reset Scale to 100% and Position to (0,0)"
+            title="Cancel: revert to position/scale from before this session and exit"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Reset</span>

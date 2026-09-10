@@ -1069,9 +1069,11 @@ interface MockpitStore {
   backgroundImagePositionX: number;
   backgroundImagePositionY: number;
   isAdjustingBackground: boolean;
+  backgroundAdjustSnapshot: { scale: number; x: number; y: number } | null;
   setAppShellBackground: (config: Partial<AppShellBackgroundConfig>) => void;
   setIsAdjustingBackground: (adjusting: boolean) => void;
   resetAppShellBackgroundAlignment: () => void;
+  cancelBackgroundAdjustment: () => void;
 
   // Shared Climate State & Actions
   climateState: ClimateState;
@@ -2109,6 +2111,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   // App Shell Background (Color or Vehicle Dashboard Environment)
   ...loadSavedShellBackground(),
   isAdjustingBackground: false, // strictly non-persisted per direct manipulation requirements
+  backgroundAdjustSnapshot: null, // strictly non-persisted, like isAdjustingBackground
   setAppShellBackground: (partial) => {
     set((state) => {
       const updatedConfig: AppShellBackgroundConfig = {
@@ -2127,13 +2130,44 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       return updatedConfig;
     });
   },
-  setIsAdjustingBackground: (adjusting) => set({ isAdjustingBackground: adjusting }),
+  setIsAdjustingBackground: (adjusting) => {
+    set((state) => {
+      if (adjusting && !state.isAdjustingBackground) {
+        // Entering adjustment mode: snapshot current values for Reset/cancel
+        return {
+          isAdjustingBackground: true,
+          backgroundAdjustSnapshot: {
+            scale: state.backgroundImageScale,
+            x: state.backgroundImagePositionX,
+            y: state.backgroundImagePositionY,
+          },
+        };
+      }
+      if (!adjusting) {
+        // Exiting (Done or Escape): clear the snapshot so the next entry recaptures cleanly
+        return { isAdjustingBackground: false, backgroundAdjustSnapshot: null };
+      }
+      return {};
+    });
+  },
   resetAppShellBackgroundAlignment: () => {
     get().setAppShellBackground({
       backgroundImageScale: 1,
       backgroundImagePositionX: 0,
       backgroundImagePositionY: 0,
     });
+  },
+  cancelBackgroundAdjustment: () => {
+    const snapshot = get().backgroundAdjustSnapshot;
+    if (snapshot) {
+      get().setAppShellBackground({
+        backgroundImageScale: snapshot.scale,
+        backgroundImagePositionX: snapshot.x,
+        backgroundImagePositionY: snapshot.y,
+      });
+    }
+    // True cancel-and-close: revert values, then exit adjustment mode and clear the snapshot.
+    set({ isAdjustingBackground: false, backgroundAdjustSnapshot: null });
   },
 
   climateState: loadSavedClimateState(),
