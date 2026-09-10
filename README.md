@@ -63,11 +63,18 @@ Infotainment & Media
 
   </td>
 </tr>
-</table>
-
+<tr>
+    <td width="260" align="center" valign="top" style="border: 0;">
+      <img src="/public/mockpit-overhead-viz.png" alt="Mockpit Overhead Driving Visualization" width="240">
+    </td>
+    <td valign="top" style="border: 0;">
 Driving & Telemetry
 
 * Overhead Driving Visualization: Vehicle orientation display with integrated Leaflet maps and real-time driving telemetry.
+
+  </td>
+</tr>
+</table>
 
 Auditor Mode & Automotive HMI Safety Compliance (v1.2)
 
