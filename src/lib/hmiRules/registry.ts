@@ -135,8 +135,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'interaction',
     title: 'Minimum Tap Target & Control Spacing',
     description: 'All touch interactive targets must be at least 44×44px with an 8–12px minimum gap between adjacent controls to prevent driver mis-taps.',
+    standardRef: 'ISO 15005 / NHTSA (≥44×44px)',
     tier: 'static',
     source: 'existing',
+    addedDate: '2026-08-01',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -199,8 +202,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'feedback',
     title: 'No Pulsing / Blinking Status Indicators',
     description: 'No `animate-pulse` or persistent visual blinking on any driver status indicator to avoid visual fatigue and sensory distraction.',
+    standardRef: 'ISO 15005 / NHTSA Visual Distraction Guidelines',
     tier: 'static',
     source: 'existing',
+    addedDate: '2026-08-01',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -249,8 +255,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'overlay',
     title: 'No Full-Screen Driver Modals',
     description: 'No full-screen modal overlays for driver-facing confirmations; alerts and confirmations must be rendered inline in-card.',
+    standardRef: 'NHTSA Driver Distraction Guidelines',
     tier: 'static',
     source: 'existing',
+    addedDate: '2026-08-01',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -300,16 +309,22 @@ export const HMI_RULES: HMIRule[] = [
     category: 'content',
     title: 'No Hedging / Disclaimer Badges on Glanceable Cards',
     description: 'Driver-facing glanceable cards must present direct, concise facts without legal disclaimers, hedging language, or cluttering badges.',
+    standardRef: 'SAE J2364 / NHTSA Glance Legibility',
     tier: 'manual',
     source: 'existing',
+    addedDate: '2026-08-01',
+    addedBy: 'anthropic-research',
   },
   {
     id: 'palette.accuracy',
     category: 'palette',
     title: 'Palette Accuracy & Contrast Fidelity',
     description: 'Palette entries and theme tokens must accurately describe rendered behavior and maintain high-contrast legibility across ambient lighting conditions.',
+    standardRef: 'ISO 15005 / WCAG 2.1',
     tier: 'manual',
     source: 'existing',
+    addedDate: '2026-08-01',
+    addedBy: 'anthropic-research',
   },
 
   // ==========================================
@@ -320,8 +335,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'timing',
     title: 'Interface Action Response Time (100–2500ms)',
     description: 'Interface actions must produce immediate visual feedback and complete operations within 100–2500ms under all operating conditions.',
+    standardRef: 'ISO 15005 / SAE J2364',
     tier: 'runtime',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const log = ctx.runtimeLog || [];
       if (log.length === 0) {
@@ -366,24 +384,33 @@ export const HMI_RULES: HMIRule[] = [
     category: 'timing',
     title: 'Single Glance Duration (≤2.0s)',
     description: 'Visual layouts must be comprehensible within individual glances of ≤2.0 seconds. High visual density increases off-road glance risk.',
+    standardRef: 'NHTSA 2.0s Single Glance Limit',
     tier: 'manual',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
   },
   {
     id: 'timing.task-glance-total',
     category: 'timing',
     title: 'Cumulative Task Off-Road Glance (≤12.0s)',
     description: 'Total cumulative off-road glance time across all sub-steps of a driving task must not exceed 12.0 seconds (NHTSA / SAE J2364 standard).',
+    standardRef: 'NHTSA / SAE J2364 (≤12.0s cumulative glance)',
     tier: 'manual',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
   },
   {
     id: 'timing.transition-duration',
     category: 'timing',
     title: 'Screen Transition Timing (~150ms / <400ms)',
     description: 'Split-screen transitions should target ~150ms; primary app screens must transition in <400ms and secondary apps in <430ms.',
+    standardRef: 'ISO 15005 / OEM HMI Guidelines',
     tier: 'static',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const screens = ctx.screens;
@@ -426,8 +453,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'feedback',
     title: 'Visual Input Feedback Latency (<100ms)',
     description: 'Immediate tactile or visual state feedback (pressed state, highlight) must occur within 100ms of user input.',
+    standardRef: 'ISO 15005 / Nielsen Perceptual Threshold',
     tier: 'runtime',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const log = ctx.runtimeLog || [];
       if (log.length === 0) {
@@ -476,8 +506,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'ia',
     title: 'Broad-and-Shallow Navigation Hierarchy (≤2 Levels)',
     description: 'Navigation depth must not exceed 2 levels (≤2 taps/transitions from Home). Deeply nested menus increase cognitive load and glance frequency.',
+    standardRef: 'NHTSA / SAE J2364 (≤2 Menu Levels)',
     tier: 'static',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const navTree = ctx.navTree;
@@ -528,8 +561,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'ia',
     title: 'Single-Layer Priority for Critical Tasks',
     description: 'Critical driving tasks (climate, route maneuver/mute, audio controls, call management, hazard/drive mode) must be reachable directly from the main interface.',
+    standardRef: 'ISO 15005 / NHTSA Priority Access',
     tier: 'static',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const homeInstances = ctx.componentsByScreen['home'] || [];
       const homeTypes = new Set(homeInstances.map((i) => i.type));
@@ -558,8 +594,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'ia',
     title: 'Task Segmentation & State Preservation',
     description: 'Multi-step workflows (navigation trip planning, messaging drafts) must be chunkable and preserve partial state across interruptions.',
+    standardRef: 'SAE J2364 Task Resumability',
     tier: 'static',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       // Check if project preserves trip / drafting state
       const hasDraftState = ctx.activeTrip !== undefined;
@@ -581,8 +620,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'visual',
     title: 'Chromatic Visual Encoding (Not Pure Monochrome)',
     description: 'Interfaces must employ chromatic color coding (e.g. green for battery/success, amber for warnings, cyan/sky for telemetry) for rapid perceptual pop-out.',
+    standardRef: 'ISO 15005 / SAE J2364 Visual Ergonomics',
     tier: 'static',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -632,8 +674,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'visual',
     title: 'Standardized ISO 2575 / SAE J2364 Symbols',
     description: 'Status telltales and control icons must use approved ISO 2575 / SAE J2364 symbol mappings rather than non-standard abstract glyphs.',
+    standardRef: 'ISO 2575 / SAE J2364',
     tier: 'static',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -683,8 +728,11 @@ export const HMI_RULES: HMIRule[] = [
     category: 'visual',
     title: 'Typography Visual Angle (12–20 arcmin)',
     description: 'Typography must provide ≥12–14 arcmin visual angle for standard body text and ≥16–20 arcmin for critical alerts at driver viewing distance.',
+    standardRef: 'ISO 15005 (Angular Legibility)',
     tier: 'static',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -755,16 +803,22 @@ export const HMI_RULES: HMIRule[] = [
     category: 'modality',
     title: 'Cascaded Multimodal Input Support',
     description: 'Complex multi-step tasks should combine multimodal inputs sequentially (e.g. voice search + touch confirmation, touch + audio chime) to lower driver workload.',
+    standardRef: 'NHTSA Multimodal Driver Workload',
     tier: 'manual',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
   },
   {
     id: 'modality.moving-lockouts',
     category: 'modality',
     title: 'Driver Distraction Lockouts While Moving',
     description: 'High-demand tasks (manual multi-character typing, extensive text scrolling, video playback) must be restricted/locked out when vehicle speed > 0.',
+    standardRef: 'NHTSA Visual-Manual Lockout Guidelines',
     tier: 'static',
     source: 'research-2026-08',
+    addedDate: '2026-08-14',
+    addedBy: 'anthropic-research',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;

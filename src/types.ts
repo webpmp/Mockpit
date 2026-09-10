@@ -278,7 +278,7 @@ export type Project = {
   components: ComponentInstance[];
 };
 
-export type ScreenMode = 'editor' | 'presentation';
+export type ScreenMode = 'editor' | 'presentation' | 'audit';
 
 export type SongTransition = 'none' | 'fade' | 'crossfade' | 'slide' | 'zoom';
 

@@ -39,6 +39,16 @@ export const RuleInfoAffordance: React.FC<RuleInfoAffordanceProps> = ({ rule }) 
           </div>
           <div className="text-slate-200 font-bold text-xs">{rule.title}</div>
           <p className="text-slate-300 text-xs leading-relaxed font-sans">{rule.description}</p>
+          {rule.standardRef && (
+            <div className="text-[11px] text-slate-400 font-mono pt-1 border-t border-slate-800/80">
+              <span className="text-slate-500 font-semibold">Standard: </span>
+              <span className="text-sky-300">{rule.standardRef}</span>
+            </div>
+          )}
+          <div className="text-[10px] text-slate-500 font-mono flex items-center justify-between pt-0.5">
+            <span>Source: {rule.source}</span>
+            {rule.addedDate && <span>Added: {rule.addedDate}</span>}
+          </div>
         </div>
       )}
     </div>

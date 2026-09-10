@@ -51,6 +51,10 @@ import {
   DisplayConfig,
   DEFAULT_DISPLAY_CONFIG,
   InteractionLogEntry,
+  HMI_RULES,
+  HMIRule,
+  RuleProposal,
+  RuleCategory,
 } from '../lib/hmiRules/registry';
 import {
   recordRuntimeInteraction as recordRuntimeLoggerEntry,
@@ -86,6 +90,9 @@ const LOCAL_STORAGE_RECENTS_KEY = 'mockpit_recents_v1';
 const LOCAL_STORAGE_CLIMATE_STATE_KEY = 'mockpit_climate_state_v1';
 const LOCAL_STORAGE_DISPLAY_CONFIG_KEY = 'mockpit_display_config_v1';
 const LOCAL_STORAGE_HMI_AUDIT_NOTES_KEY = 'mockpit_hmi_audit_notes_v1';
+const LOCAL_STORAGE_USER_DEFINED_MANUAL_RULES_KEY = 'mockpit_user_defined_manual_rules_v1';
+const LOCAL_STORAGE_RULE_PROPOSALS_KEY = 'mockpit_rule_proposals_v1';
+const LOCAL_STORAGE_EDITED_BASE_MANUAL_RULES_KEY = 'mockpit_edited_base_manual_rules_v1';
 const LOCAL_STORAGE_SELECTED_MUSIC_SERVICE_KEY = 'mockpit_selected_music_service_v1';
 const LOCAL_STORAGE_SHELL_BG_KEY = 'mockpit_shell_background_v1';
 
@@ -934,6 +941,7 @@ function loadSavedDisplayConfig(): DisplayConfig {
 
 function loadSavedHmiAuditNotes(): Record<string, Record<string, { status: 'needs-review' | 'reviewed'; note: string }>> {
   try {
+    if (typeof localStorage === 'undefined') return {};
     const saved = localStorage.getItem(LOCAL_STORAGE_HMI_AUDIT_NOTES_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -943,6 +951,48 @@ function loadSavedHmiAuditNotes(): Record<string, Record<string, { status: 'need
     }
   } catch (e) {
     console.error('Failed to load HMI audit notes from localStorage', e);
+  }
+  return {};
+}
+
+function loadSavedUserDefinedManualRules(): HMIRule[] {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const saved = localStorage.getItem(LOCAL_STORAGE_USER_DEFINED_MANUAL_RULES_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load user defined manual rules from localStorage', e);
+  }
+  return [];
+}
+
+function loadSavedRuleProposals(): RuleProposal[] {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const saved = localStorage.getItem(LOCAL_STORAGE_RULE_PROPOSALS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load rule proposals from localStorage', e);
+  }
+  return [];
+}
+
+function loadSavedEditedBaseManualRules(): Record<string, Partial<HMIRule>> {
+  try {
+    if (typeof localStorage === 'undefined') return {};
+    const saved = localStorage.getItem(LOCAL_STORAGE_EDITED_BASE_MANUAL_RULES_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (typeof parsed === 'object' && parsed !== null) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load edited base manual rules from localStorage', e);
   }
   return {};
 }
@@ -967,17 +1017,26 @@ interface MockpitStore {
   // HMI Compliance Rules & Audit System
   displayConfig: DisplayConfig;
   hmiAuditNotes: Record<string, Record<string, { status: 'needs-review' | 'reviewed'; note: string }>>;
-  isAuditPanelOpen: boolean;
   auditTargetScreenId: string;
   runtimeLog: InteractionLogEntry[];
-  setAuditPanelOpen: (open: boolean) => void;
-  toggleAuditPanel: () => void;
   setAuditTargetScreenId: (screenId: string) => void;
   setAuditNote: (screenId: string, ruleId: string, note: string) => void;
   toggleAuditReviewStatus: (screenId: string, ruleId: string) => void;
   updateDisplayConfig: (partial: Partial<DisplayConfig>) => void;
   addRuntimeLogEntry: (entry: Omit<InteractionLogEntry, 'id' | 'timestamp'>) => void;
   clearRuntimeLog: () => void;
+
+  // HMI Rules Registry Slice
+  userDefinedManualRules: HMIRule[];
+  ruleProposals: RuleProposal[];
+  editedBaseManualRules: Record<string, Partial<HMIRule>>;
+  addUserDefinedManualRule: (rule: Omit<HMIRule, 'id' | 'tier' | 'addedBy' | 'addedDate'> & { id?: string; addedDate?: string }) => void;
+  updateManualRule: (id: string, updates: { title?: string; description?: string; standardRef?: string; category?: RuleCategory }) => void;
+  deleteUserDefinedManualRule: (id: string) => void;
+  addRuleProposal: (proposal: Omit<RuleProposal, 'id' | 'createdAt' | 'status'>) => void;
+  deleteRuleProposal: (id: string) => void;
+  updateRuleProposalStatus: (id: string, status: 'draft' | 'exported') => void;
+  getEffectiveRules: () => HMIRule[];
 
   // Settings, Palette & Canvas Grid
   isAboutModalOpen: boolean;
@@ -1316,11 +1375,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   // HMI Compliance Rules & Audit System
   displayConfig: loadSavedDisplayConfig(),
   hmiAuditNotes: loadSavedHmiAuditNotes(),
-  isAuditPanelOpen: false,
   auditTargetScreenId: 'current',
   runtimeLog: [],
-  setAuditPanelOpen: (open: boolean) => set({ isAuditPanelOpen: open }),
-  toggleAuditPanel: () => set((state) => ({ isAuditPanelOpen: !state.isAuditPanelOpen })),
   setAuditTargetScreenId: (screenId: string) => set({ auditTargetScreenId: screenId }),
   setAuditNote: (screenId: string, ruleId: string, note: string) => {
     set((state) => {
@@ -1379,6 +1435,155 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   clearRuntimeLog: () => {
     clearRuntimeLogger();
     set({ runtimeLog: [] });
+  },
+
+  // HMI Rules Registry Slice Implementation
+  userDefinedManualRules: loadSavedUserDefinedManualRules(),
+  ruleProposals: loadSavedRuleProposals(),
+  editedBaseManualRules: loadSavedEditedBaseManualRules(),
+
+  addUserDefinedManualRule: (ruleInput) => {
+    set((state) => {
+      const id = ruleInput.id || `manual.${Date.now()}`;
+      const newRule: HMIRule = {
+        id,
+        category: ruleInput.category,
+        title: ruleInput.title,
+        description: ruleInput.description,
+        standardRef: ruleInput.standardRef || 'Custom Standard',
+        tier: 'manual',
+        source: ruleInput.source || 'user-proposed',
+        addedDate: ruleInput.addedDate || new Date().toISOString().slice(0, 10),
+        addedBy: 'user-proposed',
+      };
+      const updated = [...state.userDefinedManualRules, newRule];
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_USER_DEFINED_MANUAL_RULES_KEY, JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.error('Failed to save user defined manual rules', e);
+      }
+      return { userDefinedManualRules: updated };
+    });
+  },
+
+  updateManualRule: (id, updates) => {
+    set((state) => {
+      // Check if it is a user-defined manual rule
+      const userIdx = state.userDefinedManualRules.findIndex((r) => r.id === id);
+      if (userIdx >= 0) {
+        const updatedRules = [...state.userDefinedManualRules];
+        updatedRules[userIdx] = { ...updatedRules[userIdx], ...updates };
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(LOCAL_STORAGE_USER_DEFINED_MANUAL_RULES_KEY, JSON.stringify(updatedRules));
+          }
+        } catch (e) {
+          console.error('Failed to update user defined manual rule', e);
+        }
+        return { userDefinedManualRules: updatedRules };
+      }
+
+      // Otherwise check if it is one of the 5 base manual rules
+      const baseRule = HMI_RULES.find((r) => r.id === id && r.tier === 'manual');
+      if (baseRule) {
+        const currentOverride = state.editedBaseManualRules[id] || {};
+        const updatedOverrides = {
+          ...state.editedBaseManualRules,
+          [id]: { ...currentOverride, ...updates },
+        };
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(LOCAL_STORAGE_EDITED_BASE_MANUAL_RULES_KEY, JSON.stringify(updatedOverrides));
+          }
+        } catch (e) {
+          console.error('Failed to update edited base manual rules', e);
+        }
+        return { editedBaseManualRules: updatedOverrides };
+      }
+
+      return {};
+    });
+  },
+
+  deleteUserDefinedManualRule: (id) => {
+    set((state) => {
+      // Only delete if it's user-defined (pre-existing base rules are non-deletable)
+      const updated = state.userDefinedManualRules.filter((r) => r.id !== id);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_USER_DEFINED_MANUAL_RULES_KEY, JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.error('Failed to delete user defined manual rule', e);
+      }
+      return { userDefinedManualRules: updated };
+    });
+  },
+
+  addRuleProposal: (proposalInput) => {
+    set((state) => {
+      const newProposal: RuleProposal = {
+        id: `proposal.${Date.now()}`,
+        title: proposalInput.title,
+        description: proposalInput.description,
+        category: proposalInput.category,
+        tier: proposalInput.tier,
+        standardRef: proposalInput.standardRef,
+        thresholdIntent: proposalInput.thresholdIntent,
+        createdAt: new Date().toISOString(),
+        status: 'draft',
+      };
+      const updated = [newProposal, ...state.ruleProposals];
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_RULE_PROPOSALS_KEY, JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.error('Failed to save rule proposals', e);
+      }
+      return { ruleProposals: updated };
+    });
+  },
+
+  deleteRuleProposal: (id) => {
+    set((state) => {
+      const updated = state.ruleProposals.filter((p) => p.id !== id);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_RULE_PROPOSALS_KEY, JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.error('Failed to delete rule proposal', e);
+      }
+      return { ruleProposals: updated };
+    });
+  },
+
+  updateRuleProposalStatus: (id, status) => {
+    set((state) => {
+      const updated = state.ruleProposals.map((p) => (p.id === id ? { ...p, status } : p));
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_RULE_PROPOSALS_KEY, JSON.stringify(updated));
+        }
+      } catch (e) {
+        console.error('Failed to update rule proposal status', e);
+      }
+      return { ruleProposals: updated };
+    });
+  },
+
+  getEffectiveRules: () => {
+    const state = get();
+    const baseWithOverrides = HMI_RULES.map((rule) => {
+      if (rule.tier === 'manual' && state.editedBaseManualRules[rule.id]) {
+        return { ...rule, ...state.editedBaseManualRules[rule.id] };
+      }
+      return rule;
+    });
+    return [...baseWithOverrides, ...state.userDefinedManualRules];
   },
 
   journey: INITIAL_JOURNEY_STATE,

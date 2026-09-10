@@ -89,6 +89,7 @@ function createManualFinding(rule: HMIRule, ctx: AuditContext): RuleFinding {
     screenId: ctx.screenId,
     message,
     heuristicGlanceCount,
+    standardRef: rule.standardRef,
   };
 }
 
@@ -102,6 +103,7 @@ function createNotMeasuredFinding(rule: HMIRule, ctx: AuditContext): RuleFinding
     screenId: ctx.screenId,
     message: 'Not yet measured — Run a Preview session to collect real-time interaction metrics.',
     threshold: rule.id === 'timing.response-time' ? '100–2500ms' : '<100ms',
+    standardRef: rule.standardRef,
   };
 }
 
@@ -109,27 +111,37 @@ function createNotMeasuredFinding(rule: HMIRule, ctx: AuditContext): RuleFinding
  * Executes a full compliance audit against the HMI Rules Registry.
  *
  * @param ctx AuditContext containing component instances, screens, nav tree, and runtime metrics
+ * @param rulesToRun Optional array of rules to audit against (defaults to canonical HMI_RULES)
  * @returns Array of RuleFinding results
  */
-export function runAudit(ctx: AuditContext): RuleFinding[] {
+export function runAudit(ctx: AuditContext, rulesToRun?: HMIRule[]): RuleFinding[] {
   const allFindings: RuleFinding[] = [];
+  const rules = rulesToRun || HMI_RULES;
 
-  for (const rule of HMI_RULES) {
+  for (const rule of rules) {
     if (rule.tier === 'manual') {
-      allFindings.push(createManualFinding(rule, ctx));
+      const finding = createManualFinding(rule, ctx);
+      finding.standardRef = rule.standardRef;
+      allFindings.push(finding);
     } else if (rule.tier === 'runtime' && (!ctx.runtimeLog || ctx.runtimeLog.length === 0)) {
-      allFindings.push(createNotMeasuredFinding(rule, ctx));
+      const finding = createNotMeasuredFinding(rule, ctx);
+      finding.standardRef = rule.standardRef;
+      allFindings.push(finding);
     } else if (rule.check) {
       try {
         const results = rule.check(ctx);
         if (results && results.length > 0) {
-          allFindings.push(...results);
+          for (const res of results) {
+            res.standardRef = rule.standardRef;
+            allFindings.push(res);
+          }
         } else {
           allFindings.push({
             ruleId: rule.id,
             status: 'pass',
             screenId: ctx.screenId,
             message: `Satisfies ${rule.title} standards.`,
+            standardRef: rule.standardRef,
           });
         }
       } catch (err: any) {
@@ -138,6 +150,7 @@ export function runAudit(ctx: AuditContext): RuleFinding[] {
           status: 'fail',
           screenId: ctx.screenId,
           message: `Audit check error: ${err?.message || String(err)}`,
+          standardRef: rule.standardRef,
         });
       }
     }

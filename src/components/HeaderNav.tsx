@@ -25,8 +25,6 @@ import {
 export const HeaderNav: React.FC = () => {
   const screenMode = useMockpitStore((s) => s.screenMode);
   const setScreenMode = useMockpitStore((s) => s.setScreenMode);
-  const isAuditPanelOpen = useMockpitStore((s) => s.isAuditPanelOpen);
-  const toggleAuditPanel = useMockpitStore((s) => s.toggleAuditPanel);
   const activeView = useMockpitStore((s) => s.activeView);
   const setActiveView = useMockpitStore((s) => s.setActiveView);
   const screens = useMockpitStore((s) => s.screens);
@@ -307,6 +305,7 @@ export const HeaderNav: React.FC = () => {
 
                           <button
                             onClick={() => {
+                              setScreenMode('editor');
                               setActiveView(parentScreen.id);
                               setIsMegaMenuOpen(false);
                             }}
@@ -454,6 +453,7 @@ export const HeaderNav: React.FC = () => {
 
                                   <button
                                     onClick={() => {
+                                      setScreenMode('editor');
                                       setActiveView(childScreen.id);
                                       setIsMegaMenuOpen(false);
                                     }}
@@ -520,17 +520,17 @@ export const HeaderNav: React.FC = () => {
         {/* Divider */}
         <div className="w-px h-4 bg-slate-800/90 mx-1" />
 
-        {/* Editor / Presentation Mode Switcher */}
+        {/* Editor / Presenter / Auditor Mode Switcher */}
         <div className="flex items-center gap-0.5 bg-slate-900/90 p-0.5 rounded-xl border border-slate-800/90">
           <button
             onClick={() => setScreenMode('editor')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              !isPresentation
+              screenMode === 'editor'
                 ? 'bg-slate-800 shadow-sm border border-slate-700/60'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
             style={{
-              color: !isPresentation ? 'var(--color-primary)' : undefined,
+              color: screenMode === 'editor' ? 'var(--color-primary)' : undefined,
             }}
             title="Editor Mode"
           >
@@ -541,14 +541,27 @@ export const HeaderNav: React.FC = () => {
           <button
             onClick={() => setScreenMode('presentation')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              isPresentation
+              screenMode === 'presentation'
                 ? 'bg-slate-800 text-emerald-400 shadow-sm border border-slate-700/60'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
-            title="Presentation Mode"
+            title="Presenter Mode"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Presentation</span>
+            <span>Presenter</span>
+          </button>
+
+          <button
+            onClick={() => setScreenMode('audit')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              screenMode === 'audit'
+                ? 'bg-slate-800 text-sky-400 shadow-sm border border-slate-700/60'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Auditor Mode"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+            <span>Auditor</span>
           </button>
         </div>
       </div>
@@ -556,20 +569,6 @@ export const HeaderNav: React.FC = () => {
       {/* Utility Action Icons */}
       {!isPresentation && (
         <div className="flex items-center gap-1.5 ml-auto">
-          {/* HMI Compliance & Safety Audit Button */}
-          <button
-            onClick={toggleAuditPanel}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono transition-all border flex items-center gap-1.5 cursor-pointer ${
-              isAuditPanelOpen
-                ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.3)]'
-                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:text-sky-300 hover:border-sky-500/30'
-            }`}
-            title="HMI Compliance & Safety Audit (v1.0)"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-            <span className="hidden sm:inline">Audit</span>
-          </button>
-
           {copiedComponent && (
             <button
               onClick={() => pasteComponent()}

@@ -11,7 +11,6 @@ import { AboutModal } from './components/AboutModal';
 
 export default function App() {
   const screenMode = useMockpitStore((s) => s.screenMode);
-  const isPresentation = screenMode === 'presentation';
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -69,26 +68,29 @@ export default function App() {
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden relative pb-[42px]">
-        {/* Left Component Library Sidebar (Editor Mode) */}
-        {!isPresentation && <Sidebar />}
+        {screenMode === 'audit' ? (
+          <AuditPanel />
+        ) : (
+          <>
+            {/* Left Component Library Sidebar (Editor Mode) */}
+            {screenMode === 'editor' && <Sidebar />}
 
-        {/* Center Infotainment Display Canvas */}
-        <div className="flex-1 h-full overflow-hidden relative">
-          <Canvas />
-        </div>
+            {/* Center Infotainment Display Canvas */}
+            <div className="flex-1 h-full overflow-hidden relative">
+              <Canvas />
+            </div>
 
-        {/* Right Inspector Panel (Editor Mode) */}
-        {!isPresentation && <Inspector />}
+            {/* Right Inspector Panel (Editor Mode) */}
+            {screenMode === 'editor' && <Inspector />}
+          </>
+        )}
       </div>
 
       {/* Toggle-able Vehicle State Debug Panel */}
-      <DebugStatePanel />
+      {screenMode !== 'audit' && <DebugStatePanel />}
 
       {/* System Settings & Palette Modal */}
       <SettingsModal />
-
-      {/* Automotive HMI Compliance & Safety Audit Panel */}
-      <AuditPanel />
 
       {/* About Mockpit Modal */}
       <AboutModal />

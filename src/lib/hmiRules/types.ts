@@ -71,6 +71,7 @@ export interface RuleFinding {
   threshold?: string;
   heuristicGlanceCount?: number;
   details?: string;
+  standardRef?: string;
 }
 
 export interface HMIRule {
@@ -78,7 +79,22 @@ export interface HMIRule {
   category: RuleCategory;
   title: string;
   description: string;
+  standardRef: string;
   tier: RuleTier;
-  source: 'existing' | 'research-2026-08';
+  source: string;
+  addedDate: string;
+  addedBy?: 'anthropic-research' | 'user-proposed' | string;
   check?: (ctx: AuditContext) => RuleFinding[];
+}
+
+export interface RuleProposal {
+  id: string;
+  title: string;
+  description: string;
+  category: RuleCategory;
+  tier: 'static' | 'runtime' | 'manual';
+  standardRef: string;
+  thresholdIntent: string;
+  createdAt: string;
+  status: 'draft' | 'exported';
 }
