@@ -1,11 +1,6 @@
-# Mockpit
+Mockpit
 
 Prototyping vehicle infotainment systems with component-based, behavior-driven Human-Machine Interface (HMI) bindings.
-
-![React](https://img.shields.io/badge/React-19-blue?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)
-![Vite](https://img.shields.io/badge/Vite-6.2-purple?logo=vite)
-![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?logo=tailwindcss)
 
 <table align="center" style="border: 0;" cellspacing="0">
   <tr>
@@ -18,106 +13,135 @@ Prototyping vehicle infotainment systems with component-based, behavior-driven H
   </tr>
 </table>
 
----
+⸻
 
-## Overview
+Overview
 
-**Mockpit** is an interactive prototyping application for designing, layout-testing, and simulating modern automotive digital cockpits and infotainment systems. It provides modular, highly-responsive HMI widgets with realistic behavior, live state management, and real-time canvas positioning.
+Mockpit is an interactive prototyping application for designing, layout-testing, and simulating modern automotive digital cockpits and infotainment systems. It provides modular, highly-responsive HMI widgets with realistic behavior, live state management, and real-time canvas positioning.
 
----
+⸻
 
-## Key Features
+Key Features
 
-- 🌡️ **Climate Control Suite**
-  - **Temperature Widget**: Dual-mode (horizontal/vertical) temperature slider with mercury color gradients, press-and-hold auto-repeat buttons, container query scaling, and precise puck bounds.
-  - **Vent Control**: Interactive air flow direction toggles and fan speed controls.
-  - **Seat Controls**: Multi-stage driver and passenger seat heating and ventilation selectors.
+<table style="border: 0;" cellspacing="0">
+  <tr>
+    <td width="260" align="center" valign="top" style="border: 0;">
+      <img src="/public/mockpit-climate.png" alt="Mockpit Climate Control" width="240">
+    </td>
+    <td valign="top" style="border: 0;">
 
-- 📞 **Phone & Communications**
-  - **Dial Pad**: Responsive dialer with live type-to-display readout, press-and-hold clearing, contact matching, and container-relative key typography.
-  - **Contacts & Messages**: Contact directory search, call log history, and messaging widget bindings.
+Climate Control Suite
 
-- 🎵 **Infotainment & Media**
-  - **Media Player**: Track playback controls, progress scrubbing, volume controls, and album art display.
+* Temperature Widget: Dual-mode (horizontal/vertical) temperature slider with mercury color gradients, press-and-hold auto-repeat buttons, container query scaling, and precise puck bounds.
+* Vent Control: Interactive air flow direction toggles and fan speed controls.
+* Seat Controls: Multi-stage driver and passenger seat heating and ventilation selectors.
 
-- 🗺️ **Driving & Telemetry**
-  - **Overhead Driving Visualization**: Vehicle orientation display with integrated Leaflet maps and real-time driving telemetry.
+  </td>
+</tr>
+<tr>
+  <td width="260" align="center" valign="top" style="border: 0;">
+    <img src="/public/mockpit-phone.png" alt="Mockpit Phone and Communications" width="240">
+  </td>
+  <td valign="top" style="border: 0;">
 
-- 🛡️ **Auditor Mode & Automotive HMI Safety Compliance (v1.2)**
-  - **Automated Compliance Engine**: Evaluates cockpit screens against industry automotive ergonomics and distraction guidelines (NHTSA Driver Distraction Guidelines, ISO 15005, ISO 9241-410, SAE J941, WCAG 2.1).
-  - **Multi-Tier Rule Framework**:
-    - **Static Analysis**: Touch target physical sizing (mm), character heights/PPD, contrast ratios across themes, information density, and glance-budget heuristics.
-    - **Runtime Telemetry**: Interaction latency instrumentation, response times, and state transition smoothness.
-    - **Manual Checklist & Notes**: Qualitative review criteria with reviewer status toggles and audit documentation per screen.
-  - **Dual Audit Perspectives**:
-    - **Rule View**: Filter and audit findings grouped by safety standards, categories (Timing, Information Architecture, Visual, Feedback, Modality), and compliance status (Pass, Fail, Warning, Needs Review).
-    - **Component View**: Screen-by-screen and widget-by-widget inspector comparing measured metrics against standard thresholds.
-  - **Seamless Canvas Deep Linking**: Click "Select on canvas" on any finding to automatically switch back to Editor mode, switch to the active screen, and select the component.
-  - **Rule Registry Browser**: Searchable reference library of all evaluated HMI guidelines with regulatory citations, design rationales, and physical display calibration (display diagonal, aspect ratio, viewing distance).
+Phone & Communications
 
-- 🛠️ **Canvas & Customization Workspace**
-  - **Three App Modes**: Seamless switching between **Editor** (full design tool), **Presenter** (distraction-free cockpit simulation), and **Auditor** (in-depth HMI safety inspection).
-  - **Drag & Drop Canvas**: Modular widget positioning, resizing, and alignment.
-  - **Layers Panel**: Z-index reordering and visibility toggles for all HMI widgets.
-  - **Inspector**: Fine-tune component props, color themes, and binding values.
-  - **Drive Simulator & Telemetry Panel**: Live vehicle state simulation (gears, speed, battery, headlights, ADAS, and event presets). Automatically hidden during Auditor mode.
-  - **Vehicle Dashboard Environment**: Direct-manipulation background scaling and panning with true cancel-and-close Reset support.
+* Dial Pad: Responsive dialer with live type-to-display readout, press-and-hold clearing, contact matching, and container-relative key typography.
+* Contacts & Messages: Contact directory search, call log history, and messaging widget bindings.
 
----
+  </td>
+</tr>
+<tr>
+  <td width="260" align="center" valign="top" style="border: 0;">
+    <img src="/public/mockpit-media.png" alt="Mockpit Infotainment and Media" width="240">
+  </td>
+  <td valign="top" style="border: 0;">
 
-## Tech Stack
+Infotainment & Media
 
-- **Frontend Framework**: React 19 + TypeScript
-- **Build Tool**: Vite 6
-- **Styling**: Tailwind CSS v4
-- **State Management**: Zustand
-- **Animations**: Motion
-- **Icons**: Lucide React
-- **Mapping**: Leaflet & React-Leaflet
+* Media Player: Track playback controls, progress scrubbing, volume controls, and album art display.
 
----
+  </td>
+</tr>
+</table>
 
-## 🚀 Getting Started
+Driving & Telemetry
 
-### Prerequisites
+* Overhead Driving Visualization: Vehicle orientation display with integrated Leaflet maps and real-time driving telemetry.
 
-- **Node.js**: v18 or higher
-- **npm**: v9 or higher
+Auditor Mode & Automotive HMI Safety Compliance (v1.2)
 
-### Installation
+* Automated Compliance Engine: Evaluates cockpit screens against industry automotive ergonomics and distraction guidelines (NHTSA Driver Distraction Guidelines, ISO 15005, ISO 9241-410, SAE J941, WCAG 2.1).
+* Multi-Tier Rule Framework:
+    * Static Analysis: Touch target physical sizing (mm), character heights/PPD, contrast ratios across themes, information density, and glance-budget heuristics.
+    * Runtime Telemetry: Interaction latency instrumentation, response times, and state transition smoothness.
+    * Manual Checklist & Notes: Qualitative review criteria with reviewer status toggles and audit documentation per screen.
+* Dual Audit Perspectives:
+    * Rule View: Filter and audit findings grouped by safety standards, categories (Timing, Information Architecture, Visual, Feedback, Modality), and compliance status (Pass, Fail, Warning, Needs Review).
+    * Component View: Screen-by-screen and widget-by-widget inspector comparing measured metrics against standard thresholds.
+* Seamless Canvas Deep Linking: Click “Select on canvas” on any finding to automatically switch back to Editor mode, switch to the active screen, and select the component.
+* Rule Registry Browser: Searchable reference library of all evaluated HMI guidelines with regulatory citations, design rationales, and physical display calibration (display diagonal, aspect ratio, viewing distance).
+
+Canvas & Customization Workspace
+
+* Three App Modes: Seamless switching between Editor (full design tool), Presenter (distraction-free cockpit simulation), and Auditor (in-depth HMI safety inspection).
+* Drag & Drop Canvas: Modular widget positioning, resizing, and alignment.
+* Layers Panel: Z-index reordering and visibility toggles for all HMI widgets.
+* Inspector: Fine-tune component props, color themes, and binding values.
+* Drive Simulator & Telemetry Panel: Live vehicle state simulation (gears, speed, battery, headlights, ADAS, and event presets). Automatically hidden during Auditor mode.
+* Vehicle Dashboard Environment: Direct-manipulation background scaling and panning with true cancel-and-close Reset support.
+
+⸻
+
+Tech Stack
+
+* Frontend Framework: React 19 + TypeScript
+* Build Tool: Vite 6
+* Styling: Tailwind CSS v4
+* State Management: Zustand
+* Animations: Motion
+* Icons: Lucide React
+* Mapping: Leaflet & React-Leaflet
+
+⸻
+
+🚀 Getting Started
+
+Prerequisites
+
+* Node.js: v18 or higher
+* npm: v9 or higher
+
+Installation
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/mockpit.git
-   cd mockpit
-   ```
+
+git clone https://github.com/your-username/mockpit.git
+cd mockpit
 
 2. Install dependencies:
-   ```bash
-   npm install
-   ```
+
+npm install
 
 3. Start the local development server:
-   ```bash
-   npm run dev
-   ```
 
-4. Open your browser at `http://localhost:3000` to interact with Mockpit.
+npm run dev
 
----
+4. Open your browser at http://localhost:3000 to interact with Mockpit.
 
-## Available Scripts
+⸻
 
-- `npm run dev` – Launch the Vite development server on port 3000.
-- `npm run build` – Compile the production bundle into the `dist` directory.
-- `npm run lint` – Run TypeScript type checks (`tsc --noEmit`).
-- `npm run preview` – Locally preview the built production bundle.
+Available Scripts
 
----
+* npm run dev – Launch the Vite development server on port 3000.
+* npm run build – Compile the production bundle into the dist directory.
+* npm run lint – Run TypeScript type checks (tsc --noEmit).
+* npm run preview – Locally preview the built production bundle.
 
-## Project Structure
+⸻
 
-```text
+Project Structure
+
 src/
 ├── components/           # Core HMI widgets & canvas UI
 │   ├── climate/          # Temperature, vent, and seat controls
@@ -135,10 +159,9 @@ src/
 ├── types.ts              # Global TypeScript declarations
 ├── utils/                # Helper utilities and color generators
 └── main.tsx              # Application entry point
-```
 
----
+⸻
 
-## 📄 License
+License
 
-This project is open-source and available under the [MIT License](LICENSE).
+This project is open-source and available under the MIT License.
