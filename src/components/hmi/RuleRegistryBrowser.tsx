@@ -30,6 +30,7 @@ import {
   Palette,
   X,
   FileCode,
+  ArrowLeft,
 } from 'lucide-react';
 
 const CATEGORIES: { id: RuleCategory; label: string; icon: React.FC<{ className?: string }> }[] = [
@@ -44,7 +45,11 @@ const CATEGORIES: { id: RuleCategory; label: string; icon: React.FC<{ className?
   { id: 'palette', label: 'Palette & Color Fidelity', icon: Palette },
 ];
 
-export const RuleRegistryBrowser: React.FC = () => {
+interface RuleRegistryBrowserProps {
+  onBackToFindings?: () => void;
+}
+
+export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBackToFindings }) => {
   const userDefinedManualRules = useMockpitStore((state) => state.userDefinedManualRules);
   const ruleProposals = useMockpitStore((state) => state.ruleProposals);
   const editedBaseManualRules = useMockpitStore((state) => state.editedBaseManualRules);
@@ -209,6 +214,18 @@ export const RuleRegistryBrowser: React.FC = () => {
       {/* Registry Sub-header & Action Bar */}
       <div className="px-5 py-3 border-b border-slate-800 bg-slate-950/40 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2">
+          {onBackToFindings && (
+            <button
+              type="button"
+              id="mockpit-registry-back-btn"
+              onClick={onBackToFindings}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition-colors cursor-pointer mr-1"
+              title="Back to Audit Findings"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Findings</span>
+            </button>
+          )}
           <BookOpen className="w-4 h-4 text-sky-400" />
           <h3 className="text-xs sm:text-sm font-bold font-mono text-slate-200 uppercase tracking-wider">
             HMI Rule Registry & Standards

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { ComponentInstance } from '../../types';
 import {
@@ -31,6 +31,7 @@ import {
   Layers,
   Eye,
   Sliders,
+  SlidersHorizontal,
   ChevronDown,
   ChevronUp,
   X,
@@ -61,6 +62,25 @@ interface ComponentAuditGroup {
   totalIssues: number;
 }
 
+export const normalizeCategoryName = (tagOrCategory?: string): string => {
+  if (!tagOrCategory) return 'General';
+  const lower = tagOrCategory.toLowerCase().trim();
+  if (lower.includes('tap target') || lower === 'tap targets') return 'Tap Targets';
+  if (lower.includes('feedback') || lower.includes('animation')) return 'Feedback & Animation';
+  if (lower.includes('overlay') || lower.includes('modal')) return 'Overlays & Modals';
+  if (lower.includes('content') || lower.includes('copy')) return 'Content & Copy';
+  if (lower.includes('color') || lower.includes('contrast')) return 'Color & Contrast';
+  if (lower.includes('timing') || lower.includes('glance')) return 'Timing & Glance Load';
+  if (lower.includes('navigation') || lower.includes('layout')) return 'Navigation and Layout';
+  if (lower.includes('icon') || lower.includes('symbol')) return 'Icon & Symbols';
+  if (lower.includes('input') || lower.includes('driving')) return 'Input & Driving Mode';
+  if (lower.includes('text') || lower.includes('legibility')) return 'Text Legibility';
+  return tagOrCategory
+    .split(/[\s_-]+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export const AuditPanel: React.FC = () => {
   const setScreenMode = useMockpitStore((s) => s.setScreenMode);
   const activeView = useMockpitStore((s) => s.activeView);
@@ -79,6 +99,7 @@ export const AuditPanel: React.FC = () => {
   const setAuditTargetScreenId = useMockpitStore((s) => s.setAuditTargetScreenId);
   const userDefinedManualRules = useMockpitStore((s) => s.userDefinedManualRules);
   const editedBaseManualRules = useMockpitStore((s) => s.editedBaseManualRules);
+  const backgroundColor = useMockpitStore((s) => s.backgroundColor);
 
   // Tab mode: 'findings' vs 'registry'
   const [activeAuditTab, setActiveAuditTab] = useState<'findings' | 'registry'>('findings');
@@ -100,13 +121,60 @@ export const AuditPanel: React.FC = () => {
   const [selectedTierFilter, setSelectedTierFilter] = useState<'all' | RuleTier>('all');
   // v1.1: Default to 'issues' filter
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'issues' | 'pass'>('issues');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [runtimeEntries, setRuntimeEntries] = useState(getRuntimeLog());
   const [exportFeedback, setExportFeedback] = useState<string | null>(null);
   // State for expanded passing component lists
   const [expandedPassIds, setExpandedPassIds] = useState<Record<string, boolean>>({});
-  // State for expanded rule component sub-rows
-  const [expandedRuleCompGroups, setExpandedRuleCompGroups] = useState<Record<string, boolean>>({});
+  // State for expanded rule cards (collapsed by default in v2)
+  const [expandedRuleCards, setExpandedRuleCards] = useState<Record<string, boolean>>({});
+
+  // Popover state for merged Filters control (v7)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const filtersPopoverRef = useRef<HTMLDivElement>(null);
+
+  // Close filters popover on click outside or Escape
+  useEffect(() => {
+    if (!isFiltersOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filtersPopoverRef.current && !filtersPopoverRef.current.contains(e.target as Node)) {
+        setIsFiltersOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFiltersOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFiltersOpen]);
+
+  // Active filters count and summary parts for v7 merged Filters control
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedStatusFilter !== 'all') count += 1;
+    if (selectedCategoryFilter !== 'all') count += 1;
+    return count;
+  }, [selectedStatusFilter, selectedCategoryFilter]);
+
+  const activeFilterSummaryParts = useMemo(() => {
+    const parts: string[] = [];
+    if (selectedStatusFilter === 'issues') {
+      parts.push('Issues');
+    } else if (selectedStatusFilter === 'pass') {
+      parts.push('Passed');
+    }
+    if (selectedCategoryFilter !== 'all') {
+      parts.push(selectedCategoryFilter);
+    }
+    return parts;
+  }, [selectedStatusFilter, selectedCategoryFilter]);
 
   // Sync activeTierTab when selectedTierFilter is changed externally
   useEffect(() => {
@@ -151,8 +219,9 @@ export const AuditPanel: React.FC = () => {
       displayConfig,
       canvasScale: 1.0,
       activeTrip,
+      screenBackgroundColor: backgroundColor || '#020617',
     };
-  }, [effectiveScreenId, auditTargetScreenId, componentsByScreen, screens, runtimeEntries, displayConfig, activeTrip]);
+  }, [effectiveScreenId, auditTargetScreenId, componentsByScreen, screens, runtimeEntries, displayConfig, activeTrip, backgroundColor]);
 
   // Run audit engine
   const findings = useMemo(() => {
@@ -337,10 +406,20 @@ export const AuditPanel: React.FC = () => {
         const comp = allInstances.find((i) => i.id === f.instanceId);
         const componentType = comp?.type || f.instanceId;
 
+        let screenId = f.screenId;
+        if (!screenId || screenId === 'all') {
+          for (const [sId, sComps] of Object.entries(componentsByScreen)) {
+            if (sComps.some((c) => c.id === f.instanceId)) {
+              screenId = sId;
+              break;
+            }
+          }
+        }
+
         group.affectedInstances.push({
           instanceId: f.instanceId,
           componentType,
-          screenId: f.screenId,
+          screenId,
           status: f.status as 'fail' | 'warning',
           measured: f.measured,
           threshold: f.threshold,
@@ -355,7 +434,10 @@ export const AuditPanel: React.FC = () => {
       const q = searchQuery.toLowerCase();
       list = list.filter(
         (g) =>
+          (g.rule.plainHeadline && g.rule.plainHeadline.toLowerCase().includes(q)) ||
+          (g.rule.categoryTag && g.rule.categoryTag.toLowerCase().includes(q)) ||
           g.rule.title.toLowerCase().includes(q) ||
+          g.rule.id.toLowerCase().includes(q) ||
           g.rule.description.toLowerCase().includes(q) ||
           (g.rule.standardRef && g.rule.standardRef.toLowerCase().includes(q))
       );
@@ -367,7 +449,38 @@ export const AuditPanel: React.FC = () => {
       list = list.filter((g) => g.fails.length + g.warnings.length === 0 && g.passes.length > 0);
     }
 
-    list.sort((a, b) => b.fails.length + b.warnings.length - (a.fails.length + a.warnings.length));
+    // Sort rules strictly by severity:
+    // 1. Fails first (by fail count desc, then warn count desc)
+    // 2. Warnings second (by warn count desc)
+    // 3. Not measured third
+    // 4. Passes last (alphabetically by plain headline / title)
+    list.sort((a, b) => {
+      const aHasFails = a.fails.length > 0;
+      const bHasFails = b.fails.length > 0;
+      if (aHasFails && !bHasFails) return -1;
+      if (!aHasFails && bHasFails) return 1;
+      if (aHasFails && bHasFails) {
+        if (b.fails.length !== a.fails.length) return b.fails.length - a.fails.length;
+        return b.warnings.length - a.warnings.length;
+      }
+
+      const aHasWarn = a.warnings.length > 0;
+      const bHasWarn = b.warnings.length > 0;
+      if (aHasWarn && !bHasWarn) return -1;
+      if (!aHasWarn && bHasWarn) return 1;
+      if (aHasWarn && bHasWarn) {
+        return b.warnings.length - a.warnings.length;
+      }
+
+      const aHasUnmeasured = a.notMeasured.length > 0;
+      const bHasUnmeasured = b.notMeasured.length > 0;
+      if (aHasUnmeasured && !bHasUnmeasured) return -1;
+      if (!aHasUnmeasured && bHasUnmeasured) return 1;
+
+      const aTitle = a.rule.plainHeadline || a.rule.title;
+      const bTitle = b.rule.plainHeadline || b.rule.title;
+      return aTitle.localeCompare(bTitle);
+    });
     return list;
   }, [findings, effectiveRules, selectedTierFilter, selectedStatusFilter, searchQuery, componentsByScreen]);
 
@@ -378,6 +491,92 @@ export const AuditPanel: React.FC = () => {
     }
     return groupedRulesData.filter((g) => g.rule.tier === activeTierTab);
   }, [groupedRulesData, selectedTierFilter, activeTierTab]);
+
+  // Available categories for the current tab (Item 7)
+  const availableCategoriesForCurrentTab = useMemo(() => {
+    const cats = new Set<string>();
+    effectiveRules
+      .filter((r) => r.tier === activeTierTab)
+      .forEach((r) => {
+        cats.add(normalizeCategoryName(r.categoryTag || r.category));
+      });
+    return Array.from(cats).sort();
+  }, [activeTierTab, effectiveRules]);
+
+  // Category-grouped rules for the current tab with two-level sorting (Item 6 & 7)
+  const categoryGroupedRules = useMemo(() => {
+    let rules = currentTabRules;
+    if (selectedCategoryFilter !== 'all') {
+      rules = rules.filter(
+        (g) => normalizeCategoryName(g.rule.categoryTag || g.rule.category) === selectedCategoryFilter
+      );
+    }
+
+    const catMap = new Map<string, typeof currentTabRules>();
+    rules.forEach((ruleGroup) => {
+      const catName = normalizeCategoryName(ruleGroup.rule.categoryTag || ruleGroup.rule.category);
+      const list = catMap.get(catName) || [];
+      list.push(ruleGroup);
+      catMap.set(catName, list);
+    });
+
+    const categories = Array.from(catMap.entries()).map(([categoryName, catRules]) => {
+      let maxFails = 0;
+      let totalFails = 0;
+      let maxWarnings = 0;
+      let totalWarnings = 0;
+      let hasUnmeasured = false;
+
+      catRules.forEach((rg) => {
+        const failCount = rg.fails.length;
+        const warnCount = rg.warnings.length;
+        if (failCount > maxFails) maxFails = failCount;
+        totalFails += failCount;
+        if (warnCount > maxWarnings) maxWarnings = warnCount;
+        totalWarnings += warnCount;
+        if (rg.notMeasured.length > 0) hasUnmeasured = true;
+      });
+
+      return {
+        categoryName,
+        rules: catRules,
+        maxFails,
+        totalFails,
+        maxWarnings,
+        totalWarnings,
+        hasUnmeasured,
+      };
+    });
+
+    // Two-level sort: category order by severity (Item 6)
+    categories.sort((a, b) => {
+      const aHasFails = a.maxFails > 0;
+      const bHasFails = b.maxFails > 0;
+      if (aHasFails && !bHasFails) return -1;
+      if (!aHasFails && bHasFails) return 1;
+      if (aHasFails && bHasFails) {
+        if (b.maxFails !== a.maxFails) return b.maxFails - a.maxFails;
+        if (b.totalFails !== a.totalFails) return b.totalFails - a.totalFails;
+        return b.maxWarnings - a.maxWarnings;
+      }
+
+      const aHasWarn = a.maxWarnings > 0;
+      const bHasWarn = b.maxWarnings > 0;
+      if (aHasWarn && !bHasWarn) return -1;
+      if (!aHasWarn && bHasWarn) return 1;
+      if (aHasWarn && bHasWarn) {
+        if (b.maxWarnings !== a.maxWarnings) return b.maxWarnings - a.maxWarnings;
+        return b.totalWarnings - a.totalWarnings;
+      }
+
+      if (a.hasUnmeasured && !b.hasUnmeasured) return -1;
+      if (!a.hasUnmeasured && b.hasUnmeasured) return 1;
+
+      return a.categoryName.localeCompare(b.categoryName);
+    });
+
+    return categories;
+  }, [currentTabRules, selectedCategoryFilter]);
 
   // Unmeasured runtime rules
   const unmeasuredRuntimeRules = useMemo(() => {
@@ -401,7 +600,6 @@ export const AuditPanel: React.FC = () => {
 
   // Manual rules data
   const manualList = useMemo(() => {
-    const screenNotes = hmiAuditNotes[effectiveScreenId] || {};
     const findingsByRule = new Map<string, RuleFinding[]>();
     findings.forEach((f) => {
       const list = findingsByRule.get(f.ruleId) || [];
@@ -412,7 +610,6 @@ export const AuditPanel: React.FC = () => {
     return effectiveRules
       .filter((rule) => rule.tier === 'manual')
       .map((rule) => {
-        const noteEntry = screenNotes[rule.id] || { status: 'needs-review', note: '' };
         const ruleFindings = findingsByRule.get(rule.id) || [];
         const finding = ruleFindings[0] || {
           ruleId: rule.id,
@@ -423,36 +620,56 @@ export const AuditPanel: React.FC = () => {
         return {
           rule,
           finding,
-          isReviewed: noteEntry.status === 'reviewed',
-          note: noteEntry.note,
         };
       });
-  }, [findings, effectiveRules, hmiAuditNotes, effectiveScreenId]);
+  }, [findings, effectiveRules]);
 
-  // Filter Manual rules by search & status
+  // Filter Manual rules by search & category
   const filteredManualRules = useMemo(() => {
-    return manualList.filter(({ rule, isReviewed }) => {
+    return manualList.filter(({ rule }) => {
       if (selectedTierFilter !== 'all' && rule.tier !== selectedTierFilter) {
         return false;
       }
 
-      // Status filter
-      if (selectedStatusFilter === 'issues') {
-        if (isReviewed) return false;
-      } else if (selectedStatusFilter === 'pass') {
-        if (!isReviewed) return false;
+      // Category filter (Item 7)
+      if (selectedCategoryFilter !== 'all') {
+        if (normalizeCategoryName(rule.categoryTag || rule.category) !== selectedCategoryFilter) {
+          return false;
+        }
       }
 
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchText = `${rule.title} ${rule.id} ${rule.description} ${rule.category} ${rule.standardRef || ''}`.toLowerCase();
+        const matchText = `${rule.plainHeadline || ''} ${rule.categoryTag || ''} ${rule.title} ${rule.id} ${rule.description} ${rule.category} ${rule.standardRef || ''}`.toLowerCase();
         if (!matchText.includes(q)) return false;
       }
 
       return true;
     });
-  }, [manualList, selectedTierFilter, selectedStatusFilter, searchQuery]);
+  }, [manualList, selectedTierFilter, selectedCategoryFilter, searchQuery]);
+
+  // Category-grouped manual rules
+  const categoryGroupedManualRules = useMemo(() => {
+    const catMap = new Map<string, typeof filteredManualRules>();
+    filteredManualRules.forEach((item) => {
+      const catName = normalizeCategoryName(item.rule.categoryTag || item.rule.category);
+      const list = catMap.get(catName) || [];
+      list.push(item);
+      catMap.set(catName, list);
+    });
+
+    const categories = Array.from(catMap.entries()).map(([categoryName, items]) => {
+      return {
+        categoryName,
+        items,
+      };
+    });
+
+    categories.sort((a, b) => a.categoryName.localeCompare(b.categoryName));
+
+    return categories;
+  }, [filteredManualRules]);
 
   // Total issues count for tab badge
   const totalIssuesCount = useMemo(() => {
@@ -460,9 +677,110 @@ export const AuditPanel: React.FC = () => {
       const rule = effectiveRules.find((r) => r.id === f.ruleId);
       return rule && rule.tier !== 'manual' && (f.status === 'fail' || f.status === 'warning');
     }).length;
-    const manualNeedsReview = manualList.filter((m) => !m.isReviewed).length;
-    return automatedIssues + manualNeedsReview;
+    return automatedIssues + manualList.length;
   }, [findings, effectiveRules, manualList]);
+
+  // Screen names lookup for findings (Item 6)
+  const getScreenNamesForFinding = (finding: RuleFinding): string => {
+    if (auditTargetScreenId !== 'all') {
+      const matched = screens.find((s) => s.id === auditTargetScreenId || s.id === effectiveScreenId);
+      return matched ? matched.name : (targetScreenDef?.name || 'Current Screen');
+    }
+    if (finding.screenId && finding.screenId !== 'all') {
+      const matched = screens.find((s) => s.id === finding.screenId);
+      if (matched) return matched.name;
+    }
+    // Scope is All Screens (Project-Wide): list the screens with active content
+    const activeScreenNames = screens
+      .filter((s) => (componentsByScreen[s.id] || []).length > 0)
+      .map((s) => s.name);
+    if (activeScreenNames.length > 0) {
+      return activeScreenNames.join(', ');
+    }
+    return screens.map((s) => s.name).join(', ') || 'All Screens';
+  };
+
+  // Screen names lookup for static and runtime rule cards (v6 Item 3)
+  const getRuleScreenNames = (ruleGroup: {
+    affectedInstances: { screenId?: string }[];
+    fails: RuleFinding[];
+    warnings: RuleFinding[];
+    passes: RuleFinding[];
+  }): string => {
+    const screenIdSet = new Set<string>();
+
+    ruleGroup.affectedInstances.forEach((inst) => {
+      if (inst.screenId && inst.screenId !== 'all') screenIdSet.add(inst.screenId);
+    });
+    ruleGroup.fails.forEach((f) => {
+      if (f.screenId && f.screenId !== 'all') screenIdSet.add(f.screenId);
+    });
+    ruleGroup.warnings.forEach((f) => {
+      if (f.screenId && f.screenId !== 'all') screenIdSet.add(f.screenId);
+    });
+
+    if (screenIdSet.size === 0) {
+      ruleGroup.passes.forEach((p) => {
+        if (p.screenId && p.screenId !== 'all') screenIdSet.add(p.screenId);
+      });
+    }
+
+    if (screenIdSet.size > 0) {
+      const matchedNames: string[] = [];
+      screens.forEach((s) => {
+        if (screenIdSet.has(s.id)) {
+          matchedNames.push(s.name);
+        }
+      });
+      screenIdSet.forEach((id) => {
+        if (!screens.some((s) => s.id === id)) {
+          matchedNames.push(id);
+        }
+      });
+      if (matchedNames.length > 0) {
+        return matchedNames.join(', ');
+      }
+    }
+
+    if (auditTargetScreenId !== 'all') {
+      const matched = screens.find((s) => s.id === auditTargetScreenId || s.id === effectiveScreenId);
+      return matched ? matched.name : (targetScreenDef?.name || 'Current Screen');
+    }
+
+    const activeScreenNames = screens
+      .filter((s) => (componentsByScreen[s.id] || []).length > 0)
+      .map((s) => s.name);
+    if (activeScreenNames.length > 0) {
+      return activeScreenNames.join(', ');
+    }
+
+    return screens.map((s) => s.name).join(', ') || 'All Screens';
+  };
+
+  // Formatting for finding measurement and threshold (v6 Item 1)
+  const formatFindingMeasurement = (inst: { measured?: string; threshold?: string; message: string }) => {
+    if (inst.measured) {
+      if (inst.threshold) {
+        let thresholdPart = inst.threshold;
+        if (thresholdPart.startsWith('≥')) {
+          thresholdPart = `needs at least ${thresholdPart.replace(/^≥\s*/, '')}`;
+        } else if (thresholdPart.startsWith('>')) {
+          thresholdPart = `needs more than ${thresholdPart.replace(/^>\s*/, '')}`;
+        } else if (thresholdPart.startsWith('≤')) {
+          thresholdPart = `needs at most ${thresholdPart.replace(/^≤\s*/, '')}`;
+        } else if (thresholdPart.startsWith('<')) {
+          thresholdPart = `needs less than ${thresholdPart.replace(/^<\s*/, '')}`;
+        } else if (thresholdPart.toLowerCase().startsWith('needs ')) {
+          thresholdPart = thresholdPart;
+        } else {
+          thresholdPart = `needs ${thresholdPart}`;
+        }
+        return `${inst.measured} — ${thresholdPart}`;
+      }
+      return inst.measured;
+    }
+    return inst.message;
+  };
 
   const handleSelectOnCanvas = (instanceId?: string, screenId?: string) => {
     if (!instanceId) return;
@@ -476,6 +794,7 @@ export const AuditPanel: React.FC = () => {
   const handleTierTabChange = (tier: 'static' | 'runtime' | 'manual') => {
     setActiveTierTab(tier);
     setSelectedTierFilter(tier);
+    setSelectedCategoryFilter('all');
   };
 
   const handleSummarySegmentClick = (tier: 'static' | 'runtime' | 'manual') => {
@@ -487,17 +806,17 @@ export const AuditPanel: React.FC = () => {
     }
   };
 
-  const toggleExpandRuleCompGroup = (key: string) => {
-    setExpandedRuleCompGroups((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
   const toggleExpandPass = (id: string) => {
     setExpandedPassIds((prev) => ({
       ...prev,
       [id]: !prev[id],
+    }));
+  };
+
+  const toggleExpandRuleCard = (ruleId: string) => {
+    setExpandedRuleCards((prev) => ({
+      ...prev,
+      [ruleId]: !prev[ruleId],
     }));
   };
 
@@ -634,282 +953,282 @@ export const AuditPanel: React.FC = () => {
 
   return (
     <div className="bg-slate-900 w-full h-full flex flex-col overflow-hidden text-slate-100 font-sans">
-      {/* Top Header Bar */}
-        <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-bold font-mono tracking-tight text-slate-100">
-                  HMI Compliance & Safety Audit
-                </h2>
-              </div>
-              <p className="text-xs text-slate-400">
-                Research-backed automotive timing, IA, legibility, and distraction standards
-              </p>
-            </div>
+      {/* Row 1 (identity): icon + title, Close button. Nothing else. */}
+      <div className="px-5 py-3 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0">
+            <ShieldCheck className="w-4 h-4" />
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* View Mode Toggle: Findings vs Rule Registry */}
-            <div className="flex items-center bg-slate-900 border border-slate-700/80 p-0.5 rounded-xl text-xs font-mono">
-              <button
-                type="button"
-                id="mockpit-audit-tab-findings"
-                onClick={() => setActiveAuditTab('findings')}
-                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                  activeAuditTab === 'findings'
-                    ? 'bg-sky-500 text-slate-950 font-bold shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Audit Findings
-              </button>
-              <button
-                type="button"
-                id="mockpit-audit-tab-registry"
-                onClick={() => setActiveAuditTab('registry')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                  activeAuditTab === 'registry'
-                    ? 'bg-sky-500 text-slate-950 font-bold shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Rule Registry</span>
-              </button>
-            </div>
-
-            {/* Screen Scope Picker */}
-            {activeAuditTab === 'findings' && (
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1 text-xs font-mono">
-                <span className="text-slate-400">Scope:</span>
-                <select
-                  value={auditTargetScreenId}
-                  onChange={(e) => setAuditTargetScreenId(e.target.value)}
-                  className="bg-transparent text-sky-300 font-bold focus:outline-none cursor-pointer"
-                >
-                  <option value="current" className="bg-slate-900 text-slate-100">
-                    Current ({screens.find((s) => s.id === activeView)?.name || activeView})
-                  </option>
-                  <option value="all" className="bg-slate-900 text-slate-100">
-                    All Screens (Project-Wide)
-                  </option>
-                  {screens.map((s) => (
-                    <option key={s.id} value={s.id} className="bg-slate-900 text-slate-100">
-                      Screen: {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Close Button */}
-            <button
-              onClick={() => setScreenMode('editor')}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Close Audit Mode"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <h2 className="text-sm sm:text-base font-bold font-mono tracking-tight text-slate-100">
+            HMI Compliance & Safety Audit
+          </h2>
         </div>
 
-        {/* Body content based on active tab */}
-        {activeAuditTab === 'registry' ? (
-          <RuleRegistryBrowser />
-        ) : (
-          <>
-            {/* Single-line Compact Stat Strip (Section 4d) */}
-            <div className="px-5 py-2 border-b border-slate-800 bg-slate-900/90 flex items-center gap-4 text-xs font-mono text-slate-400 overflow-x-auto shrink-0 select-none">
-              <button
-                type="button"
-                onClick={() => handleSummarySegmentClick('static')}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
-                  selectedTierFilter === 'static'
-                    ? 'bg-sky-500/15 text-sky-300 font-bold border border-sky-500/40'
-                    : 'hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
-                }`}
-                title="Filter by Static Analysis tier"
-              >
-                <span className="text-emerald-400 font-medium">{summaries.static.pass} Pass</span>
-                <span>·</span>
-                <span className={summaries.static.fail > 0 ? 'text-rose-400 font-bold' : 'text-slate-400'}>
-                  {summaries.static.fail} Fail
-                </span>
-                <span>·</span>
-                <span className={summaries.static.warning > 0 ? 'text-amber-400 font-medium' : 'text-slate-400'}>
-                  {summaries.static.warning} Warn
-                </span>
-              </button>
+        <button
+          onClick={() => setScreenMode('editor')}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors cursor-pointer"
+          title="Close Audit Mode"
+          aria-label="Close Audit Mode"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
-              <span className="text-slate-700">|</span>
+      {/* Body content based on active tab */}
+      {activeAuditTab === 'registry' ? (
+        <RuleRegistryBrowser onBackToFindings={() => setActiveAuditTab('findings')} />
+      ) : (
+        <>
+          {/* Row 2 (toolbar): Scope selector → Search input → Filters button (with badge) → Rule Registry icon button (right-aligned) */}
+          <div className="px-5 py-2 bg-slate-950/50 border-b border-slate-800 flex items-center gap-2.5 shrink-0 flex-wrap">
+            {/* Scope selector (no 'Scope:' prefix) */}
+            <select
+              id="mockpit-scope-select"
+              value={auditTargetScreenId}
+              onChange={(e) => setAuditTargetScreenId(e.target.value)}
+              className="bg-slate-900 border border-slate-800 focus:border-sky-500 rounded-xl px-2.5 py-1 text-xs text-sky-300 font-bold font-mono outline-none cursor-pointer"
+              title="Audit screen scope"
+            >
+              <option value="current" className="bg-slate-900 text-slate-100">
+                Current ({screens.find((s) => s.id === activeView)?.name || activeView})
+              </option>
+              <option value="all" className="bg-slate-900 text-slate-100">
+                All Screens (Project-Wide)
+              </option>
+              {screens.map((s) => (
+                <option key={s.id} value={s.id} className="bg-slate-900 text-slate-100">
+                  Screen: {s.name}
+                </option>
+              ))}
+            </select>
 
-              <button
-                type="button"
-                onClick={() => handleSummarySegmentClick('runtime')}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
-                  selectedTierFilter === 'runtime'
-                    ? 'bg-sky-500/15 text-sky-300 font-bold border border-sky-500/40'
-                    : 'hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
-                }`}
-                title="Filter by Runtime Metrics tier"
-              >
-                {summaries.runtime.notMeasured > 0 ? (
-                  <span className="text-slate-400">{summaries.runtime.notMeasured} Not Measured</span>
-                ) : (
-                  <>
-                    <span className="text-emerald-400 font-medium">{summaries.runtime.pass} Pass</span>
-                    {summaries.runtime.fail > 0 && (
-                      <>
-                        <span>·</span>
-                        <span className="text-rose-400 font-bold">{summaries.runtime.fail} Fail</span>
-                      </>
-                    )}
-                  </>
-                )}
-              </button>
-
-              <span className="text-slate-700">|</span>
-
-              <button
-                type="button"
-                onClick={() => handleSummarySegmentClick('manual')}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
-                  selectedTierFilter === 'manual'
-                    ? 'bg-sky-500/15 text-sky-300 font-bold border border-sky-500/40'
-                    : 'hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
-                }`}
-                title="Filter by Manual Review tier"
-              >
-                <span className="text-slate-400">{summaries.manual.reviewed} Reviewed</span>
-                <span>·</span>
-                <span className={summaries.manual.needsReview > 0 ? 'text-amber-400 font-medium' : 'text-slate-400'}>
-                  {summaries.manual.needsReview} Needs Review
-                </span>
-              </button>
+            {/* Search input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search rules, tokens..."
+                className="bg-slate-900 border border-slate-800 focus:border-sky-500 rounded-xl pl-8 pr-3 py-1 text-xs text-slate-200 font-mono outline-none w-36 sm:w-56"
+              />
             </div>
 
-            {/* Filter Controls & Search */}
-            <div className="px-5 py-2.5 bg-slate-950/50 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Search Input */}
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search rules, tokens..."
-                    className="bg-slate-900 border border-slate-800 focus:border-sky-500 rounded-xl pl-8 pr-3 py-1 text-xs text-slate-200 font-mono outline-none w-40 sm:w-48"
-                  />
-                </div>
+            {/* Filters button with badge & popover */}
+            <div className="relative" ref={filtersPopoverRef}>
+              <button
+                type="button"
+                id="mockpit-audit-filters-btn"
+                onClick={() => setIsFiltersOpen((prev) => !prev)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono transition-colors cursor-pointer border ${
+                  isFiltersOpen || activeFiltersCount > 0
+                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
+                }`}
+                title="Filter rules by status and category"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Filters</span>
+                {activeFiltersCount > 0 && (
+                  <span
+                    id="mockpit-audit-filters-badge"
+                    className="px-1.5 py-0.2 rounded-full bg-sky-400 text-slate-950 font-bold text-[10px] flex items-center justify-center leading-none"
+                  >
+                    {activeFiltersCount}
+                  </span>
+                )}
+                <ChevronDown className={`w-3 h-3 transition-transform ${isFiltersOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-                {/* Status Filter */}
-                <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-0.5 rounded-xl text-xs font-mono">
-                  <button
-                    onClick={() => setSelectedStatusFilter('all')}
-                    className={`px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
-                      selectedStatusFilter === 'all'
-                        ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    All ({findings.length})
-                  </button>
-                  <button
-                    onClick={() => setSelectedStatusFilter('issues')}
-                    className={`px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
-                      selectedStatusFilter === 'issues'
-                        ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    Issues ({totalIssuesCount})
-                  </button>
-                  <button
-                    onClick={() => setSelectedStatusFilter('pass')}
-                    className={`px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
-                      selectedStatusFilter === 'pass'
-                        ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    Passed
-                  </button>
-                </div>
+              {/* Filters Popover */}
+              {isFiltersOpen && (
+                <div
+                  id="mockpit-audit-filters-popover"
+                  className="absolute left-0 top-full mt-1.5 z-50 w-72 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col gap-3 font-mono text-xs animate-in fade-in zoom-in-95"
+                >
+                  {/* Popover Header */}
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span className="font-bold text-slate-200 text-xs uppercase tracking-wider">Filters</span>
+                    {activeFiltersCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedStatusFilter('all');
+                          setSelectedCategoryFilter('all');
+                        }}
+                        className="text-[11px] text-sky-400 hover:underline cursor-pointer"
+                      >
+                        Reset filters
+                      </button>
+                    )}
+                  </div>
 
-                {/* Group By Toggle (v1.2) - Default: Rule */}
+                  {/* Status Filter */}
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                      Status
+                    </span>
+                    <div className="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter('all')}
+                        className={`py-1 rounded text-center transition-colors cursor-pointer ${
+                          selectedStatusFilter === 'all'
+                            ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        All ({findings.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter('issues')}
+                        className={`py-1 rounded text-center transition-colors cursor-pointer ${
+                          selectedStatusFilter === 'issues'
+                            ? 'bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Issues ({totalIssuesCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatusFilter('pass')}
+                        className={`py-1 rounded text-center transition-colors cursor-pointer ${
+                          selectedStatusFilter === 'pass'
+                            ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Passed
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Category Filter */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="hmi-category-filter-select"
+                      className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block"
+                    >
+                      Category
+                    </label>
+                    <select
+                      id="hmi-category-filter-select"
+                      value={selectedCategoryFilter}
+                      onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-sky-500 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono outline-none cursor-pointer"
+                      title="Filter rules by category"
+                    >
+                      <option value="all">All Categories</option>
+                      {availableCategoriesForCurrentTab.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Rule Registry Icon Button (Right-aligned) */}
+            <div className="flex items-center ml-auto">
+              <button
+                type="button"
+                id="mockpit-audit-btn-registry"
+                onClick={() => setActiveAuditTab('registry')}
+                className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-100 transition-colors cursor-pointer"
+                title="Rule Registry"
+                aria-label="Rule Registry"
+              >
+                <BookOpen className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Row 3 (conditional): active-filters summary line, only rendered when status ≠ "All" or category ≠ "All Categories" */}
+          {activeFilterSummaryParts.length > 0 && (
+            <div
+              id="mockpit-active-filters-summary"
+              className="px-5 py-1.5 bg-slate-950/70 border-b border-slate-800/80 flex items-center justify-between text-xs font-mono text-slate-300 shrink-0"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-400">Filtering by:</span>
+                <span className="text-sky-300 font-semibold">
+                  {activeFilterSummaryParts.join(' · ')}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedStatusFilter('all');
+                  setSelectedCategoryFilter('all');
+                }}
+                className="text-[11px] text-slate-400 hover:text-slate-200 underline transition-colors cursor-pointer"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
+            {/* Toolbar: Secondary Row (Icon-only, reduced weight: Group-by, Simulate Touch, Export) */}
+            <div className="px-5 py-1 bg-slate-950/30 border-b border-slate-800/80 flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-1.5">
+                {/* Group By Toggle (Rule / Component) */}
                 {activeTierTab !== 'manual' && (
-                  <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-0.5 rounded-xl text-xs font-mono">
-                    <span className="text-xs text-slate-500 pl-1.5 pr-0.5 select-none">Group:</span>
+                  <div className="flex items-center gap-0.5 bg-slate-900/90 border border-slate-800 p-0.5 rounded-lg">
                     <button
                       onClick={() => setGroupBy('rule')}
-                      className={`px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      className={`p-1 rounded transition-colors cursor-pointer ${
                         groupBy === 'rule'
-                          ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
-                          : 'text-slate-400 hover:text-slate-200'
+                          ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                          : 'text-slate-500 hover:text-slate-300'
                       }`}
                       title="Group findings by rule definition (default)"
                     >
                       <ListFilter className="w-3.5 h-3.5" />
-                      <span>Rule</span>
                     </button>
                     <button
                       onClick={() => setGroupBy('component')}
-                      className={`px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      className={`p-1 rounded transition-colors cursor-pointer ${
                         groupBy === 'component'
-                          ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
-                          : 'text-slate-400 hover:text-slate-200'
+                          ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                          : 'text-slate-500 hover:text-slate-300'
                       }`}
                       title="Group findings by component instance"
                     >
                       <LayoutGrid className="w-3.5 h-3.5" />
-                      <span>Component</span>
                     </button>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                {/* Test Simulation Button */}
+              <div className="flex items-center gap-1.5">
+                {/* Test Simulation Button (Icon-only) */}
                 <button
                   onClick={handleSimulateTestInteraction}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-300 cursor-pointer"
-                  title="Record a simulated touch interaction to measure latency"
+                  className="p-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  title="Simulate touch interaction to measure latency"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="hidden sm:inline">Simulate Touch</span>
+                  <Sparkles className="w-3.5 h-3.5" />
                 </button>
 
-                {/* Export Dropdown */}
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleExportReport('json')}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-sky-500/10 border border-sky-500/30 text-xs font-mono text-sky-300 hover:bg-sky-500/20 cursor-pointer"
-                    title="Export Audit Report as JSON"
-                  >
-                    <Download className="w-3 h-3" /> JSON
-                  </button>
-                  <button
-                    onClick={() => handleExportReport('html')}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-sky-500/10 border border-sky-500/30 text-xs font-mono text-sky-300 hover:bg-sky-500/20 cursor-pointer"
-                    title="Export Audit Report as HTML"
-                  >
-                    <FileText className="w-3 h-3" /> HTML
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveAuditTab('registry')}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-300 cursor-pointer ml-1"
-                    title="Open HMI Rule Registry Browser"
-                  >
-                    <BookOpen className="w-3 h-3 text-sky-400" />
-                    <span>Rule Registry</span>
-                  </button>
-                </div>
+                {/* Export Buttons (Icon-only) */}
+                <button
+                  onClick={() => handleExportReport('json')}
+                  className="p-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  title="Export Audit Report as JSON"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleExportReport('html')}
+                  className="p-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  title="Export Audit Report as HTML"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 
@@ -921,134 +1240,153 @@ export const AuditPanel: React.FC = () => {
               </div>
             )}
 
-            {/* Tier Navigation Tabs (Section 4c) */}
+            {/* Tier Navigation Tabs */}
             <div className="px-5 pt-2 pb-0 bg-slate-950/40 border-b border-slate-800 flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => handleTierTabChange('static')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg border-b-2 transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg border-b-2 transition-all cursor-pointer ${
                   activeTierTab === 'static'
                     ? 'border-sky-400 text-sky-300 bg-slate-800/60'
                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>Static ({summaries.static.fail})</span>
+                <span>Static</span>
+                {summaries.static.fail > 0 ? (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                    {summaries.static.fail} fail
+                  </span>
+                ) : summaries.static.warning > 0 ? (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    {summaries.static.warning} warn
+                  </span>
+                ) : null}
               </button>
 
               <button
                 type="button"
                 onClick={() => handleTierTabChange('runtime')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg border-b-2 transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg border-b-2 transition-all cursor-pointer ${
                   activeTierTab === 'runtime'
                     ? 'border-sky-400 text-sky-300 bg-slate-800/60'
                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
                 }`}
               >
                 <Clock className="w-3.5 h-3.5" />
-                <span>
-                  Runtime ({summaries.runtime.notMeasured > 0 ? summaries.runtime.notMeasured : summaries.runtime.fail})
-                </span>
+                <span>Runtime</span>
+                {summaries.runtime.fail > 0 ? (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                    {summaries.runtime.fail} fail
+                  </span>
+                ) : summaries.runtime.notMeasured > 0 ? (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/60 text-slate-300 border border-slate-600">
+                    {summaries.runtime.notMeasured} not measured
+                  </span>
+                ) : null}
               </button>
 
               <button
                 type="button"
                 onClick={() => handleTierTabChange('manual')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg border-b-2 transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg border-b-2 transition-all cursor-pointer ${
                   activeTierTab === 'manual'
                     ? 'border-sky-400 text-sky-300 bg-slate-800/60'
                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>Manual Review ({summaries.manual.needsReview})</span>
+                <span>Manual Review</span>
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                  {manualList.length}
+                </span>
               </button>
             </div>
 
         {/* Scrollable Findings List */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {activeTierTab === 'manual' ? (
-            filteredManualRules.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 font-mono text-xs bg-slate-950/30 rounded-xl border border-slate-800/60">
-                {selectedStatusFilter === 'issues'
-                  ? '✓ All manual items marked as Reviewed.'
-                  : 'No matching manual review rules.'}
+            categoryGroupedManualRules.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 font-mono text-sm bg-slate-950/30 rounded-xl border border-slate-800/60">
+                No matching manual review rules.
               </div>
             ) : (
-              filteredManualRules.map(({ rule, finding, isReviewed, note }) => (
-                <div
-                  key={rule.id}
-                  className="bg-slate-950/60 border border-slate-800 hover:border-slate-700/80 rounded-xl p-3.5 transition-all space-y-2.5"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                          MANUAL
+              <div className="space-y-6">
+                {categoryGroupedManualRules.map((cat, catIdx) => (
+                  <div key={cat.categoryName} className="space-y-3">
+                    {/* Category Section Heading (Item 2 & 4: 20px, bold, text-slate-400) */}
+                    <div className={`pb-1.5 flex items-center justify-between border-b border-slate-800/60 ${catIdx > 0 ? 'pt-3' : 'pt-0'}`}>
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="text-[20px] font-bold text-slate-400 tracking-tight">
+                          {cat.categoryName}
+                        </h3>
+                        <span className="px-2 py-0.5 rounded text-xs font-mono font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                          {cat.items.length} {cat.items.length === 1 ? 'rule' : 'rules'}
                         </span>
-                        <span className="text-xs font-mono text-slate-500">{rule.id}</span>
-                        <h4 className="text-base font-semibold text-slate-100">{rule.title}</h4>
-                        {rule.standardRef && (
-                          <span className="text-xs font-mono px-2 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-800/60">
-                            {rule.standardRef}
-                          </span>
-                        )}
                       </div>
-                      <p className="text-xs text-slate-400 leading-relaxed">{rule.description}</p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => toggleAuditReviewStatus(effectiveScreenId, rule.id)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                        isReviewed
-                          ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30'
-                          : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
-                      }`}
-                    >
-                      {isReviewed ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" />
-                      ) : (
-                        <AlertTriangle className="w-3.5 h-3.5 text-slate-400" />
-                      )}
-                      <span>{isReviewed ? 'Reviewed' : 'Needs Review'}</span>
-                    </button>
-                  </div>
+                    {/* Manual Review Cards (Item 8: Flattened) */}
+                    <div className="space-y-3">
+                      {cat.items.map(({ rule, finding }) => (
+                        <div
+                          key={rule.id}
+                          className="bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-4 transition-all divide-y divide-slate-800/60"
+                        >
+                          {/* Header row: Headline (Item 2 & 4: 17px, font-semibold, text-slate-200; Item 5: No Needs Review badge) */}
+                          <div className="pb-3">
+                            <h4 className="text-[17px] font-semibold text-slate-200">
+                              {rule.plainHeadline || rule.title}
+                            </h4>
+                          </div>
 
-                  {/* Contextual glance count or non-duplicate specific guidance */}
-                  {(finding.heuristicGlanceCount !== undefined ||
-                    (finding.message && finding.message !== rule.description)) && (
-                    <div className="bg-slate-900/90 rounded-lg p-2.5 border border-slate-800 text-xs font-mono flex flex-wrap items-center justify-between gap-2">
-                      {finding.message && finding.message !== rule.description && (
-                        <div className="text-slate-300 flex-1 min-w-[200px]">
-                          <span className="text-slate-500 mr-1.5">Context:</span>
-                          {finding.message}
-                        </div>
-                      )}
+                          {/* To Do (renamed from "What to look for", Items 2 & 7: 13px label, 14px body) */}
+                          {(rule.fixGuidance || rule.description) && (
+                            <div className="py-3 space-y-1">
+                              <span className="text-[13px] font-semibold text-slate-400 block">To Do</span>
+                              <p className="text-sm leading-relaxed text-slate-300">{rule.fixGuidance || rule.description}</p>
+                            </div>
+                          )}
 
-                      {finding.heuristicGlanceCount !== undefined && (
-                        <div className="text-xs text-slate-300 bg-slate-800 border border-slate-700 rounded px-2 py-0.5 shrink-0">
-                          Glance Estimate: ~{finding.heuristicGlanceCount} glances
+                          {/* Screens (Item 6: 13px label, 14px body with real screen names) */}
+                          <div className="py-3 space-y-1">
+                            <span className="text-[13px] font-semibold text-slate-400 block">Screens</span>
+                            <p className="text-sm text-slate-300">{getScreenNamesForFinding(finding)}</p>
+                          </div>
+
+                          {/* Estimate (Item 8: merged single glance estimate rounded to whole number; 13px label, 14px body) */}
+                          {finding.heuristicGlanceCount !== undefined && (
+                            <div className="py-3 space-y-1">
+                              <span className="text-[13px] font-semibold text-slate-400 block">Estimate</span>
+                              <p className="text-sm text-slate-300">
+                                About {Math.round(finding.heuristicGlanceCount)} glances to parse this screen (heuristic)
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Contextual message if custom and not glance estimate or description */}
+                          {finding.message &&
+                            finding.heuristicGlanceCount === undefined &&
+                            finding.message !== rule.description && (
+                              <div className="py-3 space-y-1">
+                                <span className="text-[13px] font-semibold text-slate-400 block">Context</span>
+                                <p className="text-sm text-slate-300">{finding.message}</p>
+                              </div>
+                          )}
+
+                          {/* Simplified Footer Meta Line (Item 1: inline adjacent text + icon with ~6px gap; Item 2: 14px) */}
+                          <div className="pt-3 flex items-center gap-1.5 text-sm font-mono text-slate-400">
+                            {rule.standardRef && (
+                              <span className="text-slate-400 font-mono text-sm">{rule.standardRef}</span>
+                            )}
+                            <RuleInfoAffordance rule={rule} />
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  )}
-
-                  {/* Notes Textarea */}
-                  <div>
-                    <label className="text-xs font-mono text-slate-400 block mb-1">
-                      Auditor Review Notes:
-                    </label>
-                    <textarea
-                      value={note}
-                      onChange={(e) => setAuditNote(effectiveScreenId, rule.id, e.target.value)}
-                      placeholder="Document human factors review, cognitive workload assessment, or exceptions..."
-                      rows={2}
-                      className="w-full bg-slate-900 border border-slate-800 focus:border-sky-500 rounded-lg p-2 text-xs font-mono text-slate-200 outline-none resize-none transition-colors"
-                    />
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )
           ) : (
             <>
@@ -1260,10 +1598,10 @@ export const AuditPanel: React.FC = () => {
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                  <span className="font-semibold text-base text-rose-200 shrink-0">
-                                    {rule?.title || fFinding.ruleId}
+                                  <span className="font-semibold text-sm text-rose-200 shrink-0">
+                                    {rule?.plainHeadline || rule?.title || fFinding.ruleId}
                                   </span>
-                                  <span className="text-slate-300 text-sm truncate">
+                                  <span className="text-slate-300 text-xs truncate">
                                     {fFinding.measured
                                       ? `${fFinding.measured} (${fFinding.threshold ? `needs ${fFinding.threshold}` : fFinding.message})`
                                       : fFinding.message}
@@ -1283,11 +1621,11 @@ export const AuditPanel: React.FC = () => {
                                 className="flex items-center justify-between gap-3 py-1.5 px-2.5 rounded-lg bg-slate-900/40 border border-slate-800 text-xs font-mono"
                               >
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <AlertTriangle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                  <span className="font-semibold text-base text-slate-300 shrink-0">
-                                    {rule?.title || wFinding.ruleId}
+                                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  <span className="font-semibold text-sm text-slate-300 shrink-0">
+                                    {rule?.plainHeadline || rule?.title || wFinding.ruleId}
                                   </span>
-                                  <span className="text-slate-300 text-sm truncate">
+                                  <span className="text-slate-300 text-xs truncate">
                                     {wFinding.measured
                                       ? `${wFinding.measured} (${wFinding.threshold ? `needs ${wFinding.threshold}` : wFinding.message})`
                                       : wFinding.message}
@@ -1325,8 +1663,8 @@ export const AuditPanel: React.FC = () => {
                                       >
                                         <div className="flex items-center gap-1.5 min-w-0">
                                           <Check className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                          <span className="text-slate-300 font-semibold text-sm shrink-0">
-                                            {rule?.title || pFinding.ruleId}
+                                          <span className="text-slate-300 font-semibold text-xs shrink-0">
+                                            {rule?.plainHeadline || rule?.title || pFinding.ruleId}
                                           </span>
                                           {pFinding.measured && (
                                             <span className="text-slate-500 text-xs truncate">({pFinding.measured})</span>
@@ -1348,230 +1686,266 @@ export const AuditPanel: React.FC = () => {
               </div>
             ) : (
               /* View Mode: Rule-First (Default) */
-              <div className="space-y-3">
-                {currentTabRules.length === 0 ? (
+              <div className="space-y-6">
+                {categoryGroupedRules.length === 0 ? (
                   <div className="text-center py-8 text-slate-500 font-mono text-xs bg-slate-950/30 rounded-xl border border-slate-800/60">
                     {selectedStatusFilter === 'issues'
                       ? '✓ No issues found for current filter.'
                       : 'No matching rules.'}
                   </div>
                 ) : (
-                  currentTabRules.map((ruleGroup) => {
-                    const { rule, fails, warnings, passes, notMeasured, affectedInstances } = ruleGroup;
-                    const hasFails = fails.length > 0;
-                    const hasWarnings = warnings.length > 0;
-                    const hasNotMeasured = notMeasured.length > 0;
-
-                    let statusBadge = (
-                      <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1 shrink-0">
-                        <Check className="w-3.5 h-3.5 text-slate-400" /> Pass
-                      </span>
-                    );
-
-                    if (hasFails) {
-                      statusBadge = (
-                        <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-950/60 text-rose-300 border border-rose-800/80 flex items-center gap-1 shrink-0">
-                          <XCircle className="w-3.5 h-3.5 text-rose-400" /> {fails.length} Fail{fails.length > 1 ? 's' : ''}
-                          {hasWarnings && ` · ${warnings.length} Warn`}
-                        </span>
-                      );
-                    } else if (hasWarnings) {
-                      statusBadge = (
-                        <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1 shrink-0">
-                          <AlertTriangle className="w-3.5 h-3.5 text-slate-400" /> {warnings.length} Warn
-                        </span>
-                      );
-                    } else if (hasNotMeasured) {
-                      statusBadge = (
-                        <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1 shrink-0">
-                          <Clock className="w-3.5 h-3.5 text-slate-400" /> Not Measured
-                        </span>
-                      );
-                    }
-
-                    const instancesByType = new Map<string, typeof affectedInstances>();
-                    affectedInstances.forEach((inst) => {
-                      const list = instancesByType.get(inst.componentType) || [];
-                      list.push(inst);
-                      instancesByType.set(inst.componentType, list);
-                    });
-
-                    return (
-                      <div
-                        key={rule.id}
-                        id={`rule-card-${rule.id}`}
-                        className={`bg-slate-950/60 border rounded-xl p-3.5 transition-all space-y-3 ${
-                          hasFails
-                            ? 'border-rose-900/50 hover:border-rose-700/60'
-                            : 'border-slate-800 hover:border-slate-700'
-                        }`}
-                      >
-                        {/* Rule Card Header */}
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                          <div className="space-y-1 max-w-2xl">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                                {rule.tier.toUpperCase()}
-                              </span>
-                              <span className="text-xs font-mono text-slate-500">{rule.id}</span>
-                              <h4 className="text-base font-semibold text-slate-100">{rule.title}</h4>
-                              {rule.standardRef && (
-                                <span className="text-xs font-mono px-2 py-0.5 rounded bg-sky-950/60 text-sky-300 border border-sky-800/60">
-                                  {rule.standardRef}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-slate-400 leading-relaxed">{rule.description}</p>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            {statusBadge}
-                            <RuleInfoAffordance rule={rule} />
-                          </div>
+                  categoryGroupedRules.map((cat, catIdx) => (
+                    <div key={cat.categoryName} className="space-y-3">
+                      {/* Category Section Heading (Item 2 & 4: 20px, bold, text-slate-400) */}
+                      <div className={`pb-1.5 flex items-center justify-between border-b border-slate-800/60 ${catIdx > 0 ? 'pt-3' : 'pt-0'}`}>
+                        <div className="flex items-center gap-2.5">
+                          <h3 className="text-[20px] font-bold text-slate-400 tracking-tight">
+                            {cat.categoryName}
+                          </h3>
+                          {cat.totalFails > 0 ? (
+                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-rose-950/60 text-rose-300 border border-rose-800/60">
+                              {cat.totalFails} {cat.totalFails === 1 ? 'fail' : 'fails'}
+                            </span>
+                          ) : cat.totalWarnings > 0 ? (
+                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-950/50 text-amber-300 border border-amber-800/50">
+                              {cat.totalWarnings} {cat.totalWarnings === 1 ? 'warn' : 'warns'}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                              Passing
+                            </span>
+                          )}
                         </div>
+                        <span className="text-xs font-mono text-slate-500">
+                          {cat.rules.length} {cat.rules.length === 1 ? 'rule' : 'rules'}
+                        </span>
+                      </div>
 
-                        {/* Affected Components List */}
-                        {affectedInstances.length > 0 && (
-                          <div className="space-y-2 pt-1 border-t border-slate-800/60">
-                            <div className="text-xs font-mono text-slate-400 font-semibold flex items-center justify-between">
-                              <span>
-                                Affected Components ({affectedInstances.length}{' '}
-                                {affectedInstances.length === 1 ? 'instance' : 'instances'})
+                      {/* Rule cards for this category */}
+                      <div className="space-y-3">
+                        {cat.rules.map((ruleGroup) => {
+                          const { rule, fails, warnings, passes, notMeasured, affectedInstances } = ruleGroup;
+                          const hasFails = fails.length > 0;
+                          const hasWarnings = warnings.length > 0;
+                          const hasNotMeasured = notMeasured.length > 0;
+
+                          let statusBadge = (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1 shrink-0">
+                              <Check className="w-3.5 h-3.5 text-slate-400" /> Pass
+                            </span>
+                          );
+
+                          if (hasFails) {
+                            statusBadge = (
+                              <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-950/60 text-rose-300 border border-rose-800/80 flex items-center gap-1 shrink-0">
+                                <XCircle className="w-3.5 h-3.5 text-rose-400" /> {fails.length} Fail{fails.length > 1 ? 's' : ''}
+                                {hasWarnings && ` · ${warnings.length} Warn`}
                               </span>
-                            </div>
+                            );
+                          } else if (hasWarnings) {
+                            statusBadge = (
+                              <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-950/40 text-amber-300 border border-amber-800/60 flex items-center gap-1 shrink-0">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> {warnings.length} Warn{warnings.length > 1 ? 'ings' : 'ing'}
+                              </span>
+                            );
+                          } else if (hasNotMeasured) {
+                            statusBadge = (
+                              <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1 shrink-0">
+                                <Clock className="w-3.5 h-3.5 text-slate-400" /> Not Measured
+                              </span>
+                            );
+                          }
 
-                            <div className="space-y-1.5">
-                              {Array.from(instancesByType.entries()).map(([compType, instList]) => {
-                                const groupKey = `${rule.id}-${compType}`;
-                                const isMulti = instList.length > 1;
-                                const isExpanded = expandedRuleCompGroups[groupKey] ?? true;
+                          const isRuleExpanded = !!expandedRuleCards[rule.id];
 
-                                return (
-                                  <div
-                                    key={groupKey}
-                                    className="rounded-lg bg-slate-900/60 border border-slate-800/80 p-2 text-xs font-mono space-y-1.5"
+                          return (
+                            <div
+                              key={rule.id}
+                              id={`rule-card-${rule.id}`}
+                              className={`bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-3.5 transition-all ${
+                                isRuleExpanded ? 'space-y-3' : ''
+                              }`}
+                            >
+                              {/* Rule Card Header (Item 2 & 4: 17px, font-semibold, text-slate-200) */}
+                              <div
+                                className="flex items-start justify-between gap-3 flex-wrap cursor-pointer select-none"
+                                onClick={() => toggleExpandRuleCard(rule.id)}
+                              >
+                                <div className="space-y-1 max-w-2xl">
+                                  <h4 className="text-[17px] font-semibold text-slate-200">
+                                    {rule.plainHeadline || rule.title}
+                                  </h4>
+                                </div>
+
+                                <div
+                                  className="flex items-center gap-2 shrink-0"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {statusBadge}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleExpandRuleCard(rule.id);
+                                    }}
+                                    className="p-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                                    title={isRuleExpanded ? 'Collapse rule details' : 'Expand rule details'}
                                   >
-                                    <div className="flex items-center justify-between gap-2">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-slate-200">
-                                          {getComponentDisplayName(compType)}
-                                        </span>
-                                        {isMulti && (
-                                          <span className="text-slate-500 text-xs">
-                                            ({instList.length} instances)
-                                          </span>
-                                        )}
-                                      </div>
+                                    {isRuleExpanded ? (
+                                      <ChevronUp className="w-4 h-4 text-slate-400" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
 
-                                      {isMulti && (
-                                        <button
-                                          type="button"
-                                          onClick={() => toggleExpandRuleCompGroup(groupKey)}
-                                          className="text-sky-400 hover:text-sky-300 text-xs cursor-pointer"
+                              {/* Section 1: Affected Components List (Expanded only) */}
+                              {isRuleExpanded && affectedInstances.length > 0 && (
+                                <div className="space-y-2 pt-1 border-t border-slate-800/60">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[13px] font-semibold text-slate-400">
+                                      Affected Components ({affectedInstances.length}{' '}
+                                      {affectedInstances.length === 1 ? 'instance' : 'instances'})
+                                    </span>
+                                  </div>
+
+                                  <div className="divide-y divide-slate-800/40">
+                                    {affectedInstances.map((inst, idx) => (
+                                      <div
+                                        key={`${inst.instanceId}-${idx}`}
+                                        className="flex items-center gap-3 py-2"
+                                      >
+                                        {/* Thumbnail placeholder box - clickable to select on canvas (v6 Item 2) */}
+                                        <div
+                                          onClick={() => handleSelectOnCanvas(inst.instanceId, inst.screenId)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                              e.preventDefault();
+                                              handleSelectOnCanvas(inst.instanceId, inst.screenId);
+                                            }
+                                          }}
+                                          tabIndex={0}
+                                          role="button"
+                                          aria-label={`Select ${getComponentDisplayName(inst.componentType)} on canvas`}
+                                          title="Select on canvas"
+                                          className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 text-slate-500 cursor-pointer hover:border-sky-500/50 transition-colors focus:outline-none focus:ring-1 focus:ring-sky-500"
                                         >
-                                          {isExpanded ? '[hide]' : `[show ${instList.length}]`}
-                                        </button>
-                                      )}
-                                    </div>
+                                          <LayoutGrid className="w-5 h-5 text-slate-400" />
+                                        </div>
 
-                                    {(isExpanded || !isMulti) && (
-                                      <div className="space-y-1 pl-1">
-                                        {instList.map((inst, idx) => (
-                                          <div
-                                            key={`${inst.instanceId}-${idx}`}
-                                            className="flex items-center justify-between gap-3 py-1 px-2 rounded bg-slate-950/40 border border-slate-800/50"
-                                          >
-                                            <div className="flex items-center gap-2 min-w-0">
-                                              {inst.status === 'fail' ? (
-                                                <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                              ) : (
-                                                <AlertTriangle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                              )}
-                                              <span className="text-slate-300 truncate">
-                                                {inst.measured
-                                                  ? `${inst.measured} (${inst.threshold ? `threshold: ${inst.threshold}` : inst.message})`
-                                                  : inst.message}
-                                              </span>
-                                            </div>
+                                        <div className="min-w-0 flex-1">
+                                          <div className="font-medium text-slate-200 text-sm">
+                                            {getComponentDisplayName(inst.componentType)}
+                                          </div>
+                                          <div className="text-slate-400 text-sm">
+                                            {formatFindingMeasurement(inst)}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
+                              {/* Collapsible Passing Instances (Expanded only) */}
+                              {isRuleExpanded && passes.length > 0 && selectedStatusFilter !== 'issues' && (
+                                <div className="pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpandPass(`rule-pass-${rule.id}`)}
+                                    className="text-sm font-mono text-slate-400 hover:text-slate-200 flex items-center justify-between w-full py-1 cursor-pointer"
+                                  >
+                                    <span className="flex items-center gap-1.5">
+                                      <Check className="w-3.5 h-3.5 text-slate-400" />
+                                      <span>
+                                        {passes.length} {passes.length === 1 ? 'instance passed' : 'instances passed'}
+                                      </span>
+                                    </span>
+                                    <span className="text-slate-500 text-xs">
+                                      {expandedPassIds[`rule-pass-${rule.id}`] ? '[hide]' : '[show]'}
+                                    </span>
+                                  </button>
+
+                                  {expandedPassIds[`rule-pass-${rule.id}`] && (
+                                    <div className="space-y-1 pl-4 border-l border-slate-800 animate-in fade-in duration-100 mt-1">
+                                      {passes.map((pFinding, idx) => (
+                                        <div
+                                          key={`pass-${pFinding.instanceId || idx}`}
+                                          className="flex items-center justify-between text-sm font-mono text-slate-400 py-0.5 px-2"
+                                        >
+                                          <div className="flex items-center gap-1.5">
+                                            <Check className="w-3.5 h-3.5 text-slate-400" />
+                                            <span className="text-slate-300 font-semibold">
+                                              {pFinding.instanceId
+                                                ? getComponentDisplayName(
+                                                    componentsByScreen[effectiveScreenId]?.find(
+                                                      (i) => i.id === pFinding.instanceId
+                                                    )?.type || pFinding.instanceId
+                                                  )
+                                                : 'Screen'}
+                                            </span>
+                                            {pFinding.measured && (
+                                              <span className="text-slate-500 text-sm">({pFinding.measured})</span>
+                                            )}
+                                          </div>
+                                          {pFinding.instanceId && (
                                             <button
                                               type="button"
-                                              onClick={() => handleSelectOnCanvas(inst.instanceId, inst.screenId)}
-                                              className="flex items-center gap-1 px-2 py-0.5 rounded bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 text-xs shrink-0 cursor-pointer transition-colors"
-                                              title="Highlight on visual canvas"
+                                              onClick={() => handleSelectOnCanvas(pFinding.instanceId, pFinding.screenId)}
+                                              className="text-sky-400 hover:underline cursor-pointer text-sm"
                                             >
-                                              <MousePointer className="w-3 h-3" /> Select
+                                              view
                                             </button>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Collapsible Passing Instances */}
-                        {passes.length > 0 && selectedStatusFilter !== 'issues' && (
-                          <div className="pt-1">
-                            <button
-                              type="button"
-                              onClick={() => toggleExpandPass(`rule-pass-${rule.id}`)}
-                              className="text-xs font-mono text-slate-400 hover:text-slate-200 flex items-center justify-between w-full py-1 cursor-pointer"
-                            >
-                              <span className="flex items-center gap-1.5">
-                                <Check className="w-3.5 h-3.5 text-slate-400" />
-                                <span>
-                                  {passes.length} {passes.length === 1 ? 'instance passed' : 'instances passed'}
-                                </span>
-                              </span>
-                              <span className="text-slate-500 text-xs">
-                                {expandedPassIds[`rule-pass-${rule.id}`] ? '[hide]' : '[show]'}
-                              </span>
-                            </button>
-
-                            {expandedPassIds[`rule-pass-${rule.id}`] && (
-                              <div className="space-y-1 pl-4 border-l border-slate-800 animate-in fade-in duration-100 mt-1">
-                                {passes.map((pFinding, idx) => (
-                                  <div
-                                    key={`pass-${pFinding.instanceId || idx}`}
-                                    className="flex items-center justify-between text-xs font-mono text-slate-400 py-0.5 px-2"
-                                  >
-                                    <div className="flex items-center gap-1.5">
-                                      <Check className="w-3.5 h-3.5 text-slate-400" />
-                                      <span className="text-slate-300 font-semibold">
-                                        {pFinding.instanceId
-                                          ? getComponentDisplayName(
-                                              componentsByScreen[effectiveScreenId]?.find(
-                                                (i) => i.id === pFinding.instanceId
-                                              )?.type || pFinding.instanceId
-                                            )
-                                          : 'Screen'}
-                                      </span>
-                                      {pFinding.measured && (
-                                        <span className="text-slate-500 text-xs">({pFinding.measured})</span>
-                                      )}
+                                          )}
+                                        </div>
+                                      ))}
                                     </div>
-                                    {pFinding.instanceId && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleSelectOnCanvas(pFinding.instanceId, pFinding.screenId)}
-                                        className="text-sky-400 hover:underline cursor-pointer text-xs"
-                                      >
-                                        view
-                                      </button>
-                                    )}
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Screens field (v6 Item 3) */}
+                              {isRuleExpanded && (
+                                <div className="space-y-1">
+                                  <span className="text-[13px] font-semibold text-slate-400 block">Screens</span>
+                                  <p className="text-sm text-slate-300">{getRuleScreenNames(ruleGroup)}</p>
+                                </div>
+                              )}
+
+                              {/* Section 2: Recommended Fix Box */}
+                              {isRuleExpanded && rule.fixGuidance && (
+                                <div className="bg-sky-950/30 border border-sky-800/50 rounded-xl p-3 text-sm text-sky-200 flex items-start gap-2.5">
+                                  <Sparkles className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                                  <div className="space-y-0.5">
+                                    <span className="font-semibold text-sky-300 block text-[13px]">Recommended Fix</span>
+                                    <p className="leading-relaxed text-slate-300 text-sm">{rule.fixGuidance}</p>
                                   </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                                </div>
+                              )}
+
+                              {/* Footnote for ia.task-segmentation */}
+                              {isRuleExpanded && rule.id === 'ia.task-segmentation' && (
+                                <div className="text-sm font-mono text-slate-400 italic bg-slate-900/60 rounded-lg p-2.5 border border-slate-800/80">
+                                  * State preservation is currently validated via activeTrip and project persistent state slices. This check always passes.
+                                </div>
+                              )}
+
+                              {/* Section 3: Simplified Footer Meta Line (Item 1 & 2: inline group with ~6px gap; 14px font size) */}
+                              {isRuleExpanded && (
+                                <div className="pt-2.5 border-t border-slate-800/60 flex items-center gap-1.5 text-sm font-mono text-slate-400">
+                                  {rule.standardRef && (
+                                    <span className="text-slate-400 font-mono text-sm">{rule.standardRef}</span>
+                                  )}
+                                  <RuleInfoAffordance rule={rule} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })
+                    </div>
+                  ))
                 )}
               </div>
             )}
@@ -1579,19 +1953,6 @@ export const AuditPanel: React.FC = () => {
         </>
       )}
     </div>
-
-        {/* Footer info */}
-        <div className="px-5 py-2.5 border-t border-slate-800 bg-slate-950/80 text-xs font-mono text-slate-500 flex items-center justify-between shrink-0">
-          <div>
-            HMI Rules v1.2 • Component-first audit view • {effectiveRules.length} safety and ergonomic rules evaluated
-          </div>
-          <button
-            onClick={() => setScreenMode('editor')}
-            className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors cursor-pointer"
-          >
-            Done
-          </button>
-        </div>
       </>
     )}
   </div>

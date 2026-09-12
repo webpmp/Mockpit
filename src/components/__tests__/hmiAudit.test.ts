@@ -17,12 +17,12 @@ import {
 import { ScreenDefinition, ComponentInstance } from '../../types';
 
 describe('HMI Compliance Rules & Audit System', () => {
-  it('should register exactly 18 canonical HMI rules across expected categories and tiers', () => {
-    assert.equal(HMI_RULES.length, 18);
+  it('should register exactly 19 canonical HMI rules across expected categories and tiers', () => {
+    assert.equal(HMI_RULES.length, 19);
 
     const ruleIds = HMI_RULES.map((r) => r.id);
     const uniqueIds = new Set(ruleIds);
-    assert.equal(uniqueIds.size, 18);
+    assert.equal(uniqueIds.size, 19);
 
     // Verify presence of all expected rule IDs
     const expectedIds = [
@@ -42,6 +42,7 @@ describe('HMI Compliance Rules & Audit System', () => {
       'visual.color-not-monochrome',
       'visual.icon-standardization',
       'visual.typography-legibility',
+      'accessibility.contrast-wcag',
       'modality.cascaded-input',
       'modality.moving-lockouts',
     ];
@@ -197,7 +198,7 @@ describe('HMI Compliance Rules & Audit System', () => {
 
     const findings = runAudit(ctx);
     const jsonReport = generateAuditReportJson(findings, ctx, 'Home Screen');
-    assert.equal(jsonReport.totalRules, 18);
+    assert.equal(jsonReport.totalRules, 19);
     assert.equal(jsonReport.screenId, 'home');
     assert.ok(jsonReport.timestamp.length > 0);
 

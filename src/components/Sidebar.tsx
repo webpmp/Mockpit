@@ -72,16 +72,6 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
         },
       ]
     : []),
-  ...(COMPONENT_FLAGS.tirePressure
-    ? [
-        {
-          type: 'tirePressure' as ComponentType,
-          title: 'Tire Pressure Monitor',
-          description: '4-wheel TPMS PSI pressure layout',
-          defaultBindingDesc: 'TPMS tire pressure monitor shell',
-        },
-      ]
-    : []),
 ];
 
 const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [
@@ -221,6 +211,16 @@ const VEHICLE_WIDGET_ITEMS: ComponentLibraryItem[] = [
     description: 'System health card with connector line to vehicle diagram',
     defaultBindingDesc: 'Diagnostic callout & target anchor line',
   },
+  ...(COMPONENT_FLAGS.tirePressure
+    ? [
+        {
+          type: 'tirePressure' as ComponentType,
+          title: 'Tire Pressure Monitor',
+          description: '4-wheel TPMS PSI pressure layout',
+          defaultBindingDesc: 'TPMS tire pressure monitor shell',
+        },
+      ]
+    : []),
   {
     type: 'sendToServiceCenter',
     title: 'Send Vehicle Diagnostics',
@@ -248,7 +248,7 @@ const CATEGORIES = [
     key: 'vehicle',
     title: 'Vehicle',
     icon: Car,
-    iconColorClass: 'text-cyan-400',
+    iconColorClass: 'text-indigo-400',
     items: VEHICLE_WIDGET_ITEMS,
   },
   {
@@ -262,7 +262,7 @@ const CATEGORIES = [
     key: 'phone',
     title: 'Phone',
     icon: Phone,
-    iconColorClass: 'text-purple-400',
+    iconColorClass: 'text-teal-400',
     items: PHONE_WIDGET_ITEMS,
   },
   {
@@ -407,7 +407,6 @@ export const Sidebar: React.FC = () => {
             {/* Component Template Cards for Notifications */}
             {NOTIFICATION_LIBRARY_ITEMS.map((item) => {
               const Icon = COMPONENT_META[item.type]?.icon || LayoutGrid;
-              const color = COMPONENT_META[item.type]?.defaultColor || '#f59e0b';
               return (
                 <div
                   key={item.type}
@@ -418,8 +417,7 @@ export const Sidebar: React.FC = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="p-2 rounded-lg bg-slate-900 border border-slate-700/80 group-hover:scale-105 transition-transform"
-                        style={{ color }}
+                        className="p-2 rounded-lg bg-slate-900 border border-slate-700/80 group-hover:scale-105 transition-transform text-amber-400"
                       >
                         <Icon className="w-5 h-5" />
                       </div>
@@ -561,7 +559,6 @@ export const Sidebar: React.FC = () => {
                 ) : (
                   category.items.map((item) => {
                     const Icon = COMPONENT_META[item.type]?.icon || LayoutGrid;
-                    const color = COMPONENT_META[item.type]?.defaultColor || '#38bdf8';
                     return (
                       <div
                         key={item.type}
@@ -572,8 +569,7 @@ export const Sidebar: React.FC = () => {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2.5">
                             <div
-                              className="p-2 rounded-lg bg-slate-900 border border-slate-700/80 group-hover:scale-105 transition-transform"
-                              style={{ color }}
+                              className={`p-2 rounded-lg bg-slate-900 border border-slate-700/80 group-hover:scale-105 transition-transform ${category.iconColorClass}`}
                             >
                               <Icon className="w-5 h-5" />
                             </div>

@@ -11,7 +11,8 @@ export type RuleCategory =
   | 'overlay'
   | 'feedback'
   | 'content'
-  | 'palette';
+  | 'palette'
+  | 'accessibility';
 
 export interface DisplayConfig {
   displayDiagonalInches: number; // e.g. 12.3"
@@ -59,6 +60,7 @@ export interface AuditContext {
   displayConfig: DisplayConfig;
   canvasScale?: number;
   activeTrip?: any;
+  screenBackgroundColor?: string;
 }
 
 export interface RuleFinding {
@@ -84,6 +86,9 @@ export interface HMIRule {
   source: string;
   addedDate: string;
   addedBy?: 'anthropic-research' | 'user-proposed' | string;
+  categoryTag?: string;
+  plainHeadline?: string;
+  fixGuidance?: string;
   check?: (ctx: AuditContext) => RuleFinding[];
 }
 

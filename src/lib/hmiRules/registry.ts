@@ -7,11 +7,13 @@ import {
   NavNode,
 } from './types';
 import { isStandardAutomotiveIcon } from './iconDictionary';
+import { wcagContrastRatio } from './contrastUtils';
 import { ComponentInstance, ComponentType } from '../../types';
 import { getComponentDisplayName } from '../../utils/componentDisplayNames';
 
 export * from './types';
 export * from './iconDictionary';
+export * from './contrastUtils';
 
 /**
  * Computes visual angle in arcminutes from font size in pixels, canvas scale factor,
@@ -140,6 +142,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'existing',
     addedDate: '2026-08-01',
     addedBy: 'anthropic-research',
+    categoryTag: 'Tap targets',
+    plainHeadline: 'Control is too small or too close to its neighbor to tap reliably while driving',
+    fixGuidance: 'Resize to at least 44×44px, and leave at least 8px of space between it and the nearest adjacent control.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -207,6 +212,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'existing',
     addedDate: '2026-08-01',
     addedBy: 'anthropic-research',
+    categoryTag: 'Feedback & animation',
+    plainHeadline: 'Status indicator blinks or pulses, which can distract a driver',
+    fixGuidance: 'Remove the pulsing/blinking animation. Use a static state change or a brief, non-repeating transition instead.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -260,6 +268,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'existing',
     addedDate: '2026-08-01',
     addedBy: 'anthropic-research',
+    categoryTag: 'Overlays & modals',
+    plainHeadline: 'A driver confirmation takes over the whole screen',
+    fixGuidance: 'Convert this to an inline, in-card confirmation instead of a full-screen takeover — keep the rest of the interface visible.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -314,17 +325,23 @@ export const HMI_RULES: HMIRule[] = [
     source: 'existing',
     addedDate: '2026-08-01',
     addedBy: 'anthropic-research',
+    categoryTag: 'Content & copy',
+    plainHeadline: 'A glanceable card has hedging language, disclaimers, or clutter badges',
+    fixGuidance: 'Rewrite the card\'s copy to state the fact directly — no disclaimers, hedge words, or extra badges competing for attention.',
   },
   {
     id: 'palette.accuracy',
     category: 'palette',
     title: 'Palette Accuracy & Contrast Fidelity',
-    description: 'Palette entries and theme tokens must accurately describe rendered behavior and maintain high-contrast legibility across ambient lighting conditions.',
+    description: 'Palette entries and theme tokens must accurately describe rendered behavior (e.g. a token named `sky-500` should render as sky-500, not a different color).',
     standardRef: 'ISO 15005 / WCAG 2.1',
     tier: 'manual',
     source: 'existing',
     addedDate: '2026-08-01',
     addedBy: 'anthropic-research',
+    categoryTag: 'Color & contrast',
+    plainHeadline: "A color or theme token doesn't match how the component actually renders",
+    fixGuidance: 'Update the token description to match rendered output. (Contrast is checked separately — see `accessibility.contrast-wcag` below.)',
   },
 
   // ==========================================
@@ -340,6 +357,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Timing & glance load',
+    plainHeadline: 'An action took too long (or too little/no time) to respond',
+    fixGuidance: 'Actions should complete and show feedback within 100ms–2500ms. Investigate the interaction that triggered this reading.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const log = ctx.runtimeLog || [];
       if (log.length === 0) {
@@ -389,6 +409,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Timing & glance load',
+    plainHeadline: 'This screen may take longer than a single 2-second glance to understand',
+    fixGuidance: 'Simplify the layout or reduce visual density so the key information reads in one glance.',
   },
   {
     id: 'timing.task-glance-total',
@@ -400,6 +423,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Timing & glance load',
+    plainHeadline: 'Completing this task requires more than 12 seconds of total off-road glancing',
+    fixGuidance: 'Break the task into fewer, denser glances, or move some sub-steps to voice/audio feedback instead of visual.',
   },
   {
     id: 'timing.transition-duration',
@@ -411,6 +437,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Timing & glance load',
+    plainHeadline: 'This screen transition is slower than the required limit',
+    fixGuidance: 'Primary screens must transition in under 400ms, secondary/split-screen transitions under 430ms (150ms target). Speed up the transition style.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const screens = ctx.screens;
@@ -458,6 +487,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Feedback & animation',
+    plainHeadline: 'Touch didn\'t show visual feedback fast enough',
+    fixGuidance: 'Pressed/highlight state should appear within 100ms of the tap. Check for a rendering or state-update delay.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const log = ctx.runtimeLog || [];
       if (log.length === 0) {
@@ -511,6 +543,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Navigation & layout',
+    plainHeadline: 'This screen is buried more than 2 taps deep from Home',
+    fixGuidance: 'Move it up in the navigation tree — no screen should require more than 2 taps/transitions to reach.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const navTree = ctx.navTree;
@@ -566,6 +601,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Navigation & layout',
+    plainHeadline: 'A critical control (climate, navigation, audio, calls, or hazard) isn\'t reachable directly from Home',
+    fixGuidance: 'Add a direct control for this on the Home screen or dock — don\'t require navigating into a submenu for core driving functions.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const homeInstances = ctx.componentsByScreen['home'] || [];
       const homeTypes = new Set(homeInstances.map((i) => i.type));
@@ -599,6 +637,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Navigation & layout',
+    plainHeadline: 'Task segmentation and workflow state preservation',
+    fixGuidance: 'Break multi-step tasks into separate steps and preserve intermediate state across interruptions.',
     check: (ctx: AuditContext): RuleFinding[] => {
       // Check if project preserves trip / drafting state
       const hasDraftState = ctx.activeTrip !== undefined;
@@ -625,6 +666,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Color & contrast',
+    plainHeadline: 'Component relies on grayscale alone instead of a color cue',
+    fixGuidance: 'Add a semantic color accent (e.g. sky for telemetry, amber for warning, green/emerald for good status) so status reads at a glance.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -679,6 +723,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Icon & symbols',
+    plainHeadline: 'Icon isn\'t from the standard automotive symbol set',
+    fixGuidance: 'Swap in the matching icon from the ISO 2575 / SAE J2364 allowlist so it\'s recognizable the way drivers expect.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -733,6 +780,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Text legibility',
+    plainHeadline: 'Text is smaller than the safe reading angle for this component\'s viewing distance',
+    fixGuidance: 'Standard text needs ≥12 arcmin, critical alerts need ≥16 arcmin. Increase font size or component scale until it clears the threshold.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -808,6 +858,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Input & driving mode',
+    plainHeadline: 'This multi-step task could combine voice and touch to reduce workload, but currently doesn\'t',
+    fixGuidance: 'Consider adding a voice-input option that cascades into a touch confirmation, instead of requiring touch-only for every step.',
   },
   {
     id: 'modality.moving-lockouts',
@@ -819,6 +872,9 @@ export const HMI_RULES: HMIRule[] = [
     source: 'research-2026-08',
     addedDate: '2026-08-14',
     addedBy: 'anthropic-research',
+    categoryTag: 'Input & driving mode',
+    plainHeadline: 'A high-demand task (typing, scrolling, video) isn\'t locked out while the vehicle is moving',
+    fixGuidance: 'Set lockoutWhileDriving so this component disables or simplifies itself whenever vehicle speed > 0.',
     check: (ctx: AuditContext): RuleFinding[] => {
       const findings: RuleFinding[] = [];
       const instances = ctx.instances;
@@ -860,6 +916,84 @@ export const HMI_RULES: HMIRule[] = [
           message: 'No unprotected high-demand tasks detected on this screen.',
           threshold: 'Lockout compliance verified',
         });
+      }
+
+      return findings;
+    },
+  },
+
+  // ==========================================
+  // ACCESSIBILITY / CONTRAST
+  // ==========================================
+  {
+    id: 'accessibility.contrast-wcag',
+    tier: 'static',
+    title: 'WCAG 2.1 AA Contrast Ratio',
+    description: 'Text and UI components must meet WCAG 2.1 Level AA contrast ratios against their background.',
+    standardRef: 'WCAG 2.1 Level AA',
+    category: 'accessibility',
+    categoryTag: 'Color & contrast',
+    plainHeadline: "Text or control doesn't have enough contrast against its background",
+    fixGuidance: 'Increase the contrast between foreground and background color. Normal text needs at least 4.5:1, large text (24px+) and icons/UI borders need at least 3:1.',
+    source: 'chris-request',
+    addedDate: '2026-09-10',
+    addedBy: 'chris',
+    check: (ctx: AuditContext): RuleFinding[] => {
+      const findings: RuleFinding[] = [];
+      const instances = ctx.instances;
+
+      if (instances.length === 0) {
+        return [{
+          ruleId: 'accessibility.contrast-wcag',
+          status: 'pass',
+          screenId: ctx.screenId,
+          message: 'No components to evaluate.',
+          threshold: '4.5:1 normal text / 3:1 large text & UI components',
+        }];
+      }
+
+      for (const inst of instances) {
+        // Skip decorative and logo/wordmark components entirely — WCAG exempts them.
+        if (inst.staticProps?.decorative === 'true' || (inst.type as string) === 'logo' || (inst.type as string) === 'wordmark') {
+          continue;
+        }
+
+        const fgColor = inst.staticProps?.textColor || inst.staticProps?.color || '#e2e8f0';
+        const bgColor = inst.staticProps?.backgroundColor || ctx.screenBackgroundColor || '#0f172a';
+        const fontSizePx = inst.staticProps?.fontSizePx ? Number(inst.staticProps.fontSizePx) : (
+          ['speed', 'gear', 'battery'].includes(inst.type) ? 36 :
+          ['climate', 'climateTemp', 'warning'].includes(inst.type) ? 24 :
+          ['media', 'nowPlaying', 'mediaPlaylists', 'mediaDiscovery', 'navDestination'].includes(inst.type) ? 18 : 14
+        );
+        const isBold = inst.staticProps?.fontWeight === 'bold' || Number(inst.staticProps?.fontWeight) >= 700;
+        const isNonText = ['icon', 'chartElement', 'buttonBorder'].includes(inst.staticProps?.contrastRole || '');
+
+        const isLargeText = fontSizePx >= 24 || (isBold && fontSizePx >= 18.66);
+        const requiredRatio = isNonText ? 3 : (isLargeText ? 3 : 4.5);
+
+        const ratio = wcagContrastRatio(fgColor, bgColor);
+
+        if (ratio < requiredRatio) {
+          findings.push({
+            ruleId: 'accessibility.contrast-wcag',
+            status: 'fail',
+            instanceId: inst.id,
+            screenId: ctx.screenId,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" has a contrast ratio of ${ratio.toFixed(2)}:1 against its background (requires ≥${requiredRatio}:1).`,
+            measured: `${ratio.toFixed(2)}:1`,
+            threshold: `≥${requiredRatio}:1`,
+          });
+        } else {
+          findings.push({
+            ruleId: 'accessibility.contrast-wcag',
+            status: 'pass',
+            instanceId: inst.id,
+            screenId: ctx.screenId,
+            message: `Component "${getComponentDisplayName(inst.type, inst.staticProps?.label)}" contrast ratio ${ratio.toFixed(2)}:1 meets WCAG AA (≥${requiredRatio}:1).`,
+            measured: `${ratio.toFixed(2)}:1`,
+            threshold: `≥${requiredRatio}:1`,
+          });
+        }
       }
 
       return findings;

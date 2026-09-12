@@ -72,7 +72,7 @@ function createManualFinding(rule: HMIRule, ctx: AuditContext): RuleFinding {
 
   if (rule.id === 'timing.glance-duration' || rule.id === 'timing.task-glance-total') {
     // Calculate aggregate heuristic glance count for components on screen
-    const instances = ctx.instances;
+    const instances = ctx.instances || [];
     if (instances.length > 0) {
       const totalGlances = instances.reduce((acc, inst) => acc + calculateGlanceHeuristic(inst), 0);
       heuristicGlanceCount = Math.round(totalGlances * 10) / 10;

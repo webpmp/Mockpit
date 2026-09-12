@@ -28,7 +28,7 @@ export const RuleInfoAffordance: React.FC<RuleInfoAffordanceProps> = ({ rule }) 
 
       {isOpen && (
         <div
-          className="absolute right-0 bottom-full mb-1.5 z-50 w-72 sm:w-80 p-3 rounded-xl bg-slate-950 border border-slate-700/90 shadow-2xl text-xs font-mono space-y-1.5 animate-in fade-in zoom-in-95 duration-100 text-left pointer-events-none"
+          className="absolute left-0 bottom-full mb-1.5 z-50 w-72 sm:w-80 p-3 rounded-xl bg-slate-950 border border-slate-700/90 shadow-2xl text-xs font-mono space-y-1.5 animate-in fade-in zoom-in-95 duration-100 text-left pointer-events-none"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between border-b border-slate-800 pb-1">

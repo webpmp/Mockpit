@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants';
-import { Sliders, Check, Move, ZoomIn, RotateCcw } from 'lucide-react';
+import { Sliders, Check, Move, ZoomIn, X } from 'lucide-react';
 
 interface AppShellBackgroundProps {
   canvasScale: number;
@@ -201,13 +201,14 @@ export const AppShellBackground: React.FC<AppShellBackgroundProps> = ({ canvasSc
 
           <div className="h-4 w-px bg-slate-700 mx-1" />
 
+          {/* CANCEL BUTTON (formerly "Reset") */}
           <button
             onClick={() => cancelBackgroundAdjustment()}
             className="px-2 py-1 text-[11px] font-mono text-slate-300 hover:text-slate-100 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-1 transition-colors cursor-pointer"
             title="Cancel: revert to position/scale from before this session and exit"
           >
-            <RotateCcw className="w-3 h-3" />
-            <span>Reset</span>
+            <X className="w-3 h-3" />
+            <span>Cancel</span>
           </button>
 
           <button

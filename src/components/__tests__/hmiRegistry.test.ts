@@ -11,7 +11,7 @@ import { ScreenDefinition } from '../../types';
 
 describe('HMI Rule Registry Management & StandardRef Propagation', () => {
   it('every canonical rule has non-empty standardRef, ISO addedDate, and addedBy', () => {
-    assert.equal(HMI_RULES.length, 18);
+    assert.equal(HMI_RULES.length, 19);
 
     const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
