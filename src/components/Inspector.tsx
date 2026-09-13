@@ -1105,6 +1105,17 @@ export const Inspector: React.FC = () => {
               />
             </div>
 
+            {/* Show Header toggle for ALL Component Types, default checked */}
+            <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+              <span className="text-[11px] font-mono text-slate-400 font-bold uppercase">Show Header</span>
+              <input
+                type="checkbox"
+                checked={selectedComp.staticProps.showHeader !== 'false'}
+                onChange={(e) => handleStaticPropChange('showHeader', e.target.checked ? 'true' : 'false')}
+                className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+              />
+            </div>
+
             {selectedComp.type === 'speed' && (
               <>
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-1.5">
@@ -3724,6 +3735,7 @@ export const Inspector: React.FC = () => {
                   key !== 'distanceTextColor' &&
                   key !== 'trafficDensity' &&
                   key !== 'grayscaleTraffic' &&
+                  key !== 'showHeader' &&
                   key !== 'buttonLabel' &&
                   key !== 'reportTitle' &&
                   key !== 'confirmLabel' &&

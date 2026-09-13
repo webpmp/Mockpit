@@ -56,6 +56,7 @@ import { PhoneDialPadWidget } from './phone/PhoneDialPadWidget';
 import { PhoneMessagingWidget } from './phone/PhoneMessagingWidget';
 import { ContactAvatar } from './ContactAvatar';
 import { COMPONENT_META } from '../config/componentMeta';
+import { CATEGORY_ICON_HEX, COMPONENT_TYPE_TO_CATEGORY } from '../config/categoryColors';
 import { getAvatarColor, getInitials } from '../utils/avatarHash';
 import { ClimateVentWidget } from './climate/ClimateVentWidget';
 import { ClimateTempWidget } from './climate/ClimateTempWidget';
@@ -126,13 +127,20 @@ export const getAlphaColor = (color: string, hexAlpha: string, mixPercent: numbe
   return `${color}${hexAlpha}`;
 };
 
-export const getComponentDefaultIcon = (type: string, customColor: string, iconKey?: string) => {
+export const getComponentDefaultIcon = (
+  type: string,
+  customColor: string,
+  iconKey?: string,
+  isPresentation?: boolean
+) => {
   const className = 'w-5 h-5 shrink-0';
   if (type === 'warning' || iconKey) {
     return renderNotificationIcon(iconKey || 'alert-triangle', className);
   }
-  const IconComp = COMPONENT_META[type as ComponentType]?.icon || Gauge;
-  return <IconComp className={className} style={{ color: customColor }} />;
+  // Generic per-type icon glyph is permanently hidden on canvas — Editor,
+  // Presenter, and Auditor alike (Chris: reduces canvas clutter). Only the
+  // alert/warning icon in the branch above still renders.
+  return null;
 };
 
 interface ComponentHeaderProps {
@@ -144,9 +152,11 @@ interface ComponentHeaderProps {
   className?: string;
   hideIcon?: boolean;
   hideDivider?: boolean;
+  isPresentation?: boolean;
+  hidden?: boolean; // ComponentHeaderProps
 }
 
-export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
+export const ComponentHeader: React.FC< ComponentHeaderProps > = ({
   type,
   label,
   customColor,
@@ -155,6 +165,8 @@ export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
   className = '',
   hideIcon = false,
   hideDivider = false,
+  isPresentation = false,
+  hidden = false,
 }) => {
   const isNotification = type === 'warning';
 
@@ -168,6 +180,8 @@ export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
     );
   }
 
+  if (hidden) return null;
+
   const baseHeaderClass = hideDivider
     ? 'flex items-center justify-between text-[11px] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none leading-none'
     : 'flex items-center justify-between h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60';
@@ -175,7 +189,7 @@ export const ComponentHeader: React.FC<ComponentHeaderProps> = ({
   return (
     <div className={`${baseHeaderClass} ${className}`}>
       <span className="flex items-center gap-1.5 min-w-0 truncate">
-        {!hideIcon && getComponentDefaultIcon(type, customColor, iconKey)}
+        {!hideIcon && getComponentDefaultIcon(type, customColor, iconKey, isPresentation)}
         <span className="truncate">{label}</span>
       </span>
       {rightElement && <div className="shrink-0 flex items-center gap-1.5 ml-2">{rightElement}</div>}
@@ -409,7 +423,8 @@ const NavHomeWidget: React.FC<{
   customColor: string;
   baseOpacity: string;
   styleOpacity?: number;
-}> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
+  isPresentation?: boolean;
+}> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity, isPresentation }) => {
   const initialAddress = resolved.address || component.staticProps?.address || 'San Jose, CA';
   const [address, setAddress] = React.useState(initialAddress);
   const [homeLat, setHomeLat] = React.useState(resolved.lat || component.staticProps?.lat || '37.3861');
@@ -428,6 +443,8 @@ const NavHomeWidget: React.FC<{
         type="navHome"
         label={headerLabel}
         customColor={customColor}
+        isPresentation={isPresentation}
+        hidden={component.staticProps?.showHeader === 'false'}
         rightElement={
           <span className="text-[0.5625rem] font-mono px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 font-semibold">
             SAVED
@@ -476,7 +493,8 @@ const NavFavoritesWidget: React.FC<{
   customColor: string;
   baseOpacity: string;
   styleOpacity?: number;
-}> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
+  isPresentation?: boolean;
+}> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity, isPresentation }) => {
   const favorites = useMockpitStore((s) => s.favorites) || [];
   const recents = useMockpitStore((s) => s.recents) || [];
   const addFavorite = useMockpitStore((s) => s.addFavorite);
@@ -534,6 +552,8 @@ const NavFavoritesWidget: React.FC<{
         type="navFavorites"
         label={headerLabel}
         customColor={customColor}
+        isPresentation={isPresentation}
+        hidden={component.staticProps?.showHeader === 'false'}
       />
 
       <div className="flex-1 min-h-0 my-2 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
@@ -695,7 +715,8 @@ const NavDestinationWidget: React.FC<{
   customColor: string;
   baseOpacity: string;
   styleOpacity?: number;
-}> = ({ component, resolved, vehicleState, isSelected, customColor, baseOpacity, styleOpacity }) => {
+  isPresentation?: boolean;
+}> = ({ component, resolved, vehicleState, isSelected, customColor, baseOpacity, styleOpacity, isPresentation }) => {
   const initialPrimaryDest = resolved.destination || component.staticProps?.destination || 'Yosemite National Park Valley';
   const initialDestLat = resolved.destLat || component.staticProps?.destLat || resolved.lat || component.staticProps?.lat || '37.7456';
   const initialDestLng = resolved.destLng || component.staticProps?.destLng || resolved.lng || component.staticProps?.lng || '-119.5936';
@@ -987,6 +1008,8 @@ const NavDestinationWidget: React.FC<{
         type="navDestination"
         label={headerLabel}
         customColor={customColor}
+        isPresentation={isPresentation}
+        hidden={component.staticProps?.showHeader === 'false'}
       />
 
       <div ref={contentRef} className="flex-1 min-h-0 my-1.5 overflow-y-auto pr-1 custom-scrollbar">
@@ -1179,7 +1202,8 @@ const NavSearchWidget: React.FC<{
   customColor: string;
   baseOpacity: string;
   styleOpacity?: number;
-}> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity }) => {
+  isPresentation?: boolean;
+}> = ({ component, resolved, isSelected, customColor, baseOpacity, styleOpacity, isPresentation }) => {
   const [query, setQuery] = React.useState('');
   const [isFocused, setIsFocused] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -1289,6 +1313,8 @@ const NavSearchWidget: React.FC<{
         type="navSearch"
         label={headerLabel}
         customColor={customColor}
+        isPresentation={isPresentation}
+        hidden={component.staticProps?.showHeader === 'false'}
         rightElement={
           <span className="text-[0.5625rem] font-mono text-slate-400">NEARBY</span>
         }
@@ -1365,6 +1391,7 @@ interface TirePressureWidgetProps {
   customColor: string;
   baseOpacity: string;
   styleOpacity: number;
+  isPresentation?: boolean;
 }
 
 const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
@@ -1374,6 +1401,7 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
   customColor,
   baseOpacity,
   styleOpacity,
+  isPresentation,
 }) => {
   const tirePressureWarning = useMockpitStore((s) => s.vehicleState.tirePressureWarning ?? false);
 
@@ -1479,6 +1507,8 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
         type="tirePressure"
         label={headerLabel}
         customColor={customColor}
+        isPresentation={isPresentation}
+        hidden={component.staticProps?.showHeader === 'false'}
       />
 
       {/* Hidden offscreen measurement element to measure unconstrained width of full label */}
@@ -1619,7 +1649,7 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
     // useful, functional placeholder for positioning; no ghost overlay needed.
     return (
       <div className={wrapperClasses} style={wrapperStyle}>
-        <ComponentHeader type="navTripSummary" label={headerLabel} customColor={customColor} />
+        <ComponentHeader type="navTripSummary" label={headerLabel} customColor={customColor} isPresentation={isPresentation} hidden={component.staticProps?.showHeader === 'false'} />
         <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center p-3 my-auto">
           <span className="text-xs font-mono text-slate-400">No active trip.</span>
           <button
@@ -1646,7 +1676,7 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
 
   return (
     <div className={wrapperClasses} style={wrapperStyle}>
-      <ComponentHeader type="navTripSummary" label={headerLabel} customColor={customColor} />
+      <ComponentHeader type="navTripSummary" label={headerLabel} customColor={customColor} isPresentation={isPresentation} hidden={component.staticProps?.showHeader === 'false'} />
 
       {/* Hidden offscreen measurement element — same convention as TirePressureWidget */}
       <span
@@ -1792,6 +1822,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             type="battery"
             label={headerLabel}
             customColor={customColor}
+            isPresentation={isPresentation}
+            hidden={component.staticProps?.showHeader === 'false'}
             rightElement={
               vehicleState.isCharging ? (
                 <span className="flex items-center gap-1 text-emerald-400 font-bold text-[0.625rem] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
@@ -1940,6 +1972,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             label={headerLabel}
             customColor={customColor}
             iconKey={iconKey}
+            isPresentation={isPresentation}
+            hidden={component.staticProps?.showHeader === 'false'}
             rightElement={
               onMinimize ? (
                 <button
@@ -2002,6 +2036,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             type="map"
             label={headerLabel}
             customColor={customColor}
+            isPresentation={isPresentation}
+            hidden={component.staticProps?.showHeader === 'false'}
             className="px-3 pt-3"
             rightElement={
               <span className="text-[0.5625rem] font-mono text-slate-500">
@@ -2162,6 +2198,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             type="phone"
             label={headerLabel}
             customColor={customColor}
+            isPresentation={isPresentation}
+            hidden={component.staticProps?.showHeader === 'false'}
             rightElement={
               <span className="text-[0.5625rem] text-emerald-400 font-mono">CONNECTED</span>
             }
@@ -2207,6 +2245,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           customColor={customColor}
           baseOpacity={baseOpacity}
           styleOpacity={styleOpacity}
+          isPresentation={isPresentation}
         />
       );
     }
@@ -2220,6 +2259,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           customColor={customColor}
           baseOpacity={baseOpacity}
           styleOpacity={styleOpacity}
+          isPresentation={isPresentation}
         />
       );
     }
@@ -2233,6 +2273,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           customColor={customColor}
           baseOpacity={baseOpacity}
           styleOpacity={styleOpacity}
+          isPresentation={isPresentation}
         />
       );
     }
@@ -2247,6 +2288,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           customColor={customColor}
           baseOpacity={baseOpacity}
           styleOpacity={styleOpacity}
+          isPresentation={isPresentation}
         />
       );
     }
@@ -2260,6 +2302,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           customColor={customColor}
           baseOpacity={baseOpacity}
           styleOpacity={styleOpacity}
+          isPresentation={isPresentation}
         />
       );
     }
@@ -2285,6 +2328,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               type="navTripEstimate"
               label={headerLabel}
               customColor={customColor}
+              isPresentation={isPresentation}
+              hidden={component.staticProps?.showHeader === 'false'}
             />
 
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center p-3 my-auto">
@@ -2328,6 +2373,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             type="navTripEstimate"
             label={headerLabel}
             customColor={customColor}
+            isPresentation={isPresentation}
+            hidden={component.staticProps?.showHeader === 'false'}
           />
 
           <div className="grid grid-cols-2 gap-2 my-auto">
