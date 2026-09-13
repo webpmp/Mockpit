@@ -138,6 +138,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
         type="media"
         label={headerLabel}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
         rightElement={
           <div className="relative">
             <button

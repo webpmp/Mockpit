@@ -220,6 +220,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
           type="speed"
           label={headerLabel}
           customColor={customColor}
+          hidden={component.staticProps?.showHeader === 'false'}
           className="w-full"
         />
 
@@ -411,6 +412,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
           type="speed"
           label={headerLabel}
           customColor={customColor}
+          hidden={component.staticProps?.showHeader === 'false'}
           className="w-full"
         />
 
@@ -550,6 +552,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
         type="speed"
         label={headerLabel}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
         className="w-full"
       />
 

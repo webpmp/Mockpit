@@ -158,6 +158,7 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
         type="climateVent"
         label={headerLabel}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
       />
 
       {/* 3 Dashboard Vents spatially: Left, Center, Right */}

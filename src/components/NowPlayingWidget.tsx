@@ -742,6 +742,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
           customColor={customColor}
           hideIcon={!showHeaderIcon}
           hideDivider={!showHeaderDivider}
+          hidden={component.staticProps?.showHeader === 'false'}
         />
       </div>
 

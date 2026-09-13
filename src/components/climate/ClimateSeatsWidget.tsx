@@ -345,6 +345,7 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
         type="climateSeats"
         label={headerLabel}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
       />
 
       {/* Main Dual-Seat Climate Area */}

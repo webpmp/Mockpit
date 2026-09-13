@@ -470,6 +470,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
         type="climate"
         label={headerLabel}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
       />
 
       {/* 2. Responsive Content Layout based on Element Priority Hierarchy */}

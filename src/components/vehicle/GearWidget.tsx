@@ -40,6 +40,8 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
 
   const headerLabel = resolved?.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.gear;
 
+  const gearBarPosition = component.staticProps?.gearBarPosition === 'bottom' ? 'bottom' : 'top';
+
   const componentWidth = component.width ?? 242;
   const componentHeight = component.height ?? 198;
 
@@ -117,10 +119,11 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
     <div
       ref={containerRef}
       data-component-type="gear"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between items-stretch shadow-lg backdrop-blur-md transition-all select-none overflow-visible ${
+      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between items-stretch shadow-lg backdrop-blur-md transition-all select-none overflow-visible [container-type:size] ${
         isUltraCompact ? 'p-2' : isCompact ? 'p-2.5' : 'p-3.5'
       } ${baseOpacity}`}
       style={{
+        containerType: 'size',
         borderColor: isSelected ? customColor : undefined,
         opacity: styleOpacity,
       }}
@@ -131,11 +134,16 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
           type="gear"
           label={headerLabel}
           customColor={customColor}
+          hidden={component.staticProps?.showHeader === 'false'}
         />
       )}
 
       {/* 2. Top Area: Stationary Compact P R N D Anchor + Downward-Extending Selector */}
-      <div className="relative flex flex-col items-center justify-center my-auto shrink-0 w-full px-1 z-20">
+      <div
+        className={`relative flex flex-col items-center justify-center shrink-0 w-full px-1 z-20 ${
+          gearBarPosition === 'bottom' ? 'order-2' : 'order-1'
+        }`}
+      >
         {/* Stationary Compact P R N D Anchor Bar (Does NOT move or jump) */}
         <div
           onMouseDown={(e) => e.stopPropagation()}
@@ -232,7 +240,11 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
       </div>
 
       {/* 3. Large Center Gear Letter (Primary Visual Representation & Selector Activator) */}
-      <div className="flex items-center justify-center my-auto shrink-0 z-10">
+      <div
+        className={`flex-1 min-h-0 flex items-center justify-center z-10 ${
+          gearBarPosition === 'bottom' ? 'order-1' : 'order-2'
+        }`}
+      >
         <button
           type="button"
           aria-label={`Current gear ${currentGear}. Click to activate gear selector`}
@@ -242,12 +254,6 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
             setIsSelecting((prev) => !prev);
           }}
           className={`flex items-center justify-center rounded-xl transition-all duration-150 select-none cursor-pointer ${
-            isUltraCompact
-              ? 'px-4 py-1 text-2xl'
-              : isCompact
-              ? 'px-5 py-1.5 text-3xl'
-              : 'px-6 py-2 text-4xl'
-          } ${
             isSelecting
               ? 'bg-slate-800 border-sky-500/80 ring-2 ring-sky-500/30'
               : 'bg-slate-800/70 hover:bg-slate-800 hover:border-slate-600 border-slate-700/60'
@@ -255,6 +261,8 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
           style={{
             color: customColor,
             boxShadow: `0 0 ${isSelecting ? '24px' : '16px'} ${getAlphaColor(customColor, '50', 30)}`,
+            fontSize: 'clamp(28px, 42cqmin, 180px)',
+            padding: 'clamp(4px, 4cqmin, 28px) clamp(10px, 8cqmin, 40px)',
           }}
           title="Click to activate gear selector"
         >

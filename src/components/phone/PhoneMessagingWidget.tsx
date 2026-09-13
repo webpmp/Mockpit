@@ -103,6 +103,7 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
         type="phoneMessaging"
         label={headerLabel}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
         rightElement={
           selectedThreadId && (
             <button

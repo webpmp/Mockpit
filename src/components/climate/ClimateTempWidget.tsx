@@ -115,6 +115,7 @@ export const ClimateTempWidget: React.FC<ClimateTempWidgetProps> = ({
         type="climateTemp"
         label={headerLabel}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
       />
 
       {orientation === 'horizontal' ? (

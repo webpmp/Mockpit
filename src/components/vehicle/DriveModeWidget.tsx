@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { ComponentInstance, DriveModeState } from '../../types';
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { ComponentHeader, DEFAULT_COMPONENT_LABELS } from '../ComponentRenderer';
@@ -75,6 +75,7 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
           type="driveMode"
           label={headerLabel}
           customColor={customColor}
+          hidden={component.staticProps?.showHeader === 'false'}
         />
       )}
 
@@ -87,7 +88,7 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
             e.stopPropagation();
             setIsOpen((prev) => !prev);
           }}
-          className={`group relative flex items-center justify-between w-full rounded-xl border transition-colors cursor-pointer ${
+          className={`group relative flex items-center justify-center w-full rounded-xl border transition-colors cursor-pointer ${
             isUltraCompact
               ? 'py-1 px-2 text-xs'
               : isCompact
@@ -105,12 +106,6 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
           <span className="font-bold tracking-wider uppercase whitespace-nowrap">
             {activeMode}
           </span>
-
-          <ChevronDown
-            className={`transition-transform duration-200 text-slate-400 group-hover:text-slate-200 shrink-0 ml-1.5 ${
-              isUltraCompact ? 'w-3 h-3' : 'w-3.5 h-3.5'
-            } ${isOpen ? 'rotate-180 text-sky-400' : ''}`}
-          />
         </button>
 
         {/* Dropdown Popover: smoothly slides out from trigger and retracts on close */}

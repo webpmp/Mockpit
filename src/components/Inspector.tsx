@@ -3577,6 +3577,42 @@ export const Inspector: React.FC = () => {
               );
             })()}
 
+            {/* Gear Selector Configuration */}
+            {selectedComp.type === 'gear' && (
+              <div className="space-y-1.5 bg-slate-800/80 p-3 rounded-lg border border-slate-700/60">
+                <span className="text-[10px] font-mono font-bold text-sky-400 uppercase block">
+                  Gear Bar Position
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(
+                    [
+                      { pos: 'top', label: 'Top', Icon: ArrowUp },
+                      { pos: 'bottom', label: 'Bottom', Icon: ArrowDown },
+                    ] as const
+                  ).map(({ pos, label, Icon }) => {
+                    const current = selectedComp.staticProps.gearBarPosition === 'bottom' ? 'bottom' : 'top';
+                    const isActive = current === pos;
+                    return (
+                      <button
+                        key={pos}
+                        type="button"
+                        onClick={() => handleStaticPropChange('gearBarPosition', pos)}
+                        className={`py-1.5 px-2 rounded-md text-[11px] font-mono font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                          isActive
+                            ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-sm'
+                            : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                        }`}
+                        title={`Show gear bar at the ${label.toLowerCase()}`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Climate Controls */}
             {selectedComp.type === 'climate' && (
               <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-3">
@@ -3736,6 +3772,7 @@ export const Inspector: React.FC = () => {
                   key !== 'trafficDensity' &&
                   key !== 'grayscaleTraffic' &&
                   key !== 'showHeader' &&
+                  key !== 'gearBarPosition' &&
                   key !== 'buttonLabel' &&
                   key !== 'reportTitle' &&
                   key !== 'confirmLabel' &&

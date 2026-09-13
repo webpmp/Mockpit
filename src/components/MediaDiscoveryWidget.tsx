@@ -149,6 +149,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
         type="mediaDiscovery"
         label={headerLabel || (mode === 'trending' ? 'Trending' : 'Discovery')}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
         rightElement={
           <div className="relative">
             <button

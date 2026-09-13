@@ -170,6 +170,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
         type="phoneDialPad"
         label={headerLabel}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
         rightElement={
           !isInCall && (
             <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">

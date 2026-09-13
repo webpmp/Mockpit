@@ -99,6 +99,7 @@ export const MediaPlaylistsWidget: React.FC<MediaPlaylistsWidgetProps> = ({
         type="mediaPlaylists"
         label={headerLabel || 'Playlists'}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
       />
 
       {/* Playlists Display: Carousel vs Wrap-Grid */}

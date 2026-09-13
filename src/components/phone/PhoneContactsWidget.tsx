@@ -105,6 +105,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
         type="phoneContacts"
         label={headerLabel}
         customColor={customColor}
+        hidden={component.staticProps?.showHeader === 'false'}
         rightElement={
           selectedContact && (
             <button
