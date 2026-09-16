@@ -4,6 +4,7 @@ import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
 import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType, EgoVehicleType } from '../types';
 import { QUICK_ACCESS_OPTIONS, getDefaultQuickAccessDimensions } from '../config/quickAccessConfig';
 import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check, Eye, EyeOff } from 'lucide-react';
+import { geocodeAddress } from '../utils/geocoding';
 import {
   WeatherDetailCardKey,
   DEFAULT_DETAIL_CARD_ORDER,
@@ -840,6 +841,9 @@ const GeometryInput: React.FC<{
 
 export const Inspector: React.FC = () => {
   const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
+  const vehicleState = useMockpitStore((s) => s.vehicleState);
+  const setVehicleState = useMockpitStore((s) => s.setVehicleState);
+  const resetVehicleOrigin = useMockpitStore((s) => s.resetVehicleOrigin);
   const components = useMockpitStore((s) => s.components);
   const notificationComponents = useMockpitStore((s) => s.notificationComponents);
   const notificationStackPosition = useMockpitStore((s) => s.notificationStackPosition);
@@ -888,6 +892,34 @@ export const Inspector: React.FC = () => {
 
   const [isAddingBinding, setIsAddingBinding] = useState(false);
   const [activeTab, setActiveTab] = useState<'component' | 'screen' | 'layers'>('screen');
+  const [originInputVal, setOriginInputVal] = useState<string>(vehicleState.originLocationName || 'San Francisco, CA');
+  const [originGeocodeStatus, setOriginGeocodeStatus] = useState<'idle' | 'resolving' | 'success' | 'failed'>('idle');
+
+  useEffect(() => {
+    setOriginInputVal(vehicleState.originLocationName || 'San Francisco, CA');
+  }, [vehicleState.originLocationName]);
+
+  const handleResolveOrigin = async (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    setOriginGeocodeStatus('resolving');
+    const res = await geocodeAddress(trimmed);
+    if (res) {
+      setOriginGeocodeStatus('success');
+      setVehicleState({
+        originLat: res.lat,
+        originLng: res.lng,
+        originLocationName: res.displayName,
+        originUnresolved: false,
+      });
+      setOriginInputVal(res.displayName);
+    } else {
+      setOriginGeocodeStatus('failed');
+      setVehicleState({
+        originUnresolved: true,
+      });
+    }
+  };
 
   // Track expanded state of collapsible sections.
   // Defaults: 'geometry', 'stacking', 'bindings' are collapsed (false).
@@ -1347,6 +1379,93 @@ export const Inspector: React.FC = () => {
 
             {selectedComp.type === 'navDestination' && (
               <div className="space-y-2">
+                {/* Trip Origin / Current Location */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                      Trip Origin (Current Location)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetVehicleOrigin();
+                        setOriginInputVal('San Francisco, CA');
+                        setOriginGeocodeStatus('idle');
+                      }}
+                      className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                      title="Reset origin to San Francisco, CA (37.7749, -122.4194)"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      Reset to SF
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-mono">Location Address / City</span>
+                    <input
+                      type="text"
+                      value={originInputVal}
+                      onChange={(e) => {
+                        setOriginInputVal(e.target.value);
+                        if (originGeocodeStatus !== 'idle') setOriginGeocodeStatus('idle');
+                      }}
+                      onBlur={() => {
+                        if (originInputVal.trim() && originInputVal !== vehicleState.originLocationName) {
+                          handleResolveOrigin(originInputVal);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleResolveOrigin(originInputVal);
+                        }
+                      }}
+                      placeholder="e.g. San Francisco, CA or Chicago, IL"
+                      className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                    />
+                    {originGeocodeStatus === 'resolving' && (
+                      <span className="text-[10px] text-sky-400 font-mono flex items-center gap-1">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+                        Resolving location…
+                      </span>
+                    )}
+                    {originGeocodeStatus === 'success' && (
+                      <span className="text-[10px] text-emerald-400 font-mono block truncate">
+                        ✓ Origin set: {vehicleState.originLocationName}
+                      </span>
+                    )}
+                    {(originGeocodeStatus === 'failed' || vehicleState.originUnresolved) && (
+                      <span className="text-[10px] text-amber-400 font-mono block">
+                        ⚠ Location not found — keeping last origin
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-mono">Origin Lat</span>
+                      <input
+                        type="text"
+                        value={vehicleState.originLat ?? 37.7749}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setVehicleState({ originLat: val });
+                        }}
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-mono">Origin Lng</span>
+                      <input
+                        type="text"
+                        value={vehicleState.originLng ?? -122.4194}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setVehicleState({ originLng: val });
+                        }}
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
                   <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
                     Primary Destination
@@ -1516,6 +1635,93 @@ export const Inspector: React.FC = () => {
 
             {selectedComp.type === 'navTripEstimate' && (
               <div className="space-y-2">
+                {/* Trip Origin / Current Location */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                      Trip Origin (Current Location)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetVehicleOrigin();
+                        setOriginInputVal('San Francisco, CA');
+                        setOriginGeocodeStatus('idle');
+                      }}
+                      className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                      title="Reset origin to San Francisco, CA (37.7749, -122.4194)"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      Reset to SF
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-mono">Location Address / City</span>
+                    <input
+                      type="text"
+                      value={originInputVal}
+                      onChange={(e) => {
+                        setOriginInputVal(e.target.value);
+                        if (originGeocodeStatus !== 'idle') setOriginGeocodeStatus('idle');
+                      }}
+                      onBlur={() => {
+                        if (originInputVal.trim() && originInputVal !== vehicleState.originLocationName) {
+                          handleResolveOrigin(originInputVal);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleResolveOrigin(originInputVal);
+                        }
+                      }}
+                      placeholder="e.g. San Francisco, CA or Chicago, IL"
+                      className="w-full bg-slate-900 px-2 py-1.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                    />
+                    {originGeocodeStatus === 'resolving' && (
+                      <span className="text-[10px] text-sky-400 font-mono flex items-center gap-1">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+                        Resolving location…
+                      </span>
+                    )}
+                    {originGeocodeStatus === 'success' && (
+                      <span className="text-[10px] text-emerald-400 font-mono block truncate">
+                        ✓ Origin set: {vehicleState.originLocationName}
+                      </span>
+                    )}
+                    {(originGeocodeStatus === 'failed' || vehicleState.originUnresolved) && (
+                      <span className="text-[10px] text-amber-400 font-mono block">
+                        ⚠ Location not found — keeping last origin
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-mono">Origin Lat</span>
+                      <input
+                        type="text"
+                        value={vehicleState.originLat ?? 37.7749}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setVehicleState({ originLat: val });
+                        }}
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 font-mono">Origin Lng</span>
+                      <input
+                        type="text"
+                        value={vehicleState.originLng ?? -122.4194}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setVehicleState({ originLng: val });
+                        }}
+                        className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
                   <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
                     Route Simulation Parameters

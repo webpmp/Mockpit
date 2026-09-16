@@ -343,6 +343,10 @@ const INITIAL_VEHICLE_STATE: VehicleState = {
   signalBars: 4,
   mapLat: 37.7749,
   mapLng: -122.4194,
+  originLat: 37.7749,
+  originLng: -122.4194,
+  originLocationName: 'San Francisco, CA',
+  originUnresolved: false,
   cruiseControlActive: false,
   blindSpotWarning: true,
   proximityWarning: true,
@@ -1166,6 +1170,7 @@ interface MockpitStore {
   // Vehicle State Actions
   setVehicleState: (partial: Partial<VehicleState>) => void;
   resetVehicleState: () => void;
+  resetVehicleOrigin: () => void;
   applyPresetScenario: (scenario: 'low_battery' | 'highway_cruise' | 'charging_station' | 'door_alert' | 'tire_warning' | 'parked') => void;
 
   // Notifications
@@ -2819,6 +2824,15 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     set(() => {
       localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(INITIAL_VEHICLE_STATE));
       return { vehicleState: INITIAL_VEHICLE_STATE };
+    });
+  },
+
+  resetVehicleOrigin: () => {
+    get().setVehicleState({
+      originLat: 37.7749,
+      originLng: -122.4194,
+      originLocationName: 'San Francisco, CA',
+      originUnresolved: false,
     });
   },
 

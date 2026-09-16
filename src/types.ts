@@ -151,6 +151,10 @@ export type VehicleState = {
   signalBars?: number;    // 1 - 5 bars
   mapLat?: number;        // dynamic map center latitude
   mapLng?: number;        // dynamic map center longitude
+  originLat?: number;     // canonical / user-editable simulation origin latitude
+  originLng?: number;     // canonical / user-editable simulation origin longitude
+  originLocationName?: string; // display name of custom origin location
+  originUnresolved?: boolean;  // true if custom origin geocoding failed
   cruiseControlActive?: boolean;
   cruiseSetSpeed?: number;
   blindSpotWarning?: boolean;

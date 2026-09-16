@@ -777,8 +777,8 @@ const NavDestinationWidget: React.FC<{
   const [destGeocoded, setDestGeocoded] = React.useState<boolean | undefined>(undefined);
 
   // Live estimate calculation for Active Mode & Stop Legs
-  const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
-  const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
+  const originLat = typeof vehicleState.originLat === 'number' ? vehicleState.originLat : 37.7749;
+  const originLng = typeof vehicleState.originLng === 'number' ? vehicleState.originLng : -122.4194;
   const consumptionRate = Number(resolved.consumptionRate || component.staticProps?.consumptionRate) || 0.32;
 
   const estimate = activeTrip
@@ -1261,8 +1261,8 @@ const NavSearchWidget: React.FC<{
   const prevExpandedRef = React.useRef<boolean>(isExpanded);
   const lastSearchDeltaRef = React.useRef<number>(140);
 
-  const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
-  const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
+  const originLat = typeof vehicleState.originLat === 'number' ? vehicleState.originLat : 37.7749;
+  const originLng = typeof vehicleState.originLng === 'number' ? vehicleState.originLng : -122.4194;
 
   const defaultPOIs = React.useMemo(() => [
     { name: 'Tesla Supercharger - 250kW', status: '8/12 Open', dist: '1.2 mi', lat: originLat + 0.008, lng: originLng + 0.003, category: 'charging_station' },
@@ -1747,8 +1747,8 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
     );
   }
 
-  const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
-  const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
+  const originLat = typeof vehicleState.originLat === 'number' ? vehicleState.originLat : 37.7749;
+  const originLng = typeof vehicleState.originLng === 'number' ? vehicleState.originLng : -122.4194;
   const consumptionRate = Number(resolved.consumptionRate || component.staticProps?.consumptionRate) || 0.32;
   const estimate = calculateTripEstimate(originLat, originLng, activeTrip, consumptionRate, vehicleState.batteryPercent);
   const stopCount = activeTrip.stops?.length || 0;
@@ -2436,8 +2436,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         );
       }
 
-      const originLat = typeof vehicleState.mapLat === 'number' ? vehicleState.mapLat : 37.7749;
-      const originLng = typeof vehicleState.mapLng === 'number' ? vehicleState.mapLng : -122.4194;
+      const originLat = typeof vehicleState.originLat === 'number' ? vehicleState.originLat : 37.7749;
+      const originLng = typeof vehicleState.originLng === 'number' ? vehicleState.originLng : -122.4194;
       const consumptionRate = Number(resolved.consumptionRate || component.staticProps?.consumptionRate) || 0.32;
 
       const estimate = calculateTripEstimate(
