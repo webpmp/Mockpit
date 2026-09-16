@@ -43,6 +43,8 @@ export interface OpenMeteoCurrent {
   visibility?: number;
   relative_humidity_2m?: number;
   surface_pressure?: number;
+  uv_index?: number;
+  dew_point_2m?: number;
   is_day?: number;
 }
 
@@ -114,5 +116,6 @@ export interface WeatherAlertsState {
   locationName?: string;
   coordinates: { lat: number; lon: number } | null;
   timezone?: string;
+  current?: OpenMeteoCurrent;
 }
 

@@ -54,6 +54,7 @@ export function useWeatherAlerts() {
           locationName,
           coordinates: { lat, lon },
           timezone: result.rawResponse.timezone,
+          current: result.rawResponse.current,
         });
       } catch (err: any) {
         if (!isMounted.current || thisSeq !== activeRequestSeq.current) {
@@ -93,6 +94,7 @@ export function useWeatherAlerts() {
     errorMessage: state.errorMessage,
     locationName: state.locationName,
     timezone: state.timezone,
+    current: state.current,
     refetch: () => loadAlerts(true),
   };
 }

@@ -10,7 +10,8 @@ import {
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ComponentInstance, ComponentType } from '../types';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
-import { getComponentIcon, getComponentColor } from '../config/componentMeta';
+import { getComponentIcon } from '../config/componentMeta';
+import { resolveLayerIconColor } from '../config/categoryColors';
 
 interface LayersPanelProps {
   className?: string;
@@ -70,7 +71,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
           {sortedComponents.map((comp) => {
             const isSelected = selectedComponentId === comp.id;
             const Icon = getComponentIcon(comp.type);
-            const color = getComponentColor(comp.type, comp.staticProps?.color);
+            const color = resolveLayerIconColor(comp, activeView);
             const label =
               comp.staticProps?.label ||
               DEFAULT_COMPONENT_LABELS[comp.type] ||

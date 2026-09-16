@@ -1,11 +1,22 @@
 import React from 'react';
 import {
-  ShieldCheck,
   AlertTriangle,
   ExternalLink,
+  Thermometer,
+  Sun,
+  Droplets,
+  Waves,
+  CloudFog,
 } from 'lucide-react';
 import { useWeatherAlerts } from '../../hooks/useWeatherAlerts';
+import { useWeatherStore } from '../../store/useWeatherStore';
+import {
+  WeatherDetailCardKey,
+  parseDetailCardOrder,
+  isDetailCardVisible,
+} from '../../types/weatherDetails';
 import { WeatherAlertCard } from './WeatherAlertCard';
+import { WeatherDetailCard, getUvCategory } from './WeatherDetailCard';
 
 interface WeatherAlertsSectionProps {
   className?: string;
@@ -14,40 +25,128 @@ interface WeatherAlertsSectionProps {
 export const WeatherAlertsSection: React.FC<WeatherAlertsSectionProps> = ({
   className = '',
 }) => {
-  const { alerts, status, errorMessage, refetch } = useWeatherAlerts();
+  const { alerts, status, errorMessage, refetch, current } = useWeatherAlerts();
+
+  const apparentTemp =
+    current?.apparent_temperature !== undefined
+      ? Math.round(current.apparent_temperature)
+      : undefined;
+
+  const rawUv = current?.uv_index;
+  const uvIndex = rawUv !== undefined ? Math.round(rawUv) : undefined;
+  const uvCategory = rawUv !== undefined ? getUvCategory(rawUv) : undefined;
+
+  const dewPoint =
+    current?.dew_point_2m !== undefined
+      ? Math.round(current.dew_point_2m)
+      : undefined;
+
+  const pressureInHg =
+    current?.surface_pressure !== undefined
+      ? current.surface_pressure * 0.02953
+      : undefined;
+
+  const visibilityMiles =
+    current?.visibility !== undefined
+      ? current.visibility / 1609.34
+      : undefined;
+
+  const detailCardOrder = useWeatherStore((s) => s.detailCardOrder);
+  const detailCardVisibility = useWeatherStore((s) => s.detailCardVisibility);
+
+  const orderedCardKeys = parseDetailCardOrder(detailCardOrder);
+  const visibleCardKeys = orderedCardKeys.filter((key) =>
+    isDetailCardVisible(key, detailCardVisibility)
+  );
+
+  const renderDetailCard = (key: WeatherDetailCardKey) => {
+    switch (key) {
+      case 'feelsLike':
+        return (
+          <WeatherDetailCard
+            key="feelsLike"
+            id="weather-detail-feels-like"
+            icon={Thermometer}
+            label="Feels Like"
+            value={apparentTemp !== undefined ? `${apparentTemp}°` : '--'}
+          />
+        );
+      case 'uvIndex':
+        return (
+          <WeatherDetailCard
+            key="uvIndex"
+            id="weather-detail-uv-index"
+            icon={Sun}
+            label="UV Index"
+            value={uvIndex !== undefined ? uvIndex : '--'}
+            sub={uvCategory}
+          />
+        );
+      case 'dewPoint':
+        return (
+          <WeatherDetailCard
+            key="dewPoint"
+            id="weather-detail-dew-point"
+            icon={Droplets}
+            label="Dew Point"
+            value={dewPoint !== undefined ? `${dewPoint}°` : '--'}
+          />
+        );
+      case 'pressure':
+        return (
+          <WeatherDetailCard
+            key="pressure"
+            id="weather-detail-pressure"
+            icon={Waves}
+            label="Pressure"
+            value={pressureInHg !== undefined ? pressureInHg.toFixed(2) : '--'}
+            sub="IN"
+          />
+        );
+      case 'visibility':
+        return (
+          <WeatherDetailCard
+            key="visibility"
+            id="weather-detail-visibility"
+            icon={CloudFog}
+            label="Visibility"
+            value={visibilityMiles !== undefined ? Math.round(visibilityMiles) : '--'}
+            sub="MI"
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div
       id="weather-alerts-section"
-      className={`flex-1 w-full h-full rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-md p-4 sm:p-5 flex flex-col justify-between overflow-hidden shadow-xl ${className}`}
+      className={`flex-1 w-full h-full flex flex-col justify-between min-h-0 overflow-hidden ${className}`}
     >
-      {/* Top Header Row */}
-      <div className="shrink-0 mb-3.5">
-        <div className="pb-2.5 border-b border-slate-800/80">
-          <h3
-            id="weather-alerts-heading"
-            className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-slate-200 font-mono"
-          >
-            Weather Alerts
-          </h3>
-        </div>
-      </div>
-
-      {/* Main Alert Content List / States */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
-        {/* Loading Skeleton */}
-        {status === 'loading' && alerts.length === 0 && (
+      {/* Main Content: Two Peer Cards Stacked in Shared Scroll Container */}
+      <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto pr-1">
+        {/* Loading Skeleton when no cached data exists */}
+        {status === 'loading' && !current && alerts.length === 0 ? (
           <div className="space-y-3 animate-pulse" id="weather-alerts-skeleton">
-            <div className="h-20 rounded-xl bg-slate-800/60 border border-slate-800" />
-            <div className="h-20 rounded-xl bg-slate-800/40 border border-slate-800" />
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3.5 flex flex-col gap-2.5">
+              <div className="h-4 w-36 bg-slate-800 rounded mb-2" />
+              <div
+                className="grid grid-cols-5 gap-3"
+              >
+                <div className="h-[235px] rounded-xl bg-slate-800/50" />
+                <div className="h-[235px] rounded-xl bg-slate-800/40" />
+                <div className="h-[235px] rounded-xl bg-slate-800/40" />
+                <div className="h-[235px] rounded-xl bg-slate-800/40" />
+                <div className="h-[235px] rounded-xl bg-slate-800/40" />
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Error State */}
-        {status === 'error' && (
+        ) : status === 'error' && !current ? (
+          /* Error State when fetch failed and no data is present */
           <div
             id="weather-alerts-error-state"
-            className="flex flex-col items-center justify-center p-6 text-center rounded-xl bg-slate-950/40 border border-slate-800 gap-2.5 h-full min-h-[140px]"
+            className="flex flex-col items-center justify-center p-6 text-center rounded-2xl bg-slate-900/40 border border-slate-800 gap-2.5 h-full min-h-[140px]"
           >
             <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
               <AlertTriangle className="w-5 h-5" />
@@ -67,37 +166,51 @@ export const WeatherAlertsSection: React.FC<WeatherAlertsSectionProps> = ({
               Retry Connection
             </button>
           </div>
-        )}
+        ) : (
+          <>
+            {/* Peer Card 1: Active Weather Alerts (only rendered when alerts.length > 0) */}
+            {alerts.length > 0 && (
+              <div
+                id="weather-alerts-card"
+                className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3.5 flex flex-col gap-2.5 shrink-0"
+              >
+                <h3
+                  id="weather-alerts-heading"
+                  className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-slate-200 font-mono pb-2 border-b border-slate-800/80"
+                >
+                  Weather Alerts
+                </h3>
+                {alerts.map((alert) => (
+                  <WeatherAlertCard key={alert.id} alert={alert} />
+                ))}
+              </div>
+            )}
 
-        {/* Empty State: Normal Conditions */}
-        {status === 'success' && alerts.length === 0 && (
-          <div
-            id="weather-alerts-empty-state"
-            className="flex flex-col items-center justify-center p-6 text-center rounded-xl bg-slate-950/40 border border-slate-800/80 gap-3 h-full min-h-[160px]"
-          >
-            <div className="w-11 h-11 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shadow-[0_0_12px_rgba(14,165,233,0.15)]">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="text-xs font-mono font-extrabold uppercase tracking-wider text-slate-200">
-                No Significant Weather Alerts
-              </h4>
-            </div>
-          </div>
-        )}
-
-        {/* Active Alerts List */}
-        {alerts.length > 0 && (
-          <div className="space-y-2.5" id="weather-alerts-list">
-            {alerts.map((alert) => (
-              <WeatherAlertCard key={alert.id} alert={alert} />
-            ))}
-          </div>
+            {/* Peer Card 2: Current Observations (only rendered when at least one detail card is visible) */}
+            {visibleCardKeys.length > 0 && (
+              <div
+                id="observations-card"
+                className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3.5 flex flex-col gap-2.5 shrink-0"
+              >
+                <h3
+                  id="observations-heading"
+                  className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-slate-200 font-mono pb-2 border-b border-slate-800/80"
+                >
+                  Current Observations
+                </h3>
+                <div
+                  className="grid grid-cols-5 gap-3"
+                >
+                  {visibleCardKeys.map((key) => renderDetailCard(key))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Footer Attribution Row */}
-      <div className="shrink-0 pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-end text-[10px] font-mono text-slate-600">
+      <div className="shrink-0 pt-2 flex items-center justify-end text-[10px] font-mono text-slate-600">
         <a
           href="https://open-meteo.com/"
           target="_blank"
@@ -112,3 +225,4 @@ export const WeatherAlertsSection: React.FC<WeatherAlertsSectionProps> = ({
     </div>
   );
 };
+

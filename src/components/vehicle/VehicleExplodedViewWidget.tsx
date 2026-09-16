@@ -27,6 +27,7 @@ export const VehicleExplodedViewWidget: React.FC<VehicleExplodedViewWidgetProps>
   const label = resolved.label || component.staticProps.label || 'Vehicle Exploded View';
   const removeBg = component.staticProps.removeBg !== 'false';
   const tolerance = parseInt(component.staticProps.bgTolerance || '25', 10);
+  const edgeSoftness = parseInt(component.staticProps.bgEdgeSoftness || '0', 10);
 
   const [displayUrl, setDisplayUrl] = useState<string>(rawImageUrl);
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
@@ -41,7 +42,7 @@ export const VehicleExplodedViewWidget: React.FC<VehicleExplodedViewWidgetProps>
     }
 
     let isMounted = true;
-    processImageBackgroundRemoval(rawImageUrl, tolerance).then((keyedUrl) => {
+    processImageBackgroundRemoval(rawImageUrl, tolerance, edgeSoftness).then((keyedUrl) => {
       if (isMounted) {
         setDisplayUrl(keyedUrl);
       }
@@ -50,7 +51,7 @@ export const VehicleExplodedViewWidget: React.FC<VehicleExplodedViewWidgetProps>
     return () => {
       isMounted = false;
     };
-  }, [rawImageUrl, removeBg, tolerance]);
+  }, [rawImageUrl, removeBg, tolerance, edgeSoftness]);
 
   return (
     <div

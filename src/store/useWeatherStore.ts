@@ -3,6 +3,11 @@ import { AirQualityData } from '../types/airQuality';
 import { fetchAirQuality } from '../services/airQualityService';
 import { SunTimeData } from '../types/sunTime';
 import { parseSunTimes } from '../services/sunTimeService';
+import {
+  WeatherDetailCardKey,
+  DEFAULT_DETAIL_CARD_ORDER,
+  parseDetailCardOrder,
+} from '../types/weatherDetails';
 
 export type WeatherConditionKey =
   | 'clear-day'
@@ -55,12 +60,17 @@ export interface WeatherState {
   radarZoom: number; // clamped 0..7 (default 7)
   radarRefreshInterval: number; // in minutes (default 5)
   radarLabel: string; // editable text (default "LOCAL RADAR")
+  detailCardOrder: string; // comma-separated keys, e.g. "feelsLike,uvIndex,dewPoint,pressure,visibility"
+  detailCardVisibility: Record<string, boolean>; // e.g. { feelsLike: true, uvIndex: true, ... }
   setLocationInput: (v: string) => void;
   setUnit: (u: 'F' | 'C') => void;
   setDisplayScale: (scale: 'sm' | 'md' | 'lg') => void;
   setRadarZoom: (z: number) => void;
   setRadarRefreshInterval: (m: number) => void;
   setRadarLabel: (lbl: string) => void;
+  setDetailCardOrder: (order: string) => void;
+  setDetailCardVisibility: (cardKey: string, visible: boolean) => void;
+  reorderDetailCard: (cardKey: string, direction: 'up' | 'down') => void;
   fetchWeather: () => Promise<void>;
 }
 
@@ -386,6 +396,14 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
   radarZoom: 7,
   radarRefreshInterval: 5,
   radarLabel: 'LOCAL RADAR',
+  detailCardOrder: DEFAULT_DETAIL_CARD_ORDER.join(','),
+  detailCardVisibility: {
+    feelsLike: true,
+    uvIndex: true,
+    dewPoint: true,
+    pressure: true,
+    visibility: true,
+  },
 
   setLocationInput: (locationInput: string) => {
     set({ locationInput });
@@ -413,6 +431,34 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
 
   setRadarLabel: (radarLabel: string) => {
     set({ radarLabel });
+  },
+
+  setDetailCardOrder: (detailCardOrder: string) => {
+    set({ detailCardOrder });
+  },
+
+  setDetailCardVisibility: (cardKey: string, visible: boolean) => {
+    set((state) => ({
+      detailCardVisibility: {
+        ...state.detailCardVisibility,
+        [cardKey]: visible,
+      },
+    }));
+  },
+
+  reorderDetailCard: (cardKey: string, direction: 'up' | 'down') => {
+    const currentOrder = parseDetailCardOrder(get().detailCardOrder);
+    const index = currentOrder.indexOf(cardKey as WeatherDetailCardKey);
+    if (index === -1) return;
+
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= currentOrder.length) return;
+
+    const updated = [...currentOrder];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(newIndex, 0, moved);
+
+    set({ detailCardOrder: updated.join(',') });
   },
 
   fetchWeather: async () => {

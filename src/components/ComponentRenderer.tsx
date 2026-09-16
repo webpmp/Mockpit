@@ -733,6 +733,8 @@ const NavDestinationWidget: React.FC<{
   const startTripGuidance = useMockpitStore((s) => s.startTripGuidance);
   const cancelTripGuidance = useMockpitStore((s) => s.cancelTripGuidance);
   const updateComponentSize = useMockpitStore((s) => s.updateComponentSize);
+  const pendingNavDestinationAction = useMockpitStore((s) => s.pendingNavDestinationAction);
+  const clearNavDestinationAction = useMockpitStore((s) => s.clearNavDestinationAction);
 
   // Parse waypoints / stops for draft mode
   const parseInitialStops = (): TripStop[] => {
@@ -955,10 +957,11 @@ const NavDestinationWidget: React.FC<{
     }
   };
 
-  const handleAddStop = () => {
+  const handleAddStop = React.useCallback(() => {
+    const baseStops = activeTrip ? activeTrip.stops : draftStops;
     const newStop: TripStop = {
       id: `stop-${Date.now()}`,
-      name: `Stop ${currentStops.length + 1}`,
+      name: `Stop ${baseStops.length + 1}`,
       lat: '37.5000',
       lng: '-120.0000',
     };
@@ -968,9 +971,40 @@ const NavDestinationWidget: React.FC<{
         stops: [...activeTrip.stops, newStop],
       });
     } else {
-      setDraftStops([...draftStops, newStop]);
+      setDraftStops((prev) => [...prev, newStop]);
     }
-  };
+  }, [activeTrip, draftStops, startTripGuidance]);
+
+  const handledActionIdRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (
+      pendingNavDestinationAction?.type === 'addStop' &&
+      handledActionIdRef.current !== pendingNavDestinationAction.id
+    ) {
+      handledActionIdRef.current = pendingNavDestinationAction.id;
+      clearNavDestinationAction();
+      handleAddStop();
+      cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (contentRef.current) {
+        contentRef.current.scrollTop = contentRef.current.scrollHeight;
+      }
+    }
+  }, [pendingNavDestinationAction, clearNavDestinationAction, handleAddStop]);
+
+  React.useEffect(() => {
+    const handleCustomEvent = () => {
+      handleAddStop();
+      cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (contentRef.current) {
+        contentRef.current.scrollTop = contentRef.current.scrollHeight;
+      }
+    };
+    window.addEventListener('mockpit-trip-planner-add-stop', handleCustomEvent);
+    return () => {
+      window.removeEventListener('mockpit-trip-planner-add-stop', handleCustomEvent);
+    };
+  }, [handleAddStop]);
 
   const handleRemoveStop = (index: number) => {
     const baseStops = activeTrip ? activeTrip.stops : draftStops;
@@ -1591,6 +1625,11 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
   const activeTrip = useMockpitStore((s) => s.activeTrip);
   const vehicleState = useMockpitStore((s) => s.vehicleState);
   const setActiveView = useMockpitStore((s) => s.setActiveView);
+  const activeView = useMockpitStore((s) => s.activeView);
+  const screens = useMockpitStore((s) => s.screens);
+  const componentsByScreen = useMockpitStore((s) => s.componentsByScreen);
+  const findScreenForComponentType = useMockpitStore((s) => s.findScreenForComponentType);
+  const triggerNavDestinationAction = useMockpitStore((s) => s.triggerNavDestinationAction);
 
   const headerLabel =
     resolved.label || component.staticProps?.label || DEFAULT_COMPONENT_LABELS.navTripSummary;
@@ -1625,8 +1664,29 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
     return () => observer.disconnect();
   }, [checkNameFit]);
 
-  const goToTripPlanner = () => {
-    setActiveView('navigation');
+  const findTripPlannerScreenId = React.useCallback((): string | null => {
+    // 1. Check currently active screen first
+    const currentComps = componentsByScreen[activeView] || [];
+    if (currentComps.some((c) => c.type === 'navDestination')) {
+      return activeView;
+    }
+    // 2. Search configured screens in defined order
+    for (const screen of screens) {
+      const screenComps = componentsByScreen[screen.id] || [];
+      if (screenComps.some((c) => c.type === 'navDestination')) {
+        return screen.id;
+      }
+    }
+    // 3. Fallback to store helper if defined
+    return findScreenForComponentType('navDestination');
+  }, [activeView, componentsByScreen, findScreenForComponentType, screens]);
+
+  const goToTripPlanner = React.useCallback(() => {
+    const targetScreenId = findTripPlannerScreenId();
+    if (!targetScreenId) return;
+    if (targetScreenId !== activeView) {
+      setActiveView(targetScreenId);
+    }
     setTimeout(() => {
       const el =
         document.getElementById('component-navDestination') ||
@@ -1635,7 +1695,31 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 50);
-  };
+  }, [activeView, findTripPlannerScreenId, setActiveView]);
+
+  const handleTripSummaryAddStop = React.useCallback(() => {
+    const targetScreenId = findTripPlannerScreenId();
+    if (!targetScreenId) {
+      // No Trip Planner exists anywhere: fail gracefully without navigating or throwing
+      return;
+    }
+
+    // Trigger the shared Add Stop action on Trip Planner
+    triggerNavDestinationAction('addStop');
+
+    // If Trip Planner is NOT on current screen, navigate to the target screen
+    if (targetScreenId !== activeView) {
+      setActiveView(targetScreenId);
+    } else {
+      // Already on current screen: scroll Trip Planner into view
+      const el =
+        document.getElementById('component-navDestination') ||
+        document.querySelector('[data-component-type="navDestination"]');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [activeView, findTripPlannerScreenId, setActiveView, triggerNavDestinationAction]);
 
   const wrapperClasses = `w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`;
   const wrapperStyle = { borderColor: isSelected ? customColor : undefined, opacity: styleOpacity };
@@ -1712,23 +1796,25 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
         )}
       </div>
 
-      <div className="flex items-center pt-1 border-t border-slate-800/60">
+      <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800/60">
         <button
-          onClick={goToTripPlanner}
+          type="button"
+          onClick={handleTripSummaryAddStop}
           className="shrink-0 min-h-[36px] px-2.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-[0.625rem] font-bold font-mono border border-slate-700/60 flex items-center gap-1 transition-colors cursor-pointer"
         >
-          {stopCount === 0 ? (
-            <>
-              <Plus className="w-3 h-3 text-slate-400" />
-              <span>Add Stop</span>
-            </>
-          ) : (
-            <>
-              <MapPin className="w-3 h-3 text-slate-400" />
-              <span>{stopCount} Stop{stopCount > 1 ? 's' : ''}</span>
-            </>
-          )}
+          <Plus className="w-3 h-3 text-slate-400" />
+          <span>Add Stop</span>
         </button>
+        {stopCount > 0 && (
+          <button
+            type="button"
+            onClick={goToTripPlanner}
+            className="shrink-0 min-h-[36px] px-2 rounded-lg bg-slate-950/40 hover:bg-slate-800/80 text-slate-400 hover:text-slate-200 text-[0.625rem] font-bold font-mono border border-slate-700/60 flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <MapPin className="w-3 h-3 text-slate-400" />
+            <span>{stopCount} Stop{stopCount > 1 ? 's' : ''}</span>
+          </button>
+        )}
       </div>
     </div>
   );

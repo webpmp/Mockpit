@@ -45,6 +45,8 @@ export function buildOpenMeteoAlertsUrl(lat: number, lon: number, unit: 'F' | 'C
     'visibility',
     'relative_humidity_2m',
     'surface_pressure',
+    'uv_index',
+    'dew_point_2m',
   ].join(',');
 
   const hourlyParams = [

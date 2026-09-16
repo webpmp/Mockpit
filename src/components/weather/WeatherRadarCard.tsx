@@ -5,7 +5,7 @@ import { RefreshCw, AlertTriangle, Layers } from 'lucide-react';
  * WeatherRadarCard
  *
  * Renders a glanceable live local weather radar tile map using RainViewer's public tile API
- * and Carto's light_all (Positron) base map tiles for high legibility.
+ * and OpenStreetMap standard base map tiles with contrast filtering for high legibility.
  */
 export interface WeatherRadarCardProps {
   lat: number;
@@ -15,7 +15,7 @@ export interface WeatherRadarCardProps {
   refreshIntervalMinutes?: number;
   className?: string;
   onExpand?: () => void;
-  variant?: 'compact' | 'full' | 'thumbnail';
+  variant?: 'compact' | 'full';
   sizeMode?: 'width' | 'height';
 }
 
@@ -39,7 +39,7 @@ function lat2tile(lat: number, zoom: number): number {
 
 /**
  * Shared 3x3 Tile Mosaic Sub-Component
- * Renders a crisp Carto Positron (light_all) base map with RainViewer radar overlay
+ * Renders an OpenStreetMap base map with RainViewer radar overlay
  * and centered target reticle, supporting an optional scale multiplier for landscape cover crop.
  */
 const RadarTileMosaic: React.FC<{
@@ -61,21 +61,23 @@ const RadarTileMosaic: React.FC<{
       }}
     >
       {tileOffsets.map((tile) => {
-        // Carto light_all (Positron) provides clean, high-contrast, light neutral-gray cartography
-        const baseMapUrl = `https://a.basemaps.cartocdn.com/light_all/${safeZoom}/${tile.x}/${tile.y}.png`;
+        // OpenStreetMap standard tiles with subdomain sharding (a, b, c) matching Navigation Leaflet pattern
+        const subdomains = ['a', 'b', 'c'];
+        const sub = subdomains[Math.abs(tile.x + tile.y) % 3];
+        const baseMapUrl = `https://${sub}.tile.openstreetmap.org/${safeZoom}/${tile.x}/${tile.y}.png`;
         const radarTileUrl = radarPath
           ? `${radarHost}${radarPath}/256/${safeZoom}/${tile.x}/${tile.y}/2/1_1.png`
           : null;
 
         return (
           <div key={`${tile.x}-${tile.y}`} className="relative w-[256px] h-[256px] bg-slate-200">
-            {/* Base Carto Light Tile at 90% opacity */}
+            {/* Base Map Tile with filter to desaturate & brighten for high contrast against radar overlay */}
             <img
               src={baseMapUrl}
               alt=""
               aria-hidden="true"
-              referrerPolicy="no-referrer"
               className="absolute inset-0 w-full h-full object-cover opacity-90"
+              style={{ filter: 'grayscale(0.6) brightness(1.15) contrast(0.9)' }}
             />
             {/* RainViewer Weather Radar Tile Overlay */}
             {radarTileUrl && (
@@ -203,46 +205,6 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
   }, [frameTime]);
 
   const isFull = variant === 'full';
-  const isThumbnail = variant === 'thumbnail';
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // THUMBNAIL VARIANT: 96x96px Absolute Corner Thumbnail for Today Card
-  // ──────────────────────────────────────────────────────────────────────────
-  if (isThumbnail) {
-    return (
-      <div
-        id="weather-radar-thumbnail"
-        role="button"
-        tabIndex={0}
-        onClick={onExpand}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onExpand?.();
-          }
-        }}
-        className={`absolute top-4 right-4 w-[96px] h-[96px] rounded-xl overflow-hidden border border-slate-700 shadow-lg cursor-pointer select-none bg-slate-200 flex items-center justify-center ${className}`}
-        title="Open full radar view"
-        aria-label="Open radar imagery"
-      >
-        {hasError ? (
-          <div className="flex flex-col items-center justify-center w-full h-full bg-slate-900 text-amber-500 p-1 text-center">
-            <AlertTriangle className="w-4 h-4" />
-          </div>
-        ) : (
-          <div className="relative w-full h-full overflow-hidden flex items-center justify-center">
-            <RadarTileMosaic
-              tileOffsets={tileOffsets}
-              safeZoom={safeZoom}
-              radarHost={radarHost}
-              radarPath={radarPath}
-              reticleSize="sm"
-            />
-          </div>
-        )}
-      </div>
-    );
-  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // FULL VARIANT: Bounded Square Map with Cover Crop (scale=1.5)
@@ -299,7 +261,7 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
             {/* Bottom-right: Source Watermark */}
             <div className="absolute bottom-3 right-3 z-20 px-2.5 py-1 rounded-lg bg-slate-950/85 backdrop-blur-sm border border-slate-800 text-[10px] font-mono text-slate-400 flex items-center gap-1.5 shadow-md">
               <Layers className="w-3 h-3" />
-              RAINVIEWER • CARTO
+              RAINVIEWER • © OpenStreetMap contributors
             </div>
           </div>
         )}

@@ -1122,6 +1122,9 @@ interface MockpitStore {
   activeTrip: ActiveTrip | null;
   startTripGuidance: (trip: Omit<ActiveTrip, 'startedAt'>) => void;
   cancelTripGuidance: () => void;
+  pendingNavDestinationAction: { type: 'addStop'; id: number } | null;
+  triggerNavDestinationAction: (action: 'addStop') => void;
+  clearNavDestinationAction: () => void;
 
   // Search POI results
   searchResults: POISearchResult[];
@@ -1673,6 +1676,14 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       console.error('Failed to remove active trip from localStorage', e);
     }
     set({ activeTrip: null });
+  },
+
+  pendingNavDestinationAction: null,
+  triggerNavDestinationAction: (action: 'addStop') => {
+    set({ pendingNavDestinationAction: { type: action, id: Date.now() } });
+  },
+  clearNavDestinationAction: () => {
+    set({ pendingNavDestinationAction: null });
   },
 
   addFavorite: (fav) => {
@@ -3165,7 +3176,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       case 'gear':
         width = 200;
         height = 140;
-        staticProps = { label: 'Gear', color: '#f8fafc' };
+        staticProps = { label: 'Gear', color: '#38bdf8' };
         bindings = [
           {
             id: `bind-${Date.now()}-1`,
@@ -3472,6 +3483,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           imageUrl: '',
           removeBg: 'true',
           bgTolerance: '25',
+          bgEdgeSoftness: '0',
         };
         bindings = [];
         break;
@@ -4184,6 +4196,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         selectedMessagingThreadId: null,
         queuedMessageToasts: [],
         activeTrip: null,
+        pendingNavDestinationAction: null,
         currentTrackId: SAMPLE_TRACKS[0].id,
         isPlaying: false,
         progressSec: 102,

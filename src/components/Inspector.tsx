@@ -3,7 +3,14 @@ import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS } from '../store/useMockp
 import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
 import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType, EgoVehicleType } from '../types';
 import { QUICK_ACCESS_OPTIONS, getDefaultQuickAccessDimensions } from '../config/quickAccessConfig';
-import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check } from 'lucide-react';
+import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check, Eye, EyeOff } from 'lucide-react';
+import {
+  WeatherDetailCardKey,
+  DEFAULT_DETAIL_CARD_ORDER,
+  DETAIL_CARD_LABELS,
+  parseDetailCardOrder,
+  isDetailCardVisible,
+} from '../types/weatherDetails';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
 import { LayersPanel } from './LayersPanel';
 import { NumericStepper } from './NumericStepper';
@@ -354,6 +361,101 @@ const WeatherRadarPropertiesSection: React.FC = () => {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Weather Detail Cards: Order & Visibility */}
+      <DetailCardsOrderSection />
+    </div>
+  );
+};
+
+const DetailCardsOrderSection: React.FC = () => {
+  const detailCardOrder = useWeatherStore((s) => s.detailCardOrder);
+  const detailCardVisibility = useWeatherStore((s) => s.detailCardVisibility);
+  const setDetailCardVisibility = useWeatherStore((s) => s.setDetailCardVisibility);
+  const reorderDetailCard = useWeatherStore((s) => s.reorderDetailCard);
+
+  const orderedKeys = parseDetailCardOrder(detailCardOrder);
+
+  return (
+    <div className="pt-2 border-t border-slate-800/80 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <label className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+          Detail Cards (Order & Visibility)
+        </label>
+        <span className="text-[10px] font-mono text-slate-500">
+          {orderedKeys.filter((k) => isDetailCardVisible(k, detailCardVisibility)).length} / {orderedKeys.length} visible
+        </span>
+      </div>
+
+      <div className="space-y-1.5" id="inspector-weather-detail-cards-list">
+        {orderedKeys.map((key, index) => {
+          const isVisible = isDetailCardVisible(key, detailCardVisibility);
+          const isFirst = index === 0;
+          const isLast = index === orderedKeys.length - 1;
+
+          return (
+            <div
+              key={key}
+              id={`inspector-weather-detail-row-${key}`}
+              className={`flex items-center justify-between p-2 rounded-xl border text-xs font-mono transition-colors ${
+                isVisible
+                  ? 'bg-slate-900/90 border-slate-800 text-slate-200'
+                  : 'bg-slate-950/40 border-slate-800/50 text-slate-500'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  type="button"
+                  id={`inspector-weather-detail-toggle-${key}`}
+                  title={isVisible ? 'Hide card' : 'Show card'}
+                  onClick={() => setDetailCardVisibility(key, !isVisible)}
+                  className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                    isVisible
+                      ? 'text-sky-400 hover:bg-sky-500/10'
+                      : 'text-slate-600 hover:text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  {isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                </button>
+                <span className={`font-bold truncate ${isVisible ? 'text-slate-200' : 'text-slate-500'}`}>
+                  {DETAIL_CARD_LABELS[key] || key}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  id={`inspector-weather-detail-up-${key}`}
+                  disabled={isFirst}
+                  title="Move Up"
+                  onClick={() => reorderDetailCard(key, 'up')}
+                  className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                    isFirst
+                      ? 'opacity-20 cursor-not-allowed text-slate-600'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                  }`}
+                >
+                  <ArrowUp className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  id={`inspector-weather-detail-down-${key}`}
+                  disabled={isLast}
+                  title="Move Down"
+                  onClick={() => reorderDetailCard(key, 'down')}
+                  className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                    isLast
+                      ? 'opacity-20 cursor-not-allowed text-slate-600'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                  }`}
+                >
+                  <ArrowDown className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -2492,6 +2594,7 @@ export const Inspector: React.FC = () => {
             {selectedComp.type === 'vehicleExplodedView' && (() => {
               const removeBg = selectedComp.staticProps.removeBg !== 'false';
               const tolerance = parseInt(selectedComp.staticProps.bgTolerance || '25', 10);
+              const edgeSoftness = parseInt(selectedComp.staticProps.bgEdgeSoftness || '0', 10);
 
               return (
                 <div className="space-y-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
@@ -2536,7 +2639,12 @@ export const Inspector: React.FC = () => {
                       {selectedComp.staticProps.imageUrl && (
                         <button
                           type="button"
-                          onClick={() => handleStaticPropChange('imageUrl', '')}
+                          onClick={() => {
+                            updateComponentStaticProps(selectedComp.id, {
+                              imageUrl: '',
+                              bgEdgeSoftness: '0',
+                            });
+                          }}
                           className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-700 text-xs font-mono flex items-center gap-1 transition-colors"
                           title="Reset to default blueprint vehicle SVG"
                         >
@@ -2604,6 +2712,36 @@ export const Inspector: React.FC = () => {
                         </div>
                         <p className="text-[9px] font-mono text-slate-500">
                           Live adjustments key out background variations and subtle gradients.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Edge Softness Slider (visible only when Background Removal is on) */}
+                    {removeBg && (
+                      <div className="space-y-1.5 pt-1.5 border-t border-slate-800/60">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-slate-300 font-bold">
+                            Edge Softness
+                          </span>
+                          <span className="text-[10px] font-mono text-sky-400 font-bold">
+                            {edgeSoftness}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={edgeSoftness}
+                          onChange={(e) => handleStaticPropChange('bgEdgeSoftness', e.target.value)}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+                        />
+                        <div className="flex justify-between text-[8px] font-mono text-slate-500">
+                          <span>0% (Sharp)</span>
+                          <span>100% (Soft)</span>
+                        </div>
+                        <p className="text-[9px] font-mono text-slate-500">
+                          Softens the transparency edge to reduce jagged pixels and color halos.
                         </p>
                       </div>
                     )}
@@ -3745,6 +3883,7 @@ export const Inspector: React.FC = () => {
                   key !== 'healthValue' &&
                   key !== 'removeBg' &&
                   key !== 'bgTolerance' &&
+                  key !== 'bgEdgeSoftness' &&
                   key !== 'highwayName' &&
                   key !== 'nextExit' &&
                   key !== 'distanceToManeuver' &&

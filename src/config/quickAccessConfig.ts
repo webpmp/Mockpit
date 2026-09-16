@@ -106,27 +106,27 @@ export function getDefaultQuickAccessStaticProps(type: ComponentType): Record<st
     case 'climate':
       return {
         label: 'Climate Control',
-        color: '#f97316',
+        color: '#fb923c',
       };
     case 'climateTemp':
       return {
         label: 'Temperature Control',
-        color: '#f97316',
+        color: '#fb923c',
       };
     case 'climateVent':
       return {
         label: 'Air Vents',
-        color: '#06b6d4',
+        color: '#fb923c',
       };
     case 'climateSeats':
       return {
         label: 'Heated & Cooled Seats',
-        color: '#ef4444',
+        color: '#fb923c',
       };
     case 'vehicleExplodedView':
       return {
         label: 'Vehicle Controls',
-        color: '#38bdf8',
+        color: '#818cf8',
         displayMode: 'exploded',
       };
     case 'battery':
@@ -138,7 +138,7 @@ export function getDefaultQuickAccessStaticProps(type: ComponentType): Record<st
     case 'gear':
       return {
         label: 'Gear Indicator',
-        color: '#f8fafc',
+        color: '#38bdf8',
       };
     case 'speed':
       return {
@@ -156,7 +156,7 @@ export function getDefaultQuickAccessStaticProps(type: ComponentType): Record<st
     case 'tirePressure':
       return {
         label: 'Tire Pressure',
-        color: '#eab308',
+        color: '#818cf8',
       };
     default:
       return {

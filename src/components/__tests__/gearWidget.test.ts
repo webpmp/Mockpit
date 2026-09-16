@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { GearState } from '../../types';
+import { COMPONENT_META, getComponentColor } from '../../config/componentMeta';
+import { CATEGORY_ICON_HEX } from '../../config/categoryColors';
 
 const GEARS: GearState[] = ['P', 'R', 'N', 'D'];
 
@@ -110,5 +112,24 @@ describe('Gear Selector Component Unit & Regression Suite', () => {
     assert.deepEqual(checkCompact(242, 198), { isUltraCompact: false, isCompact: false });
     assert.deepEqual(checkCompact(190, 130), { isUltraCompact: false, isCompact: true });
     assert.deepEqual(checkCompact(150, 85), { isUltraCompact: true, isCompact: true });
+  });
+
+  it('Gear icon in layers listing uses dashboard blue (#38bdf8)', () => {
+    assert.equal(COMPONENT_META.gear.defaultColor, '#38bdf8', 'Default metadata color for gear must be dashboard blue #38bdf8');
+    assert.equal(CATEGORY_ICON_HEX.home, '#38bdf8', 'Home/dashboard category icon hex must be #38bdf8');
+    assert.equal(getComponentColor('gear'), '#38bdf8', 'getComponentColor without customColor returns #38bdf8');
+
+    // Simulate layers listing resolution logic for gear
+    const resolveLayerColor = (type: string, staticColor?: string) => {
+      const rawColor = getComponentColor(type as any, staticColor);
+      return type === 'gear' && (!staticColor || staticColor === '#f8fafc')
+        ? CATEGORY_ICON_HEX.home
+        : rawColor;
+    };
+
+    assert.equal(resolveLayerColor('gear'), '#38bdf8');
+    assert.equal(resolveLayerColor('gear', '#f8fafc'), '#38bdf8');
+    assert.equal(resolveLayerColor('gear', '#38bdf8'), '#38bdf8');
+    assert.equal(resolveLayerColor('gear', '#22c55e'), '#22c55e');
   });
 });

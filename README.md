@@ -169,6 +169,20 @@ src/
 
 ⸻
 
+External Services & Map Tile Policy
+
+Mockpit relies on zero-setup public APIs for realistic simulation data:
+* **OpenStreetMap (OSM)**: Standard raster base map tiles (`tile.openstreetmap.org`) for Navigation and Weather Radar (`© OpenStreetMap contributors`).
+* **Open-Meteo & RainViewer**: Live global weather forecasts, weather alerts, and real-time precipitation radar tile overlays.
+* **MusicBrainz & Cover Art Archive**: Live music metadata, release lookup, and album art discovery.
+* **Overpass API**: Live geographic Points of Interest (POI) search around active navigation coordinates.
+
+> **Note for maintainers on OpenStreetMap tile usage**:
+> 1. **Referer Header Requirement**: OpenStreetMap's Tile Usage Policy requires a valid HTTP `Referer` header to identify the calling origin. The basemap `<img>` elements must **never** set `referrerPolicy="no-referrer"`; stripping the Referer header causes OSM's Varnish cache to silently return an "ACCESS BLOCKED" placeholder tile rather than legitimate map geography.
+> 2. **Tile Usage Capacity**: OSM's volunteer-run standard tile service is intended for low-to-medium development and evaluation traffic under reasonable individual use, not a guaranteed production SLA for high-volume redistributed applications. If Mockpit is ever deployed at significant production scale, consider pointing the base tile URLs to a dedicated tile cache, a commercial tile provider, or a self-hosted tile server.
+
+⸻
+
 License
 
 This project is open-source and available under the MIT License.

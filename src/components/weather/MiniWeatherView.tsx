@@ -1,7 +1,6 @@
 import React from 'react';
 import { WeatherConditionKey } from '../../store/useWeatherStore';
 import { WeatherIcon } from './WeatherIcon';
-import { WeatherRadarCard } from './WeatherRadarCard';
 import { AirQualityData } from '../../types/airQuality';
 import { SunTimeData } from '../../types/sunTime';
 import { getAqiEpaColorInfo } from '../../services/airQualityService';
@@ -41,11 +40,6 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
   precipitationChance,
   airQuality,
   sunTime,
-  radarLat,
-  radarLon,
-  radarZoom = 7,
-  radarRefreshInterval = 5,
-  onOpenRadar,
   className = '',
 }) => {
   const windDisplay = wind ? `${wind.direction || 'CALM'} ${Math.round(wind.speed)}` : '—';
@@ -72,18 +66,6 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
       className={`relative bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl shadow-xl text-slate-100 flex justify-center items-center w-full h-full min-h-0 ${className}`}
       style={{ padding: '32px', gap: '48px' }}
     >
-      {/* Absolute Radar Thumbnail (top-right corner) */}
-      {radarLat !== undefined && radarLon !== undefined && (
-        <WeatherRadarCard
-          lat={radarLat}
-          lon={radarLon}
-          zoom={radarZoom}
-          refreshIntervalMinutes={radarRefreshInterval}
-          variant="thumbnail"
-          onExpand={onOpenRadar}
-        />
-      )}
-
       {/* Left Stats Column */}
       <div
         id="mini-weather-left-stats"

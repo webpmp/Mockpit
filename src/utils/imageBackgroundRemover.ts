@@ -135,15 +135,22 @@ export function detectBackgroundColor(data: Uint8ClampedArray, width: number, he
 
 /**
  * Processes an image using an offscreen canvas and applies color-key background removal
+ * with optional alpha-edge softness / feathering.
  */
 export async function processImageBackgroundRemoval(
   imageUrl: string,
-  tolerance: number // 0 - 100
+  tolerance: number, // 0 - 100
+  edgeSoftness: number = 0 // 0 - 100
 ): Promise<string> {
-  // Generate cache key
-  const cacheKey = `${imageUrl.length}_${imageUrl.slice(0, 80)}_${tolerance}`;
+  // Generate cache key including edgeSoftness
+  const cacheKey = `${imageUrl.length}_${imageUrl.slice(0, 80)}_${tolerance}_${edgeSoftness}`;
   if (processedImageCache.has(cacheKey)) {
     return processedImageCache.get(cacheKey)!;
+  }
+
+  // Guard for server-side or non-DOM test environments
+  if (typeof window === 'undefined' || typeof Image === 'undefined' || typeof document === 'undefined') {
+    return imageUrl;
   }
 
   return new Promise((resolve, reject) => {
@@ -214,6 +221,95 @@ export async function processImageBackgroundRemoval(
             // Smooth anti-aliased edge
             const alphaFactor = (dist - (threshold - feather)) / feather;
             data[i + 3] = Math.round(a * alphaFactor);
+          }
+        }
+
+        // Apply Edge Softness if > 0: operates exclusively on the alpha mask
+        if (edgeSoftness > 0) {
+          const radius = Math.max(1, Math.min(12, Math.round((edgeSoftness / 100) * 11 + 1)));
+          const totalPixels = targetW * targetH;
+          const alphaIn = new Uint8Array(totalPixels);
+          const alphaOut = new Uint8Array(totalPixels);
+
+          for (let p = 0; p < totalPixels; p++) {
+            alphaIn[p] = data[p * 4 + 3];
+          }
+
+          // Horizontal 1D box blur pass on alpha
+          for (let y = 0; y < targetH; y++) {
+            const rowOffset = y * targetW;
+            let windowSum = 0;
+            let windowCount = 0;
+
+            // Pre-seed window from x = -radius to +radius
+            for (let k = -radius; k <= radius; k++) {
+              if (k >= 0 && k < targetW) {
+                windowSum += alphaIn[rowOffset + k];
+                windowCount++;
+              }
+            }
+
+            for (let x = 0; x < targetW; x++) {
+              alphaOut[rowOffset + x] = Math.round(windowSum / windowCount);
+
+              // Slide window to x + 1
+              const removeX = x - radius;
+              if (removeX >= 0) {
+                windowSum -= alphaIn[rowOffset + removeX];
+                windowCount--;
+              }
+              const addX = x + radius + 1;
+              if (addX < targetW) {
+                windowSum += alphaIn[rowOffset + addX];
+                windowCount++;
+              }
+            }
+          }
+
+          // Vertical 1D box blur pass on alpha
+          for (let x = 0; x < targetW; x++) {
+            let windowSum = 0;
+            let windowCount = 0;
+
+            for (let k = -radius; k <= radius; k++) {
+              if (k >= 0 && k < targetH) {
+                windowSum += alphaOut[k * targetW + x];
+                windowCount++;
+              }
+            }
+
+            for (let y = 0; y < targetH; y++) {
+              const pixelIdx = y * targetW + x;
+              const blurredAlpha = Math.round(windowSum / windowCount);
+              const origAlpha = alphaIn[pixelIdx];
+
+              // Composite original RGB with softened alpha channel:
+              // For fully interior subject pixels (origAlpha === 255), retain solid subject opacity
+              // For pixels along the transparency edge, apply feathered alpha.
+              if (origAlpha === 0) {
+                // Background pixel: slight soft halo feathering capped to avoid background spill
+                data[pixelIdx * 4 + 3] = Math.min(blurredAlpha, Math.round((edgeSoftness / 100) * 120));
+              } else if (origAlpha === 255) {
+                // Interior pixel: preserve crisp subject opacity
+                data[pixelIdx * 4 + 3] = 255;
+              } else {
+                // Edge / transition pixel: blend original keyed alpha with blurred alpha
+                const blend = edgeSoftness / 100;
+                data[pixelIdx * 4 + 3] = Math.round(origAlpha * (1 - blend) + blurredAlpha * blend);
+              }
+
+              // Slide window to y + 1
+              const removeY = y - radius;
+              if (removeY >= 0) {
+                windowSum -= alphaOut[removeY * targetW + x];
+                windowCount--;
+              }
+              const addY = y + radius + 1;
+              if (addY < targetH) {
+                windowSum += alphaOut[addY * targetW + x];
+                windowCount++;
+              }
+            }
           }
         }
 

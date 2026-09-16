@@ -12,8 +12,7 @@ import { COMPONENT_FLAGS } from '../config/componentFlags';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, FOCUSED_APP_RECT } from '../config/constants';
 import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ContactAvatar } from './ContactAvatar';
-import { WeatherForecastScreen } from './weather/WeatherForecastScreen';
-import { WeatherRadarScreen } from './weather/WeatherRadarScreen';
+import { WeatherScreenShell } from './weather/WeatherScreenShell';
 import { useWeatherStore } from '../store/useWeatherStore';
 import { Move, Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare, Battery, Zap } from 'lucide-react';
 
@@ -97,35 +96,14 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
         height: FOCUSED_APP_RECT.height,
       };
 
-  if (activeView === 'weather') {
+  if (activeView === 'weather' || activeView === 'weather-radar') {
     return (
       <div
-        key={activeView}
+        key="weather-carousel"
         className={`absolute transition-all duration-300 ease-out z-20 overflow-hidden ${transitionClasses}`}
         style={containerStyle}
       >
-        <WeatherForecastScreen
-          onBack={() => {
-            const prev = useMockpitStore.getState().previousView;
-            setActiveView(prev && prev !== 'weather' ? prev : 'home');
-          }}
-        />
-      </div>
-    );
-  }
-
-  if (activeView === 'weather-radar') {
-    return (
-      <div
-        key={activeView}
-        className={`absolute transition-all duration-300 ease-out z-20 overflow-hidden ${transitionClasses}`}
-        style={containerStyle}
-      >
-        <WeatherRadarScreen
-          onBack={() => {
-            setActiveView('weather');
-          }}
-        />
+        <WeatherScreenShell />
       </div>
     );
   }
@@ -814,8 +792,8 @@ export const Canvas: React.FC = () => {
             </div>
           </div>
 
-          {/* Weather Screen Full Takeover in Editor Mode */}
-          {!isPresentation && activeView === 'weather' && (
+          {/* Weather Carousel Full Takeover in Editor Mode */}
+          {!isPresentation && (activeView === 'weather' || activeView === 'weather-radar') && (
             <div
               className="absolute z-20 overflow-hidden pointer-events-auto"
               style={{
@@ -825,31 +803,7 @@ export const Canvas: React.FC = () => {
                 height: FOCUSED_APP_RECT.height,
               }}
             >
-              <WeatherForecastScreen
-                onBack={() => {
-                  const prev = useMockpitStore.getState().previousView;
-                  setActiveView(prev && prev !== 'weather' ? prev : 'home');
-                }}
-              />
-            </div>
-          )}
-
-          {/* Weather Radar Child Screen Full Takeover in Editor Mode */}
-          {!isPresentation && activeView === 'weather-radar' && (
-            <div
-              className="absolute z-20 overflow-hidden pointer-events-auto"
-              style={{
-                left: FOCUSED_APP_RECT.x,
-                top: FOCUSED_APP_RECT.y,
-                width: FOCUSED_APP_RECT.width,
-                height: FOCUSED_APP_RECT.height,
-              }}
-            >
-              <WeatherRadarScreen
-                onBack={() => {
-                  setActiveView('weather');
-                }}
-              />
+              <WeatherScreenShell />
             </div>
           )}
 
