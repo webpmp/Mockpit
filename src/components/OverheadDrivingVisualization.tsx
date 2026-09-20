@@ -1334,19 +1334,19 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
 
   // Polygon definition for Left & Right Blind Spot Zones (Ego local coordinates)
 const LEFT_BLIND_SPOT_POLYGON = [
-  { x: -28, y: 11.5 },
-  { x: -230, y: 207 },
-  { x: -175, y: 280 },
-  { x: -120, y: 335 },
-  { x: -70, y: 368 },
+  { x: -30.5, y: 11.5 },
+  { x: -250.6, y: 207 },
+  { x: -190.7, y: 280 },
+  { x: -130.8, y: 335 },
+  { x: -76.3, y: 368 },
 ];
 
 const RIGHT_BLIND_SPOT_POLYGON = [
-  { x: 28, y: 11.5 },
-  { x: 230, y: 207 },
-  { x: 175, y: 280 },
-  { x: 120, y: 335 },
-  { x: 70, y: 368 },
+  { x: 30.5, y: 11.5 },
+  { x: 250.6, y: 207 },
+  { x: 190.7, y: 280 },
+  { x: 130.8, y: 335 },
+  { x: 76.3, y: 368 },
 ];
 
 function isPointInPolygon(point: { x: number; y: number }, polygon: Array<{ x: number; y: number }>): boolean {
@@ -1382,34 +1382,48 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
   const sensorOpacity = parseFloat(props.sensorOpacity || '0.65');
 
   // =========================================================================
-  // EXPLICIT 4-LANE HIGHWAY GEOMETRY MODEL (966px SVG Viewport Base)
-  // Total road width = 826px (from x=70 to x=896). Center = 483px.
-  // 4 Driving Lanes (165.2px each) + 1 Center Median Zone (165.2px)
+  // EXPLICIT 4-LANE HIGHWAY GEOMETRY MODEL (1206px SVG Viewport Base)
+  // Total road width = 1206px (from x=0 to x=1206).
+  // 4 Driving Lanes (180px each) + Center Median Zone (40px)
+  // Emergency Shoulders (163px each) + Grass Shoulders (60px each)
   // =========================================================================
-  const ROAD_LEFT = 70;
-  const ROAD_RIGHT = 896;
-  const ROAD_WIDTH = 826;
-  const LANE_WIDTH = 165.2;
+  const ROAD_LEFT = 0;
+  const ROAD_RIGHT = 1206;
+  const ROAD_WIDTH = 1206;
+  const LANE_WIDTH = 180;
+  const MEDIAN_WIDTH = 40;
+  const EMERGENCY_SHOULDER_WIDTH = 163;
+  const GRASS_SHOULDER_WIDTH = 60;
+
+  const ZONES = {
+    grassLeft: { start: 0, end: 60 },
+    opposingLanes: { start: 60, end: 420 },
+    emergencyLeft: { start: 420, end: 583 },
+    median: { start: 583, end: 623 },
+    emergencyRight: { start: 623, end: 786 },
+    egoLanes: { start: 786, end: 1146 },
+    grassRight: { start: 1146, end: 1206 },
+  };
 
   const svgViewW = Math.max(ROAD_WIDTH, viewW);
   const svgViewX = ROAD_RIGHT - svgViewW;
 
   // The 4 Explicit Driving Lanes
-  // Opposing 2 (outer): 70.0 -> 235.2 (centerX = 152.6)
-  // Opposing 1 (inner): 235.2 -> 400.4 (centerX = 317.8)
-  // Center Median:     400.4 -> 565.6 (centerX = 483.0) - NOT A DRIVING LANE
-  // Ego 1 (inner):      565.6 -> 730.8 (centerX = 648.2)
-  // Ego 2 (outer):      730.8 -> 896.0 (centerX = 813.4)
+  // Opposing 2 (outer): 60.0 -> 240.0 (centerX = 150.0)
+  // Opposing 1 (inner): 240.0 -> 420.0 (centerX = 330.0)
+  // Emergency Left:     420.0 -> 583.0
+  // Center Median:      583.0 -> 623.0 (centerX = 603.0) - NOT A DRIVING LANE
+  // Emergency Right:    623.0 -> 786.0
+  // Ego 1 (inner):      786.0 -> 966.0 (centerX = 876.0)
+  // Ego 2 (outer):      966.0 -> 1146.0 (centerX = 1056.0)
 
   // Helper to calculate lane center X position
   const getLaneX = (lane: number) => {
     if (lane < 0) {
-      // Opposing lanes: -1 is inner opposing lane (317.8), -2 is outer (152.6)
       const absL = Math.abs(lane);
-      return 317.8 - (absL - 1) * 165.2;
+      return 330 - (absL - 1) * LANE_WIDTH;
     } else {
-      // Same-direction lanes: 1 is inner ego lane (648.2), 2 is outer (813.4)
-      return 648.2 + (lane - 1) * 165.2;
+      return 876 + (lane - 1) * LANE_WIDTH;
     }
   };
 
@@ -2370,6 +2384,26 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
             <stop offset="40%" stopColor={customAccentColor} stopOpacity="0.25" />
             <stop offset="100%" stopColor={customAccentColor} stopOpacity="0" />
           </radialGradient>
+
+          {/* Grass Shoulder Texture Pattern */}
+          <pattern id="grass-texture" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill="#81b139" />
+            <circle cx="5" cy="5" r="1.5" fill="#6b9530" opacity="0.7" />
+            <circle cx="15" cy="15" r="1.5" fill="#6b9530" opacity="0.7" />
+            <circle cx="14" cy="6" r="1.2" fill="#5c8129" opacity="0.8" />
+            <circle cx="4" cy="14" r="1.2" fill="#5c8129" opacity="0.8" />
+            <path d="M 2,18 L 4,12 L 6,18 Z" fill="#99cc44" opacity="0.4" />
+            <path d="M 12,8 L 14,2 L 16,8 Z" fill="#99cc44" opacity="0.4" />
+          </pattern>
+
+          {/* Concrete Median Texture Pattern */}
+          <pattern id="concrete-pattern" width="16" height="16" patternUnits="userSpaceOnUse">
+            <rect width="16" height="16" fill="#64748b" />
+            <circle cx="3" cy="3" r="1.2" fill="#475569" opacity="0.6" />
+            <circle cx="11" cy="11" r="1.2" fill="#334155" opacity="0.5" />
+            <circle cx="12" cy="4" r="0.9" fill="#94a3b8" opacity="0.5" />
+            <circle cx="4" cy="12" r="0.9" fill="#94a3b8" opacity="0.4" />
+          </pattern>
         </defs>
 
         {/* Full-bleed Asphalt Road Surface */}
@@ -2381,29 +2415,64 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           fill="url(#asphalt-pattern)"
         />
 
-        {/* Outer Solid Shoulder Markings (x=70 and x=896) */}
-        <line
-          x1={70}
-          y1={0}
-          x2={70}
-          y2={viewH}
-          stroke="#64748b"
-          strokeWidth="3.5"
+        {/* Outer Grass Shoulder Zones & Markings */}
+        {/* Left Grass Shoulder (0 - 60) */}
+        <rect
+          id="grass-shoulder-left"
+          x={0}
+          y={0}
+          width={60}
+          height={viewH}
+          fill="url(#grass-texture)"
         />
         <line
-          x1={896}
+          x1={0}
           y1={0}
-          x2={896}
+          x2={0}
           y2={viewH}
-          stroke="#64748b"
+          stroke="#334155"
+          strokeWidth="2"
+        />
+        <line
+          x1={60}
+          y1={0}
+          x2={60}
+          y2={viewH}
+          stroke="#f8fafc"
           strokeWidth="3.5"
         />
 
-        {/* Opposing Lanes Dashed Separator (x=235.2) */}
+        {/* Right Grass Shoulder (1146 - 1206) */}
+        <rect
+          id="grass-shoulder-right"
+          x={1146}
+          y={0}
+          width={60}
+          height={viewH}
+          fill="url(#grass-texture)"
+        />
         <line
-          x1={235.2}
+          x1={1146}
           y1={0}
-          x2={235.2}
+          x2={1146}
+          y2={viewH}
+          stroke="#f8fafc"
+          strokeWidth="3.5"
+        />
+        <line
+          x1={1206}
+          y1={0}
+          x2={1206}
+          y2={viewH}
+          stroke="#334155"
+          strokeWidth="2"
+        />
+
+        {/* Opposing Lanes Dashed Separator (x=240) */}
+        <line
+          x1={240}
+          y1={0}
+          x2={240}
           y2={viewH}
           stroke="#64748b"
           strokeWidth="2.5"
@@ -2412,50 +2481,91 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           opacity="0.8"
         />
 
-        {/* CENTER CONCRETE MEDIAN ZONE (x=400.4 to x=565.6, centered at x=483.0) */}
+        {/* Emergency Shoulders flanking the median */}
+        {/* Opposing Side Emergency Shoulder (420 - 583) */}
         <rect
-          x={400.4}
+          id="emergency-shoulder-left"
+          x={420}
           y={0}
-          width={165.2}
+          width={163}
           height={viewH}
-          fill="#64748b"
+          fill="#cbd5e1"
+          fillOpacity={0.85}
+        />
+        {/* Yellow safety line at lane-facing edge (x=420) */}
+        <line
+          x1={420}
+          y1={0}
+          x2={420}
+          y2={viewH}
+          stroke="#eab308"
+          strokeWidth="3.5"
+        />
+
+        {/* CENTER CONCRETE MEDIAN ZONE (x=583 to x=623, centered at x=603.0, width=40) */}
+        <rect
+          id="median-rect"
+          x={583}
+          y={0}
+          width={40}
+          height={viewH}
+          fill="url(#concrete-pattern)"
         />
 
         {/* Concrete Curb Borders */}
         <line
-          x1={400.4}
+          x1={583}
           y1={0}
-          x2={400.4}
+          x2={583}
           y2={viewH}
           stroke="#334155"
           strokeWidth="3"
         />
         <line
-          x1={565.6}
+          x1={623}
           y1={0}
-          x2={565.6}
+          x2={623}
           y2={viewH}
           stroke="#334155"
           strokeWidth="3"
         />
 
+        {/* Ego Side Emergency Shoulder (623 - 786) */}
+        <rect
+          id="emergency-shoulder-right"
+          x={623}
+          y={0}
+          width={163}
+          height={viewH}
+          fill="#cbd5e1"
+          fillOpacity={0.85}
+        />
+        {/* Yellow safety line at lane-facing edge (x=786) */}
+        <line
+          x1={786}
+          y1={0}
+          x2={786}
+          y2={viewH}
+          stroke="#eab308"
+          strokeWidth="3.5"
+        />
 
-        {/* HIGH-MAST MEDIAN STREET LIGHT FIXTURE (Centered at x=483.0 in median, scrolling smoothly) */}
-        <g id="median-light-fixture" transform={`translate(483, ${medianLightY})`}>
+        {/* HIGH-MAST MEDIAN STREET LIGHT FIXTURE (Centered at x=603.0 in median, scrolling smoothly) */}
+        <g id="median-light-fixture" transform={`translate(603, ${medianLightY})`}>
           <defs>
-            <radialGradient id="median-light-pool-warm" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffd166" stopOpacity="0.65" />
-              <stop offset="45%" stopColor="#f59e0b" stopOpacity="0.32" />
-              <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+            <radialGradient id="median-light-pool-white" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.65" />
+              <stop offset="45%" stopColor="#f1f5f9" stopOpacity="0.32" />
+              <stop offset="100%" stopColor="#f8fafc" stopOpacity="0" />
             </radialGradient>
           </defs>
-          {/* Warm light cast onto the ground */}
+          {/* White light cast onto the ground */}
           <ellipse
             cx="0"
             cy="18"
             rx="130"
             ry="150"
-            fill="url(#median-light-pool-warm)"
+            fill="url(#median-light-pool-white)"
             opacity="0.28"
           />
           <ellipse
@@ -2463,7 +2573,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
             cy="18"
             rx="70"
             ry="90"
-            fill="url(#median-light-pool-warm)"
+            fill="url(#median-light-pool-white)"
             opacity="0.45"
           />
           {/* Base of light pole */}
@@ -2556,11 +2666,11 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           <ellipse cx="19" cy="-65" rx="3.5" ry="1.5" fill="#fef3a8" />
         </g>
 
-        {/* Ego Lanes Dashed Separator (x=730.8) */}
+        {/* Ego Lanes Dashed Separator (x=966) */}
         <line
-          x1={730.8}
+          x1={966}
           y1={0}
-          x2={730.8}
+          x2={966}
           y2={viewH}
           stroke="#64748b"
           strokeWidth="2.5"
@@ -2648,7 +2758,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           {isLeftZoneActive && (
             <g id="blind-spot-spatial-zone-left" transform="scale(-1, 1)">
               <path
-                d="M 28 11.5 L 230 207 A 114 114 0 0 1 70 368 Z"
+                d="M 30.5 11.5 L 250.6 207 A 124.2 124.2 0 0 1 76.3 368 Z"
                 fill={blindSpotColor}
                 fillOpacity={blindSpotOpacity}
                 filter="url(#hazard-glow-red)"
@@ -2660,7 +2770,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           {isRightZoneActive && (
             <g id="blind-spot-spatial-zone">
               <path
-                d="M 28 11.5 L 230 207 A 114 114 0 0 1 70 368 Z"
+                d="M 30.5 11.5 L 250.6 207 A 124.2 124.2 0 0 1 76.3 368 Z"
                 fill={blindSpotColor}
                 fillOpacity={blindSpotOpacity}
                 filter="url(#hazard-glow-red)"

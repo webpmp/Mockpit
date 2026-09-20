@@ -14,7 +14,7 @@ import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ContactAvatar } from './ContactAvatar';
 import { WeatherScreenShell } from './weather/WeatherScreenShell';
 import { useWeatherStore } from '../store/useWeatherStore';
-import { Move, Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare, Battery, Zap } from 'lucide-react';
+import { Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare, Battery, Zap } from 'lucide-react';
 
 const getTransitionClasses = (style: TransitionStyle = 'fade', isActive: boolean) => {
   if (!isActive) {
@@ -881,15 +881,6 @@ export const Canvas: React.FC = () => {
                           boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
                         }}
                       >
-                        {/* Move Drag Handle */}
-                        <div
-                          className="absolute -top-3 left-1/2 -translate-x-1/2 text-slate-950 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-md cursor-move pointer-events-auto hover:brightness-110"
-                          style={{ backgroundColor: 'var(--color-primary, #38bdf8)' }}
-                          onMouseDown={(e) => handleMouseDown(e, comp.id, comp.x, comp.y)}
-                        >
-                          <Move className="w-3 h-3" /> Move ({comp.x}, {comp.y})
-                        </div>
-
                         {/* Delete Quick Handle */}
                         <button
                           className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
