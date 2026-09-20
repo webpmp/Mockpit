@@ -20,6 +20,7 @@ export interface MiniNavColors {
   streetTitleColor?: string;
   instructionTextColor?: string;
   distanceTextColor?: string;
+  headerArrowColor?: string;
   // Deprecated legacy field for backward compatibility
   horizonColor?: string;
   backgroundColor?: string;
@@ -42,6 +43,7 @@ export const DEFAULT_MINI_NAV_COLORS = {
   streetTitleColor: '#e2e8f0', // slate-200
   instructionTextColor: '#94a3b8', // slate-400
   distanceTextColor: '#f8fafc', // slate-100
+  headerArrowColor: '#f8fafc',
 };
 
 export const DEFAULT_MINI_NAV_APPEARANCE = DEFAULT_MINI_NAV_COLORS;
@@ -72,6 +74,7 @@ interface MiniNavProps {
   streetTitleColor?: string;
   instructionTextColor?: string;
   distanceTextColor?: string;
+  headerArrowColor?: string;
   // Deprecated backward compatibility
   backgroundColor?: string;
   width?: number;
@@ -116,6 +119,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   streetTitleColor: propStreetTitleColor,
   instructionTextColor: propInstructionTextColor,
   distanceTextColor: propDistanceTextColor,
+  headerArrowColor: propHeaderArrowColor,
   backgroundColor: propBackgroundColor,
   width,
   height,
@@ -187,6 +191,9 @@ export const MiniNav: React.FC<MiniNavProps> = ({
 
   // 10. Distance Text Color
   const distanceTextColor = propDistanceTextColor || DEFAULT_MINI_NAV_COLORS.distanceTextColor;
+
+  // 11. Header Arrow Color
+  const headerArrowColor = propHeaderArrowColor || DEFAULT_MINI_NAV_COLORS.headerArrowColor;
 
   // Atmospheric horizon glow accent & boundary controls
   // Independent from Sky Color and Ground Color
@@ -401,6 +408,18 @@ export const MiniNav: React.FC<MiniNavProps> = ({
     });
   }, [activeLane, numLanes, roadTopLeft.x, roadTopLeft.y, roadTopRight.x, roadBottomLeft.x, roadBottomLeft.y, roadBottomRight.x]);
 
+  const isEnlargedManeuver =
+    maneuverType === 'left' || maneuverType === 'right' ||
+    maneuverType === 'merge-left' || maneuverType === 'merge-right';
+  const arrowWidth = isEnlargedManeuver ? 120 : 44;
+  const arrowHeight = isEnlargedManeuver ? 135 : 52;
+  const arrowViewBox =
+    maneuverType === 'left' ? '-15 15 400 450' :
+    maneuverType === 'right' ? '0 15 400 450' :
+    maneuverType === 'merge-left' ? '0 0 400 450' :
+    maneuverType === 'merge-right' ? '0 0 400 450' :
+    '80 120 160 190';
+
   return (
     <div
       id="mini-nav-container"
@@ -414,7 +433,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
       {/* Top Header: Current Highway & Maneuver Distance */}
       <div
         id="mini-nav-header"
-        className="w-full px-5 pt-5 pb-4 z-10 flex flex-col items-start justify-start bg-gradient-to-b from-black/40 via-black/15 to-transparent transition-colors"
+        className="w-full px-5 pt-5 pb-5 z-10 flex flex-col items-start justify-start bg-gradient-to-b from-black/40 via-black/15 to-transparent transition-colors"
         style={{
           backgroundColor: skyColor,
           borderBottom: 'none',
@@ -422,61 +441,61 @@ export const MiniNav: React.FC<MiniNavProps> = ({
           boxShadow: 'none',
         }}
       >
-        <div className="flex items-center justify-between w-full gap-3">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <span
-              id="mini-nav-highway-badge"
-              className="px-2.5 py-1 rounded text-sm font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400"
-              style={{
-                borderColor: `color-mix(in srgb, ${highwayBadgeColor} 40%, transparent)`,
-                backgroundColor: `color-mix(in srgb, ${highwayBadgeColor} 15%, transparent)`,
-                color: highwayBadgeTextColor,
-              }}
-            >
-              {currentHighway}
-            </span>
-          </div>
+        {/* Row 1: highway badge, full width */}
+        <div
+          id="mini-nav-highway-badge"
+          className="w-full box-border px-3.5 py-2 rounded text-base font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400"
+          style={{
+            borderColor: `color-mix(in srgb, ${highwayBadgeColor} 40%, transparent)`,
+            backgroundColor: `color-mix(in srgb, ${highwayBadgeColor} 15%, transparent)`,
+            color: highwayBadgeTextColor,
+          }}
+        >
+          {currentHighway}
+        </div>
 
-          {/* Wrap distance + icon together so both sit on the right */}
-          <div className="flex items-center gap-2 shrink-0">
-            {showManeuverDirection && (
-              <svg
-                width="44"
-                height="52"
-                viewBox="80 120 160 190"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <ManeuverGlyph type={maneuverType} color={arrowColor} />
-              </svg>
-            )}
+        {/* Row 2: maneuver arrow + distance/instruction, full width */}
+        <div className="flex items-center gap-4 w-full mt-4">
+          {showManeuverDirection && (
+            <svg
+              width={arrowWidth}
+              height={arrowHeight}
+              viewBox={arrowViewBox}
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="shrink-0"
+            >
+              <ManeuverGlyph type={maneuverType} color={headerArrowColor} />
+            </svg>
+          )}
+          <div className="flex flex-col">
             <span
               id="mini-nav-distance-text"
-              className="text-xl font-bold font-mono tracking-tight"
+              className="text-[38px] font-bold font-mono tracking-tight leading-none"
               style={{ color: distanceTextColor }}
             >
               {distanceFormatted}
             </span>
+            <span
+              id="mini-nav-instruction-sub"
+              className="text-[19px] font-mono mt-1.5"
+              style={{ color: instructionTextColor }}
+            >
+              {maneuverInstruction}
+            </span>
           </div>
         </div>
 
+        <div className="w-full h-px bg-white/15 my-4" />
+
+        {/* Row 3: street title, full width */}
         <h3
           id="mini-nav-street-title"
-          className="mt-2 w-full text-lg font-semibold tracking-tight leading-snug"
+          className="w-full text-2xl font-semibold tracking-tight leading-snug"
           style={{ color: streetTitleColor }}
         >
           {exitOrStreetName}
         </h3>
-
-        {maneuverType !== 'straight' && (
-          <span
-            id="mini-nav-instruction-sub"
-            className="mt-1 text-[11px] font-mono"
-            style={{ color: instructionTextColor }}
-          >
-            {maneuverInstruction}
-          </span>
-        )}
       </div>
 
       {/* Center 3D Perspective Road & Directional Maneuver SVG */}

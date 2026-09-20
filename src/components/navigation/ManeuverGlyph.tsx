@@ -56,7 +56,7 @@ export const ManeuverGlyph: React.FC<ManeuverGlyphProps> = ({
         <g className={className} id="maneuver-glyph-left">
           {/* 90-degree left turn maneuver arrow */}
           <path
-            d="M 95 185 L 155 135 L 155 168 Q 195 170 195 210 L 195 300 L 165 300 L 165 218 Q 165 198 140 198 L 155 198 L 155 235 Z"
+            d="M 30 185 L 125 125 L 125 168 Q 195 170 195 210 L 195 330 L 165 330 L 165 218 Q 165 198 125 198 L 125 245 Z"
             fill={color}
           />
         </g>
@@ -67,13 +67,32 @@ export const ManeuverGlyph: React.FC<ManeuverGlyphProps> = ({
         <g className={className} id="maneuver-glyph-right">
           {/* 90-degree right turn maneuver arrow */}
           <path
-            d="M 225 185 L 165 235 L 165 198 L 180 198 Q 155 198 155 218 L 155 300 L 125 300 L 125 210 Q 125 170 165 168 L 165 135 Z"
+            d="M 195 330 L 165 330 L 165 218 Q 165 198 205 198 L 205 245 L 300 185 L 205 125 L 205 168 Q 135 170 135 210 L 135 330 Z"
             fill={color}
           />
         </g>
       );
 
     // Follow-up extensions (fallback safe glyphs)
+    case 'merge-left':
+      return (
+        <g className={className} id="maneuver-glyph-merge-left">
+          <path
+            d="M 230 380 L 170 380 L 170 285 L 105 330 L 80 295 L 157 242 Q 170 230 170 200 L 170 180 L 130 180 L 200 90 L 270 180 L 230 180 L 230 380 Z"
+            fill={color}
+          />
+        </g>
+      );
+
+    case 'merge-right':
+      return (
+        <g className={className} id="maneuver-glyph-merge-right">
+          <path
+            d="M 170 380 L 230 380 L 230 285 L 295 330 L 320 295 L 243 242 Q 230 230 230 200 L 230 180 L 270 180 L 200 90 L 130 180 L 170 180 L 170 380 Z"
+            fill={color}
+          />
+        </g>
+      );
     case 'sharp-left':
       return (
         <g className={className} id="maneuver-glyph-sharp-left">

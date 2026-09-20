@@ -3250,6 +3250,8 @@ export const Inspector: React.FC = () => {
                 { id: 'slight-right', label: 'Slight Right' },
                 { id: 'left', label: 'Left Turn' },
                 { id: 'right', label: 'Right Turn' },
+                { id: 'merge-left', label: 'Merge Left' },
+                { id: 'merge-right', label: 'Merge Right' },
               ];
 
               return (
@@ -3280,7 +3282,7 @@ export const Inspector: React.FC = () => {
                           <svg
                             width="16"
                             height="19"
-                            viewBox="80 120 160 190"
+                            viewBox={opt.id === 'merge-left' || opt.id === 'merge-right' ? '0 0 400 450' : '80 120 160 190'}
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
                           >
@@ -3598,6 +3600,22 @@ export const Inspector: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* 5b. Header Arrow Color */}
+                      <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-300 font-medium">Header Arrow Color</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={selectedComp.staticProps.headerArrowColor || DEFAULT_MINI_NAV_COLORS.headerArrowColor}
+                            onChange={(e) => handleStaticPropChange('headerArrowColor', e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent"
+                          />
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {selectedComp.staticProps.headerArrowColor || DEFAULT_MINI_NAV_COLORS.headerArrowColor}
+                          </span>
+                        </div>
+                      </div>
+
                       {/* 6. Guide Lane Color */}
                       <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
                         <span className="text-[11px] font-mono text-slate-300 font-medium">Guide Lane Color</span>
@@ -3710,6 +3728,7 @@ export const Inspector: React.FC = () => {
                             horizonBoundaryOpacity: String(DEFAULT_MINI_NAV_COLORS.horizonBoundaryOpacity),
                             roadColor: DEFAULT_MINI_NAV_COLORS.roadColor,
                             arrowColor: DEFAULT_MINI_NAV_COLORS.arrowColor,
+                            headerArrowColor: DEFAULT_MINI_NAV_COLORS.headerArrowColor,
                             guideLaneColor: DEFAULT_MINI_NAV_COLORS.guideLaneColor,
                             highwayBadgeColor: DEFAULT_MINI_NAV_COLORS.highwayBadgeColor,
                             highwayBadgeTextColor: DEFAULT_MINI_NAV_COLORS.highwayBadgeTextColor,
@@ -4097,6 +4116,7 @@ export const Inspector: React.FC = () => {
                   key !== 'laneCount' &&
                   key !== 'activeLaneIndex' &&
                   key !== 'arrowColor' &&
+                  key !== 'headerArrowColor' &&
                   key !== 'horizonColor' &&
                   key !== 'guideLaneColor' &&
                   key !== 'highwayBadgeColor' &&
