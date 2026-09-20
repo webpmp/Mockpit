@@ -2343,7 +2343,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
         <defs>
           {/* Asphalt Surface Pattern */}
           <pattern id="asphalt-pattern" width="24" height="24" patternUnits="userSpaceOnUse">
-            <rect width="24" height="24" fill="#334155" />
+            <rect width="24" height="24" fill="#1e293b" />
           </pattern>
 
           {/* Ego Vehicle Glowing Halo Filter */}
@@ -2489,8 +2489,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           y={0}
           width={163}
           height={viewH}
-          fill="#cbd5e1"
-          fillOpacity={0.85}
+          fill="url(#asphalt-pattern)"
         />
         {/* Yellow safety line at lane-facing edge (x=420) */}
         <line
@@ -2537,8 +2536,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           y={0}
           width={163}
           height={viewH}
-          fill="#cbd5e1"
-          fillOpacity={0.85}
+          fill="url(#asphalt-pattern)"
         />
         {/* Yellow safety line at lane-facing edge (x=786) */}
         <line

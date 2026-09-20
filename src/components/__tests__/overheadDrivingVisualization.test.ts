@@ -17,6 +17,7 @@ describe('Overhead Driving Visualization Full-Bleed & Geometry Suite', () => {
     assert.ok(!fileContent.includes('fill="#030712"'), 'Must not contain black outer background rect');
     assert.ok(!fileContent.includes('width={862}'), 'Must not contain 862px outer shoulder rect');
     assert.ok(fileContent.includes('fill="url(#asphalt-pattern)"'), 'Asphalt pattern must be present');
+    assert.ok(fileContent.includes('<rect width="24" height="24" fill="#1e293b"'), 'Asphalt pattern must use Mini Nav road color #1e293b');
   });
 
   it('3. Verifies right-anchored viewport and preserved roadway geometry', () => {
