@@ -32,9 +32,8 @@ export const ManeuverGlyph: React.FC<ManeuverGlyphProps> = ({
     case 'slight-left':
       return (
         <g className={className} id="maneuver-glyph-slight-left">
-          {/* Slight left curved diagonal arrow */}
           <path
-            d="M 100.4 161.7 L 100.7 214.5 L 118.1 201.1 Q 150.0 239.1 150.0 300.0 L 170.0 300.0 Q 170.0 239.1 133.9 188.9 L 151.3 175.5 Z"
+            d="M 210 380 L 270 380 Q 270 241 177 148 L 191 134 L 120 120 L 134 191 L 148 177 Q 210 240 210 380 Z"
             fill={color}
           />
         </g>
@@ -43,9 +42,8 @@ export const ManeuverGlyph: React.FC<ManeuverGlyphProps> = ({
     case 'slight-right':
       return (
         <g className={className} id="maneuver-glyph-slight-right">
-          {/* Slight right curved diagonal arrow */}
           <path
-            d="M 219.6 161.7 L 168.7 175.5 L 186.1 188.9 Q 150.0 239.1 150.0 300.0 L 170.0 300.0 Q 170.0 239.1 201.9 201.1 L 219.3 214.5 Z"
+            d="M 190 380 L 130 380 Q 130 241 223 148 L 209 134 L 280 120 L 266 191 L 252 177 Q 190 240 190 380 Z"
             fill={color}
           />
         </g>
@@ -91,6 +89,28 @@ export const ManeuverGlyph: React.FC<ManeuverGlyphProps> = ({
             d="M 170 380 L 230 380 L 230 285 L 295 330 L 320 295 L 243 242 Q 230 230 230 200 L 230 180 L 270 180 L 200 90 L 130 180 L 170 180 L 170 380 Z"
             fill={color}
           />
+        </g>
+      );
+
+    case 'lane-ends-right':
+      return (
+        <g className={className} id="maneuver-glyph-lane-ends-right">
+          <rect x="40" y="30" width="40" height="340" fill={color} />
+          <rect x="162.5" y="195" width="15" height="35" fill={color} />
+          <rect x="162.5" y="255" width="15" height="35" fill={color} />
+          <rect x="162.5" y="315" width="15" height="35" fill={color} />
+          <path d="M 195 30 L 235 30 L 235 120 L 285 185 L 285 370 L 245 370 L 245 195 L 195 130 Z" fill={color} />
+        </g>
+      );
+
+    case 'lane-ends-left':
+      return (
+        <g className={className} id="maneuver-glyph-lane-ends-left">
+          <rect x="220" y="30" width="40" height="340" fill={color} />
+          <rect x="122.5" y="195" width="15" height="35" fill={color} />
+          <rect x="122.5" y="255" width="15" height="35" fill={color} />
+          <rect x="122.5" y="315" width="15" height="35" fill={color} />
+          <path d="M 105 30 L 65 30 L 65 120 L 15 185 L 15 370 L 55 370 L 55 195 L 105 130 Z" fill={color} />
         </g>
       );
     case 'sharp-left':

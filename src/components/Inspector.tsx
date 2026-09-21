@@ -2667,6 +2667,33 @@ export const Inspector: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Road Scenery Settings */}
+                <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+                  <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                    Road Scenery
+                  </span>
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-300 font-mono">Street Light</span>
+                      <input
+                        type="checkbox"
+                        checked={selectedComp.staticProps.streetLight !== 'false'}
+                        onChange={(e) => handleStaticPropChange('streetLight', e.target.checked ? 'true' : 'false')}
+                        className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-700/40">
+                      <span className="text-[11px] text-slate-300 font-mono">Highway Gantry</span>
+                      <input
+                        type="checkbox"
+                        checked={selectedComp.staticProps.highwayGantry !== 'false'}
+                        onChange={(e) => handleStaticPropChange('highwayGantry', e.target.checked ? 'true' : 'false')}
+                        className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Speed Limit Settings */}
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
                   <div className="flex items-center justify-between">
@@ -3250,8 +3277,10 @@ export const Inspector: React.FC = () => {
                 { id: 'slight-right', label: 'Slight Right' },
                 { id: 'left', label: 'Left Turn' },
                 { id: 'right', label: 'Right Turn' },
-                { id: 'merge-left', label: 'Merge Left' },
-                { id: 'merge-right', label: 'Merge Right' },
+                { id: 'merge-left', label: 'Left Merge' },
+                { id: 'merge-right', label: 'Right Merge' },
+                { id: 'lane-ends-left', label: 'Left Lane Ends' },
+                { id: 'lane-ends-right', label: 'Right Lane Ends' },
               ];
 
               return (
@@ -3263,34 +3292,47 @@ export const Inspector: React.FC = () => {
                     </span>
 
                     {/* Maneuver Type Selector */}
-                    <div className="grid grid-cols-3 gap-1.5 bg-slate-950 p-1 rounded-lg border border-slate-800">
-                      {maneuverOptions.map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => {
-                            handleStaticPropChange('maneuverType', opt.id);
-                            // Also synchronize with the active journey store slice
-                            useMockpitStore.getState().setManeuverType(opt.id);
-                          }}
-                          className={`flex flex-col items-center justify-center gap-1 py-1.5 px-2 text-[10px] font-mono font-bold rounded capitalize transition-colors ${
-                            currentManeuverType === opt.id
-                              ? 'bg-sky-500 text-slate-950 shadow'
-                              : 'text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          <svg
-                            width="16"
-                            height="19"
-                            viewBox={opt.id === 'merge-left' || opt.id === 'merge-right' ? '0 0 400 450' : '80 120 160 190'}
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
+                    <div className="grid grid-cols-2 gap-2 bg-slate-950 p-2 rounded-lg border border-slate-800">
+                      {maneuverOptions.map((opt) => {
+                        const thumbWidth =
+                          opt.id === 'lane-ends-left' || opt.id === 'lane-ends-right' ? 42 :
+                          opt.id === 'straight' ? 47 : 50;
+
+                        const thumbViewBox =
+                          opt.id === 'left' ? '-15 15 400 450' :
+                          opt.id === 'right' ? '0 15 400 450' :
+                          opt.id === 'slight-left' || opt.id === 'slight-right' || opt.id === 'merge-left' || opt.id === 'merge-right' ? '0 0 400 450' :
+                          opt.id === 'lane-ends-left' || opt.id === 'lane-ends-right' ? '0 0 300 400' :
+                          '80 120 160 190';
+
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              handleStaticPropChange('maneuverType', opt.id);
+                              // Also synchronize with the active journey store slice
+                              useMockpitStore.getState().setManeuverType(opt.id);
+                            }}
+                            className={`flex flex-col items-center justify-center gap-1.5 py-2.5 px-2 text-[11px] font-mono font-bold rounded capitalize transition-colors ${
+                              currentManeuverType === opt.id
+                                ? 'bg-sky-500 text-slate-950 shadow'
+                                : 'text-slate-400 hover:text-slate-200'
+                            }`}
                           >
-                            <ManeuverGlyph type={opt.id} />
-                          </svg>
-                          <span>{opt.label}</span>
-                        </button>
-                      ))}
+                            <svg
+                              width={thumbWidth}
+                              height={56}
+                              viewBox={thumbViewBox}
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <ManeuverGlyph type={opt.id} />
+                            </svg>
+                            <span className="text-center leading-tight">{opt.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
 
                     <div>

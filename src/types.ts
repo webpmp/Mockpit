@@ -188,6 +188,8 @@ export type ManeuverType =
   | 'u-turn-right'
   | 'merge-left'
   | 'merge-right'
+  | 'lane-ends-left'
+  | 'lane-ends-right'
   | 'roundabout'
   | 'arrive';
 

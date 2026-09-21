@@ -47,9 +47,9 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
   const headerLabel = resolved.label || component.staticProps?.label || 'Vent Dashboard';
 
   const [vents, setVents] = useState<Record<'left' | 'center' | 'right', VentState>>({
-    left: { id: 'left', label: 'LEFT', isOpen: true, angle: 315 },
-    center: { id: 'center', label: 'CENTER', isOpen: true, angle: 270 },
-    right: { id: 'right', label: 'RIGHT', isOpen: true, angle: 225 },
+    left: { id: 'left', label: 'LEFT', isOpen: true, angle: 135 },
+    center: { id: 'center', label: 'CENTER', isOpen: true, angle: 90 },
+    right: { id: 'right', label: 'RIGHT', isOpen: true, angle: 45 },
   });
 
   const [draggingVent, setDraggingVent] = useState<'left' | 'center' | 'right' | null>(null);

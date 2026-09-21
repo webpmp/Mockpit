@@ -13,6 +13,28 @@ import {
   DEFAULT_VEHICLE_COLORS,
 } from '../utils/vehicleAssets';
 
+// ---- Street light / highway gantry ----
+const LIGHT_SPRITE_TOP = -10;     // was -68
+const LIGHT_SPRITE_BOTTOM = 10;   // was 12
+const GANTRY_SPRITE_TOP = -15;       // was -2; sign top edge (y = -14, plus 0.5 stroke)
+const GANTRY_SPRITE_BOTTOM = 63;     // bottom of the (unblurred) shadow rect
+const GANTRY_LIGHT_CLEARANCE = 24;   // extra keep-out px; also absorbs the light's discarded wrap overshoot
+const GANTRY_ENTER_Y = -110;         // forward entry: body + blurred shadow fully above viewport
+const GANTRY_OFFSCREEN_MARGIN = 20;  // was 10; keeps the raised sign fully off-screen at entry/exit
+const GANTRY_SPACING_LIGHT_CYCLES = 4; // DECISION 2 (resolved): ~22 s between gantries at 65 mph
+const GANTRY_SCROLL_RATE = 2.2;        // DECISION 4 (resolved) — same factor as street light and traffic
+
+// dy = gantryY - streetLightY. Clear when the gantry is fully below or fully above the light's keep-out band.
+const isGantryClearOfLight = (dy: number) =>
+  dy >= LIGHT_SPRITE_BOTTOM + GANTRY_LIGHT_CLEARANCE - GANTRY_SPRITE_TOP ||  // dy >= 38
+  dy <= LIGHT_SPRITE_TOP - GANTRY_LIGHT_CLEARANCE - GANTRY_SPRITE_BOTTOM;    // dy <= -155
+
+// Safe only if clear now AND clear after a street-light wrap in either scroll direction (light cycle = viewH + 300).
+const isGantryPlacementSafe = (gantryY: number, lightY: number, lightCycleLen: number) =>
+  isGantryClearOfLight(gantryY - lightY) &&
+  isGantryClearOfLight(gantryY - lightY + lightCycleLen) &&
+  isGantryClearOfLight(gantryY - lightY - lightCycleLen);
+
 interface OverheadDrivingVisualizationProps {
   component: ComponentInstance;
   vehicleState: VehicleState;
@@ -1377,9 +1399,13 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     props.sensorWarning !== 'false' && (vehicleState?.proximityWarning ?? true);
 
   const blindSpotColor = props.blindSpotColor || '#ef4444';
-  const blindSpotOpacity = parseFloat(props.blindSpotOpacity || '0.65');
+  const blindSpotOpacity = parseFloat(props.blindSpotOpacity || '0.10');
   const sensorColor = props.sensorColor || '#ef4444';
   const sensorOpacity = parseFloat(props.sensorOpacity || '0.65');
+
+  // DECISION 1 (resolved): both default ON, following the existing `!== 'false'` convention
+  const isStreetLightEnabled = props.streetLight !== 'false';
+  const isGantryEnabled = props.highwayGantry !== 'false';
 
   // =========================================================================
   // EXPLICIT 4-LANE HIGHWAY GEOMETRY MODEL (1206px SVG Viewport Base)
@@ -1615,6 +1641,31 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
   const [sceneObjects, setSceneObjects] = useState<SceneObject[]>(baseObjects);
   const journeyRoadOffset = useMockpitStore((s) => s.journey?.roadOffset ?? 0);
   const [medianLightY, setMedianLightY] = useState<number>(-140);
+  const [gantryY, setGantryY] = useState<number | null>(null); // null = gantry not on screen
+  const medianLightYRef = useRef<number>(-140);
+  const gantryYRef = useRef<number>(GANTRY_ENTER_Y);
+  const gantryActiveRef = useRef<boolean>(false);
+  const gantryTravelRef = useRef<number>(0);
+
+  useEffect(() => {
+    medianLightYRef.current = medianLightY; // ~1 frame of lag is absorbed by GANTRY_LIGHT_CLEARANCE
+  }, [medianLightY]);
+
+  // Reset whenever the toggle changes. DECISION 5 (resolved): show at top of view right away (preview).
+  useEffect(() => {
+    gantryActiveRef.current = false;
+    gantryTravelRef.current = GANTRY_SPACING_LIGHT_CYCLES * (viewH + 300); // primed: first gantry as soon as it is safe
+    setGantryY(null);
+    if (!isGantryEnabled) return;
+    const previewY = Math.round(viewH * 0.2);
+    if (isGantryPlacementSafe(previewY, medianLightYRef.current, viewH + 300)) {
+      gantryActiveRef.current = true;
+      gantryYRef.current = previewY;
+      gantryTravelRef.current = 0;
+      setGantryY(previewY);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGantryEnabled]);
 
   useEffect(() => {
     setTraffic(baseTraffic);
@@ -1781,6 +1832,33 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           }
           return nextY;
         });
+      }
+
+      // 2b. Highway Gantry — same scroll rate as the street light; rarer; never overlaps the light
+      if (currentSpeed > 0 && isGantryEnabled) {
+        const step = dirSign * dt * currentSpeed * GANTRY_SCROLL_RATE;
+        const lightCycleLen = viewH + 300;
+        gantryTravelRef.current += Math.abs(step);
+
+        if (gantryActiveRef.current) {
+          const nextY = gantryYRef.current + step;
+          if (nextY > viewH + GANTRY_OFFSCREEN_MARGIN || nextY < GANTRY_ENTER_Y) {
+            gantryActiveRef.current = false; // left the viewport
+            setGantryY(null);
+          } else {
+            gantryYRef.current = nextY;
+            setGantryY(nextY);
+          }
+        } else if (gantryTravelRef.current >= GANTRY_SPACING_LIGHT_CYCLES * lightCycleLen) {
+          const entryY = dirSign > 0 ? GANTRY_ENTER_Y : viewH + GANTRY_OFFSCREEN_MARGIN;
+          if (isGantryPlacementSafe(entryY, medianLightYRef.current, lightCycleLen)) {
+            gantryActiveRef.current = true;
+            gantryTravelRef.current = 0;
+            gantryYRef.current = entryY;
+            setGantryY(entryY);
+          }
+          // otherwise retry next frame; the wait is at most ~193 px of scroll (≈1.4 s at 65 mph)
+        }
       }
 
       // 3. Main Traffic Movement & Anti-Collision Mechanics
@@ -2327,6 +2405,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     RANDOM_VEHICLE_TYPES,
     egoLane,
     isProximityEnabled,
+    isGantryEnabled,
   ]);
 
   return (
@@ -2404,6 +2483,22 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
             <circle cx="12" cy="4" r="0.9" fill="#94a3b8" opacity="0.5" />
             <circle cx="4" cy="12" r="0.9" fill="#94a3b8" opacity="0.4" />
           </pattern>
+
+          {/* Highway Gantry: steel truss pattern + soft ground shadow */}
+          <pattern id="truss-pattern" width="30" height="24" patternUnits="userSpaceOnUse">
+            <rect width="30" height="24" fill="#334155" />
+            <line x1="0" y1="0" x2="30" y2="24" stroke="#475569" strokeWidth="2.5" />
+            <line x1="30" y1="0" x2="0" y2="24" stroke="#475569" strokeWidth="2.5" />
+            <line x1="0" y1="0" x2="30" y2="0" stroke="#64748b" strokeWidth="2" />
+            <line x1="0" y1="24" x2="30" y2="24" stroke="#1e293b" strokeWidth="2" />
+          </pattern>
+          <filter id="gantry-shadow" x="-10%" y="-50%" width="120%" height="300%">
+            <feGaussianBlur stdDeviation="12" result="blur" />
+            <feColorMatrix
+              type="matrix"
+              values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.65 0"
+            />
+          </filter>
         </defs>
 
         {/* Full-bleed Asphalt Road Surface */}
@@ -2549,120 +2644,38 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
         />
 
         {/* HIGH-MAST MEDIAN STREET LIGHT FIXTURE (Centered at x=603.0 in median, scrolling smoothly) */}
-        <g id="median-light-fixture" transform={`translate(603, ${medianLightY})`}>
-          <defs>
-            <radialGradient id="median-light-pool-white" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.65" />
-              <stop offset="45%" stopColor="#f1f5f9" stopOpacity="0.32" />
-              <stop offset="100%" stopColor="#f8fafc" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          {/* White light cast onto the ground */}
-          <ellipse
-            cx="0"
-            cy="18"
-            rx="130"
-            ry="150"
-            fill="url(#median-light-pool-white)"
-            opacity="0.28"
-          />
-          <ellipse
-            cx="0"
-            cy="18"
-            rx="70"
-            ry="90"
-            fill="url(#median-light-pool-white)"
-            opacity="0.45"
-          />
-          {/* Base of light pole */}
-          <circle
-            cx="0"
-            cy="38"
-            r="7"
-            fill="#0f172a"
-            stroke="#475569"
-            strokeWidth="2"
-          />
-          <circle cx="0" cy="38" r="3" fill="#64748b" />
-          {/* Tall pole */}
-          <line
-            x1="1"
-            y1="38"
-            x2="1"
-            y2="-78"
-            stroke="#0f172a"
-            strokeWidth="4.5"
-          />
-          <line
-            x1="0"
-            y1="38"
-            x2="0"
-            y2="-78"
-            stroke="#334155"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-          />
-          <line
-            x1="-0.8"
-            y1="38"
-            x2="-0.8"
-            y2="-78"
-            stroke="#64748b"
-            strokeWidth="1.2"
-          />
-          {/* Double-arm fixture */}
-          <line
-            x1="-24"
-            y1="-78"
-            x2="24"
-            y2="-78"
-            stroke="#475569"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-          />
-          {/* Left downward-facing lamp housing */}
-          <path
-            d="M -27,-78 L -12,-78 L -13,-69 L -25,-69 Z"
-            fill="#0f172a"
-            stroke="#64748b"
-            strokeWidth="1"
-          />
-          <path
-            d="M -24,-69 L -14,-69 L -16,-66 L -22,-66 Z"
-            fill="#78350f"
-          />
-          {/* Right downward-facing lamp housing */}
-          <path
-            d="M 12,-78 L 27,-78 L 25,-69 L 13,-69 Z"
-            fill="#0f172a"
-            stroke="#64748b"
-            strokeWidth="1"
-          />
-          <path
-            d="M 14,-69 L 24,-69 L 22,-66 L 16,-66 Z"
-            fill="#78350f"
-          />
-          {/* Warm light emitted downward from fixtures */}
-          <ellipse
-            cx="-19"
-            cy="-64"
-            rx="8"
-            ry="4"
-            fill="#fbbf24"
-            opacity="0.38"
-          />
-          <ellipse
-            cx="19"
-            cy="-64"
-            rx="8"
-            ry="4"
-            fill="#fbbf24"
-            opacity="0.38"
-          />
-          {/* Subtle warm light cores underneath the housings */}
-          <ellipse cx="-19" cy="-65" rx="3.5" ry="1.5" fill="#fef3a8" />
-          <ellipse cx="19" cy="-65" rx="3.5" ry="1.5" fill="#fef3a8" />
-        </g>
+        {isStreetLightEnabled && (
+          <g id="median-light-fixture" transform={`translate(603, ${medianLightY})`}>
+            <defs>
+              <radialGradient id="median-light-pool-white" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.65" />
+                <stop offset="45%" stopColor="#f1f5f9" stopOpacity="0.32" />
+                <stop offset="100%" stopColor="#f8fafc" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+
+            {/* Symmetric, circular light pools on the ground */}
+            <circle cx="0" cy="0" r="240" fill="url(#median-light-pool-white)" opacity="0.28" />
+            <circle cx="0" cy="0" r="140" fill="url(#median-light-pool-white)" opacity="0.45" />
+
+            {/* Dual symmetric fixtures extending outward on either side of the pole */}
+            {/* Left side fixture & glow */}
+            <path d="M -30,-6 L -10,-6 L -10,6 L -30,6 Z" fill="#0f172a" stroke="#475569" strokeWidth="1.5" />
+            <path d="M -26,-4 L -12,-4 L -12,4 L -26,4 Z" fill="#78350f" />
+            <circle cx="-19" cy="0" r="5" fill="#ffffff" opacity="0.8" />
+            <circle cx="-19" cy="0" r="10" fill="#ffffff" opacity="0.25" />
+
+            {/* Right side fixture & glow */}
+            <path d="M 10,-6 L 30,-6 L 30,6 L 10,6 Z" fill="#0f172a" stroke="#475569" strokeWidth="1.5" />
+            <path d="M 12,-4 L 26,-4 L 26,4 L 12,4 Z" fill="#78350f" />
+            <circle cx="19" cy="0" r="5" fill="#ffffff" opacity="0.8" />
+            <circle cx="19" cy="0" r="10" fill="#ffffff" opacity="0.25" />
+
+            {/* Central pole, seen straight down the post */}
+            <circle cx="0" cy="0" r="9" fill="#0f172a" stroke="#475569" strokeWidth="2" />
+            <circle cx="0" cy="0" r="4" fill="#64748b" />
+          </g>
+        )}
 
         {/* Ego Lanes Dashed Separator (x=966) */}
         <line
@@ -2758,8 +2771,8 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
               <path
                 d="M 30.5 11.5 L 250.6 207 A 124.2 124.2 0 0 1 76.3 368 Z"
                 fill={blindSpotColor}
-                fillOpacity={blindSpotOpacity}
-                filter="url(#hazard-glow-red)"
+                fillOpacity={0.15}
+                // filter="url(#hazard-glow-red)"
                 stroke={blindSpotColor}
                 strokeWidth="2.5"
               />
@@ -2770,8 +2783,8 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
               <path
                 d="M 30.5 11.5 L 250.6 207 A 124.2 124.2 0 0 1 76.3 368 Z"
                 fill={blindSpotColor}
-                fillOpacity={blindSpotOpacity}
-                filter="url(#hazard-glow-red)"
+                fillOpacity={0.15}
+                // filter="url(#hazard-glow-red)"
                 stroke={blindSpotColor}
                 strokeWidth="2.5"
               />
@@ -2808,6 +2821,45 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
             colors={activeColors}
           />
         </g>
+
+        {/* HIGHWAY GANTRY OVERHEAD ELEMENT (top layer, above traffic and ego vehicle) */}
+        {isGantryEnabled && gantryY !== null && (
+          <g id="highway-gantry" transform={`translate(0, ${gantryY})`}>
+            {/* Gantry Shadow */}
+            <rect x="30" y="35" width="1146" height="28" fill="#000" filter="url(#gantry-shadow)" opacity="0.8" />
+
+            {/* Structural Support Pillars */}
+            <circle cx="45" cy="12" r="14" fill="#1e293b" stroke="#475569" strokeWidth="2" />
+            <circle cx="45" cy="12" r="5" fill="#cbd5e1" />
+            <rect x="591" y="-2" width="24" height="28" rx="4" fill="#1e293b" stroke="#475569" strokeWidth="2" />
+            <circle cx="1161" cy="12" r="14" fill="#1e293b" stroke="#475569" strokeWidth="2" />
+            <circle cx="1161" cy="12" r="5" fill="#cbd5e1" />
+
+            {/* Left Lanes Sign — top-left, faces left-side traffic; matches the right sign's style and yellow block */}
+            <g id="sign-hint-left" transform="translate(120, -14)">
+              <rect x="0" y="0" width="310" height="12" fill="#065f46" stroke="#047857" strokeWidth="1" rx="1" />
+              {/* Reflective white trim, same internal depth as the right sign */}
+              <rect x="2" y="1" width="306" height="2" fill="#f8fafc" opacity="0.9" />
+              {/* Yellow exit block, same as the right sign */}
+              <rect x="220" y="4" width="80" height="6" fill="#eab308" rx="0.5" />
+              <line x1="15" y1="6" x2="180" y2="6" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+            </g>
+            <g id="sign-hint-right" transform="translate(760, 16)">
+              <rect x="0" y="0" width="310" height="12" fill="#065f46" stroke="#047857" strokeWidth="1" rx="1" />
+              <rect x="2" y="1" width="306" height="2" fill="#f8fafc" opacity="0.9" />
+              <rect x="220" y="4" width="80" height="6" fill="#eab308" rx="0.5" />
+              <line x1="15" y1="6" x2="180" y2="6" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+            </g>
+
+            {/* Main Steel Lattice Span */}
+            <rect x="35" y="0" width="1136" height="6" fill="#475569" rx="1" />
+            <rect x="42" y="5" width="1122" height="14" fill="url(#truss-pattern)" />
+            <rect x="35" y="18" width="1136" height="6" fill="#334155" rx="1" />
+
+            {/* Maintenance Walkway details */}
+            <line x1="50" y1="23" x2="1156" y2="23" stroke="#1e293b" strokeWidth="1.5" strokeDasharray="3, 2" opacity="0.7" />
+          </g>
+        )}
       </svg>
 
       {/* Speed Limit Sign Overlay - Non-pulsating Edge-Triggered Flash */}

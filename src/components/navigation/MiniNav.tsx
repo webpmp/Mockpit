@@ -259,8 +259,8 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   const maneuverInstruction = useMemo(() => {
     const actionPhrases: Record<ManeuverType, string> = {
       'straight': 'Continue Straight',
-      'slight-left': 'Bear Left',
-      'slight-right': 'Keep Right',
+      'slight-left': 'Slight Left',
+      'slight-right': 'Slight Right',
       'left': 'Turn Left',
       'right': 'Turn Right',
       'arrive': 'Arrive',
@@ -268,8 +268,10 @@ export const MiniNav: React.FC<MiniNavProps> = ({
       'sharp-right': 'Sharp Right',
       'u-turn-left': 'U-Turn',
       'u-turn-right': 'U-Turn',
-      'merge-left': 'Merge Left',
-      'merge-right': 'Merge Right',
+      'merge-left': 'Left Merge',
+      'merge-right': 'Right Merge',
+      'lane-ends-left': 'Left Lane Ends',
+      'lane-ends-right': 'Right Lane Ends',
       'roundabout': 'Enter Roundabout',
     };
 
@@ -408,16 +410,24 @@ export const MiniNav: React.FC<MiniNavProps> = ({
     });
   }, [activeLane, numLanes, roadTopLeft.x, roadTopLeft.y, roadTopRight.x, roadBottomLeft.x, roadBottomLeft.y, roadBottomRight.x]);
 
-  const isEnlargedManeuver =
+  const arrowHeight = 135;
+
+  const arrowWidth =
+    maneuverType === 'lane-ends-left' || maneuverType === 'lane-ends-right' ? 101 :
     maneuverType === 'left' || maneuverType === 'right' ||
-    maneuverType === 'merge-left' || maneuverType === 'merge-right';
-  const arrowWidth = isEnlargedManeuver ? 120 : 44;
-  const arrowHeight = isEnlargedManeuver ? 135 : 52;
+    maneuverType === 'slight-left' || maneuverType === 'slight-right' ||
+    maneuverType === 'merge-left' || maneuverType === 'merge-right' ? 120 :
+    114; // straight, sharp-left, sharp-right, u-turn-left, u-turn-right, arrive — old 160×190 canvas, same aspect ratio, scaled to height 135
+
   const arrowViewBox =
     maneuverType === 'left' ? '-15 15 400 450' :
     maneuverType === 'right' ? '0 15 400 450' :
+    maneuverType === 'slight-left' ? '0 0 400 450' :
+    maneuverType === 'slight-right' ? '0 0 400 450' :
     maneuverType === 'merge-left' ? '0 0 400 450' :
     maneuverType === 'merge-right' ? '0 0 400 450' :
+    maneuverType === 'lane-ends-left' ? '0 0 300 400' :
+    maneuverType === 'lane-ends-right' ? '0 0 300 400' :
     '80 120 160 190';
 
   return (
@@ -455,35 +465,26 @@ export const MiniNav: React.FC<MiniNavProps> = ({
         </div>
 
         {/* Row 2: maneuver arrow + distance/instruction, full width */}
-        <div className="flex items-center gap-4 w-full mt-4">
+        <div className="flex items-center justify-center gap-5 w-full mt-4">
           {showManeuverDirection && (
-            <svg
-              width={arrowWidth}
-              height={arrowHeight}
-              viewBox={arrowViewBox}
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="shrink-0"
-            >
-              <ManeuverGlyph type={maneuverType} color={headerArrowColor} />
-            </svg>
+            <div className="flex flex-col items-center shrink-0">
+              <svg
+                width={arrowWidth}
+                height={arrowHeight}
+                viewBox={arrowViewBox}
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <ManeuverGlyph type={maneuverType} color={headerArrowColor} />
+              </svg>
+              <span id="mini-nav-instruction-sub" className="text-[19px] font-mono mt-1.5 text-center" style={{ color: instructionTextColor }}>
+                {maneuverInstruction}
+              </span>
+            </div>
           )}
-          <div className="flex flex-col">
-            <span
-              id="mini-nav-distance-text"
-              className="text-[38px] font-bold font-mono tracking-tight leading-none"
-              style={{ color: distanceTextColor }}
-            >
-              {distanceFormatted}
-            </span>
-            <span
-              id="mini-nav-instruction-sub"
-              className="text-[19px] font-mono mt-1.5"
-              style={{ color: instructionTextColor }}
-            >
-              {maneuverInstruction}
-            </span>
-          </div>
+          <span id="mini-nav-distance-text" className="text-[56px] font-bold font-mono tracking-tight leading-none whitespace-nowrap" style={{ color: distanceTextColor }}>
+            {distanceFormatted}
+          </span>
         </div>
 
         <div className="w-full h-px bg-white/15 my-4" />
