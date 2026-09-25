@@ -64,7 +64,7 @@ Mockpit supports **Component Integration**, allowing otherwise independent compo
 <table>
   <tr>
     <td align="center">
-      <img src="/public/comp-adjacent.png" alt="Components Adjacent">
+      <img src="/public/comp-adjacent-v2.png" alt="Components Adjacent">
       <br>
       <strong>Adjacent Components</strong>
     </td>
