@@ -51,6 +51,33 @@ Mockpit is an interactive prototyping application for designing, layout-testing,
 
 Mockpit supports **Component Integration**, allowing any two otherwise independent components to be visually connected through a parent/child relationship. This gives designers more options for composing integrated UI layouts while keeping each component independently selectable, editable, and configurable.
 
+<table>
+  <tr>
+    <td align="center">
+      <img src="/public/comp-adjacent.png" alt="Components Adjacent">
+      <br>
+      <strong>Components Adjacent</strong>
+    </td>
+    <td align="center">
+      <img src="/public/comp-adjacent-connected.png" alt="Components Adjacent Connected">
+      <br>
+      <strong>Components Adjacent Connected</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="/public/comp-overlay.png" alt="Components Overlaid">
+      <br>
+      <strong>Components Overlaid</strong>
+    </td>
+    <td align="center">
+      <img src="/public/comp-overlay-connected.png" alt="Components Overlaid Connected">
+      <br>
+      <strong>Components Overlaid Connected</strong>
+    </td>
+  </tr>
+</table>
+
 Component integration is primarily a **visual and layout relationship**, not a functional component merge.
 
 - **Flexible Layout Composition:** Any component can be connected to another component to create custom visual arrangements.
