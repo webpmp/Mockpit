@@ -22,6 +22,7 @@ import { useMockpitStore } from '../store/useMockpitStore';
 import { getCoverArtCacheKey } from '../services/musicBrainzService';
 import { resolveNowPlayingLayout } from '../utils/nowPlayingLayout';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants';
+import { getBorderClasses } from '../utils/borderOverrides';
 
 export type DismissDirection = 'up' | 'down' | 'left' | 'right';
 
@@ -722,7 +723,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
             resetDismissTimer();
           }
         }}
-        className={`w-full h-full min-w-0 min-h-0 rounded-2xl bg-slate-900/90 border border-slate-800 ${paddingClass} flex flex-col shadow-lg backdrop-blur-md relative select-none @container overflow-hidden ${baseOpacity} ${
+        className={`w-full h-full min-w-0 min-h-0 rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} ${paddingClass} flex flex-col shadow-lg backdrop-blur-md relative select-none @container overflow-hidden ${baseOpacity} ${
           isActuallyDismissed && isPresentation ? 'pointer-events-none' : 'pointer-events-auto'
         }`}
         style={{

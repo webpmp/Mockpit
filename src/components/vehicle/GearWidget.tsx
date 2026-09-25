@@ -4,6 +4,7 @@ import { ComponentInstance, GearState } from '../../types';
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { ComponentHeader, DEFAULT_COMPONENT_LABELS, getAlphaColor } from '../ComponentRenderer';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 const GEARS: GearState[] = ['P', 'R', 'N', 'D'];
 
@@ -119,7 +120,7 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
     <div
       ref={containerRef}
       data-component-type="gear"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between items-stretch shadow-lg backdrop-blur-md transition-all select-none overflow-visible [container-type:size] ${
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between items-stretch shadow-lg backdrop-blur-md transition-all select-none overflow-visible [container-type:size] ${
         isUltraCompact ? 'p-2' : isCompact ? 'p-2.5' : 'p-3.5'
       } ${baseOpacity}`}
       style={{

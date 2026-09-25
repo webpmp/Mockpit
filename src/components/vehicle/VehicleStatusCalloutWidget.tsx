@@ -2,6 +2,7 @@ import React from 'react';
 import { ComponentInstance, ConnectorAnchor } from '../../types';
 import { ShieldCheck, AlertCircle, AlertTriangle } from 'lucide-react';
 import { useMockpitStore } from '../../store/useMockpitStore';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 interface VehicleStatusCalloutWidgetProps {
   component: ComponentInstance;
@@ -142,7 +143,7 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
 
   return (
     <div
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800/90 backdrop-blur-md p-3.5 flex flex-col justify-between select-none relative transition-shadow ${baseOpacity} ${
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides, 'border-slate-800/90')} backdrop-blur-md p-3.5 flex flex-col justify-between select-none relative transition-shadow ${baseOpacity} ${
         isSelected ? 'ring-1 ring-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.2)]' : 'shadow-lg'
       }`}
       style={{ opacity: styleOpacity }}

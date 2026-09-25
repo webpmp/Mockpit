@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ComponentHeader } from '../ComponentRenderer';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 interface VentState {
   id: 'left' | 'center' | 'right';
@@ -151,7 +152,7 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
 
   return (
     <div
-      className={`@container w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+      className={`@container w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader

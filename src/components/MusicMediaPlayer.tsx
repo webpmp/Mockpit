@@ -22,6 +22,7 @@ import {
 import { ComponentInstance } from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { ComponentHeader } from './ComponentRenderer';
+import { getBorderClasses } from '../utils/borderOverrides';
 import {
   Track,
   Playlist,
@@ -130,7 +131,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
 
   return (
     <div
-      className="w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden select-none"
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden select-none`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       {/* Component Header with Compact Service Selector Dropdown */}

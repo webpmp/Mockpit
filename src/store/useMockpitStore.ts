@@ -37,7 +37,10 @@ import {
   ClimateSeat,
   AppShellBackgroundMode,
   AppShellBackgroundConfig,
+  BorderOverrides,
 } from '../types';
+import { checkIntegrationEligibility } from '../utils/componentIntegration';
+import { DEFAULT_BORDER_OVERRIDES } from '../utils/borderOverrides';
 
 import {
   TempGradientColors,
@@ -1226,6 +1229,11 @@ interface MockpitStore {
   deleteComponent: (id: string) => void;
   copyComponent: (id?: string) => void;
   pasteComponent: () => string | null;
+
+  // Component Integration Actions
+  connectComponent: (childId: string, parentId: string) => void;
+  disconnectComponent: (childId: string) => void;
+  updateComponentBorderOverride: (componentId: string, side: 'top' | 'right' | 'bottom' | 'left', value: boolean) => void;
 
   // Binding Actions
   addBinding: (componentId: string, binding: Omit<Binding, 'id'>) => void;
@@ -3608,7 +3616,24 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
       const activeScreen = state.activeView;
       const currentList = state.componentsByScreen[activeScreen] || [];
-      const updatedList = currentList.map((c) => (c.id === id ? { ...c, x: finalX, y: finalY } : c));
+      const oldComp = currentList.find((c) => c.id === id);
+      const deltaX = oldComp ? finalX - oldComp.x : 0;
+      const deltaY = oldComp ? finalY - oldComp.y : 0;
+
+      const updatedList = currentList.map((c) => {
+        if (c.id === id) {
+          return { ...c, x: finalX, y: finalY };
+        }
+        // Move connected children by the exact same delta (preserving relative offset)
+        if (c.parentId === id) {
+          return {
+            ...c,
+            x: Math.round(c.x + deltaX),
+            y: Math.round(c.y + deltaY),
+          };
+        }
+        return c;
+      });
       const updatedScreens = {
         ...state.componentsByScreen,
         [activeScreen]: updatedList,
@@ -3652,15 +3677,58 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
       const activeScreen = state.activeView;
       const currentList = state.componentsByScreen[activeScreen] || [];
+      const oldComp = currentList.find((c) => c.id === id);
+      const oldW = oldComp?.width ?? 0;
+      const oldH = oldComp?.height ?? 0;
+      const oldX = oldComp?.x ?? 0;
+      const oldY = oldComp?.y ?? 0;
+
+      let clampedW = finalW;
+      let clampedH = finalH;
+      if (oldComp) {
+        const minW = oldComp.type === 'mediaSearch' ? 550 : oldComp.type === 'overheadVisualization' ? 400 : 40;
+        const maxW = Math.max(minW, 1920 - oldX);
+        const maxH = Math.max(40, 1080 - oldY);
+        clampedW = Math.min(maxW, Math.max(minW, finalW));
+        clampedH = Math.min(maxH, Math.max(40, finalH));
+      }
+
+      const widthChanged = clampedW !== oldW && oldW > 0;
+      const heightChanged = clampedH !== oldH && oldH > 0;
+      const scaleW = widthChanged ? clampedW / oldW : 1;
+      const scaleH = heightChanged ? clampedH / oldH : 1;
+
       const updatedList = currentList.map((c) => {
         if (c.id === id) {
-          const minW = c.type === 'mediaSearch' ? 550 : c.type === 'overheadVisualization' ? 400 : 40;
-          const maxW = Math.max(minW, 1920 - (c.x || 0));
-          const maxH = Math.max(40, 1080 - (c.y || 0));
           return {
             ...c,
-            width: Math.min(maxW, Math.max(minW, finalW)),
-            height: Math.min(maxH, Math.max(40, finalH)),
+            width: clampedW,
+            height: clampedH,
+          };
+        }
+        // Connected children follow ONLY on the axis that changed:
+        if (c.parentId === id) {
+          let newChildX = c.x;
+          let newChildW = c.width;
+          let newChildY = c.y;
+          let newChildH = c.height;
+
+          if (widthChanged) {
+            const relX = c.x - oldX;
+            newChildX = Math.round(oldX + relX * scaleW);
+            newChildW = Math.max(40, Math.round(c.width * scaleW));
+          }
+          if (heightChanged) {
+            const relY = c.y - oldY;
+            newChildY = Math.round(oldY + relY * scaleH);
+            newChildH = Math.max(40, Math.round(c.height * scaleH));
+          }
+          return {
+            ...c,
+            x: newChildX,
+            y: newChildY,
+            width: newChildW,
+            height: newChildH,
           };
         }
         return c;
@@ -3846,14 +3914,63 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
       const activeScreen = state.activeView;
       const currentList = state.componentsByScreen[activeScreen] || [];
-      // Filter out deleted component and clear connector on any callout that pointed to the deleted component
+
+      // Check if deleted component is an outside-integrated child whose parent border should be restored
+      const deletedComp = currentList.find((c) => c.id === id);
+      let parentIdToRestore: string | undefined;
+      let restoredSide: keyof BorderOverrides | undefined;
+      if (deletedComp?.parentId && deletedComp.integrationStyle === 'outside' && deletedComp.attachmentPosition) {
+        parentIdToRestore = deletedComp.parentId;
+        if (deletedComp.attachmentPosition === 'top') restoredSide = 'top';
+        else if (deletedComp.attachmentPosition === 'bottom') restoredSide = 'bottom';
+        else if (deletedComp.attachmentPosition === 'left') restoredSide = 'left';
+        else if (deletedComp.attachmentPosition === 'right') restoredSide = 'right';
+      }
+
+      // Filter out deleted component, clear connectors pointing to it, and convert any child of it to standalone
       const updatedList = currentList
         .filter((c) => c.id !== id)
         .map((c) => {
-          if (c.connector && c.connector.targetComponentId === id) {
-            return { ...c, connector: null };
+          let updated = { ...c };
+          if (updated.connector && updated.connector.targetComponentId === id) {
+            updated.connector = null;
           }
-          return c;
+          // If deleted component was a child of this parent, restore the parent's touching border
+          if (parentIdToRestore && updated.id === parentIdToRestore && restoredSide && updated.borderOverrides) {
+            updated = {
+              ...updated,
+              borderOverrides: {
+                ...updated.borderOverrides,
+                [restoredSide]: true,
+              },
+            };
+          }
+          // Deleting a parent converts every child to standalone, preserving position/size and restoring header/borders
+          if (updated.parentId === id) {
+            const restoredShowHeader = updated.preConnectionShowHeader !== undefined ? updated.preConnectionShowHeader : 'true';
+            const restoredBorderOverrides = updated.preConnectionBorderOverrides !== undefined
+              ? { ...updated.preConnectionBorderOverrides }
+              : { top: true, right: true, bottom: true, left: true };
+
+            const {
+              parentId: _p,
+              integrationStyle: _is,
+              attachmentPosition: _ap,
+              preConnectionShowHeader: _psh,
+              preConnectionBorderOverrides: _pbo,
+              ...rest
+            } = updated;
+
+            updated = {
+              ...rest,
+              borderOverrides: restoredBorderOverrides,
+              staticProps: {
+                ...rest.staticProps,
+                showHeader: restoredShowHeader,
+              },
+            };
+          }
+          return updated;
         });
 
       // Also clean up references across all screens in componentsByScreen
@@ -3865,10 +3982,35 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           updatedScreens[screenKey] = (screenComps || [])
             .filter((c) => c.id !== id)
             .map((c) => {
-              if (c.connector && c.connector.targetComponentId === id) {
-                return { ...c, connector: null };
+              let updated = { ...c };
+              if (updated.connector && updated.connector.targetComponentId === id) {
+                updated.connector = null;
               }
-              return c;
+              if (updated.parentId === id) {
+                const restoredShowHeader = updated.preConnectionShowHeader !== undefined ? updated.preConnectionShowHeader : 'true';
+                const restoredBorderOverrides = updated.preConnectionBorderOverrides !== undefined
+                  ? { ...updated.preConnectionBorderOverrides }
+                  : { top: true, right: true, bottom: true, left: true };
+
+                const {
+                  parentId: _p,
+                  integrationStyle: _is,
+                  attachmentPosition: _ap,
+                  preConnectionShowHeader: _psh,
+                  preConnectionBorderOverrides: _pbo,
+                  ...rest
+                } = updated;
+
+                updated = {
+                  ...rest,
+                  borderOverrides: restoredBorderOverrides,
+                  staticProps: {
+                    ...rest.staticProps,
+                    showHeader: restoredShowHeader,
+                  },
+                };
+              }
+              return updated;
             });
         }
       }
@@ -3882,6 +4024,220 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         componentsByScreen: updatedScreens,
         components: updatedList,
         selectedComponentId: state.selectedComponentId === id ? null : state.selectedComponentId,
+      };
+    });
+  },
+
+  connectComponent: (childId, parentId) => {
+    set((state) => {
+      const activeScreen = state.activeView;
+      const currentList = state.componentsByScreen[activeScreen] || [];
+      const child = currentList.find((c) => c.id === childId);
+      const parent = currentList.find((c) => c.id === parentId);
+      if (!child || !parent || child.id === parent.id) return {};
+
+      const eligibility = checkIntegrationEligibility(child, parent);
+      if (!eligibility.isEligible || !eligibility.style || !eligibility.attachmentPosition) {
+        return {};
+      }
+
+      const style = eligibility.style;
+      const attachmentPosition = eligibility.attachmentPosition;
+
+      // 1. Record pre-connection state for child
+      const preConnectionShowHeader = child.staticProps?.showHeader || 'true';
+      const preConnectionBorderOverrides: BorderOverrides = child.borderOverrides
+        ? { ...child.borderOverrides }
+        : { top: true, right: true, bottom: true, left: true };
+
+      let newChildBorderOverrides: BorderOverrides;
+      let newParentBorderOverrides: BorderOverrides | undefined;
+
+      if (style === 'inside') {
+        newChildBorderOverrides = { top: false, right: false, bottom: false, left: false };
+      } else {
+        newChildBorderOverrides = child.borderOverrides
+          ? { ...child.borderOverrides }
+          : { top: true, right: true, bottom: true, left: true };
+
+        newParentBorderOverrides = parent.borderOverrides
+          ? { ...parent.borderOverrides }
+          : { top: true, right: true, bottom: true, left: true };
+
+        if (attachmentPosition === 'top') {
+          // Child is above parent: child's bottom faces parent, parent's top faces child
+          newChildBorderOverrides.bottom = false;
+          newParentBorderOverrides.top = false;
+        } else if (attachmentPosition === 'bottom') {
+          // Child is below parent: child's top faces parent, parent's bottom faces child
+          newChildBorderOverrides.top = false;
+          newParentBorderOverrides.bottom = false;
+        } else if (attachmentPosition === 'left') {
+          // Child is left of parent: child's right faces parent, parent's left faces child
+          newChildBorderOverrides.right = false;
+          newParentBorderOverrides.left = false;
+        } else if (attachmentPosition === 'right') {
+          // Child is right of parent: child's left faces parent, parent's right faces child
+          newChildBorderOverrides.left = false;
+          newParentBorderOverrides.right = false;
+        }
+      }
+
+      const updatedList = currentList.map((c) => {
+        if (c.id === childId) {
+          return {
+            ...c,
+            parentId,
+            integrationStyle: style,
+            attachmentPosition,
+            borderOverrides: newChildBorderOverrides,
+            preConnectionShowHeader,
+            preConnectionBorderOverrides,
+            staticProps: {
+              ...c.staticProps,
+              showHeader: 'false',
+            },
+          };
+        }
+        if (c.id === parentId && newParentBorderOverrides) {
+          return {
+            ...c,
+            borderOverrides: newParentBorderOverrides,
+          };
+        }
+        return c;
+      });
+
+      const updatedScreens = {
+        ...state.componentsByScreen,
+        [activeScreen]: updatedList,
+      };
+
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+      } catch (e) {
+        console.error('Failed to save connection', e);
+      }
+
+      return {
+        componentsByScreen: updatedScreens,
+        components: updatedList,
+      };
+    });
+  },
+
+  disconnectComponent: (childId) => {
+    set((state) => {
+      const activeScreen = state.activeView;
+      const currentList = state.componentsByScreen[activeScreen] || [];
+      const child = currentList.find((c) => c.id === childId);
+      if (!child || !child.parentId) return {};
+
+      const parentId = child.parentId;
+      const parent = currentList.find((c) => c.id === parentId);
+      const restoredShowHeader = child.preConnectionShowHeader !== undefined ? child.preConnectionShowHeader : 'true';
+      const restoredBorderOverrides: BorderOverrides = child.preConnectionBorderOverrides !== undefined
+        ? { ...child.preConnectionBorderOverrides }
+        : { top: true, right: true, bottom: true, left: true };
+
+      // Restore parent border if outside connection
+      let restoredParentBorderOverrides: BorderOverrides | undefined;
+      if (child.integrationStyle === 'outside' && child.attachmentPosition && parent?.borderOverrides) {
+        restoredParentBorderOverrides = { ...parent.borderOverrides };
+        if (child.attachmentPosition === 'top') {
+          restoredParentBorderOverrides.top = true;
+        } else if (child.attachmentPosition === 'bottom') {
+          restoredParentBorderOverrides.bottom = true;
+        } else if (child.attachmentPosition === 'left') {
+          restoredParentBorderOverrides.left = true;
+        } else if (child.attachmentPosition === 'right') {
+          restoredParentBorderOverrides.right = true;
+        }
+      }
+
+      const updatedList = currentList.map((c) => {
+        if (c.id === childId) {
+          const {
+            parentId: _p,
+            integrationStyle: _is,
+            attachmentPosition: _ap,
+            preConnectionShowHeader: _psh,
+            preConnectionBorderOverrides: _pbo,
+            ...rest
+          } = c;
+          return {
+            ...rest,
+            borderOverrides: restoredBorderOverrides,
+            staticProps: {
+              ...c.staticProps,
+              showHeader: restoredShowHeader,
+            },
+          };
+        }
+        if (c.id === parentId && restoredParentBorderOverrides) {
+          return {
+            ...c,
+            borderOverrides: restoredParentBorderOverrides,
+          };
+        }
+        return c;
+      });
+
+      const updatedScreens = {
+        ...state.componentsByScreen,
+        [activeScreen]: updatedList,
+      };
+
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+      } catch (e) {
+        console.error('Failed to save disconnect', e);
+      }
+
+      return {
+        componentsByScreen: updatedScreens,
+        components: updatedList,
+      };
+    });
+  },
+
+  updateComponentBorderOverride: (componentId, side, value) => {
+    set((state) => {
+      const activeScreen = state.activeView;
+      const currentList = state.componentsByScreen[activeScreen] || [];
+      const updatedList = currentList.map((c) => {
+        if (c.id === componentId) {
+          const currentOverrides: BorderOverrides = c.borderOverrides || {
+            top: true,
+            right: true,
+            bottom: true,
+            left: true,
+          };
+          return {
+            ...c,
+            borderOverrides: {
+              ...currentOverrides,
+              [side]: value,
+            },
+          };
+        }
+        return c;
+      });
+
+      const updatedScreens = {
+        ...state.componentsByScreen,
+        [activeScreen]: updatedList,
+      };
+
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+      } catch (e) {
+        console.error('Failed to save border override', e);
+      }
+
+      return {
+        componentsByScreen: updatedScreens,
+        components: updatedList,
       };
     });
   },

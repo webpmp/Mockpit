@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ComponentInstance, VehicleState } from '../../types';
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { ComponentHeader, DEFAULT_COMPONENT_LABELS, getAlphaColor } from '../ComponentRenderer';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 interface SpeedometerWidgetProps {
   component: ComponentInstance;
@@ -213,7 +214,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
 
     return (
       <div
-        className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-2.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
+        className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-2.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
         style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
       >
         <ComponentHeader
@@ -405,7 +406,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
 
     return (
       <div
-        className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-2.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
+        className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-2.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
         style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
       >
         <ComponentHeader
@@ -545,7 +546,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
   // 3. Default 'numeric' style
   return (
     <div
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
       style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader

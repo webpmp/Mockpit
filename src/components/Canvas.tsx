@@ -118,13 +118,18 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
         <div className="relative w-full h-full overflow-hidden">
           {[...focusedAppComponents]
             .sort((a, b) => {
+              if (b.parentId === a.id) return -1;
+              if (a.parentId === b.id) return 1;
               const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
               const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
               if (zA !== zB) return zA - zB;
               return focusedAppComponents.indexOf(a) - focusedAppComponents.indexOf(b);
             })
             .map((comp) => {
-              const baseZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
+              const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
+              const parentComp = comp.parentId ? focusedAppComponents.find((c) => c.id === comp.parentId) : null;
+              const parentZ = parentComp ? (parentComp.zIndex !== undefined ? parentComp.zIndex : (parentComp.type === 'map' ? 0 : parentComp.type === 'nowPlaying' ? 20 : 10)) : -999;
+              const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
               const offsetX = isHomeScreen ? 0 : FOCUSED_APP_RECT.x;
               const offsetY = isHomeScreen ? 0 : FOCUSED_APP_RECT.y;
               return (
@@ -831,6 +836,8 @@ export const Canvas: React.FC = () => {
             <div className="absolute inset-x-0 top-0 bottom-0 z-10">
               {[...components]
                 .sort((a, b) => {
+                  if (b.parentId === a.id) return -1;
+                  if (a.parentId === b.id) return 1;
                   const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
                   const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
                   if (zA !== zB) return zA - zB;
@@ -838,7 +845,10 @@ export const Canvas: React.FC = () => {
                 })
                 .map((comp) => {
                   const isSelected = comp.id === selectedComponentId;
-                  const baseZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
+                  const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
+                  const parentComp = comp.parentId ? components.find((c) => c.id === comp.parentId) : null;
+                  const parentZ = parentComp ? (parentComp.zIndex !== undefined ? parentComp.zIndex : (parentComp.type === 'map' ? 0 : parentComp.type === 'nowPlaying' ? 20 : 10)) : -999;
+                  const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
                   const effectiveZ = isSelected ? baseZ + 100 : baseZ;
 
                   return (

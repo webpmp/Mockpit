@@ -76,6 +76,7 @@ import { searchNearbyPOIs } from '../utils/poiSearch';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { GeocodeResult } from '../utils/geocoding';
 import { abbreviateState, formatWaypointName, recomputeChainNames } from '../utils/usStates';
+import { getBorderClasses } from '../utils/borderOverrides';
 
 interface ComponentRendererProps {
   component: ComponentInstance;
@@ -261,7 +262,7 @@ const MessageToastCard: React.FC<{
 
   return (
     <div
-      className={`w-full rounded-2xl bg-slate-950/95 border-2 p-3 flex flex-col justify-between shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+      className={`w-full rounded-2xl bg-slate-950/95 ${getBorderClasses(component.borderOverrides, '', 'border-2')} p-3 flex flex-col justify-between shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
       style={{
         borderColor: customColor,
         boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
@@ -436,7 +437,7 @@ const NavHomeWidget: React.FC<{
     <div
       id={`component-${component.type}`}
       data-component-type="navHome"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -545,7 +546,7 @@ const NavFavoritesWidget: React.FC<{
       ref={containerRef}
       id={`component-${component.type}`}
       data-component-type="navFavorites"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -1035,7 +1036,7 @@ const NavDestinationWidget: React.FC<{
       ref={cardRef}
       id={`component-${component.type}`}
       data-component-type="navDestination"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -1340,7 +1341,7 @@ const NavSearchWidget: React.FC<{
     <div
       id={`component-${component.type}`}
       data-component-type="navSearch"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -1534,7 +1535,7 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
 
   return (
     <div
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -1721,7 +1722,7 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
     }
   }, [activeView, findTripPlannerScreenId, setActiveView, triggerNavDestinationAction]);
 
-  const wrapperClasses = `w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`;
+  const wrapperClasses = `w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`;
   const wrapperStyle = { borderColor: isSelected ? customColor : undefined, opacity: styleOpacity };
 
   if (!activeTrip) {
@@ -1901,7 +1902,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -2046,7 +2047,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-950/95 border-2 p-3.5 flex flex-col justify-center shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-slate-950/95 ${getBorderClasses(component.borderOverrides, '', 'border-2')} p-3.5 flex flex-col justify-center shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
           style={{
             borderColor: customColor,
             boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
@@ -2115,7 +2116,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} flex flex-col shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -2277,7 +2278,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -2407,7 +2408,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           <div
             id={`component-${component.type}`}
             data-component-type="navTripEstimate"
-            className={`w-full min-h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+            className={`w-full min-h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
             style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
           >
             <ComponentHeader
@@ -2452,7 +2453,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         <div
           id={`component-${component.type}`}
           data-component-type="navTripEstimate"
-          className={`w-full min-h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+          className={`w-full min-h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -2564,6 +2565,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             backgroundColor={resolved.backgroundColor || component.staticProps?.backgroundColor}
             width={component.width}
             height={component.height}
+            borderOverrides={component.borderOverrides}
           />
         </div>
       );
@@ -2713,7 +2715,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     default:
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900 border border-slate-800 p-4 text-white ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-slate-900 ${getBorderClasses(component.borderOverrides)} p-4 text-white ${baseOpacity}`}
           style={{ opacity: styleOpacity }}
         >
           {component.type}

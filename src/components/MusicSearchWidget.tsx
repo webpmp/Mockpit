@@ -20,6 +20,7 @@ import {
 } from '../data/mediaData';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useMockpitStore } from '../store/useMockpitStore';
+import { getBorderClasses } from '../utils/borderOverrides';
 
 export interface MusicSearchWidgetProps {
   component: ComponentInstance;
@@ -71,7 +72,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
 
   const isNarrow = containerWidth < 480;
   const isShort = containerHeight < 140;
-  const showHeader = !isNarrow && !isShort;
+  const showHeader = !isNarrow && !isShort && component.staticProps?.showHeader !== 'false';
 
   // Speech Recognition hook integration (reusing shared hook for speech-to-text)
   const {
@@ -265,7 +266,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
       data-component-type="mediaSearch"
       onKeyDown={handleContainerKeyDown}
       tabIndex={0}
-      className={`relative w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 outline-none ${baseOpacity}`}
+      className={`relative w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 outline-none ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       {/* Header Row (shown at wider sizes, §3) */}

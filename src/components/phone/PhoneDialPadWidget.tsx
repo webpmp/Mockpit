@@ -4,6 +4,7 @@ import { CallLogItem, Contact, INITIAL_CALL_LOGS, INITIAL_CONTACTS } from '../..
 import { ContactAvatar } from '../ContactAvatar';
 import { ComponentHeader } from '../ComponentRenderer';
 import { INPUT_FIELD_HEIGHT_CLASS } from '../MockpitInput';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 interface PhoneDialPadWidgetProps {
   component: any;
@@ -163,7 +164,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
 
   return (
     <div
-      className={`@container w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+      className={`@container w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader

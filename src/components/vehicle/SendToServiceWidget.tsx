@@ -3,6 +3,7 @@ import { ComponentInstance } from '../../types';
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { extractScreenReport } from '../../utils/reportExtractors';
 import { Check, Loader2 } from 'lucide-react';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 interface SendToServiceWidgetProps {
   component: ComponentInstance;
@@ -136,7 +137,7 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
 
   return (
     <div
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800/90 backdrop-blur-md p-3.5 flex flex-col justify-center items-stretch select-none relative transition-all ${baseOpacity} ${
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides, 'border-slate-800/90')} backdrop-blur-md p-3.5 flex flex-col justify-center items-stretch select-none relative transition-all ${baseOpacity} ${
         isSelected ? 'ring-1 ring-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.2)]' : 'shadow-lg'
       }`}
       style={{ opacity: styleOpacity }}

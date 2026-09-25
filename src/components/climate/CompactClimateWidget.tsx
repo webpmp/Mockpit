@@ -7,6 +7,7 @@ import { useMockpitStore } from '../../store/useMockpitStore';
 import { useWeatherStore } from '../../store/useWeatherStore';
 import { ClimateFanSpeed, ClimateSeat } from '../../types';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 interface CompactClimateWidgetProps {
   component: any;
@@ -615,7 +616,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`@container w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 ${
+      className={`@container w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} ${
         isComfortable ? 'p-3.5 sm:p-4' : isVeryNarrow ? 'p-2.5' : 'p-3'
       } flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative select-none ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}

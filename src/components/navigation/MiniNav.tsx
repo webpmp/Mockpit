@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { ManeuverType } from '../../types';
 import { ManeuverGlyph } from './ManeuverGlyph';
+import { getBorderClasses, BorderOverrides } from '../../utils/borderOverrides';
 
 export interface MiniNavColors {
   groundColor?: string;
@@ -77,6 +78,7 @@ interface MiniNavProps {
   headerArrowColor?: string;
   // Deprecated backward compatibility
   backgroundColor?: string;
+  borderOverrides?: BorderOverrides;
   width?: number;
   height?: number;
 }
@@ -121,6 +123,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   distanceTextColor: propDistanceTextColor,
   headerArrowColor: propHeaderArrowColor,
   backgroundColor: propBackgroundColor,
+  borderOverrides,
   width,
   height,
 }) => {
@@ -433,7 +436,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   return (
     <div
       id="mini-nav-container"
-      className="relative w-full h-full flex flex-col items-center justify-between select-none overflow-hidden rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-md"
+      className={`relative w-full h-full flex flex-col items-center justify-between select-none overflow-hidden rounded-2xl ${getBorderClasses(borderOverrides, 'border-slate-800/80')} shadow-2xl backdrop-blur-md`}
       style={{
         backgroundColor: skyColor,
         width: width ? `${width}px` : undefined,

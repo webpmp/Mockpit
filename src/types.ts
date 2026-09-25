@@ -266,6 +266,26 @@ export type ComponentType =
   | 'vehicleStatusCallout'
   | 'sendToServiceCenter';
 
+export type IntegrationStyle = 'inside' | 'outside';
+
+export type AttachmentPosition =
+  | 'top-left'
+  | 'top'
+  | 'top-right'
+  | 'left'
+  | 'center'
+  | 'right'
+  | 'bottom-left'
+  | 'bottom'
+  | 'bottom-right';
+
+export interface BorderOverrides {
+  top: boolean;
+  right: boolean;
+  bottom: boolean;
+  left: boolean;
+}
+
 export type ComponentInstance = {
   id: string;
   type: ComponentType;
@@ -278,6 +298,13 @@ export type ComponentInstance = {
   zIndex?: number;
   isTransient?: boolean;
   connector?: VehicleStatusConnector | null;
+  // Component Integration (Parent/Child Visual Relationships)
+  parentId?: string;
+  integrationStyle?: IntegrationStyle;
+  attachmentPosition?: AttachmentPosition;
+  borderOverrides?: BorderOverrides;
+  preConnectionShowHeader?: string;
+  preConnectionBorderOverrides?: BorderOverrides;
 };
 
 export type Project = {

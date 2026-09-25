@@ -20,6 +20,7 @@ import { DEFAULT_MINI_NAV_COLORS } from './navigation/MiniNav';
 import { WeatherIcon } from './weather/WeatherIcon';
 import { SAMPLE_TRACKS } from '../data/mediaData';
 import { DEFAULT_VEHICLE_COLORS, getEgoVehicleTypeFromAsset, isValidHexColor } from '../utils/vehicleAssets';
+import { getEligibleParentCandidates, formatAttachmentPosition } from '../utils/componentIntegration';
 
 const REFERENCE_ICONS: Array<{ key: WeatherConditionKey; label: string }> = [
   { key: 'clear-day', label: 'Clear' },
@@ -863,11 +864,16 @@ export const Inspector: React.FC = () => {
   const updateBinding = useMockpitStore((s) => s.updateBinding);
   const removeBinding = useMockpitStore((s) => s.removeBinding);
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
+  const connectComponent = useMockpitStore((s) => s.connectComponent);
+  const disconnectComponent = useMockpitStore((s) => s.disconnectComponent);
+  const updateComponentBorderOverride = useMockpitStore((s) => s.updateComponentBorderOverride);
   const selectedMusicService = useMockpitStore((s) => s.selectedMusicService);
   const setSelectedMusicService = useMockpitStore((s) => s.setSelectedMusicService);
   const vehicleBackground = useMockpitStore((s) => s.vehicleBackground);
   const screenMode = useMockpitStore((s) => s.screenMode);
   const isEditor = screenMode === 'editor';
+
+  const [selectedTargetParentId, setSelectedTargetParentId] = useState<string>('');
 
   const selectedComp =
     components.find((c) => c.id === selectedComponentId) ||
@@ -1183,6 +1189,191 @@ export const Inspector: React.FC = () => {
           </div>
         )}
 
+        {/* Component Integration (Parent / Child) Section */}
+        {!isNotifComp && (
+          <div className="border-b border-slate-800/80 pb-4">
+            <button
+              type="button"
+              onClick={() => toggleSection('integration')}
+              className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+            >
+              <div className="flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-sky-400" />
+                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  Component Integration
+                </span>
+              </div>
+              <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+                {collapsedSections.integration ? (
+                  <ChevronRight className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </div>
+            </button>
+
+            {!collapsedSections.integration && (
+              <div className="mt-2 space-y-3">
+                {/* 1. If currently connected as a child */}
+                {selectedComp.parentId ? (
+                  (() => {
+                    const parentComp = components.find((c) => c.id === selectedComp.parentId);
+                    const parentName = parentComp
+                      ? (DEFAULT_COMPONENT_LABELS[parentComp.type] || parentComp.type)
+                      : selectedComp.parentId;
+                    return (
+                      <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                            Connected as Child
+                          </span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700 uppercase font-semibold">
+                            {selectedComp.integrationStyle || 'integrated'}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between items-center text-slate-300">
+                            <span className="text-slate-400">Parent Component:</span>
+                            <span className="font-semibold text-slate-100">{parentName}</span>
+                          </div>
+                          {selectedComp.attachmentPosition && (
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span className="text-slate-400">Position:</span>
+                              <span className="font-mono text-slate-200">
+                                {formatAttachmentPosition(selectedComp.attachmentPosition)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <p className="text-[10px] text-slate-400 leading-tight">
+                          Moving or resizing the parent will propagate to this component. Header is hidden while integrated.
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => disconnectComponent(selectedComp.id)}
+                          className="w-full py-2 px-3 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Unlink className="w-3.5 h-3.5" />
+                          Disconnect from Parent
+                        </button>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  /* 2. If standalone: check for eligible parent candidates */
+                  (() => {
+                    const candidates = getEligibleParentCandidates(selectedComp, components);
+                    const effectiveTargetParentId =
+                      selectedTargetParentId && candidates.some((c) => c.component.id === selectedTargetParentId)
+                        ? selectedTargetParentId
+                        : candidates[0]?.component.id || '';
+
+                    if (candidates.length > 0) {
+                      return (
+                        <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 space-y-2.5">
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-slate-400 uppercase font-mono block font-bold">
+                              Connect to Adjacent / Overlapping Parent
+                            </label>
+                            <select
+                              value={effectiveTargetParentId}
+                              onChange={(e) => setSelectedTargetParentId(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-sky-500"
+                            >
+                              {candidates.map((cand) => {
+                                const candLabel = DEFAULT_COMPONENT_LABELS[cand.component.type] || cand.component.type;
+                                const styleLabel = cand.style === 'inside' ? 'Inside' : 'Outside';
+                                const posLabel = formatAttachmentPosition(cand.attachmentPosition);
+                                return (
+                                  <option key={cand.component.id} value={cand.component.id}>
+                                    {candLabel} ({styleLabel} • {posLabel})
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+
+                          <p className="text-[10px] text-slate-400 leading-tight">
+                            Visually connects this component into the selected parent. Hides header and removes touching borders.
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (effectiveTargetParentId) {
+                                connectComponent(selectedComp.id, effectiveTargetParentId);
+                              }
+                            }}
+                            className="w-full py-2 px-3 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/50 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Link2 className="w-3.5 h-3.5" />
+                            Connect to Parent
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-slate-800/40 p-3 rounded-xl border border-slate-700/50 space-y-1 text-slate-400 text-xs">
+                        <span className="font-semibold text-slate-300 block">No Eligible Parent Nearby</span>
+                        <p className="text-[11px] leading-relaxed">
+                          Position this component to overlap another by ≥90% for <span className="text-slate-200">Inside</span> integration, or place it adjacent with a ≤20px gap and ≥50% shared edge for <span className="text-slate-200">Outside</span> integration.
+                        </p>
+                      </div>
+                    );
+                  })()
+                )}
+
+                {/* 3. List any connected children attached to this component */}
+                {(() => {
+                  const children = components.filter((c) => c.parentId === selectedComp.id);
+                  if (children.length === 0) return null;
+                  return (
+                    <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60 space-y-2">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                        Connected Children ({children.length})
+                      </span>
+                      <div className="space-y-1.5">
+                        {children.map((child) => {
+                          const childLabel = DEFAULT_COMPONENT_LABELS[child.type] || child.type;
+                          const posLabel = child.attachmentPosition
+                            ? formatAttachmentPosition(child.attachmentPosition)
+                            : 'Center';
+                          return (
+                            <div
+                              key={child.id}
+                              className="flex items-center justify-between bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-xs"
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-slate-200">{childLabel}</span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {child.integrationStyle === 'inside' ? 'Inside' : 'Outside'} • {posLabel}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => disconnectComponent(child.id)}
+                                className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                                title="Disconnect child"
+                              >
+                                <Unlink className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        )}
+
         {isNotifComp && (
           <div className="p-2.5 rounded-lg bg-sky-950/40 border border-sky-800/50 text-[11px] text-sky-300 flex flex-col gap-1.5">
             <div className="font-semibold flex items-center justify-between">
@@ -1248,6 +1439,39 @@ export const Inspector: React.FC = () => {
                 onChange={(e) => handleStaticPropChange('showHeader', e.target.checked ? 'true' : 'false')}
                 className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
               />
+            </div>
+
+            {/* Border Overrides */}
+            <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono text-slate-400 font-bold uppercase">Borders</span>
+                {selectedComp.parentId && (
+                  <span className="text-[10px] font-mono text-sky-400 font-semibold">
+                    Connected ({selectedComp.integrationStyle})
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['top', 'right', 'bottom', 'left'] as const).map((side) => {
+                  const isEnabled = selectedComp.borderOverrides
+                    ? selectedComp.borderOverrides[side] !== false
+                    : true;
+                  return (
+                    <button
+                      key={side}
+                      type="button"
+                      onClick={() => updateComponentBorderOverride(selectedComp.id, side, !isEnabled)}
+                      className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold uppercase transition-all cursor-pointer border text-center ${
+                        isEnabled
+                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-xs'
+                          : 'bg-slate-900/60 text-slate-500 border-slate-800 hover:text-slate-400'
+                      }`}
+                    >
+                      {side}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {selectedComp.type === 'speed' && (

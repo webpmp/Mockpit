@@ -3,6 +3,7 @@ import { ComponentInstance } from '../../types';
 import { DEFAULT_EXPLODED_VEHICLE_IMAGE } from '../../data/defaultExplodedVehicle';
 import { processImageBackgroundRemoval } from '../../utils/imageBackgroundRemover';
 import { setCachedNaturalDimensions } from '../../utils/imageContentRect';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 interface VehicleExplodedViewWidgetProps {
   component: ComponentInstance;
@@ -55,7 +56,7 @@ export const VehicleExplodedViewWidget: React.FC<VehicleExplodedViewWidgetProps>
 
   return (
     <div
-      className={`w-full h-full rounded-2xl bg-slate-950/80 border border-slate-800/90 backdrop-blur-md overflow-hidden relative flex flex-col select-none transition-shadow ${baseOpacity} ${
+      className={`w-full h-full rounded-2xl bg-slate-950/80 ${getBorderClasses(component.borderOverrides, 'border-slate-800/90')} backdrop-blur-md overflow-hidden relative flex flex-col select-none transition-shadow ${baseOpacity} ${
         isSelected ? 'ring-1 ring-sky-400/40 shadow-[0_0_25px_rgba(56,189,248,0.15)]' : 'shadow-lg'
       }`}
       style={{ opacity: styleOpacity }}

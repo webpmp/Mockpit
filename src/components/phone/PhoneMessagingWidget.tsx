@@ -5,6 +5,7 @@ import { ContactAvatar } from '../ContactAvatar';
 import { ComponentHeader } from '../ComponentRenderer';
 import { MockpitInput } from '../MockpitInput';
 import { useMockpitStore } from '../../store/useMockpitStore';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 interface PhoneMessagingWidgetProps {
   component: any;
@@ -96,7 +97,7 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
 
   return (
     <div
-      className={`@container w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+      className={`@container w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader

@@ -6,6 +6,7 @@ import { useMockpitStore } from '../../store/useMockpitStore';
 import { ComponentHeader, DEFAULT_COMPONENT_LABELS } from '../ComponentRenderer';
 import { parseDriveModes, matchActiveDriveMode } from '../../lib/driveModes';
 import { useAutoDismiss } from '../../hooks/useAutoDismiss';
+import { getBorderClasses } from '../../utils/borderOverrides';
 
 export { parseDriveModes, matchActiveDriveMode };
 
@@ -61,7 +62,7 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
     <div
       ref={containerRef}
       data-component-type="driveMode"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between shadow-lg backdrop-blur-md relative select-none overflow-visible ${
+      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between shadow-lg backdrop-blur-md relative select-none overflow-visible ${
         isUltraCompact ? 'p-2' : isCompact ? 'p-2.5' : 'p-3.5'
       } ${isOpen ? 'z-40' : ''} ${baseOpacity}`}
       style={{
