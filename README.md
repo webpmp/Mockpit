@@ -104,7 +104,7 @@ This enables layouts such as a Driver Mode Selector positioned over a Speedomete
 
 Mockpit includes an Auditor mode for evaluating vehicle infotainment designs against automotive HMI and accessibility guidelines.
 
-- **Automated Compliance:** Evaluates screens against guidelines including [Federal Register NHTSA Driver Distraction Page](https://federalregister.gov), [ISO 15005 Ergonomic Design Standard](https://iso.org), [ISO 9241-410 Physical Input Devices Design Standard](https://iso.org), [SAE J941 Motor Vehicle Drivers' Eye Locations Standard](https://sae.org), and [Evince WCAG 2.1 Compliance Guide](https://evincedev.com).
+- **Automated Compliance:** Evaluates screens against guidelines including [Federal Register NHTSA Driver Distraction Page](https://www.federalregister.gov/documents/2013/04/26/2013-09883/visual-manual-nhtsa-driver-distraction-guidelines-for-in-vehicle-electronic-devices), [ISO 15005 Ergonomic Design Standard](https://www.iso.org/obp/ui/#iso:std:iso:15005:en), [ISO 9241-410 Physical Input Devices Design Standard](https://cdn.standards.iteh.ai/samples/38899/7d7b04204f004b23b02f9479ea3b1c26/ISO-9241-410-2008.pdf), [SAE J941 Motor Vehicle Drivers' Eye Locations Standard](https://downloads.regulations.gov/NHTSA-2013-0137-0010/attachment_1.pdf), and [Evince WCAG 2.1 Compliance Guide](https://www.w3.org/TR/WCAG21/).
 - **Static Analysis:** Measures touch target sizing, character heights/PPD, contrast ratios, information density, and glance-budget heuristics.
 - **Runtime Telemetry:** Instruments interaction latency, response times, and state transitions.
 - **Manual Review:** Provides checklist criteria, reviewer status controls, and audit notes for each screen.
