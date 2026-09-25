@@ -22,7 +22,7 @@ Mockpit is an interactive prototyping application for designing, layout-testing,
 
 ### Climate Control Suite
 
-![Mockpit Climate Control](/public/mockpit-climate.png)
+<img src="/public/mockpit-climate.png" alt="Mockpit Climate Control" width="300">
 
 - **Temperature Widget:** Dual-mode (horizontal/vertical) temperature slider with mercury color gradients, press-and-hold auto-repeat buttons, container query scaling, and precise puck bounds.
 - **Vent Control:** Interactive air flow direction toggles and fan speed controls.
@@ -30,20 +30,20 @@ Mockpit is an interactive prototyping application for designing, layout-testing,
 
 ### Phone & Communications
 
-![Mockpit Phone and Communications](/public/mockpit-phone.png)
+<img src="/public/mockpit-phone.png" alt="Mockpit Phone and Communications" width="300">
 
 - **Dial Pad:** Responsive dialer with live type-to-display readout, press-and-hold clearing, contact matching, and container-relative key typography.
 - **Contacts & Messages:** Contact directory search, call log history, and messaging widget bindings.
 
 ### Infotainment & Media
 
-![Mockpit Infotainment and Media](/public/mockpit-media.png)
+<img src="/public/mockpit-media.png" alt="Mockpit Infotainment and Media" width="300">
 
 - **Media Player:** Track playback controls, progress scrubbing, volume controls, and album art display.
 
 ### Driving & Telemetry
 
-![Mockpit Overhead Driving Visualization](/public/mockpit-overhead-viz.png)
+<img src="/public/mockpit-overhead-viz.png" alt="Mockpit Overhead Driving Visualization" width="300">
 
 - **Overhead Driving Visualization:** Vehicle orientation display with integrated Leaflet maps and real-time driving telemetry.
 
