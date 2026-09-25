@@ -24,8 +24,13 @@ Mockpit is an interactive prototyping application for designing, layout-testing,
 
 <img src="/public/mockpit-overhead-viz.png" alt="Mockpit Overhead Driving Visualization" width="300">
 
-Driving-focused visualization and live vehicle-state simulation.
+Navigation, trip-planning, and vehicle-state components for interactive driving experiences.
 
+- **Navigation Map:** Static map display with location pin and map tile rendering.
+- **Navigation Search:** Search for points of interest, charging stations, and restaurants using mock results.
+- **Favorites:** Saved favorite places and recent destinations with one-tap routing.
+- **Trip Planner:** Destination and multi-stop trip planning with live distance, travel time, energy use, and arrival estimates.
+- **Trip Summary:** Glanceable, read-only overview of the current trip.
 - **Overhead Driving Visualization:** Vehicle orientation display with integrated Leaflet mapping and real-time driving telemetry.
 
 ### Infotainment & Media
