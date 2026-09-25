@@ -78,9 +78,36 @@ export const QuickAccessOverlay: React.FC = () => {
     };
   }, [activeQuickAccess?.isOpen, activeQuickAccess?.screenId]);
 
-  // Outside click dismissal handler (preserves dock button clicks)
+  const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Inactivity auto-dismiss and outside-click dismissal handler (12s standard across Mockpit)
   useEffect(() => {
-    if (!activeQuickAccess?.isOpen) return;
+    if (!activeQuickAccess?.isOpen) {
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+        dismissTimerRef.current = null;
+      }
+      return;
+    }
+
+    const AUTO_DISMISS_TIMEOUT_MS = 12000;
+
+    const resetInactivityTimer = () => {
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+        dismissTimerRef.current = null;
+      }
+      // Do not auto-dismiss while resizing or if actively selected in editor mode
+      if (isResizing || (isEditor && selectedComponentId?.startsWith('qa-'))) {
+        return;
+      }
+      dismissTimerRef.current = setTimeout(() => {
+        closeQuickAccess();
+      }, AUTO_DISMISS_TIMEOUT_MS);
+    };
+
+    // Start initial 12s inactivity timer upon opening
+    resetInactivityTimer();
 
     const handlePointerDown = (e: PointerEvent) => {
       // If currently dragging to resize, do not dismiss
@@ -90,14 +117,22 @@ export const QuickAccessOverlay: React.FC = () => {
       if (!overlayEl) return;
 
       const target = e.target as HTMLElement | null;
+      const targetEl = target instanceof Element ? target : (target as Node)?.parentElement;
 
-      // Inside overlay click: do not dismiss
+      // Inside overlay click: do not dismiss, reset inactivity timer
       if (overlayEl.contains(target as Node)) {
+        resetInactivityTimer();
+        return;
+      }
+
+      // Inside portaled popover (e.g. seat climate popover rendered via createPortal into document.body): do not dismiss, reset timer
+      if (targetEl && targetEl.closest('[data-mockpit-popover], [data-seat-popover], .seat-popover-portal')) {
+        resetInactivityTimer();
         return;
       }
 
       // Dock button click: let dock handle it immediately
-      if (target && target.closest('.mockpit-dock-item')) {
+      if (targetEl && targetEl.closest('.mockpit-dock-item')) {
         return;
       }
 
@@ -105,11 +140,48 @@ export const QuickAccessOverlay: React.FC = () => {
       closeQuickAccess();
     };
 
-    window.addEventListener('pointerdown', handlePointerDown, true);
-    return () => {
-      window.removeEventListener('pointerdown', handlePointerDown, true);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeQuickAccess();
+        return;
+      }
+      resetInactivityTimer();
     };
-  }, [activeQuickAccess?.isOpen, closeQuickAccess]);
+
+    // Activity tracking inside overlay or its portaled popovers
+    const handleActivity = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      const targetEl = target instanceof Element ? target : (target as Node)?.parentElement;
+      const overlayEl = overlayRef.current;
+
+      if (
+        (overlayEl && overlayEl.contains(target as Node)) ||
+        (targetEl && targetEl.closest('[data-mockpit-popover], [data-seat-popover], .seat-popover-portal'))
+      ) {
+        resetInactivityTimer();
+      }
+    };
+
+    const activityEvents = ['pointermove', 'mousedown', 'mousemove', 'touchstart', 'touchmove', 'wheel', 'scroll'];
+
+    window.addEventListener('pointerdown', handlePointerDown, true);
+    window.addEventListener('keydown', handleKeyDown);
+    activityEvents.forEach((evt) => {
+      window.addEventListener(evt, handleActivity, { passive: true });
+    });
+
+    return () => {
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+        dismissTimerRef.current = null;
+      }
+      window.removeEventListener('pointerdown', handlePointerDown, true);
+      window.removeEventListener('keydown', handleKeyDown);
+      activityEvents.forEach((evt) => {
+        window.removeEventListener(evt, handleActivity);
+      });
+    };
+  }, [activeQuickAccess?.isOpen, closeQuickAccess, isResizing, isEditor, selectedComponentId]);
 
   // Handle visual resizing (Interaction-layer guard: strictly EDITOR mode only)
   const handleResizeStart = (e: React.PointerEvent) => {

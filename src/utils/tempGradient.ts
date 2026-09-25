@@ -7,7 +7,7 @@ export interface TempGradientColors {
 export const DEFAULT_TEMP_GRADIENT_COLORS: TempGradientColors = {
   cold: '#38bdf8',
   neutral: '#94a3b8',
-  hot: '#ef4444',
+  hot: '#f97316',
 };
 
 export function interpolateColorHex(color1: string, color2: string, factor: number): string {

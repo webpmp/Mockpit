@@ -1,5 +1,4 @@
 import React from 'react';
-import { Flame, Snowflake } from 'lucide-react';
 import { ComponentHeader } from '../ComponentRenderer';
 import { useMockpitStore } from '../../store/useMockpitStore';
 
@@ -172,13 +171,29 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
     const rawLastCool = seat === 'driver' ? driverLastCool : passengerLastCool;
     const currentStoredLvl = targetMode === 'heat' ? (isHeating ? heat : rawLastHeat) : (isCooling ? cool : rawLastCool);
 
+    const seatColorClass = isHeating
+      ? heat === 1
+        ? 'text-amber-400'
+        : heat === 2
+        ? 'text-orange-500'
+        : 'text-orange-600'
+      : isCooling
+      ? cool === 1
+        ? 'text-sky-300'
+        : cool === 2
+        ? 'text-cyan-400'
+        : 'text-blue-500'
+      : isCurrentActive
+      ? 'text-sky-500'
+      : 'text-slate-700';
+
     return (
       <div
         onClick={() => setClimateState({ selectedSeat: seat })}
         className={`flex-1 min-w-0 h-full bg-slate-950/60 border rounded-xl p-[3%] flex flex-col items-center justify-between gap-2 overflow-hidden cursor-pointer transition-all ${
           isCurrentActive
             ? 'border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.15)]'
-            : 'border-slate-800/80 hover:border-slate-700'
+            : 'border-slate-800/80'
         }`}
       >
         {/* Seat Header Label */}
@@ -192,19 +207,11 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
           </span>
         </div>
 
-        {/* Seat Outline Graphic with Animated Layer Overlays */}
+        {/* Seat Outline Graphic */}
         <div className="relative flex-1 min-h-0 w-full max-w-[130px] max-h-[140px] aspect-[7/8] flex items-center justify-center my-auto p-1 shrink">
           {/* SVG Outline Seat Glyph */}
           <svg
-            className={`w-full h-full transition-colors ${
-              isHeating
-                ? 'text-orange-500/40'
-                : isCooling
-                ? 'text-cyan-500/40'
-                : isCurrentActive
-                ? 'text-sky-500/30'
-                : 'text-slate-700'
-            }`}
+            className={`w-full h-full ${seatColorClass}`}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -218,42 +225,6 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
             <path d="M7 19v2" />
             <path d="M17 19v2" />
           </svg>
-
-          {/* Heating Flame Overlay Layer */}
-          {isHeating && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 animate-pulse pointer-events-none">
-              {Array.from({ length: heat }).map((_, i) => (
-                <Flame
-                  key={`h-${i}`}
-                  className={`w-[25%] h-[25%] max-w-6 max-h-6 fill-current ${
-                    heat === 1
-                      ? 'text-amber-400'
-                      : heat === 2
-                      ? 'text-orange-500'
-                      : 'text-red-500 animate-bounce'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Cooling Snowflake Overlay Layer */}
-          {isCooling && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 pointer-events-none">
-              {Array.from({ length: cool }).map((_, i) => (
-                <Snowflake
-                  key={`c-${i}`}
-                  className={`w-[25%] h-[25%] max-w-6 max-h-6 ${
-                    cool === 1
-                      ? 'text-sky-300'
-                      : cool === 2
-                      ? 'text-cyan-400'
-                      : 'text-blue-500 animate-spin'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Combined Single Control Row: [ 🔥 HEAT ] [ ❄ COOL ]  [ LOW ] [ MED ] [ HIGH ] */}
@@ -261,37 +232,52 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
           className="w-full flex items-stretch gap-2 min-h-[52px] sm:min-h-[64px] max-h-[96px] flex-1 max-h-[35%]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Distinct HEAT Button */}
-          <button
-            type="button"
-            onClick={() => handleModeToggle(seat, 'heat')}
-            className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer select-none shrink-0 ${
-              isHeating
-                ? 'bg-orange-500/25 border border-orange-500/70 text-orange-300 shadow-[0_0_12px_rgba(249,115,22,0.35)]'
-                : 'bg-slate-950/70 text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 border border-slate-800/90'
-            }`}
-            title={isHeating ? `${label}: Turn HEAT OFF` : `${label}: Select HEAT`}
-            aria-label={isHeating ? `${label}: Turn HEAT OFF` : `${label}: Select HEAT`}
+          {/* Segmented HEAT / COOL mode control */}
+          <div
+            role="group"
+            aria-label={`${label}: Climate mode`}
+            className="flex items-stretch gap-0.5 p-0.5 shrink-0 rounded-xl bg-slate-950/70 border border-slate-800/90"
           >
-            <Flame className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isHeating ? 'fill-current text-orange-400' : 'text-slate-400'}`} />
-            <span className="text-[10px] sm:text-xs tracking-wider">HEAT</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => handleModeToggle(seat, 'heat')}
+              className={`min-w-[64px] flex flex-col items-center justify-center gap-2 px-3 rounded-l-[10px] rounded-r-[4px] font-mono font-bold text-[10px] sm:text-xs tracking-wider select-none cursor-pointer active:brightness-75 ${
+                isHeating
+                  ? 'bg-slate-950 text-orange-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
+                  : 'bg-slate-800 text-slate-400'
+              }`}
+              title={isHeating ? `${label}: Turn HEAT OFF` : `${label}: Select HEAT`}
+              aria-label={isHeating ? `${label}: Turn HEAT OFF` : `${label}: Select HEAT`}
+            >
+              <span
+                aria-hidden="true"
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  isHeating ? 'bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.7)]' : 'bg-slate-700'
+                }`}
+              />
+              HEAT
+            </button>
 
-          {/* Distinct COOL Button */}
-          <button
-            type="button"
-            onClick={() => handleModeToggle(seat, 'cool')}
-            className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer select-none shrink-0 ${
-              isCooling
-                ? 'bg-cyan-500/25 border border-cyan-500/70 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.35)]'
-                : 'bg-slate-950/70 text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 border border-slate-800/90'
-            }`}
-            title={isCooling ? `${label}: Turn COOL OFF` : `${label}: Select COOL`}
-            aria-label={isCooling ? `${label}: Turn COOL OFF` : `${label}: Select COOL`}
-          >
-            <Snowflake className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isCooling ? 'text-cyan-400 stroke-[2.2]' : 'text-slate-400'}`} />
-            <span className="text-[10px] sm:text-xs tracking-wider">COOL</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => handleModeToggle(seat, 'cool')}
+              className={`min-w-[64px] flex flex-col items-center justify-center gap-2 px-3 rounded-r-[10px] rounded-l-[4px] font-mono font-bold text-[10px] sm:text-xs tracking-wider select-none cursor-pointer active:brightness-75 ${
+                isCooling
+                  ? 'bg-slate-950 text-cyan-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
+                  : 'bg-slate-800 text-slate-400'
+              }`}
+              title={isCooling ? `${label}: Turn COOL OFF` : `${label}: Select COOL`}
+              aria-label={isCooling ? `${label}: Turn COOL OFF` : `${label}: Select COOL`}
+            >
+              <span
+                aria-hidden="true"
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  isCooling ? 'bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.7)]' : 'bg-slate-700'
+                }`}
+              />
+              COOL
+            </button>
+          </div>
 
           {/* LOW / MED / HIGH Contextual Intensity Controls - Taller, Prominent & Near Square */}
           <div className="flex items-stretch gap-1.5 sm:gap-2 flex-1 min-w-0">
@@ -305,7 +291,7 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
               const isIntensityActive = !isOff && ((isHeating && heat === lvl) || (isCooling && cool === lvl));
               const modeWord = isHeating ? 'Heat' : isCooling ? 'Cool' : targetMode === 'heat' ? 'Heat' : 'Cool';
 
-              let buttonStyle = 'bg-slate-950/50 text-slate-500 hover:text-slate-300 hover:bg-slate-900/80 border border-slate-800/60';
+              let buttonStyle = 'bg-slate-950/50 text-slate-500 border border-slate-800/60';
               if (isIntensityActive) {
                 if (isHeating) {
                   buttonStyle = 'bg-orange-500 text-slate-950 font-black shadow-[0_0_14px_rgba(249,115,22,0.5)] border border-orange-400';
@@ -313,7 +299,7 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
                   buttonStyle = 'bg-cyan-400 text-slate-950 font-black shadow-[0_0_14px_rgba(6,182,212,0.5)] border border-cyan-300';
                 }
               } else if (!isOff) {
-                buttonStyle = 'bg-slate-950/70 text-slate-400 hover:text-slate-200 hover:bg-slate-800/70 border border-slate-800/90';
+                buttonStyle = 'bg-slate-950/70 text-slate-400 border border-slate-800/90';
               }
 
               return (

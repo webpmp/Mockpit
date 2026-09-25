@@ -185,7 +185,7 @@ export const ClimateTempWidget: React.FC<ClimateTempWidgetProps> = ({
             {/* Right + Button (Warm) */}
             <button
               {...plusRepeat.bind}
-              className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-slate-800 hover:bg-slate-700 active:scale-90 border border-slate-700 flex items-center justify-center text-red-400 shadow cursor-pointer transition-transform shrink-0 select-none"
+              className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-slate-800 hover:bg-slate-700 active:scale-90 border border-slate-700 flex items-center justify-center text-orange-400 shadow cursor-pointer transition-transform shrink-0 select-none"
             >
               <Plus className="w-4 h-4 pointer-events-none" />
             </button>
@@ -197,7 +197,7 @@ export const ClimateTempWidget: React.FC<ClimateTempWidgetProps> = ({
           {/* Top + Button (Warm) */}
           <button
             {...plusRepeat.bind}
-            className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-slate-800 hover:bg-slate-700 active:scale-90 border border-slate-700 flex items-center justify-center text-red-400 shadow cursor-pointer transition-transform shrink-0 mb-[clamp(12px,4cqw,19px)] select-none"
+            className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-slate-800 hover:bg-slate-700 active:scale-90 border border-slate-700 flex items-center justify-center text-orange-400 shadow cursor-pointer transition-transform shrink-0 mb-[clamp(12px,4cqw,19px)] select-none"
           >
             <Plus className="w-4 h-4 pointer-events-none" />
           </button>

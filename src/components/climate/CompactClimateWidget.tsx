@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Fan, ChevronDown, ArrowUpDown, Flame, Snowflake } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Fan, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ComponentHeader } from '../ComponentRenderer';
 import { useMockpitStore } from '../../store/useMockpitStore';
@@ -80,6 +81,10 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
   const driverCool = (climateState?.driverSeatCool ?? 0) as Level;
   const passengerHeat = (climateState?.passengerSeatHeat ?? 0) as Level;
   const passengerCool = (climateState?.passengerSeatCool ?? 0) as Level;
+  const driverLastHeat = climateState?.driverLastHeat;
+  const driverLastCool = climateState?.driverLastCool;
+  const passengerLastHeat = climateState?.passengerLastHeat;
+  const passengerLastCool = climateState?.passengerLastCool;
 
   // Active display temp: shared driverTemp in SYNC mode, selected zone in UNSYNC mode
   const activeTemp = isSynced ? driverTemp : selectedSeat === 'driver' ? driverTemp : passengerTemp;
@@ -142,28 +147,134 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
 
   // Popover state for Driver & Passenger seat climate
   const [openSeatPopover, setOpenSeatPopover] = useState<'driver' | 'passenger' | null>(null);
+
   const driverSeatContainerRef = useRef<HTMLDivElement>(null);
   const passengerSeatContainerRef = useRef<HTMLDivElement>(null);
 
-  useAutoDismiss({
-    isOpen: openSeatPopover === 'driver',
-    onDismiss: () => setOpenSeatPopover((prev) => (prev === 'driver' ? null : prev)),
-    timeoutMs: 12000,
-    containerRef: driverSeatContainerRef,
-    dismissOnEscape: true,
-    dismissOnClickOutside: true,
-    resetOnActivity: true,
-  });
+  const [seatPopoverPos, setSeatPopoverPos] = useState<{ top: number; left: number } | null>(null);
+  const seatPopoverElRef = useRef<HTMLDivElement | null>(null);
+  const seatPopoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useAutoDismiss({
-    isOpen: openSeatPopover === 'passenger',
-    onDismiss: () => setOpenSeatPopover((prev) => (prev === 'passenger' ? null : prev)),
-    timeoutMs: 12000,
-    containerRef: passengerSeatContainerRef,
-    dismissOnEscape: true,
-    dismissOnClickOutside: true,
-    resetOnActivity: true,
-  });
+  const scheduleSeatPopoverDismiss = useCallback((delayMs: number) => {
+    if (seatPopoverTimeoutRef.current) {
+      clearTimeout(seatPopoverTimeoutRef.current);
+    }
+    seatPopoverTimeoutRef.current = setTimeout(() => {
+      setOpenSeatPopover(null);
+    }, delayMs);
+  }, []);
+
+  const computeSeatPopoverPosition = useCallback(() => {
+    const seat = openSeatPopover;
+    if (!seat) return;
+    const anchorEl = seat === 'driver' ? driverSeatContainerRef.current : passengerSeatContainerRef.current;
+    if (!anchorEl) return;
+
+    const anchorRect = anchorEl.getBoundingClientRect();
+    const popoverH = seatPopoverElRef.current?.offsetHeight ?? 0;
+    const popoverW = seatPopoverElRef.current?.offsetWidth ?? 0;
+    const gap = 8;
+    const viewportPad = 8;
+
+    // Default: open above the seat button.
+    let top = anchorRect.top - popoverH - gap;
+    // Not enough room above (or popover not measured yet on first pass) — flip to below.
+    if (top < viewportPad) {
+      top = anchorRect.bottom + gap;
+    }
+
+    let left = anchorRect.left + anchorRect.width / 2 - popoverW / 2;
+    left = Math.max(viewportPad, Math.min(left, window.innerWidth - popoverW - viewportPad));
+
+    setSeatPopoverPos({ top, left });
+  }, [openSeatPopover]);
+
+  // First pass: position as soon as the popover opens (before its real size is known).
+  useLayoutEffect(() => {
+    if (!openSeatPopover) {
+      setSeatPopoverPos(null);
+      return;
+    }
+    computeSeatPopoverPosition();
+  }, [openSeatPopover, computeSeatPopoverPosition]);
+
+  // Second pass: re-measure once the popover has actually rendered (real width/height known),
+  // and again whenever its content size could change (level/mode switch alters button count/labels).
+  useLayoutEffect(() => {
+    if (!openSeatPopover) return;
+    computeSeatPopoverPosition();
+  }, [openSeatPopover, driverHeat, driverCool, passengerHeat, passengerCool, computeSeatPopoverPosition]);
+
+  // Keep it anchored correctly if the window resizes while open.
+  useEffect(() => {
+    if (!openSeatPopover) return;
+    const onResize = () => computeSeatPopoverPosition();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [openSeatPopover, computeSeatPopoverPosition]);
+
+  // Scoped auto-dismiss for portaled seat popover:
+  // Detects outside interaction only if outside BOTH the anchor button container AND the portaled popover.
+  // Preserves 12s inactivity timeout and Escape-key dismissal.
+  useEffect(() => {
+    if (!openSeatPopover) return;
+
+    scheduleSeatPopoverDismiss(12000);
+
+    const resetTimer = () => scheduleSeatPopoverDismiss(12000);
+
+    const handleOutsideInteraction = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+
+      const anchorEl =
+        openSeatPopover === 'driver' ? driverSeatContainerRef.current : passengerSeatContainerRef.current;
+      const popoverEl = seatPopoverElRef.current;
+
+      const isInsideAnchor = anchorEl ? anchorEl.contains(target) : false;
+      const targetEl = target instanceof Element ? target : (target as Node)?.parentElement;
+      const isInsidePopover = popoverEl
+        ? popoverEl.contains(target) || !!targetEl?.closest?.('[data-seat-popover], [data-mockpit-popover], .seat-popover-portal')
+        : !!targetEl?.closest?.('[data-seat-popover], [data-mockpit-popover], .seat-popover-portal');
+
+      if (!isInsideAnchor && !isInsidePopover) {
+        setOpenSeatPopover(null);
+      } else {
+        resetTimer();
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpenSeatPopover(null);
+        return;
+      }
+      resetTimer();
+    };
+
+    const activityEvents = ['pointerdown', 'pointermove', 'mousedown', 'mousemove', 'touchstart', 'touchmove'];
+    const onActivity = () => resetTimer();
+
+    activityEvents.forEach((evt) => {
+      document.addEventListener(evt, onActivity, { passive: true });
+    });
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleOutsideInteraction);
+    document.addEventListener('touchstart', handleOutsideInteraction);
+
+    return () => {
+      if (seatPopoverTimeoutRef.current) {
+        clearTimeout(seatPopoverTimeoutRef.current);
+        seatPopoverTimeoutRef.current = null;
+      }
+      activityEvents.forEach((evt) => {
+        document.removeEventListener(evt, onActivity);
+      });
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleOutsideInteraction);
+      document.removeEventListener('touchstart', handleOutsideInteraction);
+    };
+  }, [openSeatPopover, scheduleSeatPopoverDismiss]);
 
   // Direct vertical temperature drag state
   const [isDraggingTemp, setIsDraggingTemp] = useState(false);
@@ -257,8 +368,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
         setClimateState({ passengerSeatCool: targetLevel, passengerSeatHeat: 0, passengerLastCool: targetLevel, passengerTargetMode: 'cool' });
       }
     }
-    // Explicitly dismiss the popover immediately after committing the selection
-    setOpenSeatPopover(null);
+    scheduleSeatPopoverDismiss(2000);
   };
 
   const handleTurnSeatOff = (seat: 'driver' | 'passenger') => {
@@ -267,36 +377,64 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
     } else {
       setClimateState({ passengerSeatHeat: 0, passengerSeatCool: 0 });
     }
-    // Explicitly dismiss the popover immediately after turning off
-    setOpenSeatPopover(null);
+    scheduleSeatPopoverDismiss(2000);
+  };
+
+  const handleModeToggle = (seat: 'driver' | 'passenger', mode: 'heat' | 'cool') => {
+    const heat = seat === 'driver' ? driverHeat : passengerHeat;
+    const cool = seat === 'driver' ? driverCool : passengerCool;
+    const isHeatingNow = heat > 0;
+    const isCoolingNow = cool > 0;
+
+    const rawLastHeat = seat === 'driver' ? driverLastHeat : passengerLastHeat;
+    const rawLastCool = seat === 'driver' ? driverLastCool : passengerLastCool;
+    const effectiveLastHeat = (rawLastHeat && rawLastHeat >= 1 && rawLastHeat <= 3 ? rawLastHeat : 2) as Level;
+    const effectiveLastCool = (rawLastCool && rawLastCool >= 1 && rawLastCool <= 3 ? rawLastCool : 2) as Level;
+
+    if (mode === 'heat') {
+      if (isHeatingNow) {
+        handleTurnSeatOff(seat);
+      } else {
+        handleSetSeatClimate(seat, 'heat', effectiveLastHeat);
+      }
+    } else {
+      if (isCoolingNow) {
+        handleTurnSeatOff(seat);
+      } else {
+        handleSetSeatClimate(seat, 'cool', effectiveLastCool);
+      }
+    }
   };
 
   // Helper for seat button styling levels
   const getSeatButtonClasses = (heat: number, cool: number, isOpen: boolean): string => {
-    if (isOpen) {
-      return 'bg-slate-950 border-orange-500 text-orange-300 ring-2 ring-orange-500/30 shadow-[0_0_12px_rgba(249,115,22,0.3)]';
+    if (heat === 1) {
+      return 'bg-amber-400/15 border-amber-400/40 text-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.25)]';
     }
-    if (heat === 1 || cool === 1) {
-      return 'bg-orange-500/15 border-orange-500/40 text-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.25)]';
-    }
-    if (heat === 2 || cool === 2) {
+    if (heat === 2) {
       return 'bg-orange-500/25 border-orange-500/60 text-orange-300 shadow-[0_0_12px_rgba(249,115,22,0.4)] ring-1 ring-orange-500/30';
     }
-    if (heat === 3 || cool === 3) {
-      return 'bg-orange-500/35 border-orange-400 text-orange-200 shadow-[0_0_18px_rgba(249,115,22,0.55)] ring-1 ring-orange-400/50';
+    if (heat === 3) {
+      return 'bg-orange-600/35 border-orange-500 text-orange-200 shadow-[0_0_18px_rgba(234,88,12,0.55)] ring-1 ring-orange-500/50';
+    }
+    if (cool === 1) {
+      return 'bg-sky-300/15 border-sky-300/40 text-sky-300 shadow-[0_0_8px_rgba(125,211,252,0.25)]';
+    }
+    if (cool === 2) {
+      return 'bg-blue-400/25 border-blue-400/60 text-blue-300 shadow-[0_0_12px_rgba(96,165,250,0.4)] ring-1 ring-blue-400/30';
+    }
+    if (cool === 3) {
+      return 'bg-blue-500/35 border-blue-400 text-blue-200 shadow-[0_0_18px_rgba(59,130,246,0.55)] ring-1 ring-blue-400/50';
+    }
+    if (isOpen) {
+      return 'bg-slate-950 border-sky-500 text-sky-300 ring-2 ring-sky-500/30 shadow-[0_0_12px_rgba(14,165,233,0.3)]';
     }
     return 'bg-slate-950/50 border-slate-800/80 text-slate-500 hover:text-slate-300 hover:border-slate-700';
   };
 
-  const renderSeatIcon = (heat: number, cool: number) => {
+  const renderSeatIcon = () => {
     const iconClass = isComfortable ? 'w-5 h-5 sm:w-5.5 sm:h-5.5 shrink-0 transition-transform' : 'w-4.5 h-4.5 shrink-0 transition-transform';
-    if (heat > 0) {
-      return <Flame className={`${iconClass} fill-current text-orange-400`} />;
-    }
-    if (cool > 0) {
-      return <Snowflake className={`${iconClass} ${cool >= 2 ? 'stroke-[2.2]' : 'stroke-[1.8]'} text-orange-300`} />;
-    }
-    return <SeatIcon className={`${iconClass} text-slate-500`} />;
+    return <SeatIcon className={iconClass} />;
   };
 
   const getSeatButtonTitle = (seatLabel: string, heat: number, cool: number) => {
@@ -313,100 +451,117 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
     return `${seatLabel} seat climate off`;
   };
 
-  const SEAT_SELECTOR_OPTIONS = [
-    { type: 'heat' as const, level: 1 as Level, label: 'LOW', titleSuffix: 'low', ariaSuffix: 'low' },
-    { type: 'heat' as const, level: 2 as Level, label: 'MED', titleSuffix: 'medium', ariaSuffix: 'medium' },
-    { type: 'heat' as const, level: 3 as Level, label: 'HIGH', titleSuffix: 'high', ariaSuffix: 'high' },
-    { type: 'off' as const, level: 0 as Level, label: 'OFF', titleSuffix: 'off', ariaSuffix: 'off' },
-    { type: 'cool' as const, level: 1 as Level, label: 'LOW', titleSuffix: 'low', ariaSuffix: 'low' },
-    { type: 'cool' as const, level: 2 as Level, label: 'MED', titleSuffix: 'medium', ariaSuffix: 'medium' },
-    { type: 'cool' as const, level: 3 as Level, label: 'HIGH', titleSuffix: 'high', ariaSuffix: 'high' },
-  ];
+  const renderSeatPopover = () => {
+    const seat = openSeatPopover;
+    if (!seat) return null;
 
-  const renderSeatSelector = (seat: 'driver' | 'passenger', heat: Level, cool: Level) => {
+    const heat = seat === 'driver' ? driverHeat : passengerHeat;
+    const cool = seat === 'driver' ? driverCool : passengerCool;
     const seatLabel = seat === 'driver' ? 'Driver' : 'Passenger';
+    const isHeating = heat > 0;
+    const isCooling = cool > 0;
+    const isOff = heat === 0 && cool === 0;
 
-    return (
+    const intensityClass = (lvl: Level) => {
+      const isActive = !isOff && ((isHeating && heat === lvl) || (isCooling && cool === lvl));
+      if (isActive) {
+        if (isHeating) {
+          if (lvl === 1) return 'bg-amber-400 text-slate-950 font-black shadow-[0_0_14px_rgba(251,191,36,0.5)] border border-amber-300';
+          if (lvl === 2) return 'bg-orange-500 text-slate-950 font-black shadow-[0_0_14px_rgba(249,115,22,0.5)] border border-orange-400';
+          return 'bg-orange-600 text-slate-950 font-black shadow-[0_0_14px_rgba(234,88,12,0.5)] border border-orange-500';
+        }
+        if (lvl === 1) return 'bg-sky-300 text-slate-950 font-black shadow-[0_0_14px_rgba(125,211,252,0.5)] border border-sky-200';
+        if (lvl === 2) return 'bg-blue-400 text-slate-950 font-black shadow-[0_0_14px_rgba(96,165,250,0.5)] border border-blue-300';
+        return 'bg-blue-500 text-slate-950 font-black shadow-[0_0_14px_rgba(59,130,246,0.5)] border border-blue-400';
+      }
+      return isOff
+        ? 'bg-slate-950/50 text-slate-500 border border-slate-800/60'
+        : 'bg-slate-950/70 text-slate-400 border border-slate-800/90';
+    };
+
+    const levelWord = (lvl: Level) => (lvl === 1 ? 'low' : lvl === 2 ? 'medium' : 'high');
+    const levelLabel = (lvl: Level) => (lvl === 1 ? 'LOW' : lvl === 2 ? 'MED' : 'HIGH');
+    const modeWord = isHeating ? 'heat' : 'cool';
+
+    return createPortal(
       <AnimatePresence>
-        {openSeatPopover === seat && (
-          <motion.div
-            initial={{ opacity: 0, y: 6, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 6, scale: 0.95 }}
-            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-50 p-1.5 sm:p-2 rounded-2xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden select-none flex flex-row items-center gap-1.5 sm:gap-2 w-max max-w-none whitespace-nowrap"
-            onClick={(e) => e.stopPropagation()}
+        <motion.div
+          ref={seatPopoverElRef}
+          key={seat}
+          data-seat-popover="true"
+          data-mockpit-popover="true"
+          initial={{ opacity: 0, y: 6, scale: 0.95 }}
+          animate={{ opacity: seatPopoverPos ? 1 : 0, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 6, scale: 0.95 }}
+          transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+          className="seat-popover-portal fixed z-[10050] p-2 rounded-2xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden select-none flex flex-row items-stretch gap-2 w-max max-w-none whitespace-nowrap"
+          style={{ top: seatPopoverPos?.top ?? -9999, left: seatPopoverPos?.left ?? -9999 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Segmented HEAT / COOL mode control */}
+          <div
+            role="group"
+            aria-label={`${seatLabel} seat: Climate mode`}
+            className="flex items-stretch gap-0.5 p-0.5 rounded-xl bg-slate-950/70 border border-slate-800/90"
           >
-            {SEAT_SELECTOR_OPTIONS.map((opt) => {
-              let isSelected = false;
-              let itemClasses = '';
-              let itemTitle = '';
-              let itemAriaLabel = '';
-              let iconElement: React.ReactNode = null;
+            <button
+              type="button"
+              onClick={() => handleModeToggle(seat, 'heat')}
+              className={`flex-1 min-w-[64px] flex flex-col items-center justify-center gap-2 px-3 py-2 rounded-l-[10px] rounded-r-[4px] font-mono font-bold text-[10px] sm:text-xs tracking-wider select-none cursor-pointer active:brightness-75 ${
+                isHeating
+                  ? 'bg-slate-950 text-orange-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
+                  : 'bg-slate-800 text-slate-400'
+              }`}
+              title={isHeating ? `${seatLabel} seat: Turn HEAT OFF` : `${seatLabel} seat: Select HEAT`}
+              aria-label={isHeating ? `${seatLabel} seat: Turn HEAT OFF` : `${seatLabel} seat: Select HEAT`}
+            >
+              <span
+                aria-hidden="true"
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  isHeating ? 'bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.7)]' : 'bg-slate-700'
+                }`}
+              />
+              HEAT
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeToggle(seat, 'cool')}
+              className={`flex-1 min-w-[64px] flex flex-col items-center justify-center gap-2 px-3 py-2 rounded-r-[10px] rounded-l-[4px] font-mono font-bold text-[10px] sm:text-xs tracking-wider select-none cursor-pointer active:brightness-75 ${
+                isCooling
+                  ? 'bg-slate-950 text-sky-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
+                  : 'bg-slate-800 text-slate-400'
+              }`}
+              title={isCooling ? `${seatLabel} seat: Turn COOL OFF` : `${seatLabel} seat: Select COOL`}
+              aria-label={isCooling ? `${seatLabel} seat: Turn COOL OFF` : `${seatLabel} seat: Select COOL`}
+            >
+              <span
+                aria-hidden="true"
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  isCooling ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-slate-700'
+                }`}
+              />
+              COOL
+            </button>
+          </div>
 
-              if (opt.type === 'heat') {
-                isSelected = heat === opt.level;
-                itemTitle = `${seatLabel} seat heat ${opt.titleSuffix}`;
-                itemAriaLabel = `${seatLabel} seat heat ${opt.ariaSuffix}`;
-                itemClasses = isSelected
-                  ? 'bg-slate-950 border-orange-500 text-orange-300 ring-2 ring-orange-500/30 shadow-[0_0_12px_rgba(249,115,22,0.3)]'
-                  : 'text-slate-400 hover:text-orange-300 hover:bg-slate-800/60 border-slate-800/80 bg-slate-900/50';
-                iconElement = (
-                  <>
-                    <span className="font-mono text-[10.5px] sm:text-xs font-bold leading-none tracking-wider">{opt.label}</span>
-                    <Flame className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isSelected ? 'fill-current text-orange-400' : 'text-slate-400'}`} />
-                  </>
-                );
-              } else if (opt.type === 'off') {
-                isSelected = heat === 0 && cool === 0;
-                itemTitle = `${seatLabel} seat climate off`;
-                itemAriaLabel = `${seatLabel} seat climate off`;
-                itemClasses = isSelected
-                  ? 'bg-slate-800/90 border-slate-600 text-slate-200 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 border-slate-800/80 bg-slate-900/50';
-                iconElement = (
-                  <span className="font-mono text-[11px] sm:text-xs font-bold leading-none tracking-wider">OFF</span>
-                );
-              } else {
-                isSelected = cool === opt.level;
-                itemTitle = `${seatLabel} seat cool ${opt.titleSuffix}`;
-                itemAriaLabel = `${seatLabel} seat cool ${opt.ariaSuffix}`;
-                itemClasses = isSelected
-                  ? 'bg-slate-950 border-orange-500 text-orange-300 ring-2 ring-orange-500/30 shadow-[0_0_12px_rgba(249,115,22,0.3)]'
-                  : 'text-slate-400 hover:text-orange-300 hover:bg-slate-800/60 border-slate-800/80 bg-slate-900/50';
-                iconElement = (
-                  <>
-                    <span className="font-mono text-[10.5px] sm:text-xs font-bold leading-none tracking-wider">{opt.label}</span>
-                    <Snowflake className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isSelected ? 'text-orange-300 stroke-[2.2]' : 'text-slate-400'}`} />
-                  </>
-                );
-              }
-
-              return (
-                <button
-                  key={`${seat}-${opt.type}-${opt.type === 'off' ? 'off' : opt.level}`}
-                  type="button"
-                  onClick={() => {
-                    if (opt.type === 'heat') {
-                      handleSetSeatClimate(seat, 'heat', opt.level);
-                    } else if (opt.type === 'off') {
-                      handleTurnSeatOff(seat);
-                    } else {
-                      handleSetSeatClimate(seat, 'cool', opt.level);
-                    }
-                    setOpenSeatPopover(null);
-                  }}
-                  className={`w-12 sm:w-14 h-12 sm:h-14 rounded-xl border flex flex-col items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer select-none active:scale-95 shrink-0 box-border overflow-hidden ${itemClasses}`}
-                  title={itemTitle}
-                  aria-label={itemAriaLabel}
-                >
-                  {iconElement}
-                </button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {/* Single shared LOW / MED / HIGH intensity row */}
+          <div className={`flex items-stretch gap-1.5 ${isOff ? 'opacity-40 pointer-events-none' : ''}`}>
+            {([1, 2, 3] as Level[]).map((lvl) => (
+              <button
+                key={`${seat}-lvl-${lvl}`}
+                type="button"
+                onClick={() => handleSetSeatClimate(seat, isHeating ? 'heat' : 'cool', lvl)}
+                className={`w-12 h-full rounded-xl font-mono text-xs font-bold tracking-wide cursor-pointer select-none active:scale-95 ${intensityClass(lvl)}`}
+                title={`${seatLabel} seat ${modeWord} ${levelWord(lvl)}`}
+                aria-label={`${seatLabel} seat ${modeWord} ${levelWord(lvl)}`}
+              >
+                {levelLabel(lvl)}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      </AnimatePresence>,
+      document.body
     );
   };
 
@@ -563,9 +718,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   openSeatPopover === 'driver'
                 )}`}
               >
-                {renderSeatIcon(driverHeat, driverCool)}
+                {renderSeatIcon()}
               </button>
-              {renderSeatSelector('driver', driverHeat, driverCool)}
             </div>
           </div>
 
@@ -596,9 +750,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   openSeatPopover === 'passenger'
                 )}`}
               >
-                {renderSeatIcon(passengerHeat, passengerCool)}
+                {renderSeatIcon()}
               </button>
-              {renderSeatSelector('passenger', passengerHeat, passengerCool)}
             </div>
           </div>
         </div>
@@ -728,9 +881,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   title={getSeatButtonTitle('Driver', driverHeat, driverCool)}
                   aria-label={getSeatButtonAriaLabel('Driver', driverHeat, driverCool)}
                 >
-                  {renderSeatIcon(driverHeat, driverCool)}
+                  {renderSeatIcon()}
                 </button>
-                {renderSeatSelector('driver', driverHeat, driverCool)}
               </div>
             </div>
 
@@ -755,9 +907,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   title={getSeatButtonTitle('Passenger', passengerHeat, passengerCool)}
                   aria-label={getSeatButtonAriaLabel('Passenger', passengerHeat, passengerCool)}
                 >
-                  {renderSeatIcon(passengerHeat, passengerCool)}
+                  {renderSeatIcon()}
                 </button>
-                {renderSeatSelector('passenger', passengerHeat, passengerCool)}
               </div>
 
               <button
@@ -777,6 +928,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
           </div>
         </div>
       )}
+      {renderSeatPopover()}
     </div>
   );
 };
