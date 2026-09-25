@@ -66,24 +66,24 @@ Mockpit supports **Component Integration**, allowing otherwise independent compo
     <td align="center">
       <img src="/public/comp-adjacent.png" alt="Components Adjacent">
       <br>
-      <strong>Components Adjacent</strong>
+      <strong>Adjacent Components</strong>
     </td>
     <td align="center">
       <img src="/public/comp-adjacent-connected.png" alt="Components Adjacent Connected">
       <br>
-      <strong>Components Adjacent Connected</strong>
+      <strong>Adjacent Components Connected</strong>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="/public/comp-overlay.png" alt="Components Overlaid">
       <br>
-      <strong>Components Overlaid</strong>
+      <strong>Overlaid Components</strong>
     </td>
     <td align="center">
       <img src="/public/comp-overlay-connected.png" alt="Components Overlaid Connected">
       <br>
-      <strong>Components Overlaid Connected</strong>
+      <strong>Overlaid Components Connected</strong>
     </td>
   </tr>
 </table>
