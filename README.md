@@ -22,7 +22,7 @@ Mockpit is an interactive prototyping application for designing, layout-testing,
 
 ### Driving & Telemetry
 
-<img src="/public/mockpit-overhead-viz.png" alt="Mockpit Overhead Driving Visualization" width="300">
+<img src="/public/comp-mininav-overhead-viz.png" alt="Mockpit Mini Nav & Overhead Driving Visualization" width="300">
 
 Navigation, trip-planning, and vehicle-state components for interactive driving experiences.
 
