@@ -43,9 +43,11 @@ Communication components for common in-vehicle phone interactions.
 
 <img src="/public/mockpit-media.png" alt="Mockpit Infotainment and Media" width="300">
 
-Media controls designed for realistic in-vehicle playback experiences.
+A collection of music discovery and playback components for an in-vehicle media experience.
 
-- **Media Player:** Track playback, progress scrubbing, volume control, and album artwork.
+- **Music Media Player:** Music playback with album artwork, recent tracks, and streaming platform selection.
+- **Discover New Music:** Music discovery with album artwork, carousel or grid layouts, and For You and Trending filters.
+- **Playlists:** Playlist browsing with album artwork and carousel or grid layout options.
 
 ### Driving & Telemetry
 
