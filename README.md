@@ -62,6 +62,18 @@ A collection of interactive climate controls for temperature, airflow, and seati
 - **Vent Control:** Interactive airflow direction and fan speed controls.
 - **Seat Controls:** Multi-stage driver and passenger seat heating and ventilation.
 
+### Weather
+
+<img src="/public/comp-weather.png" alt="Mockpit Climate Control" width="300">
+
+A fixed-layout weather experience providing current conditions, forecasts, radar, alerts, and detailed observations. Weather data can be viewed for different locations using the Select/Change Location control.
+
+- **Current Weather:** Current conditions and temperature for the selected location.
+- **5-Day Forecast:** Five-day weather forecast with daily conditions and temperatures.
+- **Current Radar:** Current precipitation radar for the selected location.
+- **Weather Alerts:** Active weather alerts and advisories for the selected location.
+- **Current Observations:** Detailed conditions including Feels Like temperature, UV Index, Dew Point, Air Pressure, and Visibility.
+
 ### Component Integration
 
 Mockpit supports **Component Integration**, allowing otherwise independent components to be visually connected through a parent/child relationship. This provides additional layout options while keeping each component independently selectable, editable, and configurable.
