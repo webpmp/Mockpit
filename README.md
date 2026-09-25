@@ -14,30 +14,19 @@ Prototyping vehicle infotainment systems with component-based, behavior-driven H
 
 ## Overview
 
-Mockpit is an interactive prototyping application for designing, layout-testing, and simulating modern automotive digital cockpits and infotainment systems. It provides modular, highly responsive HMI widgets with realistic behavior, live state management, and real-time canvas positioning.
+Mockpit is an interactive prototyping application for designing, layout-testing, and simulating modern vehicle infotainment systems. It provides modular, highly responsive HMI components with realistic behavior, live state management, and real-time canvas positioning.
 
 ---
 
 ## Key Features
 
-### Climate Control Suite
+### Driving & Telemetry
 
-<img src="/public/mockpit-climate.png" alt="Mockpit Climate Control" width="300">
+<img src="/public/mockpit-overhead-viz.png" alt="Mockpit Overhead Driving Visualization" width="300">
 
-A collection of interactive climate controls for temperature, airflow, and seating.
+Driving-focused visualization and live vehicle-state simulation.
 
-- **Temperature:** Dual-mode horizontal/vertical temperature slider with mercury color gradients, press-and-hold auto-repeat controls, container-aware scaling, and precise puck bounds.
-- **Vent Control:** Interactive airflow direction and fan speed controls.
-- **Seat Controls:** Multi-stage driver and passenger seat heating and ventilation.
-
-### Phone & Communications
-
-<img src="/public/mockpit-phone.png" alt="Mockpit Phone and Communications" width="300">
-
-Communication components for common in-vehicle phone interactions.
-
-- **Dial Pad:** Responsive dialer with live number display, press-and-hold clearing, contact matching, and container-relative typography.
-- **Contacts & Messages:** Contact directory search, call history, and messaging widget bindings.
+- **Overhead Driving Visualization:** Vehicle orientation display with integrated Leaflet mapping and real-time driving telemetry.
 
 ### Infotainment & Media
 
@@ -49,13 +38,24 @@ A collection of music discovery and playback components for an in-vehicle media 
 - **Discover New Music:** Music discovery with album artwork, carousel or grid layouts, and For You and Trending filters.
 - **Playlists:** Playlist browsing with album artwork and carousel or grid layout options.
 
-### Driving & Telemetry
+### Phone & Communications
 
-<img src="/public/mockpit-overhead-viz.png" alt="Mockpit Overhead Driving Visualization" width="300">
+<img src="/public/mockpit-phone.png" alt="Mockpit Phone and Communications" width="300">
 
-Driving-focused visualization and live vehicle-state simulation.
+Communication components for common in-vehicle phone interactions.
 
-- **Overhead Driving Visualization:** Vehicle orientation display with integrated Leaflet mapping and real-time driving telemetry.
+- **Dial Pad:** Responsive dialer with live number display, press-and-hold clearing, contact matching, and container-relative typography.
+- **Contacts & Messages:** Contact directory search, call history, and messaging widget bindings.
+
+### Climate Control Suite
+
+<img src="/public/mockpit-climate.png" alt="Mockpit Climate Control" width="300">
+
+A collection of interactive climate controls for temperature, airflow, and seating.
+
+- **Temperature:** Dual-mode horizontal/vertical temperature slider with mercury color gradients, press-and-hold auto-repeat controls, container-aware scaling, and precise puck bounds.
+- **Vent Control:** Interactive airflow direction and fan speed controls.
+- **Seat Controls:** Multi-stage driver and passenger seat heating and ventilation.
 
 ### Component Integration
 
