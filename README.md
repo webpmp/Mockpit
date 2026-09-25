@@ -2,11 +2,11 @@
 
 Prototyping vehicle infotainment systems with component-based, behavior-driven Human-Machine Interface (HMI) bindings.
 
-![Mockpit Editor](/public/mockpit-editor.png)
+![Mockpit Editor](/public/mockpit-editor-v2.png)
 
 <p align="center"><strong>Editor Mode</strong></p>
 
-![Mockpit Presentation](/public/mockpit-presentation.png)
+![Mockpit Presentation](/public/mockpit-tester.png)
 
 <p align="center"><strong>Presentation/Tester Mode</strong></p>
 
