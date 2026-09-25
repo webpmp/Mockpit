@@ -102,7 +102,7 @@ This enables layouts such as a Driver Mode Selector positioned over a Speedomete
 
 ### Auditor Mode & Automotive HMI Safety Compliance
 
-Mockpit includes an Auditor mode for evaluating cockpit designs against automotive HMI and accessibility guidelines.
+Mockpit includes an Auditor mode for evaluating vehicle infotainment designs against automotive HMI and accessibility guidelines.
 
 - **Automated Compliance:** Evaluates screens against guidelines including NHTSA Driver Distraction Guidelines, ISO 15005, ISO 9241-410, SAE J941, and WCAG 2.1.
 - **Static Analysis:** Measures touch target sizing, character heights/PPD, contrast ratios, information density, and glance-budget heuristics.
@@ -117,12 +117,12 @@ Mockpit includes an Auditor mode for evaluating cockpit designs against automoti
 
 The main workspace provides direct manipulation of HMI components and the vehicle environment.
 
-- **Three App Modes:** Editor for design, Presenter for distraction-free cockpit simulation, and Auditor for HMI safety inspection.
+- **Three App Modes:** Editor for design, Presenter for distraction-free vehicle infotainment simulation, and Auditor for HMI safety inspection.
 - **Drag & Drop Canvas:** Position, resize, align, and integrate HMI components.
 - **Layers Panel:** Reorder components by z-index and control visibility.
 - **Inspector:** Configure component properties, themes, binding values, and integration relationships.
 - **Drive Simulator & Telemetry:** Simulate gears, speed, battery, headlights, ADAS, and predefined driving events. Automatically hidden during Auditor mode.
-- **Vehicle Dashboard Environment:** Scale and pan the dashboard background with cancel-and-close Reset behavior.
+- **Vehicle Dashboard Environment:** Scale and pan the vehicle dashboard background with cancel-and-close Reset behavior.
 
 ---
 
