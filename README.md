@@ -98,7 +98,7 @@ Mockpit supports **Component Integration**, allowing otherwise independent compo
       <strong>Overlaid Components</strong>
     </td>
     <td align="center">
-      <img src="/public/comp-overlay-connected.png" alt="Components Overlaid Connected">
+      <img src="/public/comp-overlay-connected-v2.png" alt="Components Overlaid Connected">
       <br>
       <strong>Overlaid Components Connected</strong>
     </td>
