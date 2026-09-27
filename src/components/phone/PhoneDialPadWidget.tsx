@@ -131,6 +131,14 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
     if (!enteredNumber) return;
     setIsInCall(true);
     setCallDuration(0);
+
+    // Dispatch event for User Testing instrumentation
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('mockpit-action', {
+        detail: { action: 'dialPhone', value: enteredNumber.replace(/[^0-9]/g, '') }
+      }));
+    }
+
     // Add to recents
     const newLog: CallLogItem = {
       id: `log-${Date.now()}`,

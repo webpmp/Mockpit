@@ -311,7 +311,7 @@ export type Project = {
   components: ComponentInstance[];
 };
 
-export type ScreenMode = 'editor' | 'presentation' | 'audit';
+export type ScreenMode = 'editor' | 'presentation' | 'audit' | 'user-testing';
 
 export type SongTransition = 'none' | 'fade' | 'crossfade' | 'slide' | 'zoom';
 
@@ -415,3 +415,5 @@ export const APP_SCREEN_VIEWS: Record<string, string> = {
 export const isAppScreen = (type: ComponentType): boolean => {
   return type in APP_SCREEN_VIEWS;
 };
+
+export type { InteractionLogEntry } from './lib/hmiRules/types';

@@ -84,7 +84,7 @@ const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650
     <path d="M 240 240 L 400 195 L 700 195 L 810 240 L 740 300 L 280 300 Z" 
           fill="#1e293b" fill-opacity="0.4" stroke="#64748b" stroke-width="1.5" />
     
-    <!-- Steering wheel and Cockpit Dashboard -->
+    <!-- Steering wheel and Infotainment Dashboard -->
     <path d="M 320 230 L 370 215 L 420 215 L 390 245 Z" fill="#0f172a" stroke="#38bdf8" stroke-width="1.2" />
     <ellipse cx="345" cy="232" rx="14" ry="9" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.9" />
     

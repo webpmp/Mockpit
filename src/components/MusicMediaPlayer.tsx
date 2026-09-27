@@ -109,10 +109,20 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
 
   const handleSelectTrack = (track: Track) => {
     storeSetCurrentTrack(track.id);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('mockpit-action', {
+        detail: { action: 'playTrack', value: true, trackTitle: track.title }
+      }));
+    }
   };
 
   const handleTogglePlay = () => {
     togglePlay();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('mockpit-action', {
+        detail: { action: 'playTrack', value: true }
+      }));
+    }
   };
 
   const handleNextTrack = () => {

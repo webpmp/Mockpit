@@ -1358,7 +1358,14 @@ const NavSearchWidget: React.FC<{
       <div className="my-1">
         <MockpitInput
           value={query}
-          onChange={setQuery}
+          onChange={(val) => {
+            setQuery(val);
+            if (val.trim() && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('mockpit-action', {
+                detail: { action: 'searchDestination', value: val }
+              }));
+            }
+          }}
           onFocus={() => setIsFocused(true)}
           onBlur={() => {
             setTimeout(() => setIsFocused(false), 200);
@@ -1829,6 +1836,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   onMinimize,
 }) => {
   const setVehicleState = useMockpitStore((s) => s.setVehicleState);
+  const updateComponentStaticProps = useMockpitStore((s) => s.updateComponentStaticProps);
   const activePalette = useMockpitStore((s) => s.activePalette);
   const activeTrip = useMockpitStore((s) => s.activeTrip);
   const primaryColor = activePalette?.primary || '#38bdf8';
@@ -1884,6 +1892,21 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       const maxRangeMiles = Number(component.staticProps?.maxRange) || 350;
       const liveRange = Math.round((percent / 100) * maxRangeMiles);
 
+      const displayUnit = component.staticProps?.displayUnit || 'percent';
+      const isMiles = displayUnit === 'miles';
+      const primaryDisplay = isMiles ? `${liveRange} mi` : textVal;
+
+      const handleToggleBatteryUnit = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const nextUnit = isMiles ? 'percent' : 'miles';
+        updateComponentStaticProps(component.id, { displayUnit: nextUnit });
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('mockpit-action', {
+            detail: { action: 'changeBatteryUnit', value: nextUnit }
+          }));
+        }
+      };
+
       const targetPercent = Math.min(100, Math.max(1, Number(component.staticProps?.targetChargePercent) || 80));
       const chargeRateKw = Number(component.staticProps?.chargeRateKw) || 350;
 
@@ -1918,16 +1941,25 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
                   CHARGING
                 </span>
               ) : (
-                <span className="text-[0.625rem] font-mono font-bold text-slate-400 uppercase">
-                  {liveRange} MILE RANGE
-                </span>
+                <button
+                  type="button"
+                  onClick={handleToggleBatteryUnit}
+                  className="text-[0.625rem] font-mono font-bold text-slate-400 hover:text-sky-300 uppercase px-1.5 py-0.5 rounded bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 transition-colors cursor-pointer"
+                  title="Click to toggle display unit (% / miles)"
+                >
+                  {isMiles ? `${roundedPercent}%` : `${liveRange} MILE RANGE`}
+                </button>
               )
             }
           />
 
-          <div className="flex items-baseline justify-between my-1">
-            <div className="text-3xl font-black tracking-tight" style={{ color: customColor }}>
-              {textVal}
+          <div
+            className="flex items-baseline justify-between my-1 cursor-pointer group/readout select-none"
+            onClick={handleToggleBatteryUnit}
+            title="Click to toggle display unit (% / miles)"
+          >
+            <div className="text-3xl font-black tracking-tight group-hover/readout:opacity-90 transition-opacity" style={{ color: customColor }}>
+              {primaryDisplay}
             </div>
             {vehicleState.isCharging && (
               <div className="text-xs text-slate-400 font-mono">

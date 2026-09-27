@@ -14,6 +14,7 @@ import { getResolvedProps } from '../lib/bindingEvaluator';
 import { ContactAvatar } from './ContactAvatar';
 import { WeatherScreenShell } from './weather/WeatherScreenShell';
 import { useWeatherStore } from '../store/useWeatherStore';
+import { useUserTestingStore } from '../testing/useUserTestingStore';
 import { Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare, Battery, Zap } from 'lucide-react';
 
 const getTransitionClasses = (style: TransitionStyle = 'fade', isActive: boolean) => {
@@ -250,7 +251,8 @@ export const Canvas: React.FC = () => {
   const addComponent = useMockpitStore((s) => s.addComponent);
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
 
-  const isPresentation = screenMode === 'presentation';
+  const isParticipantMode = useUserTestingStore((s) => s.isParticipantMode);
+  const isPresentation = screenMode === 'presentation' || isParticipantMode;
 
   const activeScreenDef = screens.find((s) => s.id === activeView);
   const activeScreenDisplayName = activeScreenDef ? activeScreenDef.name : activeView;
@@ -998,15 +1000,17 @@ export const Canvas: React.FC = () => {
           <QuickAccessOverlay />
 
           {/* Bottom Dock Navigation - Permanent UI Chrome Layer (Always Topmost) */}
-          <div
-            className={`absolute bottom-0 left-0 right-0 h-[84px] z-[9999] ${
-              !isPresentation
-                ? 'border-t-2 border-dashed border-sky-400/60 bg-sky-950/20 backdrop-blur-[1px]'
-                : ''
-            } flex items-center justify-center pointer-events-none`}
-          >
-            <BottomDock />
-          </div>
+          {!isParticipantMode && (
+            <div
+              className={`absolute bottom-0 left-0 right-0 h-[84px] z-[9999] ${
+                !isPresentation
+                  ? 'border-t-2 border-dashed border-sky-400/60 bg-sky-950/20 backdrop-blur-[1px]'
+                  : ''
+              } flex items-center justify-center pointer-events-none`}
+            >
+              <BottomDock />
+            </div>
+          )}
 
 
           {/* On-Screen Touch Virtual Keyboard anchored to vehicle canvas */}

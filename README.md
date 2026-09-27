@@ -64,7 +64,7 @@ A collection of interactive climate controls for temperature, airflow, and seati
 
 ### Weather
 
-<img src="/public/comp-weather.png" alt="Mockpit Climate Control" width="300">
+<img src="/public/comp-weather.png" alt="Mockpit Weather" width="300">
 
 A fixed-layout weather experience providing current conditions, forecasts, radar, alerts, and detailed observations. Weather data can be viewed for different locations using the Select/Change Location control.
 
@@ -169,3 +169,58 @@ The main workspace provides direct manipulation of HMI components and the vehicl
    ```bash
    git clone https://github.com/your-username/mockpit.git
    cd mockpit
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Start the local development server:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Open your browser and navigate to `http://localhost:3000` (or the port indicated in your terminal).
+
+---
+
+## Available Scripts
+
+- `npm run dev` - Launch the Vite development server.
+- `npm run build` - Type-check and build the production bundle into `dist/`.
+- `npm run preview` - Locally preview the built production bundle.
+- `npm test` - Run the test suite.
+
+---
+
+## Project Structure
+
+```text
+src/
+├── components/           # Core HMI widgets & canvas UI
+│   ├── climate/          # Temperature, vent, and seat controls
+│   ├── hmi/              # HMI safety compliance auditor and rule registry
+│   ├── navigation/       # Navigation map, search, trip planner, and mini-nav
+│   ├── phone/            # Dial pad, contacts, and messaging
+│   ├── vehicle/          # Driving telemetry, gauges, speed, and gear controls
+│   └── weather/          # Weather forecasts, radar, and observations
+├── store/                # Zustand stores for application and vehicle state
+├── types.ts              # Global TypeScript declarations
+├── utils/                # Helper utilities and color generators
+└── main.tsx              # Application entry point
+```
+
+---
+
+## External Services & Map Tile Policy
+
+Mockpit relies on zero-setup public APIs for realistic mapping and weather data. If Mockpit is ever deployed at significant production scale, consider pointing the base tile URLs to a dedicated tile cache, a commercial tile provider, or a self-hosted tile server.
+
+---
+
+## License
+
+This project is open-source and available under the MIT License.

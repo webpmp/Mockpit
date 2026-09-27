@@ -102,6 +102,13 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
       setProgress(100);
       setStatus('success');
 
+      // Dispatch event for User Testing instrumentation
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mockpit-action', {
+          detail: { action: 'sendDiagnosticReport', value: true }
+        }));
+      }
+
       // Trigger file download
       try {
         const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(

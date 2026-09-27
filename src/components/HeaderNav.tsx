@@ -20,6 +20,7 @@ import {
   Trash2,
   ShieldCheck,
   Move,
+  FlaskConical,
 } from 'lucide-react';
 
 export const HeaderNav: React.FC = () => {
@@ -62,6 +63,11 @@ export const HeaderNav: React.FC = () => {
   // Modal State for Deleting Screens and Resetting Seed Data
   const [deleteTargetScreen, setDeleteTargetScreen] = useState<ScreenDefinition | null>(null);
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+
+  // User Testing Compact Workspace Switcher State
+  const [isWorkspaceSwitcherExpanded, setIsWorkspaceSwitcherExpanded] = useState(false);
+  const workspaceSwitcherRef = useRef<HTMLDivElement>(null);
+  const expandedMenuRef = useRef<HTMLDivElement>(null);
 
   const isPresentation = screenMode === 'presentation';
 
@@ -121,6 +127,41 @@ export const HeaderNav: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [iconPickerOpenFor]);
+
+  // Close workspace switcher on outside click or Escape
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        workspaceSwitcherRef.current &&
+        !workspaceSwitcherRef.current.contains(target) &&
+        expandedMenuRef.current &&
+        !expandedMenuRef.current.contains(target)
+      ) {
+        setIsWorkspaceSwitcherExpanded(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsWorkspaceSwitcherExpanded(false);
+      }
+    };
+    if (isWorkspaceSwitcherExpanded) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isWorkspaceSwitcherExpanded]);
+
+  // Collapse workspace switcher whenever screenMode changes
+  useEffect(() => {
+    if (screenMode !== 'user-testing') {
+      setIsWorkspaceSwitcherExpanded(false);
+    }
+  }, [screenMode]);
 
   const handleOpenAddTopLevelModal = () => {
     const defaultName = `Screen ${topLevelScreens.length + 1}`;
@@ -182,10 +223,89 @@ export const HeaderNav: React.FC = () => {
         </span>
       </button>
 
-      {/* Center Controls: Mega-Menu Screen Selector & Mode Switcher */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-        {/* Current Screen Selector Button (Opens Mega-Menu) */}
-        <div className="relative" ref={menuRef}>
+      {/* Center Controls: Compact Workspace Switcher (User Testing) OR Screen Selector + Mode Switcher */}
+      {screenMode === 'user-testing' ? (
+        /* Compact User Testing Workspace Switcher with Absolute Floating Overlay */
+        <div className="absolute left-1/2 -translate-x-1/2" ref={workspaceSwitcherRef}>
+          <button
+            type="button"
+            onClick={() => setIsWorkspaceSwitcherExpanded((prev) => !prev)}
+            className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60 hover:text-slate-100 hover:border-slate-600 select-none whitespace-nowrap"
+            aria-expanded={isWorkspaceSwitcherExpanded}
+            aria-label="User Testing Workspace Switcher"
+          >
+            <FlaskConical className="w-3.5 h-3.5 shrink-0" />
+            <span className="whitespace-nowrap">User Testing</span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
+                isWorkspaceSwitcherExpanded ? 'rotate-180 text-slate-200' : ''
+              }`}
+            />
+          </button>
+
+          {/* Floating Navigation Overlay (Removed from normal document flow) */}
+          {isWorkspaceSwitcherExpanded && (
+            <div
+              ref={expandedMenuRef}
+              className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 animate-in fade-in zoom-in-95 duration-100 select-none w-max min-w-max max-w-none"
+            >
+              <div className="flex flex-nowrap items-center w-max min-w-max gap-1 bg-slate-900/95 p-1 rounded-xl border border-slate-800 shadow-2xl backdrop-blur-xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScreenMode('editor');
+                    setIsWorkspaceSwitcherExpanded(false);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 whitespace-nowrap shrink-0"
+                  title="Editor Mode"
+                >
+                  <Edit3 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Editor</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScreenMode('presentation');
+                    setIsWorkspaceSwitcherExpanded(false);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-emerald-400 hover:bg-slate-800/60 whitespace-nowrap shrink-0"
+                  title="Presenter Mode"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+                  <span>Presenter</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScreenMode('audit');
+                    setIsWorkspaceSwitcherExpanded(false);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-sky-400 hover:bg-slate-800/60 whitespace-nowrap shrink-0"
+                  title="Auditor Mode"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                  <span>Auditor</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsWorkspaceSwitcherExpanded(false)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60 whitespace-nowrap shrink-0"
+                  title="Current: User Testing (Click to collapse)"
+                >
+                  <FlaskConical className="w-3.5 h-3.5 shrink-0" />
+                  <span>User Testing</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+            {/* Current Screen Selector Button (Opens Mega-Menu) */}
+            <div className="relative" ref={menuRef}>
           <button
             onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
             className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm cursor-pointer ${
@@ -560,14 +680,24 @@ export const HeaderNav: React.FC = () => {
             }`}
             title="Auditor Mode"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+            <ShieldCheck className="w-3.5 h-3.5" />
             <span>Auditor</span>
+          </button>
+
+          <button
+            onClick={() => setScreenMode('user-testing')}
+            className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200"
+            title="User Testing Mode"
+          >
+            <FlaskConical className="w-3.5 h-3.5" />
+            <span>User Testing</span>
           </button>
         </div>
       </div>
+      )}
 
       {/* Utility Action Icons */}
-      {!isPresentation && (
+      {!isPresentation && screenMode !== 'user-testing' && (
         <div className="flex items-center gap-1.5 ml-auto">
           {copiedComponent && (
             <button

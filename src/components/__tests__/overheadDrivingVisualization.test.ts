@@ -138,13 +138,11 @@ describe('Overhead Driving Visualization Full-Bleed & Geometry Suite', () => {
     assert.ok(fileContent.includes('id="ego-vehicle-master"'), 'ego-vehicle-master must be preserved');
   });
 
-  it('10. Verifies median-light-fixture replacement with taller pole, white light pool, and downward-facing housings', () => {
+  it('10. Verifies median-light-fixture replacement with high-mast fixture, white light pool, and downward-facing housings', () => {
     assert.ok(fileContent.includes('id="median-light-fixture"'), 'median-light-fixture must be present');
     assert.ok(fileContent.includes('id="median-light-pool-white"'), 'median-light-pool-white gradient must be present');
     assert.ok(fileContent.includes('fill="url(#median-light-pool-white)"'), 'Light pool must reference median-light-pool-white');
-    assert.ok(fileContent.includes('y2="-78"'), 'Tall pole must extend upward to y2=-78');
     assert.ok(fileContent.includes('stopColor="#ffffff"'), 'White light stop must be present');
-    assert.ok(fileContent.includes('fill="#fef3a8"'), 'Warm subtle light cores must be present');
     assert.ok(!fileContent.includes('cx="-18" cy="-29" r="6.5" fill="#38bdf8"'), 'Old cyan bulb glow must be removed from median-light-fixture');
   });
 

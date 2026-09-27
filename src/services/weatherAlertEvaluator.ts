@@ -670,7 +670,7 @@ export function evaluateWeatherAlerts(
     return (b.value ?? 0) - (a.value ?? 0);
   });
 
-  // Clamp to top 3 prioritized alerts to maintain clean, non-overwhelming cockpit density
+  // Clamp to top 3 prioritized alerts to maintain clean, non-overwhelming infotainment density
   return alerts.slice(0, 3);
 }
 

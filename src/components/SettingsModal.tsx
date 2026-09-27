@@ -991,7 +991,7 @@ export const SettingsModal: React.FC = () => {
                   Background Mode
                 </label>
                 <span className="text-[10px] text-slate-400 font-mono">
-                  {backgroundMode === 'dashboard' ? 'Vehicle Cockpit Trim' : 'Minimal Solid Fill'}
+                  {backgroundMode === 'dashboard' ? 'Vehicle Infotainment Trim' : 'Minimal Solid Fill'}
                 </span>
               </div>
 
@@ -1185,7 +1185,7 @@ export const SettingsModal: React.FC = () => {
                       Dashboard Photo Asset
                     </label>
                     <span className="text-[10px] text-slate-400 font-mono">
-                      High-res cockpit photo
+                      High-res infotainment trim photo
                     </span>
                   </div>
 
@@ -1224,7 +1224,7 @@ export const SettingsModal: React.FC = () => {
                       <button
                         onClick={() => setAppShellBackground({ backgroundImage: '/backgrounds/dashboard-01.png' })}
                         className="px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono transition-colors cursor-pointer"
-                        title="Reset to default cockpit asset"
+                        title="Reset to default infotainment asset"
                       >
                         Reset
                       </button>
