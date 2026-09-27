@@ -94,8 +94,8 @@ export const ParticipantHUD: React.FC = () => {
               </span>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-2 truncate">
-              <span className="text-xs sm:text-sm font-medium text-slate-100 truncate">
+            <div className="flex items-center justify-center">
+              <span className="text-xs sm:text-sm font-medium text-slate-100 line-clamp-2 leading-snug">
                 {currentTask.description}
               </span>
             </div>
@@ -109,7 +109,7 @@ export const ParticipantHUD: React.FC = () => {
             <Clock
               className={`w-3.5 h-3.5 shrink-0 ${
                 isCritical
-                  ? 'text-rose-400 animate-pulse'
+                  ? 'text-rose-400'
                   : isUrgent
                   ? 'text-amber-400'
                   : 'text-slate-400'
