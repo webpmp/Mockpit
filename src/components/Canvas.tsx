@@ -1033,17 +1033,15 @@ export const Canvas: React.FC = () => {
           <QuickAccessOverlay />
 
           {/* Bottom Dock Navigation - Permanent UI Chrome Layer (Always Topmost) */}
-          {!isParticipantMode && (
-            <div
-              className={`absolute bottom-0 left-0 right-0 h-[84px] z-[9999] ${
-                !isPresentation
-                  ? 'border-t-2 border-dashed border-sky-400/60 bg-sky-950/20 backdrop-blur-[1px]'
-                  : ''
-              } flex items-center justify-center pointer-events-none`}
-            >
-              <BottomDock />
-            </div>
-          )}
+          <div
+            className={`absolute bottom-0 left-0 right-0 h-[84px] z-[9999] ${
+              !isPresentation && !isParticipantMode
+                ? 'border-t-2 border-dashed border-sky-400/60 bg-sky-950/20 backdrop-blur-[1px]'
+                : ''
+            } flex items-center justify-center pointer-events-none`}
+          >
+            <BottomDock />
+          </div>
 
 
           {/* On-Screen Touch Virtual Keyboard anchored to vehicle canvas */}

@@ -154,12 +154,14 @@ interface UserTestingState {
 
   // Active Session Runtime State
   activeSession: SessionRecord | null;
+  pendingCompletedSession: SessionRecord | null;
+  sessionLocked: boolean;
   currentTaskIndex: number;
   isParticipantMode: boolean;
   taskStartTime: number | null;
   recentActionEvents: Record<string, any>;
   taskCompletedFlash: boolean;
-  showFeedbackModal: boolean;
+  sessionCompleteOpen: boolean;
   exitPromptOpen: boolean;
 
   // Active sub-tab in User Testing Mode
@@ -188,6 +190,7 @@ interface UserTestingState {
   evaluateCurrentTask: () => boolean;
   completeCurrentTask: (status?: 'completed' | 'timeout' | 'skipped') => void;
   submitSessionFeedback: (answers: FeedbackAnswer[]) => void;
+  unlockAndViewResults: () => void;
   exitSessionEarly: (abandon?: boolean) => void;
   setExitPromptOpen: (open: boolean) => void;
 
@@ -208,12 +211,14 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
   settings: loadSavedSettings(),
 
   activeSession: null,
+  pendingCompletedSession: null,
+  sessionLocked: false,
   currentTaskIndex: 0,
   isParticipantMode: false,
   taskStartTime: null,
   recentActionEvents: {},
   taskCompletedFlash: false,
-  showFeedbackModal: false,
+  sessionCompleteOpen: false,
   exitPromptOpen: false,
 
   activeTab: 'tests',
@@ -384,12 +389,14 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
 
     set({
       activeSession: newSession,
+      pendingCompletedSession: null,
+      sessionLocked: false,
       currentTaskIndex: 0,
       isParticipantMode: true,
       taskStartTime: Date.now(),
       recentActionEvents: {},
       taskCompletedFlash: false,
-      showFeedbackModal: false,
+      sessionCompleteOpen: false,
       exitPromptOpen: false,
     });
 
@@ -515,14 +522,8 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
         useMockpitStore.getState().setActiveView(nextTask.targetScreen);
       }
     } else {
-      // All tasks finished! Open final feedback modal or complete session
-      const questions = state.activeSession.testSnapshot.feedbackQuestions || [];
-      if (questions.length > 0) {
-        set({ showFeedbackModal: true });
-      } else {
-        // Complete session immediately if no feedback questions
-        get().submitSessionFeedback([]);
-      }
+      // All tasks finished! Open final session complete screen
+      set({ sessionCompleteOpen: true, taskStartTime: null });
     }
   },
 
@@ -537,14 +538,27 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       feedbackAnswers: answers,
     };
 
-    const updatedSessions = [completedSession, ...state.sessions];
-    safeSetItem(STORAGE_SESSIONS_KEY, JSON.stringify(updatedSessions));
+    set({
+      pendingCompletedSession: completedSession,
+      sessionLocked: true,
+    });
+  },
+
+  unlockAndViewResults: () => {
+    const state = get();
+    const completedSession = state.pendingCompletedSession || state.activeSession;
+    if (completedSession) {
+      const updatedSessions = [completedSession, ...state.sessions];
+      safeSetItem(STORAGE_SESSIONS_KEY, JSON.stringify(updatedSessions));
+      set({ sessions: updatedSessions });
+    }
 
     set({
-      sessions: updatedSessions,
       activeSession: null,
       isParticipantMode: false,
-      showFeedbackModal: false,
+      sessionCompleteOpen: false,
+      sessionLocked: false,
+      pendingCompletedSession: null,
       currentTaskIndex: 0,
       recentActionEvents: {},
       exitPromptOpen: false,
@@ -571,7 +585,9 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
     set({
       activeSession: null,
       isParticipantMode: false,
-      showFeedbackModal: false,
+      sessionCompleteOpen: false,
+      sessionLocked: false,
+      pendingCompletedSession: null,
       currentTaskIndex: 0,
       recentActionEvents: {},
       exitPromptOpen: false,

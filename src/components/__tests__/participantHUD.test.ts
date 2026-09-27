@@ -15,11 +15,21 @@ describe('Participant HUD — Spec v1 Suite', () => {
       'ParticipantHUD must not have animate-pulse anywhere'
     );
 
-    // Verify Clock icon has text-rose-400 for critical and text-amber-400 for urgent
+    // Verify Clock icon has text-slate-200 for critical and text-amber-400 for urgent (no rose-400 alarm color)
+    assert.doesNotMatch(
+      hudContent,
+      /<Clock[^>]*text-rose-400/,
+      'Clock icon must not use text-rose-400'
+    );
     assert.match(
       hudContent,
-      /isCritical\s*\?\s*['"]text-rose-400['"]/,
-      'Clock icon should use text-rose-400 for critical timer state without pulse'
+      /isCritical\s*\?\s*['"]text-slate-200['"]/,
+      'Clock icon should use neutral text-slate-200 for critical timer state without pulse'
+    );
+    assert.match(
+      hudContent,
+      /isUrgent\s*\?\s*['"]text-amber-400['"]/,
+      'Clock icon uses text-amber-400 for urgent timer state'
     );
   });
 
@@ -74,6 +84,42 @@ describe('Participant HUD — Spec v1 Suite', () => {
       appContent,
       /<main className="flex-1 flex overflow-hidden relative">/,
       'App.tsx participant mode main uses flex-1 flex overflow-hidden relative'
+    );
+  });
+
+  it('4. Points display and "pts" string are completely removed from ParticipantHUD', () => {
+    // Zero occurrences of "pts" anywhere in ParticipantHUD
+    assert.doesNotMatch(
+      hudContent,
+      /\bpts\b/,
+      'ParticipantHUD must not contain "pts" anywhere'
+    );
+
+    // Award icon removed
+    assert.doesNotMatch(
+      hudContent,
+      /<Award\b/,
+      'ParticipantHUD must not render Award icon'
+    );
+    assert.doesNotMatch(
+      hudContent,
+      /import\s*\{[^}]*\bAward\b[^}]*\}\s*from\s*['"]lucide-react['"]/,
+      'ParticipantHUD must not import Award from lucide-react'
+    );
+
+    // Task completed flash message does not show points
+    assert.match(
+      hudContent,
+      /<span[^>]*>\s*Task Completed!\s*<\/span>/,
+      'Task completed flash displays "Task Completed!" without point value'
+    );
+  });
+
+  it('5. Countdown timer text uses text-slate-200 for critical and text-amber-400 for urgent', () => {
+    assert.match(
+      hudContent,
+      /isCritical\s*\?\s*['"]text-slate-200['"]/,
+      'Critical timer text must use neutral text-slate-200'
     );
   });
 });

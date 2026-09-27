@@ -1,17 +1,66 @@
 import React, { useState } from 'react';
-import { Star, CheckCircle, Send } from 'lucide-react';
+import { Star, CheckCircle } from 'lucide-react';
 import { useUserTestingStore } from '../useUserTestingStore';
 import { FeedbackAnswer, FeedbackQuestion } from '../types';
+import { MasterPasswordModal } from './MasterPasswordModal';
 
-export const ParticipantFeedbackModal: React.FC = () => {
-  const showFeedbackModal = useUserTestingStore((s) => s.showFeedbackModal);
+export const ParticipantSessionComplete: React.FC = () => {
+  const sessionCompleteOpen = useUserTestingStore((s) => s.sessionCompleteOpen);
+  const sessionLocked = useUserTestingStore((s) => s.sessionLocked);
   const activeSession = useUserTestingStore((s) => s.activeSession);
+  const pendingCompletedSession = useUserTestingStore((s) => s.pendingCompletedSession);
   const submitSessionFeedback = useUserTestingStore((s) => s.submitSessionFeedback);
+  const unlockAndViewResults = useUserTestingStore((s) => s.unlockAndViewResults);
 
-  const questions: FeedbackQuestion[] = activeSession?.testSnapshot?.feedbackQuestions || [];
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string | number>>({});
 
-  if (!showFeedbackModal || !activeSession) return null;
+  const session = pendingCompletedSession || activeSession;
+
+  if (!sessionCompleteOpen || !session) return null;
+
+  const questions: FeedbackQuestion[] = session.testSnapshot?.feedbackQuestions || [];
+
+  if (sessionLocked) {
+    return (
+      <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[10000] flex items-center justify-center p-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8 sm:p-10 w-full max-w-md space-y-6 text-center animate-in fade-in zoom-in-95 duration-200 relative">
+          <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-7 h-7" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight">
+              You&apos;re all set. Thanks again.
+            </h2>
+          </div>
+
+          {/* Muted researcher-only control in the bottom corner */}
+          <div className="pt-6 border-t border-slate-800/60 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setPasswordModalOpen(true)}
+              className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer py-1 px-2 rounded"
+              title="Researcher: End session"
+            >
+              End session
+            </button>
+          </div>
+        </div>
+
+        <MasterPasswordModal
+          isOpen={passwordModalOpen}
+          title="End Testing Session"
+          description="Enter the researcher master password to unlock and view session results."
+          onCancel={() => setPasswordModalOpen(false)}
+          onSuccess={() => {
+            setPasswordModalOpen(false);
+            unlockAndViewResults();
+          }}
+        />
+      </div>
+    );
+  }
 
   const handleRatingChange = (qId: string, rating: number) => {
     setAnswers((prev) => ({ ...prev, [qId]: rating }));
@@ -37,9 +86,6 @@ export const ParticipantFeedbackModal: React.FC = () => {
     submitSessionFeedback(formattedAnswers);
   };
 
-  const totalPoints = activeSession.totalPoints;
-  const maxPoints = activeSession.maxPoints;
-
   return (
     <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[10000] flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-lg space-y-6 my-auto animate-in fade-in zoom-in-95 duration-200">
@@ -49,15 +95,15 @@ export const ParticipantFeedbackModal: React.FC = () => {
             <CheckCircle className="w-6 h-6" />
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight">
-            All Tasks Completed!
+            Thank you for participating
           </h2>
           <div className="flex items-center justify-center gap-2 text-sm text-slate-400 font-mono">
-            <span>Score: <strong className="text-sky-400 font-semibold">{totalPoints}</strong> / {maxPoints} pts</span>
-            <span aria-hidden="true">·</span>
-            <span>Duration: <strong className="text-slate-200 font-semibold">{activeSession.totalDurationSeconds}s</strong></span>
+            <span>Duration: <strong className="text-slate-200 font-semibold">{session.totalDurationSeconds}s</strong></span>
           </div>
           <p className="text-sm text-slate-400 pt-1">
-            Please answer the brief feedback questions below to finalize your research session.
+            {questions.length > 0
+              ? 'Your session is complete. Please answer a few final questions.'
+              : 'Your session is complete.'}
           </p>
         </div>
 
@@ -136,7 +182,7 @@ export const ParticipantFeedbackModal: React.FC = () => {
             type="submit"
             className="w-full py-3 px-4 rounded-xl text-sm font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 transition-colors cursor-pointer shadow-lg shadow-sky-500/10 whitespace-nowrap"
           >
-            Submit Feedback & Finish Session
+            {questions.length > 0 ? 'Submit Feedback & Finish Session' : 'Finish Session'}
           </button>
         </form>
       </div>

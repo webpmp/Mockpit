@@ -64,10 +64,31 @@ export const HeaderNav: React.FC = () => {
   const [deleteTargetScreen, setDeleteTargetScreen] = useState<ScreenDefinition | null>(null);
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
 
-  // User Testing Compact Workspace Switcher State
+  // Compact Workspace Switcher State (All Modes)
   const [isWorkspaceSwitcherExpanded, setIsWorkspaceSwitcherExpanded] = useState(false);
   const workspaceSwitcherRef = useRef<HTMLDivElement>(null);
   const expandedMenuRef = useRef<HTMLDivElement>(null);
+
+  // Track whether screen selector should be mounted in DOM (with smooth transition on mode switch)
+  const [shouldRenderScreenSelector, setShouldRenderScreenSelector] = useState(screenMode !== 'user-testing');
+  const [isScreenSelectorVisible, setIsScreenSelectorVisible] = useState(screenMode !== 'user-testing');
+
+  useEffect(() => {
+    if (screenMode !== 'user-testing') {
+      setShouldRenderScreenSelector(true);
+      const frame = requestAnimationFrame(() => {
+        setIsScreenSelectorVisible(true);
+      });
+      return () => cancelAnimationFrame(frame);
+    } else {
+      setIsScreenSelectorVisible(false);
+      setIsMegaMenuOpen(false);
+      const timer = setTimeout(() => {
+        setShouldRenderScreenSelector(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [screenMode]);
 
   const isPresentation = screenMode === 'presentation';
 
@@ -200,6 +221,32 @@ export const HeaderNav: React.FC = () => {
 
   const ActiveIcon = getScreenIcon(activeScreenDef);
 
+  const getModeDetails = (mode: string) => {
+    switch (mode) {
+      case 'presentation':
+        return {
+          label: 'Presenter',
+          icon: <Play className="w-3.5 h-3.5 fill-current shrink-0 text-emerald-400" />,
+        };
+      case 'audit':
+        return {
+          label: 'Auditor',
+          icon: <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-sky-400" />,
+        };
+      case 'user-testing':
+        return {
+          label: 'User Testing',
+          icon: <FlaskConical className="w-3.5 h-3.5 shrink-0 text-amber-400" />,
+        };
+      case 'editor':
+      default:
+        return {
+          label: 'Editor',
+          icon: <Edit3 className="w-3.5 h-3.5 shrink-0 text-sky-400" />,
+        };
+    }
+  };
+
   return (
     <header className="h-16 bg-slate-950 border-b border-slate-900 px-4 flex items-center justify-between shrink-0 select-none relative z-50">
       {/* App Branding */}
@@ -223,19 +270,22 @@ export const HeaderNav: React.FC = () => {
         </span>
       </button>
 
-      {/* Center Controls: Compact Workspace Switcher (User Testing) OR Screen Selector + Mode Switcher */}
-      {screenMode === 'user-testing' ? (
-        /* Compact User Testing Workspace Switcher with Absolute Floating Overlay */
-        <div className="absolute left-1/2 -translate-x-1/2" ref={workspaceSwitcherRef}>
+      {/* Center Controls: Mode Switcher Dropdown (First) + Mode-Aware Screen Selector (Second) */}
+      <div className="absolute left-1/2 -translate-x-[68px] flex items-center">
+        {/* Compact Mode Switcher (All Modes) */}
+        <div className="relative" ref={workspaceSwitcherRef}>
           <button
             type="button"
+            id="mode-dropdown-button"
             onClick={() => setIsWorkspaceSwitcherExpanded((prev) => !prev)}
-            className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60 hover:text-slate-100 hover:border-slate-600 select-none whitespace-nowrap"
+            className="w-[136px] px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center justify-between cursor-pointer bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60 hover:text-slate-100 hover:border-slate-600 select-none whitespace-nowrap"
             aria-expanded={isWorkspaceSwitcherExpanded}
-            aria-label="User Testing Workspace Switcher"
+            aria-label="Mode Switcher"
           >
-            <FlaskConical className="w-3.5 h-3.5 shrink-0" />
-            <span className="whitespace-nowrap">User Testing</span>
+            <span className="flex items-center gap-1.5 truncate">
+              {getModeDetails(screenMode).icon}
+              <span className="whitespace-nowrap">{getModeDetails(screenMode).label}</span>
+            </span>
             <ChevronDown
               className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
                 isWorkspaceSwitcherExpanded ? 'rotate-180 text-slate-200' : ''
@@ -243,10 +293,11 @@ export const HeaderNav: React.FC = () => {
             />
           </button>
 
-          {/* Floating Navigation Overlay (Removed from normal document flow) */}
+          {/* Floating Navigation Overlay */}
           {isWorkspaceSwitcherExpanded && (
             <div
               ref={expandedMenuRef}
+              id="mode-dropdown-menu"
               className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 animate-in fade-in zoom-in-95 duration-100 select-none w-max min-w-max max-w-none"
             >
               <div className="flex flex-nowrap items-center w-max min-w-max gap-1 bg-slate-900/95 p-1 rounded-xl border border-slate-800 shadow-2xl backdrop-blur-xl">
@@ -256,10 +307,14 @@ export const HeaderNav: React.FC = () => {
                     setScreenMode('editor');
                     setIsWorkspaceSwitcherExpanded(false);
                   }}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 whitespace-nowrap shrink-0"
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                    screenMode === 'editor'
+                      ? 'bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
                   title="Editor Mode"
                 >
-                  <Edit3 className="w-3.5 h-3.5 shrink-0" />
+                  <Edit3 className="w-3.5 h-3.5 shrink-0 text-sky-400" />
                   <span>Editor</span>
                 </button>
 
@@ -269,10 +324,14 @@ export const HeaderNav: React.FC = () => {
                     setScreenMode('presentation');
                     setIsWorkspaceSwitcherExpanded(false);
                   }}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-emerald-400 hover:bg-slate-800/60 whitespace-nowrap shrink-0"
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                    screenMode === 'presentation'
+                      ? 'bg-slate-800 text-emerald-400 shadow-sm border border-slate-700/60'
+                      : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800/60'
+                  }`}
                   title="Presenter Mode"
                 >
-                  <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+                  <Play className="w-3.5 h-3.5 fill-current shrink-0 text-emerald-400" />
                   <span>Presenter</span>
                 </button>
 
@@ -282,38 +341,62 @@ export const HeaderNav: React.FC = () => {
                     setScreenMode('audit');
                     setIsWorkspaceSwitcherExpanded(false);
                   }}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-sky-400 hover:bg-slate-800/60 whitespace-nowrap shrink-0"
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                    screenMode === 'audit'
+                      ? 'bg-slate-800 text-sky-400 shadow-sm border border-slate-700/60'
+                      : 'text-slate-400 hover:text-sky-400 hover:bg-slate-800/60'
+                  }`}
                   title="Auditor Mode"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-sky-400" />
                   <span>Auditor</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setIsWorkspaceSwitcherExpanded(false)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60 whitespace-nowrap shrink-0"
-                  title="Current: User Testing (Click to collapse)"
+                  onClick={() => {
+                    setScreenMode('user-testing');
+                    setIsWorkspaceSwitcherExpanded(false);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                    screenMode === 'user-testing'
+                      ? 'bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60'
+                      : 'text-slate-400 hover:text-amber-400 hover:bg-slate-800/60'
+                  }`}
+                  title="User Testing Mode"
                 >
-                  <FlaskConical className="w-3.5 h-3.5 shrink-0" />
+                  <FlaskConical className="w-3.5 h-3.5 shrink-0 text-amber-400" />
                   <span>User Testing</span>
                 </button>
               </div>
             </div>
           )}
         </div>
-      ) : (
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-            {/* Current Screen Selector Button (Opens Mega-Menu) */}
-            <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm cursor-pointer ${
-              isMegaMenuOpen
-                ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
-                : 'bg-slate-900 text-slate-200 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
+
+        {/* Screen Selector & Divider: animated width transition (omitted in user-testing) */}
+        {shouldRenderScreenSelector && (
+          <div
+            id="screen-selector-container"
+            className={`flex items-center overflow-hidden transition-all duration-200 ease-out ${
+              isScreenSelectorVisible && screenMode !== 'user-testing'
+                ? 'max-w-[500px] opacity-100 ml-1'
+                : 'max-w-0 opacity-0 pointer-events-none ml-0'
             }`}
           >
+            {/* Divider */}
+            <div className="w-px h-4 bg-slate-800/90 mx-1 shrink-0" />
+
+            {/* Current Screen Selector Button (Opens Mega-Menu) */}
+            <div className="relative shrink-0" ref={menuRef}>
+              <button
+                id="screen-selector-button"
+                onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm cursor-pointer whitespace-nowrap ${
+                  isMegaMenuOpen
+                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
+                    : 'bg-slate-900 text-slate-200 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
+                }`}
+              >
             <ActiveIcon className="w-3.5 h-3.5 text-sky-400" />
             <div className="flex items-center gap-1 font-mono text-slate-300">
               {activeParentDef && (
@@ -636,65 +719,9 @@ export const HeaderNav: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Divider */}
-        <div className="w-px h-4 bg-slate-800/90 mx-1" />
-
-        {/* Editor / Presenter / Auditor Mode Switcher */}
-        <div className="flex items-center gap-0.5 bg-slate-900/90 p-0.5 rounded-xl border border-slate-800/90">
-          <button
-            onClick={() => setScreenMode('editor')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              screenMode === 'editor'
-                ? 'bg-slate-800 shadow-sm border border-slate-700/60'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            style={{
-              color: screenMode === 'editor' ? 'var(--color-primary)' : undefined,
-            }}
-            title="Editor Mode"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>Editor</span>
-          </button>
-
-          <button
-            onClick={() => setScreenMode('presentation')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              screenMode === 'presentation'
-                ? 'bg-slate-800 text-emerald-400 shadow-sm border border-slate-700/60'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="Presenter Mode"
-          >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Presenter</span>
-          </button>
-
-          <button
-            onClick={() => setScreenMode('audit')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              screenMode === 'audit'
-                ? 'bg-slate-800 text-sky-400 shadow-sm border border-slate-700/60'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="Auditor Mode"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Auditor</span>
-          </button>
-
-          <button
-            onClick={() => setScreenMode('user-testing')}
-            className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200"
-            title="User Testing Mode"
-          >
-            <FlaskConical className="w-3.5 h-3.5" />
-            <span>User Testing</span>
-          </button>
-        </div>
+          </div>
+        )}
       </div>
-      )}
 
       {/* Utility Action Icons */}
       {!isPresentation && screenMode !== 'user-testing' && (

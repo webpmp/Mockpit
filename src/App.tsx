@@ -11,7 +11,7 @@ import { AuditPanel } from './components/hmi/AuditPanel';
 import { AboutModal } from './components/AboutModal';
 import { UserTestingSuite } from './testing/components/UserTestingSuite';
 import { ParticipantHUD } from './testing/components/ParticipantHUD';
-import { ParticipantFeedbackModal } from './testing/components/ParticipantFeedbackModal';
+import { ParticipantSessionComplete } from './testing/components/ParticipantSessionComplete';
 
 export default function App() {
   const screenMode = useMockpitStore((s) => s.screenMode);
@@ -104,8 +104,8 @@ export default function App() {
           </div>
         </main>
 
-        {/* Participant Post-Test Feedback Questionnaire Modal */}
-        <ParticipantFeedbackModal />
+        {/* Participant Post-Test Feedback Questionnaire / Session Complete Modal */}
+        <ParticipantSessionComplete />
       </div>
     );
   }

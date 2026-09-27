@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, CheckCircle2, FastForward, LogOut, Award, AlertTriangle } from 'lucide-react';
+import { Clock, CheckCircle2, FastForward, LogOut, AlertTriangle } from 'lucide-react';
 import { useUserTestingStore } from '../useUserTestingStore';
 import { MasterPasswordModal } from './MasterPasswordModal';
 
@@ -90,7 +90,7 @@ export const ParticipantHUD: React.FC = () => {
             <div className="flex items-center justify-center gap-2 text-emerald-400 animate-in zoom-in-95 duration-150">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span className="text-xs font-bold tracking-tight uppercase">
-                Task Completed! +{currentTask.points || 100} pts
+                Task Completed!
               </span>
             </div>
           ) : (
@@ -102,14 +102,14 @@ export const ParticipantHUD: React.FC = () => {
           )}
         </div>
 
-        {/* Right: Timer, Points & Action Affordances */}
+        {/* Right: Timer & Action Affordances */}
         <div className="flex items-center gap-3 shrink-0">
           {/* Timer Display */}
           <div className="flex items-center gap-1.5 font-mono text-xs tabular-nums px-2 py-1 rounded-lg bg-slate-900 border border-slate-800">
             <Clock
               className={`w-3.5 h-3.5 shrink-0 ${
                 isCritical
-                  ? 'text-rose-400'
+                  ? 'text-slate-200'
                   : isUrgent
                   ? 'text-amber-400'
                   : 'text-slate-400'
@@ -119,7 +119,7 @@ export const ParticipantHUD: React.FC = () => {
               <span
                 className={`font-semibold ${
                   isCritical
-                    ? 'text-rose-400'
+                    ? 'text-slate-200'
                     : isUrgent
                     ? 'text-amber-400'
                     : 'text-slate-200'
@@ -132,12 +132,6 @@ export const ParticipantHUD: React.FC = () => {
                 {formatTime(elapsedSeconds)}
               </span>
             )}
-          </div>
-
-          {/* Points */}
-          <div className="hidden md:flex items-center gap-1 text-xs text-amber-400 font-mono font-medium">
-            <Award className="w-3.5 h-3.5 shrink-0" />
-            <span>{currentTask.points || 100} pts</span>
           </div>
 
           {/* Skip Task */}
