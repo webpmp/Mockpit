@@ -6,7 +6,11 @@ import {
   getEligibleParentCandidates,
   formatAttachmentPosition,
 } from '../../utils/componentIntegration';
-import { getBorderClasses, DEFAULT_BORDER_OVERRIDES } from '../../utils/borderOverrides';
+import {
+  getBorderClasses,
+  getCornerRadiusClasses,
+  DEFAULT_BORDER_OVERRIDES,
+} from '../../utils/borderOverrides';
 import { ComponentInstance } from '../../types';
 import { useMockpitStore } from '../../store/useMockpitStore';
 
@@ -139,6 +143,74 @@ describe('Component Integration (Parent/Child Visual Relationships) Suite', () =
       assert.equal(classes.includes('border-r'), false);
       assert.equal(classes.includes('border-l'), false);
       assert.match(classes, /border-sky-500/);
+    });
+
+    it('Appends corner radius override classes to getBorderClasses when edges are disabled', () => {
+      // Child above parent has bottom border disabled -> bottom corners squared off
+      const childAbove = { top: true, right: true, bottom: false, left: true };
+      const childClasses = getBorderClasses(childAbove);
+      assert.match(childClasses, /rounded-b-none/);
+
+      // Parent below child has top border disabled -> top corners squared off
+      const parentBelow = { top: false, right: true, bottom: true, left: true };
+      const parentClasses = getBorderClasses(parentBelow);
+      assert.match(parentClasses, /rounded-t-none/);
+
+      // Child left of parent has right border disabled -> right corners squared off
+      const childLeft = { top: true, right: false, bottom: true, left: true };
+      const leftClasses = getBorderClasses(childLeft);
+      assert.match(leftClasses, /rounded-r-none/);
+
+      // Parent right of child has left border disabled -> left corners squared off
+      const parentRight = { top: true, right: true, bottom: true, left: false };
+      const rightClasses = getBorderClasses(parentRight);
+      assert.match(rightClasses, /rounded-l-none/);
+    });
+  });
+
+  describe('2b. Corner Radius Classes Generation (Spec v1)', () => {
+    it('Returns empty string when borderOverrides is null/undefined or all borders enabled', () => {
+      assert.equal(getCornerRadiusClasses(undefined), '');
+      assert.equal(getCornerRadiusClasses(null), '');
+      assert.equal(getCornerRadiusClasses(DEFAULT_BORDER_OVERRIDES), '');
+      assert.equal(
+        getCornerRadiusClasses({ top: true, right: true, bottom: true, left: true }),
+        ''
+      );
+    });
+
+    it('Returns rounded-none when all 4 borders are disabled', () => {
+      assert.equal(
+        getCornerRadiusClasses({ top: false, right: false, bottom: false, left: false }),
+        'rounded-none'
+      );
+    });
+
+    it('Returns rounded-t-none when top border is disabled', () => {
+      const overrides = { top: false, right: true, bottom: true, left: true };
+      assert.equal(getCornerRadiusClasses(overrides), 'rounded-t-none');
+    });
+
+    it('Returns rounded-b-none when bottom border is disabled', () => {
+      const overrides = { top: true, right: true, bottom: false, left: true };
+      assert.equal(getCornerRadiusClasses(overrides), 'rounded-b-none');
+    });
+
+    it('Returns rounded-l-none when left border is disabled', () => {
+      const overrides = { top: true, right: true, bottom: true, left: false };
+      assert.equal(getCornerRadiusClasses(overrides), 'rounded-l-none');
+    });
+
+    it('Returns rounded-r-none when right border is disabled', () => {
+      const overrides = { top: true, right: false, bottom: true, left: true };
+      assert.equal(getCornerRadiusClasses(overrides), 'rounded-r-none');
+    });
+
+    it('Flattens multiple edges when multiple borders are disabled', () => {
+      const topAndLeft = { top: false, right: true, bottom: true, left: false };
+      const classes = getCornerRadiusClasses(topAndLeft);
+      assert.match(classes, /rounded-t-none/);
+      assert.match(classes, /rounded-l-none/);
     });
   });
 
