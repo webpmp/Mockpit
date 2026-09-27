@@ -98,7 +98,7 @@ export default function App() {
         <ParticipantHUD />
 
         {/* Full-bleed Canvas Interactive Display */}
-        <main className="flex-1 flex overflow-hidden relative pt-12">
+        <main className="flex-1 flex overflow-hidden relative">
           <div className="flex-1 h-full overflow-hidden relative">
             <Canvas />
           </div>

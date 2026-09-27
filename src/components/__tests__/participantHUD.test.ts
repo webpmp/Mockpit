@@ -45,4 +45,35 @@ describe('Participant HUD — Spec v1 Suite', () => {
       'Center column retains flex-1 max-w-2xl px-2 text-center min-w-0'
     );
   });
+
+  it('3. Spec v1.1: Participant HUD header renders in natural document flow without fixed overlay and App.tsx has no pt-12 compensation', () => {
+    const appPath = path.resolve(process.cwd(), 'src/App.tsx');
+    const appContent = fs.readFileSync(appPath, 'utf-8');
+
+    // ParticipantHUD <header> should not be fixed top-0
+    assert.doesNotMatch(
+      hudContent,
+      /<header[^>]*class(?:Name)?="[^"]*fixed top-0[^"]*"/,
+      'ParticipantHUD header should not use fixed top-0'
+    );
+
+    assert.match(
+      hudContent,
+      /<header[^>]*class(?:Name)?="[^"]*shrink-0[^"]*"/,
+      'ParticipantHUD header should include shrink-0'
+    );
+
+    // App.tsx participant-mode <main> should not have pt-12
+    assert.doesNotMatch(
+      appContent,
+      /<main className="flex-1 flex overflow-hidden relative pt-12">/,
+      'App.tsx participant mode main must not have pt-12 hardcoded offset'
+    );
+
+    assert.match(
+      appContent,
+      /<main className="flex-1 flex overflow-hidden relative">/,
+      'App.tsx participant mode main uses flex-1 flex overflow-hidden relative'
+    );
+  });
 });

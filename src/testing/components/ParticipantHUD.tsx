@@ -61,7 +61,7 @@ export const ParticipantHUD: React.FC = () => {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[9999] bg-slate-950/95 border-b border-slate-800 shadow-xl backdrop-blur-md px-4 py-2.5 flex items-center justify-between gap-4 select-none">
+      <header className="shrink-0 bg-slate-950/95 border-b border-slate-800 shadow-xl backdrop-blur-md px-4 py-2.5 flex items-center justify-between gap-4 select-none">
         {/* Left: Participant & Progress */}
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-2">
