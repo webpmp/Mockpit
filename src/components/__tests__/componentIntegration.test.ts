@@ -11,6 +11,7 @@ import {
   getCornerRadiusClasses,
   DEFAULT_BORDER_OVERRIDES,
 } from '../../utils/borderOverrides';
+import { COMPONENT_DISPLAY_NAMES } from '../../utils/componentDisplayNames';
 import { ComponentInstance } from '../../types';
 import { useMockpitStore } from '../../store/useMockpitStore';
 
@@ -350,6 +351,210 @@ describe('Component Integration (Parent/Child Visual Relationships) Suite', () =
       assert.equal(formatAttachmentPosition('top'), 'Top');
       assert.equal(formatAttachmentPosition('center'), 'Center');
       assert.equal(formatAttachmentPosition('bottom-right'), 'Bottom Right');
+    });
+  });
+
+  describe('6. Candidate Option Label Fallback Chain (Spec v1)', () => {
+    const getCandidateLabel = (comp: ComponentInstance) => {
+      return (
+        comp.staticProps?.label?.trim() ||
+        comp.staticProps?.title?.trim() ||
+        COMPONENT_DISPLAY_NAMES[comp.type] ||
+        comp.type
+      );
+    };
+
+    it('Prefers staticProps.label over staticProps.title and default label', () => {
+      const comp = createMockComponent('callout-1', 0, 0, 320, 160, {
+        type: 'vehicleStatusCallout',
+        staticProps: {
+          label: 'Front Diagnostics Header',
+          title: 'Powertrain Inverter',
+        },
+      });
+      assert.equal(getCandidateLabel(comp), 'Front Diagnostics Header');
+    });
+
+    it('Falls back to staticProps.title when staticProps.label is absent, empty, or whitespace', () => {
+      const comp1 = createMockComponent('callout-2', 0, 0, 320, 160, {
+        type: 'vehicleStatusCallout',
+        staticProps: {
+          label: '',
+          title: 'Powertrain Inverter',
+        },
+      });
+      assert.equal(getCandidateLabel(comp1), 'Powertrain Inverter');
+
+      const comp2 = createMockComponent('callout-3', 0, 0, 320, 160, {
+        type: 'vehicleStatusCallout',
+        staticProps: {
+          label: '   ',
+          title: 'Rear Battery Module',
+        },
+      });
+      assert.equal(getCandidateLabel(comp2), 'Rear Battery Module');
+    });
+
+    it('Falls back to DEFAULT_COMPONENT_LABELS when both label and title are empty or missing', () => {
+      const comp = createMockComponent('callout-4', 0, 0, 320, 160, {
+        type: 'vehicleStatusCallout',
+        staticProps: {
+          label: '',
+          title: '',
+        },
+      });
+      assert.equal(getCandidateLabel(comp), 'Status Callout');
+    });
+
+    it('Distinguishes multiple instances of the same component type in candidate list', () => {
+      const cand1 = createMockComponent('callout-a', 0, 0, 320, 160, {
+        type: 'vehicleStatusCallout',
+        staticProps: { label: 'Front Powertrain', title: 'Drive Unit' },
+      });
+      const cand2 = createMockComponent('callout-b', 0, 180, 320, 160, {
+        type: 'vehicleStatusCallout',
+        staticProps: { title: 'Rear Inverter' },
+      });
+      const cand3 = createMockComponent('callout-c', 0, 360, 320, 160, {
+        type: 'vehicleStatusCallout',
+        staticProps: {},
+      });
+
+      assert.equal(getCandidateLabel(cand1), 'Front Powertrain');
+      assert.equal(getCandidateLabel(cand2), 'Rear Inverter');
+      assert.equal(getCandidateLabel(cand3), 'Status Callout');
+    });
+  });
+
+  describe('7. Selection Z-Index Capping, Counterpart Dimming, & Drag Transition (Spec v1)', () => {
+    const computeEffectiveZ = (
+      comp: ComponentInstance,
+      allComps: ComponentInstance[],
+      selectedId: string | null
+    ) => {
+      const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
+      const parentComp = comp.parentId ? allComps.find((c) => c.id === comp.parentId) : null;
+      const parentZ = parentComp ? (parentComp.zIndex !== undefined ? parentComp.zIndex : (parentComp.type === 'map' ? 0 : parentComp.type === 'nowPlaying' ? 20 : 10)) : -999;
+      const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
+
+      let effectiveZ = baseZ;
+      const isSelected = comp.id === selectedId;
+      if (isSelected) {
+        const ownChildrenBaseZs = allComps
+          .filter((c) => c.parentId === comp.id)
+          .map((c) => {
+            const childRawZ = c.zIndex !== undefined ? c.zIndex : (c.type === 'map' ? 0 : c.type === 'nowPlaying' ? 20 : 10);
+            return Math.max(childRawZ, baseZ + 1);
+          });
+
+        const boosted = baseZ + 100;
+        effectiveZ = ownChildrenBaseZs.length
+          ? Math.min(boosted, Math.min(...ownChildrenBaseZs) - 1)
+          : boosted;
+      }
+      return effectiveZ;
+    };
+
+    const computeOpacity = (
+      compId: string,
+      allComps: ComponentInstance[],
+      selectedId: string | null
+    ) => {
+      const selectedComp = selectedId ? allComps.find((c) => c.id === selectedId) : null;
+      const connectedCounterpartIds = new Set<string>();
+      if (selectedComp?.parentId) connectedCounterpartIds.add(selectedComp.parentId);
+      allComps.forEach((c) => {
+        if (c.parentId === selectedId) connectedCounterpartIds.add(c.id);
+      });
+      return connectedCounterpartIds.has(compId) ? 0.4 : 1;
+    };
+
+    const isTransitionNone = (
+      compId: string,
+      allComps: ComponentInstance[],
+      dragInfoId: string | null
+    ) => {
+      const draggedComp = dragInfoId ? allComps.find((c) => c.id === dragInfoId) : null;
+      const isCounterpartOfActiveDrag = Boolean(
+        draggedComp &&
+        (compId === draggedComp.parentId || allComps.find((c) => c.id === compId)?.parentId === dragInfoId)
+      );
+      return dragInfoId === compId || isCounterpartOfActiveDrag;
+    };
+
+    it('When parent is selected, effectiveZ never inverts child-above-parent invariant', () => {
+      const parent = createMockComponent('map-parent', 0, 0, 600, 400, { type: 'map' });
+      const child = createMockComponent('search-child', 20, 20, 200, 60, {
+        type: 'navSearch',
+        parentId: 'map-parent',
+      });
+      const comps = [parent, child];
+
+      const parentZ = computeEffectiveZ(parent, comps, 'map-parent');
+      const childZ = computeEffectiveZ(child, comps, 'map-parent');
+
+      // Parent boost is capped so child remains strictly on top
+      assert.ok(childZ > parentZ, `Child z (${childZ}) must be greater than parent z (${parentZ})`);
+    });
+
+    it('When child is selected, child gets full boost and stays above parent', () => {
+      const parent = createMockComponent('map-parent', 0, 0, 600, 400, { type: 'map' });
+      const child = createMockComponent('search-child', 20, 20, 200, 60, {
+        type: 'navSearch',
+        parentId: 'map-parent',
+      });
+      const comps = [parent, child];
+
+      const parentZ = computeEffectiveZ(parent, comps, 'search-child');
+      const childZ = computeEffectiveZ(child, comps, 'search-child');
+
+      assert.ok(childZ > parentZ, `Child z (${childZ}) must be greater than parent z (${parentZ})`);
+      assert.equal(childZ, 110, 'Child gets baseZ (10) + 100 = 110');
+      assert.equal(parentZ, 0, 'Parent stays at baseZ = 0');
+    });
+
+    it('Dims connected counterpart to 0.4 while selected component remains 1.0', () => {
+      const parent = createMockComponent('map-parent', 0, 0, 600, 400, { type: 'map' });
+      const child = createMockComponent('search-child', 20, 20, 200, 60, {
+        type: 'navSearch',
+        parentId: 'map-parent',
+      });
+      const unrelated = createMockComponent('speed-other', 700, 0, 200, 200, { type: 'speed' });
+      const comps = [parent, child, unrelated];
+
+      // State 1: Parent selected
+      assert.equal(computeOpacity('map-parent', comps, 'map-parent'), 1.0);
+      assert.equal(computeOpacity('search-child', comps, 'map-parent'), 0.4);
+      assert.equal(computeOpacity('speed-other', comps, 'map-parent'), 1.0);
+
+      // State 2: Child selected
+      assert.equal(computeOpacity('map-parent', comps, 'search-child'), 0.4);
+      assert.equal(computeOpacity('search-child', comps, 'search-child'), 1.0);
+      assert.equal(computeOpacity('speed-other', comps, 'search-child'), 1.0);
+
+      // State 3: Deselected
+      assert.equal(computeOpacity('map-parent', comps, null), 1.0);
+      assert.equal(computeOpacity('search-child', comps, null), 1.0);
+      assert.equal(computeOpacity('speed-other', comps, null), 1.0);
+    });
+
+    it('Disables transitions (transition-none) for both dragged component and its counterpart', () => {
+      const parent = createMockComponent('map-parent', 0, 0, 600, 400, { type: 'map' });
+      const child = createMockComponent('search-child', 20, 20, 200, 60, {
+        type: 'navSearch',
+        parentId: 'map-parent',
+      });
+      const unrelated = createMockComponent('speed-other', 700, 0, 200, 200, { type: 'speed' });
+      const comps = [parent, child, unrelated];
+
+      // Dragging parent: both parent and child get transition-none; unrelated does not
+      assert.equal(isTransitionNone('map-parent', comps, 'map-parent'), true);
+      assert.equal(isTransitionNone('search-child', comps, 'map-parent'), true);
+      assert.equal(isTransitionNone('speed-other', comps, 'map-parent'), false);
+
+      // Dragging child: both child and parent get transition-none
+      assert.equal(isTransitionNone('search-child', comps, 'search-child'), true);
+      assert.equal(isTransitionNone('map-parent', comps, 'search-child'), true);
     });
   });
 });

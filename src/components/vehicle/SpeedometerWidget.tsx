@@ -225,20 +225,29 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
           className="w-full"
         />
 
-        {/* Central Interactive Gauge Area with Drag-to-Adjust Speed */}
-        <div
-          className={`relative w-full flex-1 flex items-center justify-center my-auto z-10 min-h-0 touch-none select-none cursor-ns-resize ${
-            isDragging ? 'scale-[1.02] brightness-110' : 'hover:brightness-105'
-          } transition-transform duration-100`}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          onLostPointerCapture={handleLostPointerCapture}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          title="Drag up/right to increase speed, down/left to decrease"
-        >
+        {/* Central Visual Gauge Area */}
+        <div className="relative w-full flex-1 flex items-center justify-center my-auto z-10 min-h-0 pointer-events-none">
+          {/* Scoped Drag-to-Adjust Hit Region */}
+          <div
+            className={`absolute z-20 touch-none select-none cursor-ns-resize pointer-events-auto ${
+              isDragging ? 'scale-110 brightness-110' : 'hover:brightness-105'
+            } transition-transform duration-100 rounded-full`}
+            style={{
+              left: `${(cx / 200) * 100}%`,
+              top: `${(cy / 200) * 100}%`,
+              width: 30,
+              height: 30,
+              transform: 'translate(-50%, -50%)',
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onLostPointerCapture={handleLostPointerCapture}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            title="Drag up/right to increase speed, down/left to decrease"
+          />
           <svg viewBox="0 0 200 200" className="w-full h-full max-h-full max-w-full overflow-visible pointer-events-none">
             {/* Background Arc */}
             <path
@@ -417,20 +426,29 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
           className="w-full"
         />
 
-        {/* Central Interactive Gauge Area with Drag-to-Adjust Speed */}
-        <div
-          className={`relative w-full flex-1 flex items-center justify-center my-auto z-10 min-h-0 touch-none select-none cursor-ns-resize ${
-            isDragging ? 'scale-[1.02] brightness-110' : 'hover:brightness-105'
-          } transition-transform duration-100`}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          onLostPointerCapture={handleLostPointerCapture}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          title="Drag up/right to increase speed, down/left to decrease"
-        >
+        {/* Central Visual Gauge Area */}
+        <div className="relative w-full flex-1 flex items-center justify-center my-auto z-10 min-h-0 pointer-events-none">
+          {/* Scoped Drag-to-Adjust Hit Region */}
+          <div
+            className={`absolute z-20 touch-none select-none cursor-ns-resize pointer-events-auto ${
+              isDragging ? 'scale-110 brightness-110' : 'hover:brightness-105'
+            } transition-transform duration-100 rounded-full`}
+            style={{
+              left: `${(cx / 200) * 100}%`,
+              top: `${(cy / 200) * 100}%`,
+              width: 30,
+              height: 30,
+              transform: 'translate(-50%, -50%)',
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onLostPointerCapture={handleLostPointerCapture}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            title="Drag up/right to increase speed, down/left to decrease"
+          />
           <svg viewBox="0 0 200 200" className="w-full h-full max-h-full max-w-full overflow-visible pointer-events-none">
             <defs>
               <linearGradient
@@ -557,20 +575,29 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
         className="w-full"
       />
 
-      {/* Central Interactive Numeric Speed Area with Drag-to-Adjust Speed */}
-      <div
-        className={`my-auto z-10 flex flex-col items-center justify-center touch-none select-none cursor-ns-resize ${
-          isDragging ? 'scale-[1.04] brightness-110' : 'hover:brightness-105'
-        } transition-transform duration-100 px-4 py-2 rounded-xl`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onLostPointerCapture={handleLostPointerCapture}
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-        title="Drag up/right to increase speed, down/left to decrease"
-      >
+      {/* Central Visual Numeric Speed Area */}
+      <div className="relative my-auto z-10 flex flex-col items-center justify-center px-4 py-2 rounded-xl pointer-events-none">
+        {/* Scoped Drag-to-Adjust Hit Region */}
+        <div
+          className={`absolute z-20 touch-none select-none cursor-ns-resize pointer-events-auto ${
+            isDragging ? 'scale-110 brightness-110' : 'hover:brightness-105'
+          } transition-transform duration-100 rounded-full`}
+          style={{
+            left: '50%',
+            top: '50%',
+            width: 30,
+            height: 30,
+            transform: 'translate(-50%, -50%)',
+          }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          onLostPointerCapture={handleLostPointerCapture}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          title="Drag up/right to increase speed, down/left to decrease"
+        />
         <div
           className="font-black tracking-tighter leading-none"
           style={{

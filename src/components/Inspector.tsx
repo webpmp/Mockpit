@@ -1285,7 +1285,11 @@ export const Inspector: React.FC = () => {
                               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-sky-500"
                             >
                               {candidates.map((cand) => {
-                                const candLabel = DEFAULT_COMPONENT_LABELS[cand.component.type] || cand.component.type;
+                                const candLabel =
+                                  cand.component.staticProps.label?.trim() ||
+                                  cand.component.staticProps.title?.trim() ||
+                                  DEFAULT_COMPONENT_LABELS[cand.component.type] ||
+                                  cand.component.type;
                                 const styleLabel = cand.style === 'inside' ? 'Inside' : 'Outside';
                                 const posLabel = formatAttachmentPosition(cand.attachmentPosition);
                                 return (

@@ -836,46 +836,79 @@ export const Canvas: React.FC = () => {
           {/* Editor Canvas for Screens (Active strictly in Editor Mode) */}
           {!isPresentation && (
             <div className="absolute inset-x-0 top-0 bottom-0 z-10">
-              {[...components]
-                .sort((a, b) => {
-                  if (b.parentId === a.id) return -1;
-                  if (a.parentId === b.id) return 1;
-                  const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
-                  const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
-                  if (zA !== zB) return zA - zB;
-                  return components.indexOf(a) - components.indexOf(b);
-                })
-                .map((comp) => {
-                  const isSelected = comp.id === selectedComponentId;
-                  const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
-                  const parentComp = comp.parentId ? components.find((c) => c.id === comp.parentId) : null;
-                  const parentZ = parentComp ? (parentComp.zIndex !== undefined ? parentComp.zIndex : (parentComp.type === 'map' ? 0 : parentComp.type === 'nowPlaying' ? 20 : 10)) : -999;
-                  const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
-                  const effectiveZ = isSelected ? baseZ + 100 : baseZ;
+              {(() => {
+                const selectedComp = selectedComponentId ? components.find((c) => c.id === selectedComponentId) : null;
+                const connectedCounterpartIds = new Set<string>();
+                if (selectedComp?.parentId) connectedCounterpartIds.add(selectedComp.parentId);
+                components.forEach((c) => {
+                  if (c.parentId === selectedComponentId) connectedCounterpartIds.add(c.id);
+                });
 
-                  return (
-                    <div
-                      key={comp.id}
-                      className={`absolute group cursor-pointer pointer-events-auto ${
-                        dragInfo?.id === comp.id || resizeInfo?.id === comp.id
-                          ? 'transition-none'
-                          : 'transition-all duration-200 ease-out'
-                      }`}
-                      style={{
-                        left: comp.x,
-                        top: comp.y,
-                        width: comp.width,
-                        height: comp.height,
-                        zIndex: effectiveZ,
-                      }}
-                      onMouseDown={(e) => {
-                        handleMouseDown(e, comp.id, comp.x, comp.y);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        selectComponent(comp.id);
-                      }}
-                    >
+                const draggedOrResizedId = dragInfo?.id ?? resizeInfo?.id ?? null;
+                const draggedOrResizedComp = draggedOrResizedId
+                  ? components.find((c) => c.id === draggedOrResizedId)
+                  : null;
+
+                return [...components]
+                  .sort((a, b) => {
+                    if (b.parentId === a.id) return -1;
+                    if (a.parentId === b.id) return 1;
+                    const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
+                    const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
+                    if (zA !== zB) return zA - zB;
+                    return components.indexOf(a) - components.indexOf(b);
+                  })
+                  .map((comp) => {
+                    const isSelected = comp.id === selectedComponentId;
+                    const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
+                    const parentComp = comp.parentId ? components.find((c) => c.id === comp.parentId) : null;
+                    const parentZ = parentComp ? (parentComp.zIndex !== undefined ? parentComp.zIndex : (parentComp.type === 'map' ? 0 : parentComp.type === 'nowPlaying' ? 20 : 10)) : -999;
+                    const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
+
+                    let effectiveZ = baseZ;
+                    if (isSelected) {
+                      const ownChildrenBaseZs = components
+                        .filter((c) => c.parentId === comp.id)
+                        .map((c) => {
+                          const childRawZ = c.zIndex !== undefined ? c.zIndex : (c.type === 'map' ? 0 : c.type === 'nowPlaying' ? 20 : 10);
+                          return Math.max(childRawZ, baseZ + 1);
+                        });
+
+                      const boosted = baseZ + 100;
+                      effectiveZ = ownChildrenBaseZs.length
+                        ? Math.min(boosted, Math.min(...ownChildrenBaseZs) - 1)
+                        : boosted;
+                    }
+
+                    const isCounterpartOfActiveDrag = Boolean(
+                      draggedOrResizedComp &&
+                      (comp.id === draggedOrResizedComp.parentId || comp.parentId === draggedOrResizedId)
+                    );
+
+                    return (
+                      <div
+                        key={comp.id}
+                        className={`absolute group cursor-pointer pointer-events-auto ${
+                          dragInfo?.id === comp.id || resizeInfo?.id === comp.id || isCounterpartOfActiveDrag
+                            ? 'transition-none'
+                            : 'transition-all duration-200 ease-out'
+                        }`}
+                        style={{
+                          left: comp.x,
+                          top: comp.y,
+                          width: comp.width,
+                          height: comp.height,
+                          zIndex: effectiveZ,
+                          opacity: connectedCounterpartIds.has(comp.id) ? 0.4 : 1,
+                        }}
+                        onMouseDown={(e) => {
+                          handleMouseDown(e, comp.id, comp.x, comp.y);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectComponent(comp.id);
+                        }}
+                      >
                     {/* Main Component Widget */}
                     <ComponentRenderer
                       component={comp}
@@ -917,7 +950,7 @@ export const Canvas: React.FC = () => {
                     )}
                   </div>
                 );
-              })}
+              })})()}
 
               {/* Status Callout & Exploded View Connector Lines in Editor Mode */}
               <ConnectorLayer
