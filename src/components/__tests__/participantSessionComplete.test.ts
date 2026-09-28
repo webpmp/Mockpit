@@ -29,6 +29,12 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
   );
   const componentContent = fs.readFileSync(componentPath, 'utf-8');
 
+  const resultsDashboardPath = path.resolve(
+    process.cwd(),
+    'src/testing/components/ResultsDashboard.tsx'
+  );
+  const resultsDashboardContent = fs.readFileSync(resultsDashboardPath, 'utf-8');
+
   beforeEach(() => {
     mockStorage['mockpit_user_testing_sessions_v2'] = '[]';
     useUserTestingStore.setState({
@@ -445,7 +451,54 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
     assert.equal(found?.feedbackAnswers.length, 1);
   });
 
-  it('10. Spec v1.2: Stub localStorage.setItem to throw during a sessions write and confirm the save-error banner appears and console.error fires', () => {
+  it('10. Spec v1.3: ParticipantSessionComplete does NOT contain save-error-banner or saveError; warning belongs on Researcher Results', () => {
+    // Confirm no save-error-banner in ParticipantSessionComplete
+    assert.doesNotMatch(
+      componentContent,
+      /id="save-error-banner"/,
+      'ParticipantSessionComplete must not render #save-error-banner'
+    );
+    assert.doesNotMatch(
+      componentContent,
+      /\bsaveError\b/,
+      'ParticipantSessionComplete must not subscribe to saveError'
+    );
+    assert.doesNotMatch(
+      componentContent,
+      /Session Save Error/,
+      'ParticipantSessionComplete must not contain "Session Save Error" copy'
+    );
+  });
+
+  it('11. Spec v1.3: ResultsDashboard renders #save-error-banner with amber styling and Export text when saveError is true', () => {
+    assert.match(
+      resultsDashboardContent,
+      /id="save-error-banner"/,
+      'ResultsDashboard must render #save-error-banner'
+    );
+    assert.match(
+      resultsDashboardContent,
+      /role="alert"/,
+      'save-error banner has role="alert"'
+    );
+    assert.match(
+      resultsDashboardContent,
+      /The last session could not be saved to this browser\. Use Export to keep a copy before reloading\./,
+      'save-error banner has exact requested warning copy'
+    );
+    assert.match(
+      resultsDashboardContent,
+      /amber/,
+      'save-error banner is styled with amber researcher theme'
+    );
+    assert.match(
+      resultsDashboardContent,
+      /setSaveError\(false\)/,
+      'save-error banner has dismiss button that calls setSaveError(false)'
+    );
+  });
+
+  it('12. Spec v1.3: Stub localStorage.setItem to throw; verify saveError persists across unlockAndViewResults and exitSessionEarly until dismissed', () => {
     const originalSetItem = globalThis.localStorage.setItem;
     const originalConsoleError = console.error;
     let consoleErrorFired = false;
@@ -481,16 +534,31 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
       );
       assert.equal(useUserTestingStore.getState().saveError, true, 'saveError store state is true');
 
-      // Verify ParticipantSessionComplete includes save-error-banner markup
-      assert.match(
-        componentContent,
-        /id="save-error-banner"/,
-        'ParticipantSessionComplete renders #save-error-banner'
+      // Spec v1.3: unlockAndViewResults MUST NOT clear saveError
+      useUserTestingStore.getState().unlockAndViewResults();
+      assert.equal(
+        useUserTestingStore.getState().saveError,
+        true,
+        'saveError is retained when researcher unlocks and navigates to Results'
       );
-      assert.match(
-        componentContent,
-        /role="alert"/,
-        'save-error banner has role="alert"'
+      assert.equal(useUserTestingStore.getState().activeTab, 'results');
+
+      // Dismiss button clears saveError
+      useUserTestingStore.getState().setSaveError(false);
+      assert.equal(
+        useUserTestingStore.getState().saveError,
+        false,
+        'setSaveError(false) dismisses the warning'
+      );
+
+      // Re-trigger saveError and test exitSessionEarly
+      useUserTestingStore.getState().upsertSession(testSession);
+      assert.equal(useUserTestingStore.getState().saveError, true);
+      useUserTestingStore.getState().exitSessionEarly();
+      assert.equal(
+        useUserTestingStore.getState().saveError,
+        true,
+        'saveError is retained when researcher exits session early to Results'
       );
     } finally {
       (globalThis.localStorage as any).setItem = originalSetItem;
@@ -499,13 +567,31 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
     }
   });
 
-  it('11. Spec v1.2: Component markup renders #save-error-banner in both locked and questionnaire states', () => {
-    assert.match(
-      componentContent,
-      /saveError/,
-      'ParticipantSessionComplete reads saveError from store'
-    );
-    const matches = componentContent.match(/id="save-error-banner"/g);
-    assert.ok(matches && matches.length >= 2, 'save-error-banner present in both screens');
+  it('13. Spec v1.3: Successful session write and startSession clear saveError', () => {
+    // Manually set saveError to true
+    useUserTestingStore.setState({ saveError: true });
+    assert.equal(useUserTestingStore.getState().saveError, true);
+
+    // Successful upsert clears saveError
+    const validSession: any = {
+      id: 'SES-OK-01',
+      participantId: 'P-OK',
+      status: 'completed',
+      totalPoints: 100,
+      feedbackAnswers: [],
+    };
+    const ok = useUserTestingStore.getState().upsertSession(validSession);
+    assert.equal(ok, true);
+    assert.equal(useUserTestingStore.getState().saveError, false, 'Cleared on successful save');
+
+    // Manually set saveError to true again
+    useUserTestingStore.setState({ saveError: true });
+
+    // startSession resets saveError to false
+    const test = useUserTestingStore.getState().tests[0];
+    if (test) {
+      useUserTestingStore.getState().startSession(test.id, 'P-NEW');
+      assert.equal(useUserTestingStore.getState().saveError, false, 'startSession resets saveError');
+    }
   });
 });

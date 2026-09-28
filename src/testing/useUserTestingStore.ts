@@ -602,7 +602,6 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       currentTaskIndex: 0,
       recentActionEvents: {},
       exitPromptOpen: false,
-      saveError: false,
       activeTab: 'results',
     });
 
@@ -630,7 +629,6 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       currentTaskIndex: 0,
       recentActionEvents: {},
       exitPromptOpen: false,
-      saveError: false,
       activeTab: 'results',
     });
 

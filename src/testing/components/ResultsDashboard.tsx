@@ -8,6 +8,8 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  AlertTriangle,
+  X,
   BarChart3,
   Layers,
   FileSpreadsheet,
@@ -21,6 +23,8 @@ export const ResultsDashboard: React.FC = () => {
   const sessions = useUserTestingStore((s) => s.sessions);
   const tests = useUserTestingStore((s) => s.tests);
   const deleteSession = useUserTestingStore((s) => s.deleteSession);
+  const saveError = useUserTestingStore((s) => s.saveError);
+  const setSaveError = useUserTestingStore((s) => s.setSaveError);
 
   const [filterTestId, setFilterTestId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -172,6 +176,31 @@ export const ResultsDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {saveError && (
+        <div
+          id="save-error-banner"
+          data-testid="save-error-banner"
+          role="alert"
+          className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 text-sm flex items-center justify-between gap-3 shadow-lg shadow-amber-500/5 animate-in fade-in duration-200"
+        >
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <span>
+              The last session could not be saved to this browser. Use Export to keep a copy before reloading.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaveError(false)}
+            className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-400 hover:text-amber-200 transition-colors cursor-pointer shrink-0"
+            title="Dismiss warning"
+            aria-label="Dismiss warning"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Header & Export Affordances */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
         <div>
