@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { X, Check, Sliders } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Check, Sliders, AlertTriangle } from 'lucide-react';
 import { LibraryTask, TaskCriteria, TaskActionType, CriteriaOperator } from '../types';
+import { useMockpitStore } from '../../store/useMockpitStore';
+import { getComponentDisplayName } from '../../utils/componentDisplayNames';
+import {
+  getCriteriaFieldsForComponent,
+  findRegistryEntry,
+  CriteriaRegistryEntry,
+} from '../criteriaRegistry';
 
 interface TaskConfigModalProps {
   isOpen: boolean;
@@ -10,43 +17,6 @@ interface TaskConfigModalProps {
   title?: string;
 }
 
-const SCREENS = [
-  { id: 'home', label: 'Home Screen' },
-  { id: 'navigation', label: 'Navigation' },
-  { id: 'media', label: 'Media Player' },
-  { id: 'phone', label: 'Phone' },
-  { id: 'weather', label: 'Weather' },
-  { id: 'weather-radar', label: 'Weather Radar' },
-  { id: 'climate', label: 'Climate Control' },
-];
-
-const COMPONENTS = [
-  { id: 'speed', label: 'Speedometer' },
-  { id: 'gear', label: 'Gear Indicator' },
-  { id: 'driveMode', label: 'Drive Mode Selector' },
-  { id: 'battery', label: 'Battery Indicator' },
-  { id: 'climateTemp', label: 'Temperature Slider' },
-  { id: 'climateSeats', label: 'Seat Climate (Heat/Cool)' },
-  { id: 'climateVent', label: 'Vent Dashboard' },
-  { id: 'phoneDialPad', label: 'Phone Dial Pad' },
-  { id: 'phoneContacts', label: 'Contacts' },
-  { id: 'media', label: 'Music Media Player' },
-  { id: 'sendToServiceCenter', label: 'Send Diagnostics' },
-  { id: 'map', label: 'Navigation Map' },
-  { id: 'navFavorites', label: 'Saved Favorites & Recents' },
-  { id: 'navSearch', label: 'Navigation Search' },
-  { id: 'navDestination', label: 'Trip Planner' },
-];
-
-const CRITERIA_TYPES: { id: TaskActionType; label: string }[] = [
-  { id: 'state_field', label: 'Vehicle State Field (Speed, Gear, Drive Mode, etc.)' },
-  { id: 'climate_field', label: 'Climate State Field (Temp, Fan, Seat Heat)' },
-  { id: 'action_event', label: 'Action Event (Diagnostics Sent, Phone Dialed, etc.)' },
-  { id: 'screen_navigate', label: 'Screen Navigation (User views specific screen)' },
-  { id: 'trip_guidance', label: 'Trip Route Guidance Active' },
-  { id: 'media_service', label: 'Media Service Selected (Spotify, etc.)' },
-];
-
 export const TaskConfigModal: React.FC<TaskConfigModalProps> = ({
   isOpen,
   initialTask,
@@ -54,10 +24,13 @@ export const TaskConfigModal: React.FC<TaskConfigModalProps> = ({
   onClose,
   title = 'Configure Task',
 }) => {
+  const screens = useMockpitStore((s) => s.screens);
+  const componentsByScreen = useMockpitStore((s) => s.componentsByScreen);
+
   const [name, setName] = useState(initialTask?.name || '');
   const [description, setDescription] = useState(initialTask?.description || '');
   const [targetScreen, setTargetScreen] = useState(initialTask?.targetScreen || 'home');
-  const [targetComponent, setTargetComponent] = useState(initialTask?.targetComponent || 'speed');
+  const [targetComponent, setTargetComponent] = useState(initialTask?.targetComponent || 'none');
   const [category, setCategory] = useState<any>(initialTask?.category || 'driving');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | undefined>(initialTask?.timeLimitSeconds);
   const [points, setPoints] = useState<number>(initialTask?.points || 100);
@@ -75,12 +48,87 @@ export const TaskConfigModal: React.FC<TaskConfigModalProps> = ({
   const [criteriaOperator, setCriteriaOperator] = useState<CriteriaOperator>(initCriteria.operator || '=');
   const [criteriaValue, setCriteriaValue] = useState<string>(String(initCriteria.expectedValue ?? ''));
 
+  // Target Screen options from live useMockpitStore
+  const screenOptions = useMemo(() => {
+    return screens.map((s) => {
+      let label = s.name;
+      if (s.parentId) {
+        const parent = screens.find((p) => p.id === s.parentId);
+        label = parent ? `${parent.name} / ${s.name}` : s.name;
+      }
+      return { id: s.id, label };
+    });
+  }, [screens]);
+
+  // Check if targetScreen exists in live screens
+  const isMissingScreen = useMemo(() => {
+    return Boolean(targetScreen && !screens.some((s) => s.id === targetScreen));
+  }, [screens, targetScreen]);
+
+  // Distinct component types on selected screen
+  const componentOptions = useMemo(() => {
+    const list: { id: string; label: string; isMissing?: boolean }[] = [
+      { id: 'none', label: 'None (screen-level task)' },
+    ];
+
+    const screenComps = componentsByScreen[targetScreen] || [];
+    const seen = new Set<string>();
+    screenComps.forEach((c) => {
+      if (!seen.has(c.type)) {
+        seen.add(c.type);
+        list.push({ id: c.type, label: getComponentDisplayName(c.type) });
+      }
+    });
+
+    // If targetComponent is not 'none' and not placed on this screen, preserve it with warning
+    if (targetComponent && targetComponent !== 'none' && !seen.has(targetComponent)) {
+      list.push({
+        id: targetComponent,
+        label: `${getComponentDisplayName(targetComponent)} (Not on this screen)`,
+        isMissing: true,
+      });
+    }
+
+    return list;
+  }, [componentsByScreen, targetScreen, targetComponent]);
+
+  const isComponentNotOnScreen = useMemo(() => {
+    if (!targetComponent || targetComponent === 'none') return false;
+    const screenComps = componentsByScreen[targetScreen] || [];
+    return !screenComps.some((c) => c.type === targetComponent);
+  }, [componentsByScreen, targetScreen, targetComponent]);
+
+  // Available criteria fields for currently selected targetComponent
+  const availableFields = useMemo(() => {
+    return getCriteriaFieldsForComponent(targetComponent, screenOptions);
+  }, [targetComponent, screenOptions]);
+
+  // Check if current criteriaField is custom (not in registry)
+  const isCustomField = useMemo(() => {
+    if (!criteriaField) return false;
+    return !availableFields.some((f) => f.id === criteriaField);
+  }, [availableFields, criteriaField]);
+
+  // Active registry entry
+  const activeRegistryEntry = useMemo(() => {
+    return findRegistryEntry(criteriaField, targetComponent);
+  }, [criteriaField, targetComponent]);
+
+  // Operators allowed for current field
+  const availableOperators: CriteriaOperator[] = useMemo(() => {
+    if (activeRegistryEntry && activeRegistryEntry.operators.length > 0) {
+      return activeRegistryEntry.operators;
+    }
+    return ['=', '!=', '>=', '<=', '>', '<', 'includes'];
+  }, [activeRegistryEntry]);
+
   useEffect(() => {
     if (isOpen) {
       setName(initialTask?.name || '');
       setDescription(initialTask?.description || '');
-      setTargetScreen(initialTask?.targetScreen || 'home');
-      setTargetComponent(initialTask?.targetComponent || 'speed');
+      const screenId = initialTask?.targetScreen || (screens[0]?.id || 'home');
+      setTargetScreen(screenId);
+      setTargetComponent(initialTask?.targetComponent || 'none');
       setCategory(initialTask?.category || 'driving');
       setTimeLimitSeconds(initialTask?.timeLimitSeconds);
       setPoints(initialTask?.points || 100);
@@ -96,17 +144,76 @@ export const TaskConfigModal: React.FC<TaskConfigModalProps> = ({
       setCriteriaOperator(criteria.operator || '=');
       setCriteriaValue(String(criteria.expectedValue ?? ''));
     }
-  }, [isOpen, initialTask]);
+  }, [isOpen, initialTask, screens]);
 
   if (!isOpen) return null;
+
+  const handleScreenChange = (newScreen: string) => {
+    setTargetScreen(newScreen);
+    // targetComponent remains selected; if not on newScreen it will show with warning
+  };
+
+  const handleComponentChange = (newComp: string) => {
+    setTargetComponent(newComp);
+    const fields = getCriteriaFieldsForComponent(newComp, screenOptions);
+    if (fields.length > 0) {
+      const first = fields[0];
+      setCriteriaField(first.id);
+      setCriteriaType(first.criteriaType);
+      setCriteriaOperator(first.operators[0]);
+      if (first.valueType === 'boolean') {
+        setCriteriaValue('true');
+      } else if (first.valueType === 'enum') {
+        setCriteriaValue(first.options?.[0] || '');
+      } else if (first.valueType === 'number') {
+        setCriteriaValue(String(first.min !== undefined ? first.min : 0));
+      } else {
+        setCriteriaValue('');
+      }
+    }
+  };
+
+  const handleFieldChange = (newField: string) => {
+    setCriteriaField(newField);
+    const entry = findRegistryEntry(newField, targetComponent);
+    if (entry) {
+      setCriteriaType(entry.criteriaType);
+      if (!entry.operators.includes(criteriaOperator)) {
+        setCriteriaOperator(entry.operators[0]);
+      }
+      if (entry.valueType === 'boolean') {
+        if (criteriaValue !== 'true' && criteriaValue !== 'false') {
+          setCriteriaValue('true');
+        }
+      } else if (entry.valueType === 'enum') {
+        if (!entry.options?.includes(criteriaValue)) {
+          setCriteriaValue(entry.options?.[0] || '');
+        }
+      } else if (entry.valueType === 'number') {
+        if (isNaN(Number(criteriaValue)) || criteriaValue === '') {
+          setCriteriaValue(String(entry.min !== undefined ? entry.min : 0));
+        }
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     let parsedExpectedValue: any = criteriaValue;
-    if (criteriaValue === 'true') parsedExpectedValue = true;
-    else if (criteriaValue === 'false') parsedExpectedValue = false;
-    else if (!isNaN(Number(criteriaValue)) && criteriaValue.trim() !== '') {
+    if (
+      activeRegistryEntry?.valueType === 'boolean' ||
+      criteriaValue === 'true' ||
+      criteriaValue === 'false'
+    ) {
+      parsedExpectedValue = criteriaValue === 'true' || criteriaValue === '1';
+    } else if (activeRegistryEntry?.valueType === 'number') {
+      parsedExpectedValue = !isNaN(Number(criteriaValue)) && criteriaValue.trim() !== ''
+        ? Number(criteriaValue)
+        : criteriaValue;
+    } else if (activeRegistryEntry?.valueType === 'string') {
+      parsedExpectedValue = String(criteriaValue);
+    } else if (!isNaN(Number(criteriaValue)) && criteriaValue.trim() !== '') {
       parsedExpectedValue = Number(criteriaValue);
     }
 
@@ -182,117 +289,202 @@ export const TaskConfigModal: React.FC<TaskConfigModalProps> = ({
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-300 block">Target Screen</label>
               <select
+                id="target-screen-select"
+                data-testid="target-screen-select"
                 value={targetScreen}
-                onChange={(e) => setTargetScreen(e.target.value)}
+                onChange={(e) => handleScreenChange(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-sky-500"
               >
-                {SCREENS.map((s) => (
-                  <option key={s.id} value={s.id}>{s.label}</option>
+                {isMissingScreen && (
+                  <option value={targetScreen}>
+                    Missing screen ({targetScreen})
+                  </option>
+                )}
+                {screenOptions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
                 ))}
               </select>
+              {isMissingScreen && (
+                <div
+                  id="missing-screen-warning"
+                  data-testid="missing-screen-warning"
+                  className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-lg"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Missing screen ({targetScreen})</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-300 block">Target Component</label>
               <select
+                id="target-component-select"
+                data-testid="target-component-select"
                 value={targetComponent}
-                onChange={(e) => setTargetComponent(e.target.value)}
+                onChange={(e) => handleComponentChange(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-sky-500"
               >
-                {COMPONENTS.map((c) => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
+                {componentOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
                 ))}
               </select>
+              {isComponentNotOnScreen && (
+                <div
+                  id="missing-component-warning"
+                  data-testid="missing-component-warning"
+                  className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-lg"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Component not placed on this screen</span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Deterministic Completion Criteria Section */}
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-            <span className="text-xs font-bold text-sky-400 block tracking-wider uppercase font-mono">
-              Deterministic Completion Criteria
-            </span>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-400 block">Condition Type</label>
-              <select
-                value={criteriaType}
-                onChange={(e) => {
-                  const newType = e.target.value as TaskActionType;
-                  setCriteriaType(newType);
-                  if (newType === 'state_field') {
-                    setCriteriaField('speed');
-                    setCriteriaOperator('>=');
-                    setCriteriaValue('65');
-                  } else if (newType === 'climate_field') {
-                    setCriteriaField('driverTemp');
-                    setCriteriaOperator('=');
-                    setCriteriaValue('72');
-                  } else if (newType === 'action_event') {
-                    setCriteriaField('sendDiagnosticReport');
-                    setCriteriaOperator('=');
-                    setCriteriaValue('true');
-                  } else if (newType === 'screen_navigate') {
-                    setCriteriaField('activeView');
-                    setCriteriaOperator('=');
-                    setCriteriaValue('navigation');
-                  } else if (newType === 'media_service') {
-                    setCriteriaField('selectedMusicService');
-                    setCriteriaOperator('=');
-                    setCriteriaValue('Spotify');
-                  } else if (newType === 'trip_guidance') {
-                    setCriteriaField('activeTrip');
-                    setCriteriaOperator('=');
-                    setCriteriaValue('true');
-                  }
-                }}
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-sky-500"
-              >
-                {CRITERIA_TYPES.map((ct) => (
-                  <option key={ct.id} value={ct.id}>{ct.label}</option>
-                ))}
-              </select>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-sky-400 block tracking-wider uppercase font-mono">
+                Deterministic Completion Criteria
+              </span>
+              <span className="text-[11px] font-mono text-slate-400">
+                {criteriaType}
+              </span>
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
+              {/* Field / Action Dropdown */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-slate-400 block">Field / Action</label>
-                <input
-                  type="text"
+                <select
+                  id="criteria-field-select"
+                  data-testid="criteria-field-select"
                   value={criteriaField}
-                  onChange={(e) => setCriteriaField(e.target.value)}
-                  placeholder="field name..."
+                  onChange={(e) => handleFieldChange(e.target.value)}
                   className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm font-mono focus:outline-none focus:border-sky-500"
-                />
+                >
+                  {isCustomField && (
+                    <option value={criteriaField}>
+                      Custom: {criteriaField}
+                    </option>
+                  )}
+                  {availableFields.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
+              {/* Operator Dropdown */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-slate-400 block">Operator</label>
                 <select
+                  id="criteria-operator-select"
+                  data-testid="criteria-operator-select"
                   value={criteriaOperator}
                   onChange={(e) => setCriteriaOperator(e.target.value as CriteriaOperator)}
                   className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm font-mono focus:outline-none focus:border-sky-500"
                 >
-                  <option value="=">=</option>
-                  <option value="!=">!=</option>
-                  <option value=">=">&gt;=</option>
-                  <option value="<=">&lt;=</option>
-                  <option value=">">&gt;</option>
-                  <option value="<">&lt;</option>
-                  <option value="includes">includes</option>
+                  {availableOperators.map((op) => (
+                    <option key={op} value={op}>
+                      {op}
+                    </option>
+                  ))}
                 </select>
               </div>
 
+              {/* Expected Value */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-slate-400 block">Expected Value</label>
-                <input
-                  type="text"
-                  value={criteriaValue}
-                  onChange={(e) => setCriteriaValue(e.target.value)}
-                  placeholder="value..."
-                  className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm font-mono focus:outline-none focus:border-sky-500"
-                />
+                {activeRegistryEntry?.valueType === 'boolean' ? (
+                  <select
+                    id="criteria-value-select"
+                    data-testid="criteria-value-select"
+                    value={criteriaValue === 'false' ? 'false' : 'true'}
+                    onChange={(e) => setCriteriaValue(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm font-mono focus:outline-none focus:border-sky-500"
+                  >
+                    <option value="true">Yes / True</option>
+                    <option value="false">No / False</option>
+                  </select>
+                ) : activeRegistryEntry?.valueType === 'enum' ? (
+                  <select
+                    id="criteria-value-select"
+                    data-testid="criteria-value-select"
+                    value={criteriaValue}
+                    onChange={(e) => setCriteriaValue(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm font-mono focus:outline-none focus:border-sky-500"
+                  >
+                    {activeRegistryEntry.options?.map((opt) => {
+                      let label = opt;
+                      if (activeRegistryEntry.id === 'activeView') {
+                        const scr = screenOptions.find((s) => s.id === opt);
+                        if (scr) label = scr.label;
+                      }
+                      return (
+                        <option key={opt} value={opt}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                    {criteriaValue &&
+                      !activeRegistryEntry.options?.includes(criteriaValue) && (
+                        <option value={criteriaValue}>
+                          {criteriaValue} (Custom)
+                        </option>
+                      )}
+                  </select>
+                ) : activeRegistryEntry?.valueType === 'number' ? (
+                  <div className="space-y-1">
+                    <input
+                      id="criteria-value-input"
+                      data-testid="criteria-value-input"
+                      type="number"
+                      min={activeRegistryEntry.min}
+                      max={activeRegistryEntry.max}
+                      value={criteriaValue}
+                      onChange={(e) => setCriteriaValue(e.target.value)}
+                      placeholder="0"
+                      className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm font-mono focus:outline-none focus:border-sky-500"
+                    />
+                    {(activeRegistryEntry.min !== undefined ||
+                      activeRegistryEntry.max !== undefined) && (
+                      <span className="text-[10px] text-slate-500 font-mono block">
+                        Range: {activeRegistryEntry.min ?? 0} – {activeRegistryEntry.max ?? 'max'}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    id="criteria-value-input"
+                    data-testid="criteria-value-input"
+                    type="text"
+                    value={criteriaValue}
+                    onChange={(e) => setCriteriaValue(e.target.value)}
+                    placeholder="value..."
+                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm font-mono focus:outline-none focus:border-sky-500"
+                  />
+                )}
               </div>
             </div>
+
+            {/* Custom Field Warning */}
+            {isCustomField && (
+              <div
+                id="custom-field-warning"
+                data-testid="custom-field-warning"
+                className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1.5 rounded-lg"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>Custom: {criteriaField} (not in registry)</span>
+              </div>
+            )}
           </div>
 
           {/* Time Limit & Points */}

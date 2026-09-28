@@ -168,6 +168,16 @@ export const SessionDetailModal: React.FC<SessionDetailModalProps> = ({ session,
                             <span className="text-xs font-mono text-slate-400">
                               Screen: {result.targetScreen}
                             </span>
+                            {result.alreadySatisfiedAtStart && (
+                              <span
+                                id={`already-satisfied-badge-${idx}`}
+                                data-testid="already-satisfied-badge"
+                                className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0"
+                                title="This task began already satisfied and required participant interaction to complete."
+                              >
+                                Started Satisfied
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-slate-400 truncate mt-0.5">
                             {result.description}

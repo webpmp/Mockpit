@@ -3,6 +3,7 @@ import {
   TestDefinition,
   LibraryTask,
   TestTask,
+  TaskSetupStep,
   SessionRecord,
   TaskResult,
   FeedbackAnswer,
@@ -14,6 +15,131 @@ import { BUILTIN_TASK_LIBRARY, INITIAL_TESTS, DEFAULT_FEEDBACK_QUESTIONS } from 
 import { evaluateTaskCriteria, EvaluationState } from './evaluationEngine';
 import { useMockpitStore } from '../store/useMockpitStore';
 import { getRuntimeLog, clearRuntimeLog } from '../lib/hmiRules/runtimeInstrumenter';
+
+export interface ResearcherRuntimeSnapshot {
+  vehicleState: any;
+  climateState: any;
+  componentPropsByScreen: Record<string, Record<string, Record<string, string>>>;
+  activeView: string;
+}
+
+export function applyTaskSetup(task?: LibraryTask | TestTask | null): void {
+  if (!task || !task.setup || task.setup.length === 0) return;
+
+  const mockpit = useMockpitStore.getState();
+
+  for (const step of task.setup) {
+    if (step.kind === 'vehicleState') {
+      mockpit.setVehicleState({ [step.field]: step.value });
+    } else if (step.kind === 'climateState') {
+      mockpit.setClimateState({ [step.field]: step.value });
+    } else if (step.kind === 'activeView') {
+      mockpit.setActiveView(step.value);
+    } else if (step.kind === 'componentProp') {
+      const targetComp = step.component || (typeof task.targetComponent === 'string' ? task.targetComponent : undefined);
+
+      const currentScreens = mockpit.componentsByScreen;
+      let changed = false;
+      const updatedScreens = { ...currentScreens };
+
+      for (const [screenId, comps] of Object.entries(currentScreens)) {
+        let screenChanged = false;
+        const updatedComps = comps.map((c) => {
+          if (
+            targetComp &&
+            (c.id === targetComp || c.type === targetComp)
+          ) {
+            screenChanged = true;
+            return {
+              ...c,
+              staticProps: {
+                ...c.staticProps,
+                [step.field]: String(step.value),
+              },
+            };
+          }
+          return c;
+        });
+
+        if (screenChanged) {
+          updatedScreens[screenId] = updatedComps;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        useMockpitStore.setState({
+          componentsByScreen: updatedScreens,
+          components: updatedScreens[mockpit.activeView] || mockpit.components,
+        });
+        try {
+          localStorage.setItem('mockpit_components_by_screen_v2', JSON.stringify(updatedScreens));
+        } catch {
+          // ignore
+        }
+      }
+
+      if (step.field === 'selectedMusicService' || step.field === 'service') {
+        mockpit.setSelectedMusicService(String(step.value));
+      }
+    }
+  }
+}
+
+export function checkTaskAlreadySatisfied(task?: LibraryTask | TestTask | null): boolean {
+  if (!task || !task.criteria) return false;
+  const mockpit = useMockpitStore.getState();
+  const evalState: EvaluationState = {
+    vehicleState: mockpit.vehicleState,
+    climateState: mockpit.climateState,
+    activeView: mockpit.activeView,
+    activeTrip: mockpit.activeTrip,
+    selectedMusicService: mockpit.selectedMusicService,
+    recentActionEvents: {},
+  };
+  return evaluateTaskCriteria(task.criteria, evalState);
+}
+
+export function restoreResearcherSnapshot(snapshot: ResearcherRuntimeSnapshot | null): void {
+  if (!snapshot) return;
+  const { vehicleState, climateState, componentPropsByScreen } = snapshot;
+  const mockpit = useMockpitStore.getState();
+  mockpit.setVehicleState(vehicleState);
+  mockpit.setClimateState(climateState);
+
+  const currentScreens = mockpit.componentsByScreen;
+  let changed = false;
+  const restoredScreens = { ...currentScreens };
+
+  Object.entries(currentScreens).forEach(([screenId, comps]) => {
+    const savedScreenProps = componentPropsByScreen[screenId];
+    if (savedScreenProps) {
+      const updatedComps = comps.map((c) => {
+        if (savedScreenProps[c.id]) {
+          changed = true;
+          return {
+            ...c,
+            staticProps: { ...savedScreenProps[c.id] },
+          };
+        }
+        return c;
+      });
+      restoredScreens[screenId] = updatedComps;
+    }
+  });
+
+  if (changed) {
+    useMockpitStore.setState({
+      componentsByScreen: restoredScreens,
+      components: restoredScreens[mockpit.activeView] || mockpit.components,
+    });
+    try {
+      localStorage.setItem('mockpit_components_by_screen_v2', JSON.stringify(restoredScreens));
+    } catch {
+      // ignore
+    }
+  }
+}
 
 const STORAGE_TESTS_KEY = 'mockpit_user_testing_tests_v2';
 const STORAGE_LIBRARY_KEY = 'mockpit_user_testing_library_v2';
@@ -85,7 +211,18 @@ function loadSavedTests(): TestDefinition[] {
         safeSetItem(STORAGE_TESTS_KEY, sanitized);
       }
       const parsed = JSON.parse(sanitized);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((test: TestDefinition) => ({
+          ...test,
+          tasks: (test.tasks || []).map((t) => {
+            const builtin = BUILTIN_TASK_LIBRARY.find((b) => b.id === t.id || b.id === t.libraryTaskId);
+            return {
+              ...t,
+              setup: t.setup || builtin?.setup,
+            };
+          }),
+        }));
+      }
     }
   } catch (e) {
     console.error('Failed to load tests from localStorage', e);
@@ -102,7 +239,15 @@ function loadSavedLibrary(): LibraryTask[] {
         safeSetItem(STORAGE_LIBRARY_KEY, sanitized);
       }
       const parsed = JSON.parse(sanitized);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((t: LibraryTask) => {
+          const builtin = BUILTIN_TASK_LIBRARY.find((b) => b.id === t.id);
+          return {
+            ...t,
+            setup: t.setup || builtin?.setup,
+          };
+        });
+      }
     }
   } catch (e) {
     console.error('Failed to load task library from localStorage', e);
@@ -549,9 +694,11 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       // Clear logger for the next task
       clearRuntimeLog();
 
-      // Navigate to target screen if specified and valid
+      // Navigate to target screen if specified and valid (only if not already on that screen)
       if (nextTask && nextTask.targetScreen) {
-        useMockpitStore.getState().setActiveView(nextTask.targetScreen);
+        if (useMockpitStore.getState().activeView !== nextTask.targetScreen) {
+          useMockpitStore.getState().setActiveView(nextTask.targetScreen);
+        }
       }
     } else {
       // All tasks finished! Open final session complete screen

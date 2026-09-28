@@ -974,6 +974,14 @@ const NavDestinationWidget: React.FC<{
     } else {
       setDraftStops((prev) => [...prev, newStop]);
     }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('mockpit-action', {
+          detail: { action: 'addStop', value: true },
+        })
+      );
+    }
   }, [activeTrip, draftStops, startTripGuidance]);
 
   const handledActionIdRef = React.useRef<number | null>(null);

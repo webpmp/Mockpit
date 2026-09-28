@@ -27,6 +27,13 @@ export interface TaskCriteria {
   subCriteria?: SingleCriteria[];
 }
 
+export interface TaskSetupStep {
+  kind: 'vehicleState' | 'climateState' | 'componentProp' | 'activeView';
+  field: string;
+  value: any;
+  component?: string;
+}
+
 export interface LibraryTask {
   id: string;
   name: string;
@@ -34,6 +41,7 @@ export interface LibraryTask {
   targetScreen: string; // e.g. 'home', 'media', 'phone', 'navigation', 'climate', 'weather-radar'
   targetComponent: ComponentType | string; // e.g. 'speed', 'gear', 'climateTemp', etc.
   criteria: TaskCriteria;
+  setup?: TaskSetupStep[];
   timeLimitSeconds?: number; // Optional countdown limit
   points: number; // e.g. 100
   category?: 'driving' | 'climate' | 'media' | 'phone' | 'navigation' | 'diagnostics' | 'custom';
@@ -88,6 +96,7 @@ export interface TaskResult {
   completedAt?: number;
   interactionsCount: number;
   interactions: InteractionLogEntry[];
+  alreadySatisfiedAtStart?: boolean;
 }
 
 export interface SessionRecord {
