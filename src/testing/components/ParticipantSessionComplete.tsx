@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, CheckCircle } from 'lucide-react';
+import { Star, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useUserTestingStore } from '../useUserTestingStore';
 import { FeedbackAnswer, FeedbackQuestion } from '../types';
 import { MasterPasswordModal } from './MasterPasswordModal';
@@ -9,6 +9,7 @@ export const ParticipantSessionComplete: React.FC = () => {
   const sessionLocked = useUserTestingStore((s) => s.sessionLocked);
   const activeSession = useUserTestingStore((s) => s.activeSession);
   const pendingCompletedSession = useUserTestingStore((s) => s.pendingCompletedSession);
+  const saveError = useUserTestingStore((s) => s.saveError);
   const submitSessionFeedback = useUserTestingStore((s) => s.submitSessionFeedback);
   const unlockAndViewResults = useUserTestingStore((s) => s.unlockAndViewResults);
 
@@ -34,6 +35,21 @@ export const ParticipantSessionComplete: React.FC = () => {
               You&apos;re all set. Thanks again.
             </h2>
           </div>
+
+          {saveError && (
+            <div
+              id="save-error-banner"
+              data-testid="save-error-banner"
+              role="alert"
+              className="save-error-banner bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl p-3.5 text-xs flex items-center gap-2.5 text-left"
+            >
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <div>
+                <span className="font-semibold block text-rose-200">Session Save Error</span>
+                <span>Unable to save session data to local storage. Results may not be preserved.</span>
+              </div>
+            </div>
+          )}
 
           {/* Muted researcher-only control in the bottom corner */}
           <div className="pt-6 border-t border-slate-800/60 flex justify-end">
@@ -106,6 +122,21 @@ export const ParticipantSessionComplete: React.FC = () => {
               : 'Your session is complete.'}
           </p>
         </div>
+
+        {saveError && (
+          <div
+            id="save-error-banner"
+            data-testid="save-error-banner"
+            role="alert"
+            className="save-error-banner bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl p-3.5 text-xs flex items-center gap-2.5 text-left"
+          >
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            <div>
+              <span className="font-semibold block text-rose-200">Session Save Error</span>
+              <span>Unable to save session data to local storage. Results may not be preserved.</span>
+            </div>
+          </div>
+        )}
 
         {/* Feedback Form */}
         <form onSubmit={handleSubmit} className="space-y-6">

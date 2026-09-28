@@ -145,6 +145,9 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
     assert.equal(stateAfterTasks.isParticipantMode, true, 'isParticipantMode remains true');
     assert.notEqual(useMockpitStore.getState().screenMode, 'user-testing', 'screenMode has NOT changed to user-testing');
     assert.notEqual(stateAfterTasks.activeTab, 'results', 'activeTab is NOT yet results');
+    // Spec v1.2: Provisional session persisted immediately upon completing the final task
+    assert.equal(stateAfterTasks.sessions.length, 1, 'provisional session persisted before password gate');
+    assert.deepEqual(stateAfterTasks.sessions[0].feedbackAnswers, [], 'feedbackAnswers initially empty');
 
     // Submit feedback
     useUserTestingStore.getState().submitSessionFeedback([
@@ -156,7 +159,9 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
     assert.equal(stateAfterFeedback.isParticipantMode, true, 'isParticipantMode is still true');
     assert.ok(stateAfterFeedback.pendingCompletedSession, 'pendingCompletedSession is set');
     assert.equal(stateAfterFeedback.pendingCompletedSession?.status, 'completed');
-    assert.equal(stateAfterFeedback.sessions.length, 0, 'sessions not persisted yet before master password');
+    // Spec v1.2: Persisted session updated with submitted feedback answers
+    assert.equal(stateAfterFeedback.sessions.length, 1, 'session record count remains 1');
+    assert.equal(stateAfterFeedback.sessions[0].feedbackAnswers[0]?.value, 'Great experience');
 
     // Unlock and view results
     useUserTestingStore.getState().unlockAndViewResults();
@@ -169,7 +174,7 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
     assert.equal(stateAfterUnlock.pendingCompletedSession, null, 'pendingCompletedSession is null');
     assert.equal(stateAfterUnlock.activeTab, 'results', 'activeTab is now results');
     assert.equal(useMockpitStore.getState().screenMode, 'user-testing', 'screenMode returned to user-testing');
-    assert.equal(stateAfterUnlock.sessions.length, 1, 'session successfully persisted to sessions array');
+    assert.equal(stateAfterUnlock.sessions.length, 1, 'session successfully persisted to sessions array and not duplicated');
 
     const persistedStorage = JSON.parse(mockStorage['mockpit_user_testing_sessions_v2'] || '[]');
     assert.equal(persistedStorage.length, 1, 'session persisted in localStorage');
@@ -209,6 +214,8 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
     assert.equal(state.sessionLocked, false, 'sessionLocked is false');
     assert.equal(state.isParticipantMode, true, 'Participant mode still active');
     assert.notEqual(useMockpitStore.getState().screenMode, 'user-testing', 'Not yet routed to user-testing');
+    assert.equal(state.sessions.length, 1, 'provisional session persisted before password gate for 0-question test');
+    assert.deepEqual(state.sessions[0].feedbackAnswers, [], 'feedbackAnswers initially empty array');
 
     // Participant taps Finish Session
     useUserTestingStore.getState().submitSessionFeedback([]);
@@ -394,5 +401,111 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
       'First',
       'Double tap did not overwrite or re-stage pendingCompletedSession'
     );
+  });
+
+  it('9. Spec v1.2: upsertSession helper updates matching id in place and prepends when new', () => {
+    const session1: any = {
+      id: 'SES-001',
+      participantId: 'P-1',
+      status: 'completed',
+      totalPoints: 100,
+      feedbackAnswers: [],
+    };
+    const session2: any = {
+      id: 'SES-002',
+      participantId: 'P-2',
+      status: 'completed',
+      totalPoints: 200,
+      feedbackAnswers: [],
+    };
+
+    // First insert
+    const res1 = useUserTestingStore.getState().upsertSession(session1);
+    assert.equal(res1, true);
+    assert.equal(useUserTestingStore.getState().sessions.length, 1);
+    assert.equal(useUserTestingStore.getState().sessions[0].id, 'SES-001');
+
+    // Prepend second
+    const res2 = useUserTestingStore.getState().upsertSession(session2);
+    assert.equal(res2, true);
+    assert.equal(useUserTestingStore.getState().sessions.length, 2);
+    assert.equal(useUserTestingStore.getState().sessions[0].id, 'SES-002');
+
+    // Update existing session1 with feedback
+    const session1Updated: any = {
+      ...session1,
+      totalPoints: 150,
+      feedbackAnswers: [{ questionId: 'q1', value: 'Answer' }],
+    };
+    const res3 = useUserTestingStore.getState().upsertSession(session1Updated);
+    assert.equal(res3, true);
+    assert.equal(useUserTestingStore.getState().sessions.length, 2, 'Does not duplicate entry');
+    const found = useUserTestingStore.getState().sessions.find((s) => s.id === 'SES-001');
+    assert.equal(found?.totalPoints, 150);
+    assert.equal(found?.feedbackAnswers.length, 1);
+  });
+
+  it('10. Spec v1.2: Stub localStorage.setItem to throw during a sessions write and confirm the save-error banner appears and console.error fires', () => {
+    const originalSetItem = globalThis.localStorage.setItem;
+    const originalConsoleError = console.error;
+    let consoleErrorFired = false;
+    let loggedErrorArgs: any[] = [];
+
+    console.error = (...args: any[]) => {
+      consoleErrorFired = true;
+      loggedErrorArgs = args;
+    };
+
+    try {
+      // Stub localStorage.setItem to throw an error
+      (globalThis.localStorage as any).setItem = () => {
+        throw new Error('QuotaExceededError: DOM Exception 22');
+      };
+
+      const testSession: any = {
+        id: 'SES-FAIL-01',
+        participantId: 'P-FAIL',
+        status: 'completed',
+        totalPoints: 50,
+        feedbackAnswers: [],
+      };
+
+      // Call upsertSession which attempts localStorage write
+      const writeSuccess = useUserTestingStore.getState().upsertSession(testSession);
+      assert.equal(writeSuccess, false, 'upsertSession returns false on failure');
+      assert.equal(consoleErrorFired, true, 'console.error fired when setItem threw');
+      assert.match(
+        String(loggedErrorArgs[0] || ''),
+        /localStorage/i,
+        'Console error message mentions localStorage'
+      );
+      assert.equal(useUserTestingStore.getState().saveError, true, 'saveError store state is true');
+
+      // Verify ParticipantSessionComplete includes save-error-banner markup
+      assert.match(
+        componentContent,
+        /id="save-error-banner"/,
+        'ParticipantSessionComplete renders #save-error-banner'
+      );
+      assert.match(
+        componentContent,
+        /role="alert"/,
+        'save-error banner has role="alert"'
+      );
+    } finally {
+      (globalThis.localStorage as any).setItem = originalSetItem;
+      console.error = originalConsoleError;
+      useUserTestingStore.setState({ saveError: false });
+    }
+  });
+
+  it('11. Spec v1.2: Component markup renders #save-error-banner in both locked and questionnaire states', () => {
+    assert.match(
+      componentContent,
+      /saveError/,
+      'ParticipantSessionComplete reads saveError from store'
+    );
+    const matches = componentContent.match(/id="save-error-banner"/g);
+    assert.ok(matches && matches.length >= 2, 'save-error-banner present in both screens');
   });
 });

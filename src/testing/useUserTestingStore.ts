@@ -61,8 +61,8 @@ function safeSetItem(key: string, value: string): void {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(key, value);
     }
-  } catch {
-    // ignore
+  } catch (e) {
+    console.error(`Failed to write to localStorage for key: ${key}`, e);
   }
 }
 
@@ -163,6 +163,8 @@ interface UserTestingState {
   taskCompletedFlash: boolean;
   sessionCompleteOpen: boolean;
   exitPromptOpen: boolean;
+  saveError: boolean;
+  setSaveError: (error: boolean) => void;
 
   // Active sub-tab in User Testing Mode
   activeTab: 'tests' | 'library' | 'results' | 'settings';
@@ -186,6 +188,7 @@ interface UserTestingState {
 
   // Session Management
   startSession: (testId: string, participantId: string, researcherNotes?: string) => string | null;
+  upsertSession: (record: SessionRecord) => boolean;
   recordActionEvent: (actionName: string, detail?: any) => void;
   evaluateCurrentTask: () => boolean;
   completeCurrentTask: (status?: 'completed' | 'timeout' | 'skipped') => void;
@@ -220,6 +223,8 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
   taskCompletedFlash: false,
   sessionCompleteOpen: false,
   exitPromptOpen: false,
+  saveError: false,
+  setSaveError: (error) => set({ saveError: error }),
 
   activeTab: 'tests',
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -359,6 +364,30 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
   },
 
   // Session Lifecycle
+  upsertSession: (record) => {
+    const currentSessions = get().sessions;
+    const existingIndex = currentSessions.findIndex((s) => s.id === record.id);
+    let updatedSessions: SessionRecord[];
+    if (existingIndex >= 0) {
+      updatedSessions = [...currentSessions];
+      updatedSessions[existingIndex] = record;
+    } else {
+      updatedSessions = [record, ...currentSessions];
+    }
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(STORAGE_SESSIONS_KEY, JSON.stringify(updatedSessions));
+      }
+      set({ sessions: updatedSessions, saveError: false });
+      return true;
+    } catch (e) {
+      console.error('Failed to save session to localStorage', e);
+      set({ sessions: updatedSessions, saveError: true });
+      return false;
+    }
+  },
+
   startSession: (testId, participantId, researcherNotes) => {
     const test = get().tests.find((t) => t.id === testId);
     if (!test || test.tasks.length === 0) return null;
@@ -391,6 +420,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       activeSession: newSession,
       pendingCompletedSession: null,
       sessionLocked: false,
+      saveError: false,
       currentTaskIndex: 0,
       isParticipantMode: true,
       taskStartTime: Date.now(),
@@ -525,6 +555,14 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       }
     } else {
       // All tasks finished! Open final session complete screen
+      const now = Date.now();
+      const provisionalRecord: SessionRecord = {
+        ...updatedSession,
+        status: 'completed',
+        endedAt: now,
+        feedbackAnswers: [],
+      };
+      get().upsertSession(provisionalRecord);
       set({ sessionCompleteOpen: true, taskStartTime: null });
     }
   },
@@ -540,6 +578,8 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       feedbackAnswers: answers,
     };
 
+    get().upsertSession(completedSession);
+
     set({
       pendingCompletedSession: completedSession,
       sessionLocked: true,
@@ -550,9 +590,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
     const state = get();
     const completedSession = state.pendingCompletedSession || state.activeSession;
     if (completedSession) {
-      const updatedSessions = [completedSession, ...state.sessions];
-      safeSetItem(STORAGE_SESSIONS_KEY, JSON.stringify(updatedSessions));
-      set({ sessions: updatedSessions });
+      get().upsertSession(completedSession);
     }
 
     set({
@@ -564,6 +602,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       currentTaskIndex: 0,
       recentActionEvents: {},
       exitPromptOpen: false,
+      saveError: false,
       activeTab: 'results',
     });
 
@@ -579,9 +618,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
         status: abandon ? 'abandoned' : 'completed',
         endedAt: Date.now(),
       };
-      const updatedSessions = [endedSession, ...state.sessions];
-      safeSetItem(STORAGE_SESSIONS_KEY, JSON.stringify(updatedSessions));
-      set({ sessions: updatedSessions });
+      get().upsertSession(endedSession);
     }
 
     set({
@@ -593,6 +630,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       currentTaskIndex: 0,
       recentActionEvents: {},
       exitPromptOpen: false,
+      saveError: false,
       activeTab: 'results',
     });
 
