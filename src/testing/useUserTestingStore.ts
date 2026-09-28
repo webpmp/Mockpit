@@ -427,6 +427,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
   evaluateCurrentTask: () => {
     const state = get();
     if (!state.isParticipantMode || !state.activeSession) return false;
+    if (state.sessionCompleteOpen || state.sessionLocked) return false;
 
     const currentTask = state.activeSession.testSnapshot.tasks[state.currentTaskIndex];
     if (!currentTask || !currentTask.criteria) return false;
@@ -453,6 +454,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
   completeCurrentTask: (status = 'completed') => {
     const state = get();
     if (!state.isParticipantMode || !state.activeSession) return;
+    if (state.sessionCompleteOpen || state.sessionLocked) return;
 
     const currentTask = state.activeSession.testSnapshot.tasks[state.currentTaskIndex];
     if (!currentTask) return;
@@ -529,7 +531,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
 
   submitSessionFeedback: (answers) => {
     const state = get();
-    if (!state.activeSession) return;
+    if (!state.activeSession || state.sessionLocked) return;
 
     const completedSession: SessionRecord = {
       ...state.activeSession,
@@ -677,7 +679,12 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
 if (typeof window !== 'undefined' && typeof useMockpitStore?.subscribe === 'function') {
   useMockpitStore.subscribe(() => {
     const testingStore = useUserTestingStore.getState();
-    if (testingStore.isParticipantMode && testingStore.activeSession) {
+    if (
+      testingStore.isParticipantMode &&
+      testingStore.activeSession &&
+      !testingStore.sessionCompleteOpen &&
+      !testingStore.sessionLocked
+    ) {
       testingStore.evaluateCurrentTask();
     }
   });

@@ -221,4 +221,178 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
     assert.equal(useUserTestingStore.getState().activeTab, 'results');
     assert.equal(useMockpitStore.getState().screenMode, 'user-testing');
   });
+
+  it('6. Spec v1.1 Guard: evaluateCurrentTask and completeCurrentTask return early when sessionCompleteOpen or sessionLocked is true', () => {
+    const singleTaskTest = useUserTestingStore.getState().addTest({
+      name: 'Single Task Test',
+      goal: 'Guard check test',
+      tasks: [
+        {
+          id: 'task-guard-1',
+          instanceId: 'inst-guard-1',
+          order: 0,
+          name: 'Reach 65 MPH',
+          description: 'Drive at 65 MPH or faster',
+          targetScreen: 'cluster',
+          targetComponent: 'speedometer',
+          criteria: {
+            type: 'state_field',
+            field: 'speed',
+            operator: '>=',
+            expectedValue: 65,
+          } as any,
+          points: 150,
+        },
+      ],
+      feedbackQuestions: [
+        { id: 'q1', prompt: 'Feedback prompt', type: 'text' },
+      ],
+    });
+
+    useUserTestingStore.getState().startSession(singleTaskTest.id, 'P-GUARD-01');
+    useMockpitStore.getState().setVehicleState({ gear: 'D', speed: 70 });
+    const completed = useUserTestingStore.getState().evaluateCurrentTask();
+    assert.equal(completed, true);
+
+    // Initial state: task completed once
+    const state1 = useUserTestingStore.getState();
+    assert.equal(state1.activeSession?.taskResults.length, 1);
+    assert.equal(state1.activeSession?.totalPoints, 150);
+    assert.equal(state1.sessionCompleteOpen, true);
+    assert.equal(state1.sessionLocked, false);
+
+    // Calling evaluateCurrentTask directly while sessionCompleteOpen must return false and not re-complete
+    const evalResult1 = useUserTestingStore.getState().evaluateCurrentTask();
+    assert.equal(evalResult1, false, 'evaluateCurrentTask returns false when sessionCompleteOpen is true');
+    assert.equal(useUserTestingStore.getState().activeSession?.taskResults.length, 1);
+    assert.equal(useUserTestingStore.getState().activeSession?.totalPoints, 150);
+
+    // Calling completeCurrentTask directly while sessionCompleteOpen must return early
+    useUserTestingStore.getState().completeCurrentTask('completed');
+    assert.equal(useUserTestingStore.getState().activeSession?.taskResults.length, 1);
+    assert.equal(useUserTestingStore.getState().activeSession?.totalPoints, 150);
+
+    // Lock session
+    useUserTestingStore.getState().submitSessionFeedback([]);
+    assert.equal(useUserTestingStore.getState().sessionLocked, true);
+
+    // While sessionLocked is true, evaluateCurrentTask and completeCurrentTask must also return early
+    const evalResult2 = useUserTestingStore.getState().evaluateCurrentTask();
+    assert.equal(evalResult2, false, 'evaluateCurrentTask returns false when sessionLocked is true');
+    useUserTestingStore.getState().completeCurrentTask('completed');
+    assert.equal(useUserTestingStore.getState().activeSession?.taskResults.length, 1);
+    assert.equal(useUserTestingStore.getState().activeSession?.totalPoints, 150);
+  });
+
+  it('7. Spec v1.1 Guard: persistent criteria and Mockpit state changes during session-complete do not duplicate task results', () => {
+    // Reset vehicle to Park at 0 speed before starting test
+    useMockpitStore.getState().setVehicleState({ gear: 'P', speed: 0 });
+
+    // Wire subscription manually as done in browser environment
+    const unsub = useMockpitStore.subscribe(() => {
+      const testingStore = useUserTestingStore.getState();
+      if (
+        testingStore.isParticipantMode &&
+        testingStore.activeSession &&
+        !testingStore.sessionCompleteOpen &&
+        !testingStore.sessionLocked
+      ) {
+        testingStore.evaluateCurrentTask();
+      }
+    });
+
+    try {
+      const singleTaskTest = useUserTestingStore.getState().addTest({
+        name: 'Persistent Criteria Speed Test',
+        goal: 'Verify persistent speed criterion does not trigger duplicate completion',
+        tasks: [
+          {
+            id: 'task-speed-persist',
+            instanceId: 'inst-speed-persist',
+            order: 0,
+            name: 'Maintain High Speed',
+            description: 'Drive fast',
+            targetScreen: 'cluster',
+            targetComponent: 'speedometer',
+            criteria: {
+              type: 'state_field',
+              field: 'speed',
+              operator: '>=',
+              expectedValue: 65,
+            } as any,
+            points: 100,
+          },
+        ],
+        feedbackQuestions: [
+          { id: 'q1', prompt: 'Comments', type: 'text' },
+        ],
+      });
+
+      useUserTestingStore.getState().startSession(singleTaskTest.id, 'P-GUARD-02');
+      
+      // Satisfy criterion via store mutation (triggers subscription)
+      useMockpitStore.getState().setVehicleState({ gear: 'D', speed: 75 });
+
+      const afterFirstComplete = useUserTestingStore.getState();
+      assert.equal(afterFirstComplete.sessionCompleteOpen, true);
+      assert.equal(afterFirstComplete.activeSession?.taskResults.length, 1);
+      assert.equal(afterFirstComplete.activeSession?.totalPoints, 100);
+
+      // Simulate multiple Mockpit state changes while on questionnaire
+      useMockpitStore.getState().setVehicleState({ gear: 'D', speed: 80 });
+      useMockpitStore.getState().setVehicleState({ gear: 'D', speed: 85 });
+      useMockpitStore.getState().setVehicleState({ gear: 'D', speed: 90 });
+
+      const afterSpeedChanges = useUserTestingStore.getState();
+      assert.equal(afterSpeedChanges.activeSession?.taskResults.length, 1, 'Still exactly 1 TaskResult');
+      assert.equal(afterSpeedChanges.activeSession?.totalPoints, 100, 'Points remained 100');
+
+      // Submit feedback
+      useUserTestingStore.getState().submitSessionFeedback([{ questionId: 'q1', prompt: 'Comments', type: 'text', value: 'Smooth' }]);
+      assert.equal(useUserTestingStore.getState().sessionLocked, true);
+
+      // Simulate more Mockpit changes while locked
+      useMockpitStore.getState().setVehicleState({ gear: 'D', speed: 95 });
+      useMockpitStore.getState().setVehicleState({ gear: 'D', speed: 100 });
+
+      const afterLockedChanges = useUserTestingStore.getState();
+      assert.equal(afterLockedChanges.activeSession?.taskResults.length, 1, 'Still exactly 1 TaskResult');
+      assert.equal(afterLockedChanges.activeSession?.totalPoints, 100, 'Points remained 100');
+      assert.equal(afterLockedChanges.pendingCompletedSession?.taskResults.length, 1);
+      assert.equal(afterLockedChanges.pendingCompletedSession?.totalPoints, 100);
+    } finally {
+      unsub();
+    }
+  });
+
+  it('8. Spec v1.1 Guard: double-tap submitSessionFeedback returns early if sessionLocked is already true', () => {
+    const test = useUserTestingStore.getState().tests[0];
+    useUserTestingStore.getState().startSession(test.id, 'P-DOUBLE-TAP');
+    
+    // Complete tasks
+    for (let i = 0; i < test.tasks.length; i++) {
+      useUserTestingStore.getState().completeCurrentTask('completed');
+    }
+
+    assert.equal(useUserTestingStore.getState().sessionCompleteOpen, true);
+    assert.equal(useUserTestingStore.getState().sessionLocked, false);
+
+    // First submit
+    useUserTestingStore.getState().submitSessionFeedback([{ questionId: 'q1', prompt: 'P', type: 'text', value: 'First' }]);
+    assert.equal(useUserTestingStore.getState().sessionLocked, true);
+    const stagedSession = useUserTestingStore.getState().pendingCompletedSession;
+    assert.ok(stagedSession);
+    assert.equal(stagedSession?.feedbackAnswers[0]?.value, 'First');
+
+    // Second submit (double tap simulation) with different answers
+    useUserTestingStore.getState().submitSessionFeedback([{ questionId: 'q1', prompt: 'P', type: 'text', value: 'Second' }]);
+    
+    // Confirm it was ignored: sessionLocked remains true and pendingCompletedSession is unchanged
+    assert.equal(useUserTestingStore.getState().sessionLocked, true);
+    assert.equal(
+      useUserTestingStore.getState().pendingCompletedSession?.feedbackAnswers[0]?.value,
+      'First',
+      'Double tap did not overwrite or re-stage pendingCompletedSession'
+    );
+  });
 });
