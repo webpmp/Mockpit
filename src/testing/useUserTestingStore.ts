@@ -23,66 +23,78 @@ export interface ResearcherRuntimeSnapshot {
   activeView: string;
 }
 
+let applyingSetup = false;
+
+export function isApplyingSetup(): boolean {
+  return applyingSetup;
+}
+
 export function applyTaskSetup(task?: LibraryTask | TestTask | null): void {
   if (!task || !task.setup || task.setup.length === 0) return;
 
-  const mockpit = useMockpitStore.getState();
+  const previousApplying = applyingSetup;
+  applyingSetup = true;
+  try {
+    const mockpit = useMockpitStore.getState();
 
-  for (const step of task.setup) {
-    if (step.kind === 'vehicleState') {
-      mockpit.setVehicleState({ [step.field]: step.value });
-    } else if (step.kind === 'climateState') {
-      mockpit.setClimateState({ [step.field]: step.value });
-    } else if (step.kind === 'activeView') {
-      mockpit.setActiveView(step.value);
-    } else if (step.kind === 'componentProp') {
-      const targetComp = step.component || (typeof task.targetComponent === 'string' ? task.targetComponent : undefined);
+    for (const step of task.setup) {
+      if (step.kind === 'vehicleState') {
+        mockpit.setVehicleState({ [step.field]: step.value });
+      } else if (step.kind === 'climateState') {
+        mockpit.setClimateState({ [step.field]: step.value });
+      } else if (step.kind === 'activeView') {
+        mockpit.setActiveView(step.value);
+      } else if (step.kind === 'componentProp') {
+        const targetComp = step.component || (typeof task.targetComponent === 'string' ? task.targetComponent : undefined);
 
-      const currentScreens = mockpit.componentsByScreen;
-      let changed = false;
-      const updatedScreens = { ...currentScreens };
+        const currentScreens = mockpit.componentsByScreen;
+        let changed = false;
+        const updatedScreens = { ...currentScreens };
 
-      for (const [screenId, comps] of Object.entries(currentScreens)) {
-        let screenChanged = false;
-        const updatedComps = comps.map((c) => {
-          if (
-            targetComp &&
-            (c.id === targetComp || c.type === targetComp)
-          ) {
-            screenChanged = true;
-            return {
-              ...c,
-              staticProps: {
-                ...c.staticProps,
-                [step.field]: String(step.value),
-              },
-            };
+        for (const [screenId, comps] of Object.entries(currentScreens)) {
+          let screenChanged = false;
+          const updatedComps = comps.map((c) => {
+            if (
+              targetComp &&
+              (c.id === targetComp || c.type === targetComp)
+            ) {
+              screenChanged = true;
+              return {
+                ...c,
+                staticProps: {
+                  ...c.staticProps,
+                  [step.field]: String(step.value),
+                },
+              };
+            }
+            return c;
+          });
+
+          if (screenChanged) {
+            updatedScreens[screenId] = updatedComps;
+            changed = true;
           }
-          return c;
-        });
-
-        if (screenChanged) {
-          updatedScreens[screenId] = updatedComps;
-          changed = true;
         }
-      }
 
-      if (changed) {
-        useMockpitStore.setState({
-          componentsByScreen: updatedScreens,
-          components: updatedScreens[mockpit.activeView] || mockpit.components,
-        });
-        try {
-          localStorage.setItem('mockpit_components_by_screen_v2', JSON.stringify(updatedScreens));
-        } catch {
-          // ignore
+        if (changed) {
+          useMockpitStore.setState({
+            componentsByScreen: updatedScreens,
+            components: updatedScreens[mockpit.activeView] || mockpit.components,
+          });
+          try {
+            localStorage.setItem('mockpit_components_by_screen_v2', JSON.stringify(updatedScreens));
+          } catch {
+            // ignore
+          }
         }
-      }
 
-      if (step.field === 'selectedMusicService' || step.field === 'service') {
-        mockpit.setSelectedMusicService(String(step.value));
+        if (step.field === 'selectedMusicService' || step.field === 'service') {
+          mockpit.setSelectedMusicService(String(step.value));
+        }
       }
     }
+  } finally {
+    applyingSetup = previousApplying;
   }
 }
 
@@ -102,17 +114,21 @@ export function checkTaskAlreadySatisfied(task?: LibraryTask | TestTask | null):
 
 export function restoreResearcherSnapshot(snapshot: ResearcherRuntimeSnapshot | null): void {
   if (!snapshot) return;
-  const { vehicleState, climateState, componentPropsByScreen } = snapshot;
+  const { vehicleState, climateState, componentPropsByScreen, activeView } = snapshot;
   const mockpit = useMockpitStore.getState();
-  mockpit.setVehicleState(vehicleState);
-  mockpit.setClimateState(climateState);
+  if (vehicleState) {
+    mockpit.setVehicleState(vehicleState);
+  }
+  if (climateState) {
+    mockpit.setClimateState(climateState);
+  }
 
   const currentScreens = mockpit.componentsByScreen;
   let changed = false;
   const restoredScreens = { ...currentScreens };
 
   Object.entries(currentScreens).forEach(([screenId, comps]) => {
-    const savedScreenProps = componentPropsByScreen[screenId];
+    const savedScreenProps = componentPropsByScreen?.[screenId];
     if (savedScreenProps) {
       const updatedComps = comps.map((c) => {
         if (savedScreenProps[c.id]) {
@@ -138,6 +154,10 @@ export function restoreResearcherSnapshot(snapshot: ResearcherRuntimeSnapshot | 
     } catch {
       // ignore
     }
+  }
+
+  if (activeView && mockpit.activeView !== activeView) {
+    mockpit.setActiveView(activeView);
   }
 }
 
@@ -310,6 +330,9 @@ interface UserTestingState {
   exitPromptOpen: boolean;
   saveError: boolean;
   setSaveError: (error: boolean) => void;
+  researcherSnapshot: ResearcherRuntimeSnapshot | null;
+  taskAlreadySatisfied: boolean;
+  taskArmed: boolean;
 
   // Active sub-tab in User Testing Mode
   activeTab: 'tests' | 'library' | 'results' | 'settings';
@@ -370,6 +393,9 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
   exitPromptOpen: false,
   saveError: false,
   setSaveError: (error) => set({ saveError: error }),
+  researcherSnapshot: null,
+  taskAlreadySatisfied: false,
+  taskArmed: true,
 
   activeTab: 'tests',
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -537,10 +563,38 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
     const test = get().tests.find((t) => t.id === testId);
     if (!test || test.tasks.length === 0) return null;
 
-    const sessionId = `SES-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    // 1. Snapshot researcher runtime state before any setup runs
+    const mockpit = useMockpitStore.getState();
+    const componentPropsByScreen: Record<string, Record<string, Record<string, string>>> = {};
+    for (const [screenId, comps] of Object.entries(mockpit.componentsByScreen || {})) {
+      componentPropsByScreen[screenId] = {};
+      for (const comp of comps) {
+        componentPropsByScreen[screenId][comp.id] = { ...(comp.staticProps || {}) };
+      }
+    }
+    const snapshot: ResearcherRuntimeSnapshot = {
+      vehicleState: JSON.parse(JSON.stringify(mockpit.vehicleState || {})),
+      climateState: JSON.parse(JSON.stringify(mockpit.climateState || {})),
+      componentPropsByScreen,
+      activeView: mockpit.activeView,
+    };
 
     // Create immutable snapshot of the test configuration
     const testSnapshot: TestDefinition = JSON.parse(JSON.stringify(test));
+    const firstTask = testSnapshot.tasks[0];
+
+    // 2. Apply setup, task 1, under suppression
+    try {
+      applyingSetup = true;
+      applyTaskSetup(firstTask);
+    } finally {
+      applyingSetup = false;
+    }
+
+    // 5. Already-satisfied guard after setup
+    const isAlreadySatisfied = checkTaskAlreadySatisfied(firstTask);
+
+    const sessionId = `SES-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
     const newSession: SessionRecord = {
       id: sessionId,
@@ -562,6 +616,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
     clearRuntimeLog();
 
     set({
+      researcherSnapshot: snapshot,
       activeSession: newSession,
       pendingCompletedSession: null,
       sessionLocked: false,
@@ -573,18 +628,22 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       taskCompletedFlash: false,
       sessionCompleteOpen: false,
       exitPromptOpen: false,
+      taskAlreadySatisfied: isAlreadySatisfied,
+      taskArmed: !isAlreadySatisfied,
     });
 
-    // Auto-navigate to first task target screen if defined
-    const firstTask = testSnapshot.tasks[0];
+    // Auto-navigate to first task target screen if defined (navigate only on change)
     if (firstTask && firstTask.targetScreen) {
-      useMockpitStore.getState().setActiveView(firstTask.targetScreen);
+      if (useMockpitStore.getState().activeView !== firstTask.targetScreen) {
+        useMockpitStore.getState().setActiveView(firstTask.targetScreen);
+      }
     }
 
     return sessionId;
   },
 
   recordActionEvent: (actionName, detail) => {
+    if (applyingSetup) return;
     const state = get();
     if (!state.isParticipantMode || !state.activeSession) return;
 
@@ -600,6 +659,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
   },
 
   evaluateCurrentTask: () => {
+    if (applyingSetup) return false;
     const state = get();
     if (!state.isParticipantMode || !state.activeSession) return false;
     if (state.sessionCompleteOpen || state.sessionLocked) return false;
@@ -618,6 +678,15 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
     };
 
     const isSatisfied = evaluateTaskCriteria(currentTask.criteria, evalState);
+
+    // If task started already satisfied, don't complete until seen unsatisfied at least once
+    if (!state.taskArmed) {
+      if (!isSatisfied) {
+        set({ taskArmed: true });
+      }
+      return false;
+    }
+
     if (isSatisfied) {
       get().completeCurrentTask('completed');
       return true;
@@ -656,6 +725,7 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       completedAt: now,
       interactionsCount: taskInteractions.length,
       interactions: [...taskInteractions],
+      alreadySatisfiedAtStart: Boolean(state.taskAlreadySatisfied),
     };
 
     const updatedTaskResults = [...state.activeSession.taskResults, taskResult];
@@ -685,14 +755,17 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
     if (nextIndex < totalTasks) {
       // Advance to next task
       const nextTask = state.activeSession.testSnapshot.tasks[nextIndex];
-      set({
-        currentTaskIndex: nextIndex,
-        taskStartTime: Date.now(),
-        recentActionEvents: {},
-      });
 
-      // Clear logger for the next task
-      clearRuntimeLog();
+      // Apply setup, later tasks, under suppression
+      try {
+        applyingSetup = true;
+        applyTaskSetup(nextTask);
+      } finally {
+        applyingSetup = false;
+      }
+
+      // Check already satisfied guard after setup
+      const isAlreadySatisfied = checkTaskAlreadySatisfied(nextTask);
 
       // Navigate to target screen if specified and valid (only if not already on that screen)
       if (nextTask && nextTask.targetScreen) {
@@ -700,6 +773,17 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
           useMockpitStore.getState().setActiveView(nextTask.targetScreen);
         }
       }
+
+      set({
+        currentTaskIndex: nextIndex,
+        taskStartTime: Date.now(),
+        recentActionEvents: {},
+        taskAlreadySatisfied: isAlreadySatisfied,
+        taskArmed: !isAlreadySatisfied,
+      });
+
+      // Clear logger for the next task
+      clearRuntimeLog();
     } else {
       // All tasks finished! Open final session complete screen
       const now = Date.now();
@@ -740,7 +824,14 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       get().upsertSession(completedSession);
     }
 
+    if (state.researcherSnapshot) {
+      restoreResearcherSnapshot(state.researcherSnapshot);
+    }
+
     set({
+      researcherSnapshot: null,
+      taskAlreadySatisfied: false,
+      taskArmed: true,
       activeSession: null,
       isParticipantMode: false,
       sessionCompleteOpen: false,
@@ -767,7 +858,14 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
       get().upsertSession(endedSession);
     }
 
+    if (state.researcherSnapshot) {
+      restoreResearcherSnapshot(state.researcherSnapshot);
+    }
+
     set({
+      researcherSnapshot: null,
+      taskAlreadySatisfied: false,
+      taskArmed: true,
       activeSession: null,
       isParticipantMode: false,
       sessionCompleteOpen: false,
