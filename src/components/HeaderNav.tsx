@@ -377,7 +377,9 @@ export const HeaderNav: React.FC = () => {
         {shouldRenderScreenSelector && (
           <div
             id="screen-selector-container"
-            className={`flex items-center overflow-hidden transition-all duration-200 ease-out ${
+            className={`flex items-center ${
+              isMegaMenuOpen ? 'overflow-visible' : 'overflow-hidden'
+            } transition-all duration-200 ease-out ${
               isScreenSelectorVisible && screenMode !== 'user-testing'
                 ? 'max-w-[500px] opacity-100 ml-1'
                 : 'max-w-0 opacity-0 pointer-events-none ml-0'
