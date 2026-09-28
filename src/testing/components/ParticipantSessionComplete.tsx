@@ -97,10 +97,7 @@ export const ParticipantSessionComplete: React.FC = () => {
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight">
             Thank you for participating
           </h2>
-          <div className="flex items-center justify-center gap-2 text-sm text-slate-400 font-mono">
-            <span>Duration: <strong className="text-slate-200 font-semibold">{session.totalDurationSeconds}s</strong></span>
-          </div>
-          <p className="text-sm text-slate-400 pt-1">
+          <p className="text-sm text-slate-400">
             {questions.length > 0
               ? 'Your session is complete. Please answer a few final questions.'
               : 'Your session is complete.'}

@@ -14,6 +14,8 @@ interface SpeedometerWidgetProps {
   styleOpacity?: number;
 }
 
+export const SPEEDOMETER_DRAG_SENSITIVITY = 3;
+
 export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
   component,
   resolved = {} as Record<string, any>,
@@ -146,8 +148,8 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
     // Downward (+deltaY) and Leftward (-deltaX) produce negative delta (decrease speed)
     const combinedDeltaPixels = -deltaY + deltaX;
 
-    // Sensitivity: approximately 14 pixels per 1 unit of speed change
-    const SENSITIVITY = 14;
+    // Sensitivity: approximately 3 pixels per 1 unit of speed change (tuned for shorter, controllable drag distance)
+    const SENSITIVITY = SPEEDOMETER_DRAG_SENSITIVITY;
     const speedDelta = combinedDeltaPixels / SENSITIVITY;
 
     // Round to nearest integer (normal increment) and clamp to [0, maxSpd]

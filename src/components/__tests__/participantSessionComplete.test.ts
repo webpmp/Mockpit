@@ -67,11 +67,16 @@ describe('Participant Session-Complete Screen — Spec v1 Suite', () => {
       'ParticipantSessionComplete must not reference maxPoints'
     );
 
-    // Duration is preserved
-    assert.match(
+    // Duration is removed from participant-facing modal
+    assert.doesNotMatch(
       componentContent,
       /Duration:/,
-      'ParticipantSessionComplete retains Duration'
+      'ParticipantSessionComplete must not display "Duration:"'
+    );
+    assert.doesNotMatch(
+      componentContent,
+      /totalDurationSeconds/,
+      'ParticipantSessionComplete must not reference totalDurationSeconds'
     );
   });
 
