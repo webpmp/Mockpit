@@ -8,7 +8,7 @@ Prototyping vehicle infotainment systems with component-based, behavior-driven H
 
 ![Mockpit Presentation](/public/mockpit-tester.png)
 
-<p align="center"><strong>Presentation/Tester Mode</strong></p>
+<p align="center"><strong>Presenter Mode</strong></p>
 
 ---
 
