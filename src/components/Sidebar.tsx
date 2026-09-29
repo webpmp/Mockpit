@@ -280,12 +280,14 @@ export const Sidebar: React.FC = () => {
   const notificationComponents = useMockpitStore((s) => s.notificationComponents);
   const notificationStackPosition = useMockpitStore((s) => s.notificationStackPosition);
   const setNotificationStackPosition = useMockpitStore((s) => s.setNotificationStackPosition);
+  const notificationLibraryExpandRequest = useMockpitStore((s) => s.notificationLibraryExpandRequest);
   const reorderNotificationComponent = useMockpitStore((s) => s.reorderNotificationComponent);
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
   const selectComponent = useMockpitStore((s) => s.selectComponent);
   const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
 
   const categoryHeaderRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const notificationItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [activeCategory, setActiveCategory] = useState<string | null>(() => {
     if (activeView === 'home') return 'home';
@@ -302,6 +304,37 @@ export const Sidebar: React.FC = () => {
     else if (activeView === 'media') setActiveCategory('media');
     else if (activeView === 'phone') setActiveCategory('phone');
   }, [activeView]);
+
+  // Expand and scroll notifications category into view when requested (e.g. clicking Ghost card)
+  useEffect(() => {
+    if (notificationLibraryExpandRequest > 0) {
+      setActiveCategory('notifications');
+      setTimeout(() => {
+        categoryHeaderRefs.current['notifications']?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    }
+  }, [notificationLibraryExpandRequest]);
+
+  // When selection changes to a notification, scroll its row into view inside the list
+  useEffect(() => {
+    if (selectedComponentId && notificationComponents.some((c) => c.id === selectedComponentId)) {
+      notificationItemRefs.current[selectedComponentId]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [selectedComponentId, notificationComponents]);
+
+  const handleSidebarClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('[data-keep-selection]') ||
+      target.closest('[data-notification-instance]') ||
+      target.closest('[data-add-button]') ||
+      target.closest('[data-drag-source]') ||
+      target.closest('[draggable="true"]')
+    ) {
+      return;
+    }
+    selectComponent(null);
+  };
 
   const toggleCategory = (catKey: string) => {
     setActiveCategory((prev) => {
@@ -334,7 +367,10 @@ export const Sidebar: React.FC = () => {
     NOTIFICATION_LIBRARY_ITEMS.length;
 
   return (
-    <div className="w-80 h-full bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
+    <div
+      onClick={handleSidebarClick}
+      className="w-80 h-full bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 overflow-y-auto custom-scrollbar"
+    >
       {/* Sidebar Header */}
       <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40 shrink-0 select-none">
         <div>
@@ -375,7 +411,7 @@ export const Sidebar: React.FC = () => {
 
         {/* Notifications Expanded Content */}
         {activeCategory === 'notifications' && (
-          <div className="p-3 space-y-3 bg-slate-950/40 border-t border-slate-800/60">
+          <div data-keep-selection="true" className="p-3 space-y-3 bg-slate-950/40 border-t border-slate-800/60">
             {/* Global Stack Position Selector */}
             <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
               <label className="text-[10px] font-mono font-bold text-slate-400 uppercase block mb-1.5">
@@ -411,6 +447,7 @@ export const Sidebar: React.FC = () => {
                 <div
                   key={item.type}
                   draggable
+                  data-drag-source="true"
                   onDragStart={(e) => handleDragStart(e, item.type)}
                   className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 hover:border-amber-500/50 hover:bg-slate-800 transition-all cursor-grab active:cursor-grabbing group shadow-sm"
                 >
@@ -432,7 +469,11 @@ export const Sidebar: React.FC = () => {
                     </div>
 
                     <button
-                      onClick={() => handleAddNotification()}
+                      data-add-button="true"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddNotification();
+                      }}
                       className="p-1.5 rounded-lg bg-slate-700/60 text-slate-300 hover:bg-amber-500 hover:text-slate-950 transition-colors shrink-0 cursor-pointer"
                       title="Add notification"
                     >
@@ -471,6 +512,10 @@ export const Sidebar: React.FC = () => {
                   return (
                     <div
                       key={comp.id}
+                      ref={(el) => {
+                        notificationItemRefs.current[comp.id] = el;
+                      }}
+                      data-notification-instance="true"
                       onClick={() => selectComponent(comp.id)}
                       className={`p-2.5 rounded-xl border transition-all cursor-pointer text-xs ${
                         isSelected
@@ -569,6 +614,7 @@ export const Sidebar: React.FC = () => {
                       <div
                         key={item.type}
                         draggable
+                        data-drag-source="true"
                         onDragStart={(e) => handleDragStart(e, item.type)}
                         className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 hover:border-sky-500/50 hover:bg-slate-800 transition-all cursor-grab active:cursor-grabbing group shadow-sm"
                       >
@@ -590,7 +636,11 @@ export const Sidebar: React.FC = () => {
                           </div>
 
                           <button
-                            onClick={() => addComponent(item.type)}
+                            data-add-button="true"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addComponent(item.type);
+                            }}
                             className="p-1.5 rounded-lg bg-slate-700/60 text-slate-300 hover:bg-sky-500 hover:text-slate-950 transition-colors shrink-0 cursor-pointer"
                             title="Add to canvas"
                           >

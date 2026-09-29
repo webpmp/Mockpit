@@ -16,6 +16,9 @@ import { WeatherScreenShell } from './weather/WeatherScreenShell';
 import { useWeatherStore } from '../store/useWeatherStore';
 import { useUserTestingStore } from '../testing/useUserTestingStore';
 import { Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare, Battery, Zap } from 'lucide-react';
+import { getNotificationStackPositionClasses } from '../utils/notificationPosition';
+
+export { getNotificationStackPositionClasses };
 
 const getTransitionClasses = (style: TransitionStyle = 'fade', isActive: boolean) => {
   if (!isActive) {
@@ -234,6 +237,8 @@ export const Canvas: React.FC = () => {
   const clearTransientNotification = useMockpitStore((s) => s.clearTransientNotification);
   const clearEventNotification = useMockpitStore((s) => s.clearEventNotification);
   const notificationStackPosition = useMockpitStore((s) => s.notificationStackPosition);
+  const requestExpandNotificationsLibrary = useMockpitStore((s) => s.requestExpandNotificationsLibrary);
+  const notificationGhostActive = useMockpitStore((s) => s.notificationGhostActive);
   const interactionEvents = useMockpitStore((s) => s.interactionEvents);
   const vehicleState = useMockpitStore((s) => s.vehicleState);
   const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
@@ -503,7 +508,7 @@ export const Canvas: React.FC = () => {
         const rawH = resizeInfo.initialH + deltaY;
 
         const currentComps = useMockpitStore.getState().components;
-        const comp = currentComps.find((c) => c.id === resizeInfo.id);
+        const comp = currentComps.find((c) => c.id === resizeInfo.id) || useMockpitStore.getState().notificationComponents.find((c) => c.id === resizeInfo.id);
         const compX = comp?.x ?? 0;
         const compY = comp?.y ?? 0;
         const compMinW = comp?.type === 'mediaSearch' ? 550 : comp?.type === 'overheadVisualization' ? 400 : 40;
@@ -858,14 +863,14 @@ export const Canvas: React.FC = () => {
                   ? allEditorComponents.find((c) => c.id === draggedOrResizedId)
                   : null;
 
-                return [...allEditorComponents]
+                return [...components]
                   .sort((a, b) => {
                     if (b.parentId === a.id) return -1;
                     if (a.parentId === b.id) return 1;
                     const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
                     const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
                     if (zA !== zB) return zA - zB;
-                    return allEditorComponents.indexOf(a) - allEditorComponents.indexOf(b);
+                    return components.indexOf(a) - components.indexOf(b);
                   })
                   .map((comp) => {
                     const isSelected = comp.id === selectedComponentId;
@@ -1006,16 +1011,9 @@ export const Canvas: React.FC = () => {
 
             if (fullNotifs.length === 0) return null;
 
-            let posStyles = 'top-12 left-1/2 -translate-x-1/2 flex-col items-center';
-            if (notificationStackPosition === 'top-right') {
-              posStyles = 'top-12 right-8 flex-col items-end';
-            } else if (notificationStackPosition === 'bottom-center') {
-              posStyles = 'bottom-[96px] left-1/2 -translate-x-1/2 flex-col-reverse items-center';
-            }
-
             return (
               <div
-                className={`absolute z-30 pointer-events-auto flex gap-3 transition-all duration-300 ease-out ${posStyles}`}
+                className={`absolute z-30 pointer-events-auto flex gap-3 transition-all duration-300 ease-out ${getNotificationStackPositionClasses(notificationStackPosition)}`}
               >
                 {fullNotifs.map((comp) => (
                   <div
@@ -1035,6 +1033,100 @@ export const Canvas: React.FC = () => {
                     />
                   </div>
                 ))}
+              </div>
+            );
+          })()}
+
+          {/* Editor Notification Ghost & Selected Notification Slot (Editor only) */}
+          {!isPresentation && !isParticipantMode && screenMode === 'editor' && notificationComponents.length > 0 && (() => {
+            const selectedNotification = notificationComponents.find((c) => c.id === selectedComponentId);
+
+            return (
+              <div
+                className={`absolute z-30 pointer-events-auto flex gap-3 ${getNotificationStackPositionClasses(notificationStackPosition)}`}
+              >
+                {selectedNotification ? (
+                  // Selected State: render that one notification with ComponentRenderer (isPresentation={false}, isSelected={true})
+                  <div
+                    key={selectedNotification.id}
+                    className="relative group cursor-pointer pointer-events-auto"
+                    style={{
+                      width: selectedNotification.width,
+                      height: selectedNotification.height,
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <ComponentRenderer
+                      component={selectedNotification}
+                      vehicleState={vehicleState}
+                      isSelected={true}
+                      isPresentation={false}
+                    />
+
+                    {/* Standard Editor Selection Box Overlay */}
+                    <div
+                      className="absolute inset-0 border-2 rounded-2xl pointer-events-none"
+                      style={{
+                        borderColor: 'var(--color-primary, #38bdf8)',
+                        boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
+                      }}
+                    >
+                      {/* Delete Quick Handle */}
+                      <button
+                        className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
+                        title="Delete Component"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteComponent(selectedNotification.id);
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+
+                      {/* Bottom-Right Resize Handle */}
+                      <div
+                        className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
+                        style={{ backgroundColor: 'var(--color-primary, #38bdf8)' }}
+                        onMouseDown={(e) =>
+                          handleResizeMouseDown(
+                            e,
+                            selectedNotification.id,
+                            selectedNotification.width,
+                            selectedNotification.height
+                          )
+                        }
+                      >
+                        <Maximize2 className="w-3 h-3" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // Ghost State: resting vs active (selected-looking) state
+                  <div
+                    data-testid="notification-ghost"
+                    className={`w-[380px] h-[120px] rounded-2xl border-2 bg-slate-900/40 font-mono text-xs flex items-center justify-center cursor-pointer select-none ${
+                      notificationGhostActive
+                        ? 'border-solid text-slate-200 opacity-100'
+                        : 'border-dashed border-slate-400 text-slate-400 opacity-60'
+                    }`}
+                    style={
+                      notificationGhostActive
+                        ? {
+                            borderColor: 'var(--color-primary, #38bdf8)',
+                            boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
+                          }
+                        : undefined
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      requestExpandNotificationsLibrary();
+                    }}
+                  >
+                    Notifications ({notificationComponents.length})
+                  </div>
+                )}
               </div>
             );
           })()}

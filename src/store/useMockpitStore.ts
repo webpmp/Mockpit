@@ -1014,6 +1014,8 @@ interface MockpitStore {
   activeEventNotifIds: string[];
   interactionEvents: Record<string, boolean>;
   notificationStackPosition: NotificationStackPosition;
+  notificationLibraryExpandRequest: number;
+  notificationGhostActive: boolean;
   components: ComponentInstance[];
   selectedComponentId: string | null;
   screenMode: ScreenMode;
@@ -1203,6 +1205,8 @@ interface MockpitStore {
   setActiveView: (view: ActiveView) => void;
   findScreenForComponentType: (type: ComponentType) => string | null;
   setNotificationStackPosition: (position: NotificationStackPosition) => void;
+  requestExpandNotificationsLibrary: () => void;
+  setNotificationGhostActive: (active: boolean) => void;
   reorderNotificationComponent: (id: string, direction: 'up' | 'down') => void;
   toggleDebugPanel: () => void;
   setDebugPanelOpen: (open: boolean) => void;
@@ -1387,6 +1391,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   activeEventNotifIds: [],
   interactionEvents: {},
   notificationStackPosition: loadSavedStackPosition(),
+  notificationLibraryExpandRequest: 0,
+  notificationGhostActive: false,
   components: initialScreens.home || [],
   selectedComponentId: null,
   screenMode: 'editor',
@@ -3067,6 +3073,15 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     set({ notificationStackPosition: position });
   },
 
+  requestExpandNotificationsLibrary: () => {
+    set((state) => ({
+      notificationLibraryExpandRequest: state.notificationLibraryExpandRequest + 1,
+      notificationGhostActive: true,
+    }));
+  },
+
+  setNotificationGhostActive: (active) => set({ notificationGhostActive: active }),
+
   reorderNotificationComponent: (id, direction) => {
     set((state) => {
       const list = [...state.notificationComponents];
@@ -3093,7 +3108,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   toggleDebugPanel: () => set((state) => ({ isDebugOpen: !state.isDebugOpen })),
   setDebugPanelOpen: (open) => set({ isDebugOpen: open }),
   setDebugPanelHeight: (height) => set({ debugPanelHeight: height }),
-  selectComponent: (id) => set({ selectedComponentId: id }),
+  selectComponent: (id) => set({ selectedComponentId: id, notificationGhostActive: false }),
 
   setDockOrder: (newOrder) => {
     // Ensure home stays pinned first
@@ -3608,6 +3623,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         return {
           notificationComponents: updatedNotifs,
           selectedComponentId: id,
+          notificationGhostActive: false,
         };
       }
 
@@ -3628,6 +3644,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         componentsByScreen: updatedScreens,
         components: updatedList,
         selectedComponentId: id,
+        notificationGhostActive: false,
       };
     });
 
@@ -4626,6 +4643,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         climateState: INITIAL_CLIMATE_STATE,
         dockOrder: DEFAULT_DOCK_ORDER,
         selectedComponentId: null,
+        notificationGhostActive: false,
         activeView: 'home',
         vehicleBackground: DEFAULT_VEHICLE_BACKGROUND,
         conversations: INITIAL_CONVERSATIONS,
