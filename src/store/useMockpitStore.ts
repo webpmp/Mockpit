@@ -4,6 +4,7 @@ import {
   ActiveInputState,
   ActiveView,
   Binding,
+  BindingGroup,
   BUILTIN_PALETTES,
   ComponentInstance,
   ComponentType,
@@ -1011,6 +1012,7 @@ interface MockpitStore {
   notificationComponents: ComponentInstance[];
   transientNotifications: ComponentInstance[];
   activeEventNotifIds: string[];
+  interactionEvents: Record<string, boolean>;
   notificationStackPosition: NotificationStackPosition;
   components: ComponentInstance[];
   selectedComponentId: string | null;
@@ -1176,7 +1178,9 @@ interface MockpitStore {
   resetVehicleOrigin: () => void;
   applyPresetScenario: (scenario: 'low_battery' | 'highway_cruise' | 'charging_station' | 'door_alert' | 'tire_warning' | 'parked') => void;
 
-  // Notifications
+  // Notifications & Interaction Events
+  emitInteractionEvent: (eventName: string, durationMs?: number) => void;
+  clearInteractionEvent: (eventName: string) => void;
   triggerEventNotification: (eventName: string) => void;
   clearEventNotification: (id: string) => void;
   triggerNotification: (notif: {
@@ -1236,9 +1240,11 @@ interface MockpitStore {
   updateComponentBorderOverride: (componentId: string, side: 'top' | 'right' | 'bottom' | 'left', value: boolean) => void;
 
   // Binding Actions
-  addBinding: (componentId: string, binding: Omit<Binding, 'id'>) => void;
-  updateBinding: (componentId: string, bindingId: string, partial: Partial<Binding>) => void;
+  addBinding: (componentId: string, binding: Omit<Binding, 'id'> | Omit<BindingGroup, 'id'>) => void;
+  addBindingGroup: (componentId: string, group: Omit<BindingGroup, 'id'>) => void;
+  updateBinding: (componentId: string, bindingId: string, partial: Partial<Binding> | Partial<BindingGroup>) => void;
   removeBinding: (componentId: string, bindingId: string) => void;
+  removeBindingGroup: (componentId: string, groupId: string) => void;
 
   // Reset & Persistence
   resetToSeedData: () => void;
@@ -1370,6 +1376,8 @@ function hasSufficientSpacing(candidate: Rect, existing: Rect[], gap: number): b
   return existing.every((c) => hasMinGap(candidate, c, gap));
 }
 
+let interactionEventTimers: Record<string, NodeJS.Timeout> = {};
+
 export const useMockpitStore = create<MockpitStore>((set, get) => ({
   vehicleState: loadSavedVehicleState(),
   screens: initialScreensList,
@@ -1377,6 +1385,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   notificationComponents: initialNotifs,
   transientNotifications: [],
   activeEventNotifIds: [],
+  interactionEvents: {},
   notificationStackPosition: loadSavedStackPosition(),
   components: initialScreens.home || [],
   selectedComponentId: null,
@@ -2913,6 +2922,39 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     }));
   },
 
+  emitInteractionEvent: (eventName: string, durationMs = 2500) => {
+    if (interactionEventTimers[eventName]) {
+      clearTimeout(interactionEventTimers[eventName]);
+      delete interactionEventTimers[eventName];
+    }
+
+    set((state) => ({
+      interactionEvents: {
+        ...state.interactionEvents,
+        [eventName]: true,
+      },
+    }));
+
+    if (durationMs > 0) {
+      interactionEventTimers[eventName] = setTimeout(() => {
+        get().clearInteractionEvent(eventName);
+      }, durationMs);
+    }
+  },
+
+  clearInteractionEvent: (eventName: string) => {
+    if (interactionEventTimers[eventName]) {
+      clearTimeout(interactionEventTimers[eventName]);
+      delete interactionEventTimers[eventName];
+    }
+    set((state) => {
+      if (!state.interactionEvents[eventName]) return state;
+      const next = { ...state.interactionEvents };
+      delete next[eventName];
+      return { interactionEvents: next };
+    });
+  },
+
   triggerNotification: (notif) => {
     if (notif.message.includes('ENGAGED') || notif.message.includes('SET')) {
       get().triggerEventNotification('cruise_on');
@@ -4411,7 +4453,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           c.id === componentId ? { ...c, bindings: [...c.bindings, newBinding] } : c
         );
         try {
-          localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifs));
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifs));
+          }
         } catch (e) {
           console.error('Failed to save notification binding', e);
         }
@@ -4431,7 +4475,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       };
 
       try {
-        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+        }
       } catch (e) {
         console.error('Failed to save binding', e);
       }
@@ -4448,11 +4494,15 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       if (inNotifs) {
         const updatedNotifs = state.notificationComponents.map((c) => {
           if (c.id !== componentId) return c;
-          const updatedBindings = c.bindings.map((b) => (b.id === bindingId ? { ...b, ...partial } : b));
+          const updatedBindings = c.bindings.map((b) =>
+            b.id === bindingId ? { ...b, ...partial, id: b.id } : b
+          );
           return { ...c, bindings: updatedBindings };
         });
         try {
-          localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifs));
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifs));
+          }
         } catch (e) {
           console.error('Failed to update notification binding', e);
         }
@@ -4465,7 +4515,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       const currentList = state.componentsByScreen[activeScreen] || [];
       const updatedList = currentList.map((c) => {
         if (c.id !== componentId) return c;
-        const updatedBindings = c.bindings.map((b) => (b.id === bindingId ? { ...b, ...partial } : b));
+        const updatedBindings = c.bindings.map((b) =>
+          b.id === bindingId ? { ...b, ...partial, id: b.id } : b
+        );
         return { ...c, bindings: updatedBindings };
       });
       const updatedScreens = {
@@ -4474,7 +4526,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       };
 
       try {
-        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+        }
       } catch (e) {
         console.error('Failed to update binding', e);
       }
@@ -4494,7 +4548,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           return { ...c, bindings: c.bindings.filter((b) => b.id !== bindingId) };
         });
         try {
-          localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifs));
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifs));
+          }
         } catch (e) {
           console.error('Failed to remove notification binding', e);
         }
@@ -4515,7 +4571,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       };
 
       try {
-        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedScreens));
+        }
       } catch (e) {
         console.error('Failed to remove binding', e);
       }
@@ -4524,6 +4582,14 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         components: updatedList,
       };
     });
+  },
+
+  addBindingGroup: (componentId, group) => {
+    get().addBinding(componentId, group);
+  },
+
+  removeBindingGroup: (componentId, groupId) => {
+    get().removeBinding(componentId, groupId);
   },
 
   /**

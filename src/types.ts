@@ -162,15 +162,32 @@ export type VehicleState = {
   tirePressureWarning?: boolean;
 };
 
+export type InteractionEventName = 'speedIncreaseAttempted';
+export type BindingStateField = keyof VehicleState | InteractionEventName;
+
 export type BindingCondition = '<' | '>' | '=' | '!=' | '>=' | '<=';
 
 export type TargetProp = 'color' | 'visible' | 'opacity' | 'text' | 'icon' | 'severity';
 
-export type Binding = {
-  id: string;
-  stateField: keyof VehicleState;
+export interface BindingConditionRule {
+  stateField: BindingStateField | string;
   condition: BindingCondition;
   value: string | number | boolean;
+}
+
+export interface BindingGroup {
+  id: string;
+  conditions: BindingConditionRule[];
+  targetProp: TargetProp;
+  targetValue: string;
+}
+
+export type Binding = {
+  id: string;
+  stateField?: BindingStateField | string;
+  condition?: BindingCondition;
+  value?: string | number | boolean;
+  conditions?: BindingConditionRule[];
   targetProp: TargetProp;
   targetValue: string; // What to set targetProp to when condition is met
 };

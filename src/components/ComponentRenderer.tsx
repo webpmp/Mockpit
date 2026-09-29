@@ -69,7 +69,7 @@ import { DriveModeWidget } from './vehicle/DriveModeWidget';
 import { GearWidget } from './vehicle/GearWidget';
 import { SpeedometerWidget } from './vehicle/SpeedometerWidget';
 import { MiniNav } from './navigation/MiniNav';
-import { getResolvedProps } from '../lib/bindingEvaluator';
+import { getResolvedProps, evaluateBinding } from '../lib/bindingEvaluator';
 import { ComponentInstance, ComponentType, DriveModeState, VehicleState, TripStop } from '../types';
 import { calculateTripEstimate, calculateStopLegs, haversineMiles } from '../utils/tripCalculations';
 import { searchNearbyPOIs } from '../utils/poiSearch';
@@ -1847,8 +1847,9 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   const updateComponentStaticProps = useMockpitStore((s) => s.updateComponentStaticProps);
   const activePalette = useMockpitStore((s) => s.activePalette);
   const activeTrip = useMockpitStore((s) => s.activeTrip);
+  const interactionEvents = useMockpitStore((s) => s.interactionEvents);
   const primaryColor = activePalette?.primary || '#38bdf8';
-  const resolved = getResolvedProps(component, vehicleState);
+  const resolved = getResolvedProps(component, vehicleState, interactionEvents);
 
   // Visibility logic
   const isVisible = resolved.visible !== 'false' && resolved.visible !== '0';
@@ -1878,15 +1879,27 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     : 1;
 
   const baseOpacity = 'opacity-100';
-  // If color is not customized or is set to default/palette placeholder, use active theme palette primary color
-  const defaultTypeColor = COMPONENT_META[component.type]?.defaultColor;
-  const isDefaultOrPresetColor = !resolved.color || 
-    resolved.color === 'var(--color-primary)' || 
-    resolved.color === '#38bdf8' || 
-    resolved.color === defaultTypeColor ||
-    ['#22c55e', '#f8fafc', '#06b6d4', '#eab308', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#f97316', '#ef4444'].includes(resolved.color);
+  // Check if a binding dynamically resolves color
+  const hasActiveColorBinding = component.bindings?.some(
+    (b) => b.targetProp === 'color' && evaluateBinding(b, vehicleState, interactionEvents)
+  );
 
-  const customColor = isDefaultOrPresetColor ? primaryColor : resolved.color;
+  const defaultTypeColor = COMPONENT_META[component.type]?.defaultColor;
+
+  // For warning alert overlay, or when a color binding is active, always preserve resolved.color directly.
+  // For other components, only map to theme primary if using standard default/theme placeholders.
+  let customColor: string;
+  if (hasActiveColorBinding && resolved.color) {
+    customColor = resolved.color;
+  } else if (component.type === 'warning') {
+    customColor = resolved.color || component.staticProps?.color || '#f59e0b';
+  } else {
+    const isDefaultOrPresetColor = !resolved.color || 
+      resolved.color === 'var(--color-primary)' || 
+      resolved.color === '#38bdf8' || 
+      resolved.color === defaultTypeColor;
+    customColor = isDefaultOrPresetColor ? primaryColor : resolved.color;
+  }
 
   switch (component.type) {
     case 'battery': {

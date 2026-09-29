@@ -189,10 +189,14 @@ export const getSeverityRank = (severity?: string): number => {
   return 2;
 };
 
-const sortNotificationsBySeverity = (list: ComponentInstance[], vehicleState: any) => {
+const sortNotificationsBySeverity = (
+  list: ComponentInstance[],
+  vehicleState: any,
+  interactionEvents?: Record<string, boolean>
+) => {
   return [...list].sort((a, b) => {
-    const resA = getResolvedProps(a, vehicleState);
-    const resB = getResolvedProps(b, vehicleState);
+    const resA = getResolvedProps(a, vehicleState, interactionEvents);
+    const resB = getResolvedProps(b, vehicleState, interactionEvents);
     const sevA = resA.severity || a.staticProps?.severity || 'warning';
     const sevB = resB.severity || b.staticProps?.severity || 'warning';
     const diff = getSeverityRank(sevB) - getSeverityRank(sevA);
@@ -230,6 +234,7 @@ export const Canvas: React.FC = () => {
   const clearTransientNotification = useMockpitStore((s) => s.clearTransientNotification);
   const clearEventNotification = useMockpitStore((s) => s.clearEventNotification);
   const notificationStackPosition = useMockpitStore((s) => s.notificationStackPosition);
+  const interactionEvents = useMockpitStore((s) => s.interactionEvents);
   const vehicleState = useMockpitStore((s) => s.vehicleState);
   const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
   const screenMode = useMockpitStore((s) => s.screenMode);
@@ -277,7 +282,7 @@ export const Canvas: React.FC = () => {
     if (comp.staticProps?.triggerMode === 'event') {
       return activeEventNotifIds.includes(comp.id);
     }
-    const resolved = getResolvedProps(comp, vehicleState);
+    const resolved = getResolvedProps(comp, vehicleState, interactionEvents);
     return resolved.visible !== 'false' && resolved.visible !== '0';
   });
 
@@ -668,14 +673,15 @@ export const Canvas: React.FC = () => {
                       (!comp.isTransient || comp.staticProps?.showBadgeOnMinimize === 'true') &&
                       !!minimizedNotifIds[comp.id]
                   ),
-                  vehicleState
+                  vehicleState,
+                  interactionEvents
                 );
                 if (minimizedNotifs.length === 0) return null;
 
                 return (
                   <div className="flex items-center gap-2">
                     {minimizedNotifs.map((comp) => {
-                      const resolved = getResolvedProps(comp, vehicleState);
+                      const resolved = getResolvedProps(comp, vehicleState, interactionEvents);
                       const iconKey = resolved.icon || comp.staticProps?.icon || 'alert-triangle';
                       const color = resolved.color || comp.staticProps?.color || '#f59e0b';
                       const title = comp.staticProps?.title;
@@ -837,37 +843,40 @@ export const Canvas: React.FC = () => {
           {!isPresentation && (
             <div className="absolute inset-x-0 top-0 bottom-0 z-10">
               {(() => {
-                const selectedComp = selectedComponentId ? components.find((c) => c.id === selectedComponentId) : null;
+                const allEditorComponents = [...components, ...notificationComponents];
+                const selectedComp = selectedComponentId
+                  ? allEditorComponents.find((c) => c.id === selectedComponentId)
+                  : null;
                 const connectedCounterpartIds = new Set<string>();
                 if (selectedComp?.parentId) connectedCounterpartIds.add(selectedComp.parentId);
-                components.forEach((c) => {
+                allEditorComponents.forEach((c) => {
                   if (c.parentId === selectedComponentId) connectedCounterpartIds.add(c.id);
                 });
 
                 const draggedOrResizedId = dragInfo?.id ?? resizeInfo?.id ?? null;
                 const draggedOrResizedComp = draggedOrResizedId
-                  ? components.find((c) => c.id === draggedOrResizedId)
+                  ? allEditorComponents.find((c) => c.id === draggedOrResizedId)
                   : null;
 
-                return [...components]
+                return [...allEditorComponents]
                   .sort((a, b) => {
                     if (b.parentId === a.id) return -1;
                     if (a.parentId === b.id) return 1;
                     const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
                     const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
                     if (zA !== zB) return zA - zB;
-                    return components.indexOf(a) - components.indexOf(b);
+                    return allEditorComponents.indexOf(a) - allEditorComponents.indexOf(b);
                   })
                   .map((comp) => {
                     const isSelected = comp.id === selectedComponentId;
                     const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
-                    const parentComp = comp.parentId ? components.find((c) => c.id === comp.parentId) : null;
+                    const parentComp = comp.parentId ? allEditorComponents.find((c) => c.id === comp.parentId) : null;
                     const parentZ = parentComp ? (parentComp.zIndex !== undefined ? parentComp.zIndex : (parentComp.type === 'map' ? 0 : parentComp.type === 'nowPlaying' ? 20 : 10)) : -999;
                     const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
 
                     let effectiveZ = baseZ;
                     if (isSelected) {
-                      const ownChildrenBaseZs = components
+                      const ownChildrenBaseZs = allEditorComponents
                         .filter((c) => c.parentId === comp.id)
                         .map((c) => {
                           const childRawZ = c.zIndex !== undefined ? c.zIndex : (c.type === 'map' ? 0 : c.type === 'nowPlaying' ? 20 : 10);
@@ -991,7 +1000,8 @@ export const Canvas: React.FC = () => {
           {isPresentation && (() => {
             const fullNotifs = sortNotificationsBySeverity(
               activeNotifications.filter((comp) => !minimizedNotifIds[comp.id]),
-              vehicleState
+              vehicleState,
+              interactionEvents
             );
 
             if (fullNotifs.length === 0) return null;

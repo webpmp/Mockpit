@@ -456,7 +456,13 @@ export const Sidebar: React.FC = () => {
                   if (comp.staticProps?.triggerMode === 'event') {
                     summaryText = `Event: ${comp.staticProps?.triggerEvent || 'transition'}`;
                   } else if (primaryBinding) {
-                    summaryText = `If ${primaryBinding.stateField} ${primaryBinding.condition} ${primaryBinding.value} → ${primaryBinding.targetProp}`;
+                    if (primaryBinding.conditions && primaryBinding.conditions.length > 0) {
+                      const firstCond = primaryBinding.conditions[0];
+                      const extraConds = primaryBinding.conditions.length > 1 ? ` (+${primaryBinding.conditions.length - 1} AND)` : '';
+                      summaryText = `If ${firstCond.stateField} ${firstCond.condition} ${firstCond.value}${extraConds} → ${primaryBinding.targetProp}`;
+                    } else if (primaryBinding.stateField) {
+                      summaryText = `If ${primaryBinding.stateField} ${primaryBinding.condition} ${primaryBinding.value} → ${primaryBinding.targetProp}`;
+                    }
                     if (comp.bindings.length > 1) {
                       summaryText += ` (+${comp.bindings.length - 1})`;
                     }

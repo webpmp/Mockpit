@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS } from '../store/useMockpitStore';
 import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
-import { BindingCondition, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType, EgoVehicleType } from '../types';
+import { BindingCondition, BindingStateField, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType, EgoVehicleType } from '../types';
 import { QUICK_ACCESS_OPTIONS, getDefaultQuickAccessDimensions } from '../config/quickAccessConfig';
-import { Plus, Trash2, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Pencil, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check, Eye, EyeOff } from 'lucide-react';
 import { geocodeAddress } from '../utils/geocoding';
 import {
   WeatherDetailCardKey,
@@ -13,6 +13,7 @@ import {
   isDetailCardVisible,
 } from '../types/weatherDetails';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
+import { evaluateBinding } from '../lib/bindingEvaluator';
 import { LayersPanel } from './LayersPanel';
 import { NumericStepper } from './NumericStepper';
 import { ManeuverGlyph } from './navigation/ManeuverGlyph';
@@ -781,7 +782,7 @@ const ScreenPropertiesPanel: React.FC = () => {
   );
 };
 
-const VEHICLE_STATE_FIELDS: Array<{ field: keyof VehicleState; label: string; type: 'number' | 'boolean' | 'select' }> = [
+const VEHICLE_STATE_FIELDS: Array<{ field: BindingStateField; label: string; type: 'number' | 'boolean' | 'select' }> = [
   { field: 'gear', label: 'Gear (P/R/N/D)', type: 'select' },
   { field: 'driveMode', label: 'Drive Mode (Eco/Normal/Sport)', type: 'select' },
   { field: 'speed', label: 'Speed', type: 'number' },
@@ -790,9 +791,10 @@ const VEHICLE_STATE_FIELDS: Array<{ field: keyof VehicleState; label: string; ty
   { field: 'doorOpen', label: 'Door Open', type: 'boolean' },
   { field: 'cruiseControlActive', label: 'Cruise Control Active', type: 'boolean' },
   { field: 'tirePressureWarning', label: 'Tire Pressure Warning', type: 'boolean' },
+  { field: 'speedIncreaseAttempted', label: 'Speed Increase Attempted', type: 'boolean' },
 ];
 
-const CONDITIONS: BindingCondition[] = ['<', '>', '=', '!=', '>='];
+const CONDITIONS: BindingCondition[] = ['<', '>', '=', '!=', '>=', '<='];
 const TARGET_PROPS: TargetProp[] = ['color', 'visible', 'opacity', 'text', 'icon', 'severity'];
 
 const GeometryInput: React.FC<{
@@ -881,22 +883,23 @@ export const Inspector: React.FC = () => {
 
   const isNotifComp = selectedComp ? notificationComponents.some((c) => c.id === selectedComp.id) : false;
 
-  // New binding draft state
-  const [newBinding, setNewBinding] = useState<{
+  // New binding draft state (supports multiple conditions in a binding group)
+  const [newBindingConditions, setNewBindingConditions] = useState<Array<{
     stateField: keyof VehicleState;
     condition: BindingCondition;
     value: string;
-    targetProp: TargetProp;
-    targetValue: string;
-  }>({
-    stateField: 'batteryPercent',
-    condition: '<',
-    value: '15',
-    targetProp: 'color',
-    targetValue: '#ef4444',
-  });
+  }>>([
+    {
+      stateField: 'batteryPercent',
+      condition: '<',
+      value: '15',
+    },
+  ]);
+  const [newBindingTargetProp, setNewBindingTargetProp] = useState<TargetProp>('color');
+  const [newBindingTargetValue, setNewBindingTargetValue] = useState<string>('#ef4444');
 
   const [isAddingBinding, setIsAddingBinding] = useState(false);
+  const [editingBindingId, setEditingBindingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'component' | 'screen' | 'layers'>('screen');
   const [originInputVal, setOriginInputVal] = useState<string>(vehicleState.originLocationName || 'San Francisco, CA');
   const [originGeocodeStatus, setOriginGeocodeStatus] = useState<'idle' | 'resolving' | 'success' | 'failed'>('idle');
@@ -939,7 +942,9 @@ export const Inspector: React.FC = () => {
   useEffect(() => {
     if (selectedComponentId) {
       setActiveTab('component');
-      // Reset collapse state on component selection/reselection
+      // Reset collapse state and editing state on component selection/reselection
+      setEditingBindingId(null);
+      setIsAddingBinding(false);
       setCollapsedSections({
         geometry: true,
         stacking: true,
@@ -960,30 +965,125 @@ export const Inspector: React.FC = () => {
     updateComponentStaticProps(selectedComp.id, { [key]: value });
   };
 
-  const handleAddBindingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedComp) return;
-    let typedValue: string | number | boolean = newBinding.value;
-    if (
-      newBinding.stateField === 'isCharging' ||
-      newBinding.stateField === 'doorOpen' ||
-      newBinding.stateField === 'cruiseControlActive' ||
-      newBinding.stateField === 'tirePressureWarning'
-    ) {
-      typedValue = newBinding.value === 'true';
-    } else if (newBinding.stateField === 'speed' || newBinding.stateField === 'batteryPercent') {
-      typedValue = Number(newBinding.value) || 0;
+  const handleStartEditBinding = (b: any) => {
+    setIsAddingBinding(false);
+    setEditingBindingId(b.id);
+
+    let initialConditions: Array<{
+      stateField: keyof VehicleState;
+      condition: BindingCondition;
+      value: string;
+    }> = [];
+
+    if (b.conditions && Array.isArray(b.conditions) && b.conditions.length > 0) {
+      initialConditions = b.conditions.map((c: any) => ({
+        stateField: c.stateField,
+        condition: c.condition,
+        value: String(c.value),
+      }));
+    } else if (b.stateField) {
+      initialConditions = [
+        {
+          stateField: b.stateField,
+          condition: b.condition || '=',
+          value: String(b.value ?? ''),
+        },
+      ];
+    } else {
+      initialConditions = [
+        {
+          stateField: 'batteryPercent',
+          condition: '<',
+          value: '15',
+        },
+      ];
     }
 
-    addBinding(selectedComp.id, {
-      stateField: newBinding.stateField,
-      condition: newBinding.condition,
-      value: typedValue,
-      targetProp: newBinding.targetProp,
-      targetValue: newBinding.targetValue,
+    setNewBindingConditions(initialConditions);
+    setNewBindingTargetProp(b.targetProp || 'color');
+    setNewBindingTargetValue(b.targetValue || '#ef4444');
+  };
+
+  const handleStartAddBinding = () => {
+    setEditingBindingId(null);
+    setIsAddingBinding(true);
+    setNewBindingConditions([
+      {
+        stateField: 'batteryPercent',
+        condition: '<',
+        value: '15',
+      },
+    ]);
+    setNewBindingTargetProp('color');
+    setNewBindingTargetValue('#ef4444');
+  };
+
+  const handleSaveBindingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedComp || newBindingConditions.length === 0) return;
+
+    const parsedConditions = newBindingConditions.map((cond) => {
+      let typedValue: string | number | boolean = cond.value;
+      if (
+        cond.stateField === 'isCharging' ||
+        cond.stateField === 'doorOpen' ||
+        cond.stateField === 'cruiseControlActive' ||
+        cond.stateField === 'tirePressureWarning' ||
+        cond.stateField === 'speedIncreaseAttempted'
+      ) {
+        typedValue = cond.value === 'true' || cond.value === true;
+      } else if (cond.stateField === 'speed' || cond.stateField === 'batteryPercent') {
+        typedValue = Number(cond.value) || 0;
+      }
+      return {
+        stateField: cond.stateField,
+        condition: cond.condition,
+        value: typedValue,
+      };
     });
 
-    setIsAddingBinding(false);
+    if (editingBindingId) {
+      // Update existing binding in place, preserving its ID
+      if (parsedConditions.length === 1) {
+        updateBinding(selectedComp.id, editingBindingId, {
+          stateField: parsedConditions[0].stateField,
+          condition: parsedConditions[0].condition,
+          value: parsedConditions[0].value,
+          conditions: parsedConditions,
+          targetProp: newBindingTargetProp,
+          targetValue: newBindingTargetValue,
+        });
+      } else {
+        updateBinding(selectedComp.id, editingBindingId, {
+          stateField: undefined,
+          condition: undefined,
+          value: undefined,
+          conditions: parsedConditions,
+          targetProp: newBindingTargetProp,
+          targetValue: newBindingTargetValue,
+        });
+      }
+      setEditingBindingId(null);
+    } else {
+      // Add new binding
+      if (parsedConditions.length === 1) {
+        addBinding(selectedComp.id, {
+          stateField: parsedConditions[0].stateField,
+          condition: parsedConditions[0].condition,
+          value: parsedConditions[0].value,
+          conditions: parsedConditions,
+          targetProp: newBindingTargetProp,
+          targetValue: newBindingTargetValue,
+        });
+      } else {
+        addBinding(selectedComp.id, {
+          conditions: parsedConditions,
+          targetProp: newBindingTargetProp,
+          targetValue: newBindingTargetValue,
+        });
+      }
+      setIsAddingBinding(false);
+    }
   };
 
   return (
@@ -4550,7 +4650,11 @@ export const Inspector: React.FC = () => {
                 if (collapsedSections.bindings) {
                   setCollapsedSections((prev) => ({ ...prev, bindings: false }));
                 }
-                setIsAddingBinding(!isAddingBinding);
+                if (isAddingBinding) {
+                  setIsAddingBinding(false);
+                } else {
+                  handleStartAddBinding();
+                }
               }}
               className="p-1.5 ml-2 rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-slate-950 transition-colors text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
             >
@@ -4564,204 +4668,377 @@ export const Inspector: React.FC = () => {
                 Dynamic HMI logic rules that update styling when state changes.
               </p>
 
-              {/* List existing bindings */}
-              <div className="space-y-2.5">
-                {selectedComp.bindings?.length === 0 ? (
-                  <div className="p-3 text-center border border-dashed border-slate-800 rounded-xl text-slate-500 text-xs font-mono">
-                    No bindings configured yet. Click "+ Rule" to add one.
-                  </div>
-                ) : (
-                  selectedComp.bindings.map((b) => (
-                    <div
-                      key={b.id}
-                      className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono space-y-2 relative group hover:border-slate-700 transition-colors"
-                    >
-                      <button
-                        onClick={() => removeBinding(selectedComp.id, b.id)}
-                        className="absolute top-2 right-2 text-slate-500 hover:text-rose-400 p-1 rounded transition-colors cursor-pointer"
-                        title="Delete Binding Rule"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      <div className="text-[11px] text-slate-300 font-semibold pr-6 flex items-center gap-1">
-                        <span className="text-sky-400">IF</span>
-                        <span className="text-emerald-400">{b.stateField}</span>
-                        <span className="text-amber-400">{b.condition}</span>
-                        <span className="text-slate-100">{String(b.value)}</span>
+              {/* Form renderer for creating or editing a binding rule */}
+              {(() => {
+                const renderBindingForm = (isEditing: boolean, bindingId?: string) => (
+                  <form
+                    key={isEditing ? `edit-form-${bindingId}` : 'add-binding-form'}
+                    onSubmit={handleSaveBindingSubmit}
+                    className={`${
+                      isEditing ? 'rounded-xl' : 'mt-4 rounded-xl'
+                    } bg-slate-800/95 border border-sky-500/50 text-xs shadow-2xl flex flex-col max-h-[70vh] overflow-hidden`}
+                  >
+                    <div className="p-3 border-b border-slate-700/80 bg-slate-800 sticky top-0 z-10 flex items-center justify-between shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        {isEditing ? (
+                          <Pencil className="w-3.5 h-3.5 text-sky-400" />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5 text-sky-400" />
+                        )}
+                        <h4 className="font-bold text-sky-400 text-xs">
+                          {isEditing ? 'Edit Binding Rule' : 'New Binding Rule'}
+                        </h4>
                       </div>
-
-                      <div className="text-[11px] text-slate-400 flex items-center gap-1 pt-1 border-t border-slate-900">
-                        <span className="text-purple-400">THEN</span>
-                        <span className="text-slate-300">{b.targetProp}</span>
-                        <span>=</span>
-                        <span
-                          className="font-bold px-1.5 py-0.5 rounded bg-slate-900 text-slate-100 border border-slate-800 truncate"
-                          style={b.targetProp === 'color' ? { color: b.targetValue } : undefined}
-                        >
-                          {b.targetValue}
-                        </span>
-                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {isEditing ? 'Modify Dynamic Rule' : 'Dynamic Rule Editor'}
+                      </span>
                     </div>
-                  ))
-                )}
-              </div>
 
-              {/* Add New Binding Form Drawer (v0.6.7 scroll bug fix) */}
-              {isAddingBinding && (
-                <form
-                  onSubmit={handleAddBindingSubmit}
-                  className="mt-4 rounded-xl bg-slate-800/95 border border-sky-500/40 text-xs shadow-2xl flex flex-col max-h-[70vh] overflow-hidden"
-                >
-                  <div className="p-3 border-b border-slate-700/80 bg-slate-800 sticky top-0 z-10 flex items-center justify-between shrink-0">
-                    <h4 className="font-bold text-sky-400 text-xs">New Binding Rule</h4>
-                    <span className="text-[10px] text-slate-400 font-mono">Dynamic Rule Editor</span>
-                  </div>
+                    <div className="p-3 space-y-3 overflow-y-auto max-h-[70vh] flex-1">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">
+                            Conditions (AND Logic)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNewBindingConditions((prev) => [
+                                ...prev,
+                                { stateField: 'gear', condition: '=', value: 'P' },
+                              ])
+                            }
+                            className="text-[10px] font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" /> Add Condition
+                          </button>
+                        </div>
 
-                  <div className="p-3 space-y-3 overflow-y-auto max-h-[70vh] flex-1">
-                    <div>
-                      <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">State Field</label>
-                      <select
-                        value={newBinding.stateField}
-                        onChange={(e) => setNewBinding({ ...newBinding, stateField: e.target.value as keyof VehicleState })}
-                        className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                      >
-                        {VEHICLE_STATE_FIELDS.map((f) => (
-                          <option key={f.field} value={f.field}>{f.label}</option>
+                        {newBindingConditions.map((cond, idx) => (
+                          <div
+                            key={idx}
+                            className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-700/70 space-y-2 relative"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-sky-400 font-mono">
+                                {idx === 0 ? 'WHEN' : 'AND'}
+                              </span>
+                              {newBindingConditions.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setNewBindingConditions((prev) => prev.filter((_, i) => i !== idx))
+                                  }
+                                  className="text-slate-500 hover:text-rose-400 p-0.5 rounded cursor-pointer"
+                                  title="Remove condition"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+
+                            <div>
+                              <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
+                                State Field / Interaction Event
+                              </label>
+                              <select
+                                value={cond.stateField}
+                                onChange={(e) => {
+                                  const nextField = e.target.value as BindingStateField;
+                                  setNewBindingConditions((prev) =>
+                                    prev.map((c, i) =>
+                                      i === idx
+                                        ? {
+                                            ...c,
+                                            stateField: nextField,
+                                            value:
+                                              nextField === 'gear'
+                                                ? 'P'
+                                                : nextField === 'isCharging' ||
+                                                  nextField === 'doorOpen' ||
+                                                  nextField === 'cruiseControlActive' ||
+                                                  nextField === 'tirePressureWarning' ||
+                                                  nextField === 'speedIncreaseAttempted'
+                                                ? 'true'
+                                                : '0',
+                                          }
+                                        : c
+                                    )
+                                  );
+                                }}
+                                className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
+                              >
+                                {VEHICLE_STATE_FIELDS.map((f) => (
+                                  <option key={f.field} value={f.field}>
+                                    {f.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
+                                  Condition
+                                </label>
+                                <select
+                                  value={cond.condition}
+                                  onChange={(e) =>
+                                    setNewBindingConditions((prev) =>
+                                      prev.map((c, i) =>
+                                        i === idx
+                                          ? { ...c, condition: e.target.value as BindingCondition }
+                                          : c
+                                      )
+                                    )
+                                  }
+                                  className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
+                                >
+                                  {CONDITIONS.map((c) => (
+                                    <option key={c} value={c}>
+                                      {c}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
+                                  Value
+                                </label>
+                                {cond.stateField === 'isCharging' ||
+                                cond.stateField === 'doorOpen' ||
+                                cond.stateField === 'cruiseControlActive' ||
+                                cond.stateField === 'tirePressureWarning' ||
+                                cond.stateField === 'speedIncreaseAttempted' ? (
+                                  <select
+                                    value={cond.value}
+                                    onChange={(e) =>
+                                      setNewBindingConditions((prev) =>
+                                        prev.map((c, i) => (i === idx ? { ...c, value: e.target.value } : c))
+                                      )
+                                    }
+                                    className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
+                                  >
+                                    <option value="true">true</option>
+                                    <option value="false">false</option>
+                                  </select>
+                                ) : cond.stateField === 'gear' ? (
+                                  <select
+                                    value={cond.value}
+                                    onChange={(e) =>
+                                      setNewBindingConditions((prev) =>
+                                        prev.map((c, i) => (i === idx ? { ...c, value: e.target.value } : c))
+                                      )
+                                    }
+                                    className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
+                                  >
+                                    <option value="P">P</option>
+                                    <option value="R">R</option>
+                                    <option value="N">N</option>
+                                    <option value="D">D</option>
+                                  </select>
+                                ) : (
+                                  <input
+                                    type="text"
+                                    value={cond.value}
+                                    onChange={(e) =>
+                                      setNewBindingConditions((prev) =>
+                                        prev.map((c, i) => (i === idx ? { ...c, value: e.target.value } : c))
+                                      )
+                                    }
+                                    className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         ))}
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Condition</label>
-                        <select
-                          value={newBinding.condition}
-                          onChange={(e) => setNewBinding({ ...newBinding, condition: e.target.value as BindingCondition })}
-                          className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                        >
-                          {CONDITIONS.map((c) => (
-                            <option key={c} value={c}>{c}</option>
-                          ))}
-                        </select>
                       </div>
 
-                      <div>
-                        <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Value</label>
-                        {newBinding.stateField === 'isCharging' ||
-                        newBinding.stateField === 'doorOpen' ||
-                        newBinding.stateField === 'cruiseControlActive' ||
-                        newBinding.stateField === 'tirePressureWarning' ? (
-                          <select
-                            value={newBinding.value}
-                            onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                          >
-                            <option value="true">true</option>
-                            <option value="false">false</option>
-                          </select>
-                        ) : newBinding.stateField === 'gear' ? (
-                          <select
-                            value={newBinding.value}
-                            onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                          >
-                            <option value="P">P</option>
-                            <option value="R">R</option>
-                            <option value="N">N</option>
-                            <option value="D">D</option>
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            value={newBinding.value}
-                            onChange={(e) => setNewBinding({ ...newBinding, value: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                          />
-                        )}
-                      </div>
-                    </div>
+                      <div className="pt-2 border-t border-slate-700/80 space-y-2">
+                        <span className="text-[10px] text-slate-400 uppercase font-mono font-bold block">
+                          THEN Action
+                        </span>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">Target Property</label>
-                        <select
-                          value={newBinding.targetProp}
-                          onChange={(e) => setNewBinding({ ...newBinding, targetProp: e.target.value as TargetProp })}
-                          className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none"
-                        >
-                          {TARGET_PROPS.map((tp) => (
-                            <option key={tp} value={tp}>{tp}</option>
-                          ))}
-                        </select>
-                      </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
+                              Target Property
+                            </label>
+                            <select
+                              value={newBindingTargetProp}
+                              onChange={(e) => setNewBindingTargetProp(e.target.value as TargetProp)}
+                              className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
+                            >
+                              {TARGET_PROPS.map((tp) => (
+                                <option key={tp} value={tp}>
+                                  {tp}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
 
-                      <div>
-                        <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">New Value</label>
-                        {newBinding.targetProp === 'severity' ? (
-                          <select
-                            value={newBinding.targetValue}
-                            onChange={(e) => setNewBinding({ ...newBinding, targetValue: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
-                          >
-                            <option value="critical">critical</option>
-                            <option value="warning">warning</option>
-                            <option value="info">info</option>
-                          </select>
-                        ) : newBinding.targetProp === 'icon' ? (
-                          <select
-                            value={newBinding.targetValue}
-                            onChange={(e) => setNewBinding({ ...newBinding, targetValue: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
-                          >
-                            <option value="alert-triangle">alert-triangle</option>
-                            <option value="door-open">door-open</option>
-                            <option value="battery-warning">battery-warning</option>
-                            <option value="thermometer">thermometer</option>
-                            <option value="tire">tire</option>
-                            <option value="zap">zap</option>
-                            <option value="gauge">gauge</option>
-                            <option value="bell">bell</option>
-                            <option value="shield-alert">shield-alert</option>
-                            <option value="wrench">wrench</option>
-                            <option value="lock">lock</option>
-                            <option value="key">key</option>
-                            <option value="info">info</option>
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            value={newBinding.targetValue}
-                            onChange={(e) => setNewBinding({ ...newBinding, targetValue: e.target.value })}
-                            placeholder="e.g. #ef4444, true, {speed}"
-                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
-                          />
-                        )}
+                          <div>
+                            <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
+                              New Value
+                            </label>
+                            {newBindingTargetProp === 'severity' ? (
+                              <select
+                                value={newBindingTargetValue}
+                                onChange={(e) => setNewBindingTargetValue(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
+                              >
+                                <option value="critical">critical</option>
+                                <option value="warning">warning</option>
+                                <option value="info">info</option>
+                              </select>
+                            ) : newBindingTargetProp === 'icon' ? (
+                              <select
+                                value={newBindingTargetValue}
+                                onChange={(e) => setNewBindingTargetValue(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
+                              >
+                                <option value="alert-triangle">alert-triangle</option>
+                                <option value="door-open">door-open</option>
+                                <option value="battery-warning">battery-warning</option>
+                                <option value="thermometer">thermometer</option>
+                                <option value="tire">tire</option>
+                                <option value="zap">zap</option>
+                                <option value="gauge">gauge</option>
+                                <option value="bell">bell</option>
+                                <option value="shield-alert">shield-alert</option>
+                                <option value="wrench">wrench</option>
+                                <option value="lock">lock</option>
+                                <option value="key">key</option>
+                                <option value="info">info</option>
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                value={newBindingTargetValue}
+                                onChange={(e) => setNewBindingTargetValue(e.target.value)}
+                                placeholder="e.g. #ef4444, true, {speed}"
+                                className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-[10px] text-slate-400 italic">
+                          Tip: Use <span className="text-sky-300">{'{speed}'}</span> or{' '}
+                          <span className="text-sky-300">{'{batteryPercent}'}</span> in new value for dynamic state
+                          text.
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-[10px] text-slate-400 italic">
-                      Tip: Use <span className="text-sky-300">{'{speed}'}</span> or <span className="text-sky-300">{'{batteryPercent}'}</span> in new value for dynamic state text.
+                    <div className="p-3 bg-slate-800 sticky bottom-0 z-10 border-t border-slate-700/80 flex gap-2 shrink-0">
+                      <button
+                        type="submit"
+                        className="flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold p-1.5 rounded transition-colors cursor-pointer text-xs"
+                      >
+                        {isEditing ? 'Save Changes' : 'Save Rule'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isEditing) setEditingBindingId(null);
+                          else setIsAddingBinding(false);
+                        }}
+                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 p-1.5 rounded transition-colors cursor-pointer text-xs"
+                      >
+                        Cancel
+                      </button>
                     </div>
-                  </div>
+                  </form>
+                );
 
-                  <div className="p-3 bg-slate-800 sticky bottom-0 z-10 border-t border-slate-700/80 flex gap-2 shrink-0">
-                    <button
-                      type="submit"
-                      className="flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold p-1.5 rounded transition-colors cursor-pointer"
-                    >
-                      Save Rule
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingBinding(false)}
-                      className="bg-slate-700 hover:bg-slate-600 text-slate-200 p-1.5 rounded transition-colors cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
+                return (
+                  <>
+                    <div className="space-y-2.5">
+                      {selectedComp.bindings?.length === 0 ? (
+                        <div className="p-3 text-center border border-dashed border-slate-800 rounded-xl text-slate-500 text-xs font-mono">
+                          No bindings configured yet. Click "+ Rule" to add one.
+                        </div>
+                      ) : (
+                        selectedComp.bindings.map((b) => {
+                          if (editingBindingId === b.id) {
+                            return renderBindingForm(true, b.id);
+                          }
+
+                          return (
+                            <div
+                              key={b.id}
+                              className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono space-y-2 relative group hover:border-slate-700 transition-colors"
+                            >
+                              {b.conditions && b.conditions.length > 0 ? (
+                                <div className="space-y-1">
+                                  {b.conditions.map((cond, cIdx) => (
+                                    <div
+                                      key={cIdx}
+                                      className="text-[11px] text-slate-300 font-semibold flex items-center gap-1 flex-wrap"
+                                    >
+                                      <span className="text-sky-400 font-bold">{cIdx === 0 ? 'WHEN' : 'AND'}</span>
+                                      <span className="text-emerald-400">{cond.stateField}</span>
+                                      <span className="text-amber-400">{cond.condition}</span>
+                                      <span className="text-slate-100">{String(cond.value)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-[11px] text-slate-300 font-semibold flex items-center gap-1">
+                                  <span className="text-sky-400 font-bold">WHEN</span>
+                                  <span className="text-emerald-400">{b.stateField}</span>
+                                  <span className="text-amber-400">{b.condition}</span>
+                                  <span className="text-slate-100">{String(b.value)}</span>
+                                </div>
+                              )}
+
+                              <div className="text-[11px] text-slate-400 flex items-center gap-1 pt-1 border-t border-slate-900">
+                                <span className="text-purple-400 font-bold">THEN</span>
+                                <span className="text-slate-300">{b.targetProp}</span>
+                                <span>=</span>
+                                <span
+                                  className="font-bold px-1.5 py-0.5 rounded bg-slate-900 text-slate-100 border border-slate-800 truncate"
+                                  style={b.targetProp === 'color' ? { color: b.targetValue } : undefined}
+                                >
+                                  {b.targetValue}
+                                </span>
+                              </div>
+
+                              {/* Edit & Delete Actions */}
+                              <div className="flex items-center justify-between pt-2 border-t border-slate-900/90 mt-2 font-sans">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditBinding(b)}
+                                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-sky-500/20 text-slate-300 hover:text-sky-400 border border-slate-800 hover:border-sky-500/40 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                                  title="Edit Binding Rule"
+                                >
+                                  <Pencil className="w-3 h-3" /> Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (editingBindingId === b.id) setEditingBindingId(null);
+                                    removeBinding(selectedComp.id, b.id);
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-500/40 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                                  title="Delete Binding Rule"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Delete
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {isAddingBinding && renderBindingForm(false)}
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>

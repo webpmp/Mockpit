@@ -51,9 +51,11 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
     pointerId: number;
     targetElement: HTMLElement | null;
   } | null>(null);
+  const hasEmittedIncreaseRef = useRef(false);
 
   // Centralized cleanup function
   const endDrag = useCallback((element?: HTMLElement | null, pointerId?: number) => {
+    hasEmittedIncreaseRef.current = false;
     const currentDrag = dragStartRef.current;
     const target = element || currentDrag?.targetElement;
     const pId = pointerId !== undefined ? pointerId : currentDrag?.pointerId;
@@ -72,24 +74,74 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
     setIsDragging(false);
   }, []);
 
+  // Drag movement calculation and event emission
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
+    if (!dragStartRef.current) return;
+
+    const deltaX = clientX - dragStartRef.current.startX;
+    const deltaY = clientY - dragStartRef.current.startY;
+
+    // Upward (-deltaY) and Rightward (+deltaX) produce positive delta (increase speed)
+    // Downward (+deltaY) and Leftward (-deltaX) produce negative delta (decrease speed)
+    const combinedDeltaPixels = -deltaY + deltaX;
+
+    // Emit transient speedIncreaseAttempted interaction event once per distinct increase gesture
+    if (!hasEmittedIncreaseRef.current && combinedDeltaPixels > 0) {
+      hasEmittedIncreaseRef.current = true;
+      useMockpitStore.getState().emitInteractionEvent('speedIncreaseAttempted');
+    }
+
+    // Sensitivity: approximately 3 pixels per 1 unit of speed change (tuned for shorter, controllable drag distance)
+    const SENSITIVITY = SPEEDOMETER_DRAG_SENSITIVITY;
+    const speedDelta = combinedDeltaPixels / SENSITIVITY;
+
+    // Round to nearest integer (normal increment) and clamp to [0, maxSpd]
+    const targetSpeed = Math.round(dragStartRef.current.startSpeed + speedDelta);
+    const clampedSpeed = Math.max(0, Math.min(maxSpd, targetSpeed));
+
+    setVehicleState({ speed: clampedSpeed });
+  }, [maxSpd, setVehicleState]);
+
   // Global safety net listeners while dragging
   useEffect(() => {
     if (!isDragging) return;
+
+    const handleGlobalPointerMove = (e: PointerEvent) => {
+      if (!dragStartRef.current) return;
+      if (e.pointerType === 'mouse' && e.buttons === 0) {
+        endDrag();
+        return;
+      }
+      handleDragMove(e.clientX, e.clientY);
+    };
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!dragStartRef.current) return;
+      if (e.buttons === 0) {
+        endDrag();
+        return;
+      }
+      handleDragMove(e.clientX, e.clientY);
+    };
 
     const handleGlobalRelease = () => {
       endDrag();
     };
 
+    window.addEventListener('pointermove', handleGlobalPointerMove);
+    window.addEventListener('mousemove', handleGlobalMouseMove);
     window.addEventListener('pointerup', handleGlobalRelease);
     window.addEventListener('pointercancel', handleGlobalRelease);
     window.addEventListener('mouseup', handleGlobalRelease);
 
     return () => {
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('pointerup', handleGlobalRelease);
       window.removeEventListener('pointercancel', handleGlobalRelease);
       window.removeEventListener('mouseup', handleGlobalRelease);
     };
-  }, [isDragging, endDrag]);
+  }, [isDragging, endDrag, handleDragMove]);
 
   // Unmount cleanup
   useEffect(() => {
@@ -118,6 +170,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
       }
     }
 
+    hasEmittedIncreaseRef.current = false;
     dragStartRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -135,28 +188,10 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
       return;
     }
 
-    // Critical safeguard: immediately return unless drag is actually active
-    if (!isDragging || !dragStartRef.current) return;
+    if (!dragStartRef.current) return;
 
     e.stopPropagation();
-    e.preventDefault();
-
-    const deltaX = e.clientX - dragStartRef.current.startX;
-    const deltaY = e.clientY - dragStartRef.current.startY;
-
-    // Upward (-deltaY) and Rightward (+deltaX) produce positive delta (increase speed)
-    // Downward (+deltaY) and Leftward (-deltaX) produce negative delta (decrease speed)
-    const combinedDeltaPixels = -deltaY + deltaX;
-
-    // Sensitivity: approximately 3 pixels per 1 unit of speed change (tuned for shorter, controllable drag distance)
-    const SENSITIVITY = SPEEDOMETER_DRAG_SENSITIVITY;
-    const speedDelta = combinedDeltaPixels / SENSITIVITY;
-
-    // Round to nearest integer (normal increment) and clamp to [0, maxSpd]
-    const targetSpeed = Math.round(dragStartRef.current.startSpeed + speedDelta);
-    const clampedSpeed = Math.max(0, Math.min(maxSpd, targetSpeed));
-
-    setVehicleState({ speed: clampedSpeed });
+    handleDragMove(e.clientX, e.clientY);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -170,7 +205,9 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
   };
 
   const handleLostPointerCapture = (e: React.PointerEvent<HTMLDivElement>) => {
-    endDrag(e.currentTarget, e.pointerId);
+    if (e.buttons === 0) {
+      endDrag(e.currentTarget, e.pointerId);
+    }
   };
 
   // Helper geometry for radial and arc gauges
