@@ -1,5 +1,56 @@
-import { Binding, BindingConditionRule, BindingGroup, ComponentInstance, VehicleState } from '../types';
+import {
+  Binding,
+  BindingCondition,
+  BindingConditionRule,
+  BindingGroup,
+  ComponentInstance,
+  ConditionGroup,
+  VehicleState,
+} from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
+
+/**
+ * Type guard to check if an item in ConditionGroup children is a nested ConditionGroup.
+ */
+export function isConditionGroup(item: any): item is ConditionGroup {
+  return typeof item === 'object' && item !== null && 'logic' in item && 'children' in item;
+}
+
+/**
+ * Evaluates a ConditionGroup tree recursively (AND / OR).
+ * An empty group evaluates to false.
+ */
+export function evaluateConditionGroup(
+  group: ConditionGroup,
+  state: VehicleState,
+  events?: Record<string, boolean>
+): boolean {
+  if (!group || !group.children || group.children.length === 0) {
+    return false; // An empty group is false per Spec v3
+  }
+
+  const activeEvents =
+    events !== undefined
+      ? events
+      : typeof useMockpitStore !== 'undefined' && typeof useMockpitStore.getState === 'function'
+      ? useMockpitStore.getState().interactionEvents
+      : undefined;
+
+  if (group.logic === 'OR') {
+    return group.children.some((child) =>
+      isConditionGroup(child)
+        ? evaluateConditionGroup(child, state, activeEvents)
+        : evaluateConditionRule(child, state, activeEvents)
+    );
+  }
+
+  // Default 'AND': every child must match
+  return group.children.every((child) =>
+    isConditionGroup(child)
+      ? evaluateConditionGroup(child, state, activeEvents)
+      : evaluateConditionRule(child, state, activeEvents)
+  );
+}
 
 /**
  * Evaluates a single binding condition rule against the current vehicle state.
@@ -113,6 +164,10 @@ export function evaluateBinding(
       ? useMockpitStore.getState().interactionEvents
       : undefined;
 
+  if (binding.conditionGroup) {
+    return evaluateConditionGroup(binding.conditionGroup, state, activeEvents);
+  }
+
   if ('conditions' in binding && Array.isArray(binding.conditions)) {
     if (binding.conditions.length === 0) return false;
     return binding.conditions.every((rule) => evaluateConditionRule(rule, state, activeEvents));
@@ -182,4 +237,214 @@ export function getResolvedProps(
   }
 
   return resolved;
+}
+
+/**
+ * Maps a state field name to user-friendly label (using words per Spec v3)
+ */
+export function getFieldDisplayLabel(field: any): string {
+  const normalized = String(field || '').toLowerCase().replace(/[\s_-]/g, '');
+  switch (normalized) {
+    case 'speedincreaseattempted':
+      return 'Speed Increase Attempted';
+    case 'gear':
+      return 'Gear';
+    case 'speed':
+      return 'Speed';
+    case 'batterypercent':
+    case 'battery':
+      return 'Battery';
+    case 'drivemode':
+      return 'Drive Mode';
+    case 'ischarging':
+      return 'Is Charging';
+    case 'dooropen':
+      return 'Door Open';
+    case 'cruisecontrolactive':
+      return 'Cruise Control Active';
+    case 'tirepressurewarning':
+      return 'Tire Pressure Warning';
+    default:
+      return String(field || '');
+  }
+}
+
+/**
+ * Maps a condition operator to conversational words per Spec v3:
+ * '=' -> 'is', '!=' -> 'is not', '>' -> 'is above', '<' -> 'is below',
+ * '>=' -> 'is at least', '<=' -> 'is at most'
+ */
+export function getOperatorWord(cond: BindingCondition | string): string {
+  switch (cond) {
+    case '=':
+      return 'is';
+    case '!=':
+      return 'is not';
+    case '>':
+      return 'is above';
+    case '<':
+      return 'is below';
+    case '>=':
+      return 'is at least';
+    case '<=':
+      return 'is at most';
+    default:
+      return String(cond);
+  }
+}
+
+/**
+ * Formats a single BindingConditionRule into conversational words:
+ * e.g. "Speed Increase Attempted is true" or "Battery is below 10"
+ */
+export function formatRuleText(rule: BindingConditionRule): string {
+  const label = getFieldDisplayLabel(rule.stateField);
+  const op = getOperatorWord(rule.condition);
+  const val = String(rule.value);
+  return `${label} ${op} ${val}`;
+}
+
+/**
+ * Formats a ConditionGroup tree into a plain-language summary with parentheses for child groups:
+ * e.g. "(Speed Increase Attempted is true AND Gear is P) OR Battery is below 10"
+ */
+export function formatConditionGroupText(group: ConditionGroup): string {
+  if (!group || !group.children || group.children.length === 0) return '';
+  const parts = group.children
+    .map((child) => {
+      if (isConditionGroup(child)) {
+        const inner = formatConditionGroupText(child);
+        return inner ? `(${inner})` : '';
+      }
+      return formatRuleText(child);
+    })
+    .filter(Boolean);
+
+  const joiner = group.logic === 'OR' ? ' OR ' : ' AND ';
+  return parts.join(joiner);
+}
+
+/**
+ * Formats a binding into a complete "Show when ..." statement.
+ */
+export function formatConditionSummary(binding: Binding | BindingGroup): string {
+  if (binding.conditionGroup) {
+    const groupText = formatConditionGroupText(binding.conditionGroup);
+    return groupText ? `Show when ${groupText}` : 'Always visible';
+  }
+  if ('conditions' in binding && Array.isArray(binding.conditions) && binding.conditions.length > 0) {
+    const parts = binding.conditions.map(formatRuleText);
+    return `Show when ${parts.join(' AND ')}`;
+  }
+  const single = binding as Binding;
+  if (single.stateField !== undefined && single.condition !== undefined) {
+    return `Show when ${formatRuleText({
+      stateField: single.stateField,
+      condition: single.condition,
+      value: single.value ?? '',
+    })}`;
+  }
+  return 'Always visible';
+}
+
+/**
+ * Checks if a stateField represents a transient interaction event (e.g. speedIncreaseAttempted)
+ */
+export function isInteractionEventField(field: any): boolean {
+  const str = String(field || '').toLowerCase().replace(/[\s_-]/g, '');
+  return str === 'speedincreaseattempted';
+}
+
+/**
+ * Checks recursively if a ConditionGroup contains any interaction-event condition
+ */
+export function groupHasInteractionEvent(group: ConditionGroup): boolean {
+  if (!group || !group.children) return false;
+  return group.children.some((child) =>
+    isConditionGroup(child)
+      ? groupHasInteractionEvent(child)
+      : isInteractionEventField(child.stateField)
+  );
+}
+
+/**
+ * Checks if a binding contains any interaction-event condition
+ */
+export function bindingHasInteractionEvent(binding: Binding | BindingGroup): boolean {
+  if (binding.conditionGroup) {
+    return groupHasInteractionEvent(binding.conditionGroup);
+  }
+  if ('conditions' in binding && Array.isArray(binding.conditions)) {
+    return binding.conditions.some((c) => isInteractionEventField(c.stateField));
+  }
+  const single = binding as Binding;
+  if (single.stateField) {
+    return isInteractionEventField(single.stateField);
+  }
+  return false;
+}
+
+/**
+ * Checks if a notification component has ANY interaction-event condition across all its rules
+ */
+export function notificationHasInteractionEvent(comp: ComponentInstance): boolean {
+  if (!comp.bindings || comp.bindings.length === 0) return false;
+  return comp.bindings.some(bindingHasInteractionEvent);
+}
+
+export interface NotificationVisibilityResult {
+  visible: boolean;
+  isEventDriven: boolean;
+  resolvedProps: Record<string, string>;
+}
+
+/**
+ * Unified shared evaluator for notification visibility and cooldown gating (Section F)
+ */
+export function evaluateNotificationVisibility(
+  component: ComponentInstance,
+  vehicleState: VehicleState,
+  interactionEvents: Record<string, boolean> = {},
+  cooldowns: Record<string, { shownUntil: number; cooldownUntil: number }> = {},
+  now: number = Date.now()
+): NotificationVisibilityResult {
+  const isEventDriven = notificationHasInteractionEvent(component);
+  const resolved = getResolvedProps(component, vehicleState, interactionEvents);
+
+  if (component.staticProps?.triggerMode === 'event') {
+    return {
+      visible: true,
+      isEventDriven: true,
+      resolvedProps: resolved,
+    };
+  }
+
+  if (isEventDriven) {
+    const cooldown = cooldowns[component.id];
+    if (cooldown && now < cooldown.shownUntil) {
+      // While in active shownUntil window: verify state part of the rule is met
+      const simulatedEvents = { ...interactionEvents, speedIncreaseAttempted: true };
+      const simulatedResolved = getResolvedProps(component, vehicleState, simulatedEvents);
+      const isVisible = simulatedResolved.visible !== 'false' && simulatedResolved.visible !== '0';
+      return {
+        visible: isVisible,
+        isEventDriven: true,
+        resolvedProps: simulatedResolved,
+      };
+    }
+    // Outside shown window or during quiet cooldown:
+    return {
+      visible: false,
+      isEventDriven: true,
+      resolvedProps: resolved,
+    };
+  }
+
+  // Pure state-driven notification
+  const isVisible = resolved.visible !== 'false' && resolved.visible !== '0';
+  return {
+    visible: isVisible,
+    isEventDriven: false,
+    resolvedProps: resolved,
+  };
 }

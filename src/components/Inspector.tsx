@@ -876,6 +876,21 @@ export const Inspector: React.FC = () => {
   const isEditor = screenMode === 'editor';
 
   const [selectedTargetParentId, setSelectedTargetParentId] = useState<string>('');
+  const [confirmDeleteNotificationId, setConfirmDeleteNotificationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setConfirmDeleteNotificationId(null);
+  }, [selectedComponentId]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setConfirmDeleteNotificationId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const selectedComp =
     components.find((c) => c.id === selectedComponentId) ||
@@ -1481,20 +1496,53 @@ export const Inspector: React.FC = () => {
         {isNotifComp && (
           <div className="p-2.5 rounded-lg bg-sky-950/40 border border-sky-800/50 text-[11px] text-sky-300 flex flex-col gap-1.5">
             <div className="font-semibold flex items-center justify-between">
-              <span>Stack Position:</span>
+              <span>Global Position:</span>
               <select
                 value={notificationStackPosition}
                 onChange={(e) => setNotificationStackPosition(e.target.value as NotificationStackPosition)}
                 className="bg-slate-900 text-sky-200 border border-sky-700/60 rounded px-1.5 py-0.5 text-xs font-mono font-bold focus:outline-none"
               >
+                <option value="top-left">Top Left</option>
                 <option value="top-center">Top Center</option>
                 <option value="top-right">Top Right</option>
+                <option value="bottom-left">Bottom Left</option>
                 <option value="bottom-center">Bottom Center</option>
+                <option value="bottom-right">Bottom Right</option>
               </select>
             </div>
             <p className="text-[10px] text-slate-400 leading-tight">
-              Position is computed automatically by the global notification stack layout in Presentation mode.
+              Applies in Editor and Presenter. Change it in the component library&apos;s Notifications section.
             </p>
+          </div>
+        )}
+
+        {isNotifComp && selectedComp && (
+          <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="font-bold text-slate-200">Active Status</span>
+              <span className="text-[10px] text-slate-400">
+                {selectedComp.staticProps?.enabled !== 'false'
+                  ? 'Active — triggers when conditions are met'
+                  : 'Inactive — kept in library without triggering'}
+              </span>
+            </div>
+            <button
+              type="button"
+              data-testid="inspector-notification-active-toggle"
+              onClick={() => {
+                const currentEnabled = selectedComp.staticProps?.enabled !== 'false';
+                updateComponentStaticProps(selectedComp.id, {
+                  enabled: currentEnabled ? 'false' : 'true',
+                });
+              }}
+              className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all cursor-pointer border ${
+                selectedComp.staticProps?.enabled !== 'false'
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-sm'
+                  : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`}
+            >
+              {selectedComp.staticProps?.enabled !== 'false' ? 'Active' : 'Inactive'}
+            </button>
           </div>
         )}
 
@@ -5045,12 +5093,48 @@ export const Inspector: React.FC = () => {
 
         {/* Delete Component Button */}
         <div className="border-t border-slate-800 pt-4">
-          <button
-            onClick={() => deleteComponent(selectedComp.id)}
-            className="w-full p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Trash2 className="w-4 h-4" /> Delete Component
-          </button>
+          {isNotifComp && confirmDeleteNotificationId === selectedComp.id ? (
+            <div
+              data-testid="inspector-notification-delete-confirm"
+              className="w-full p-2.5 rounded-xl bg-slate-900 border border-rose-500/60 flex flex-col gap-2 font-mono"
+            >
+              <span className="text-xs text-slate-200 font-bold">
+                Delete &ldquo;{selectedComp.staticProps?.message || 'Notification'}&rdquo;?
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteNotificationId(null)}
+                  className="flex-1 py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmDeleteNotificationId(null);
+                    deleteComponent(selectedComp.id);
+                  }}
+                  className="flex-1 py-1.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold cursor-pointer transition-colors shadow-sm"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                if (isNotifComp) {
+                  setConfirmDeleteNotificationId(selectedComp.id);
+                } else {
+                  deleteComponent(selectedComp.id);
+                }
+              }}
+              className="w-full p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" /> Delete Component
+            </button>
+          )}
         </div>
       </div>
       </div>

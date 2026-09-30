@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Plus,
   ChevronDown,
@@ -13,7 +13,7 @@ import {
   Car,
 } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
-import { ComponentType, NotificationStackPosition } from '../types';
+import { ComponentType, NotificationStackPosition, ComponentInstance, isNotificationEnabled } from '../types';
 import { COMPONENT_FLAGS } from '../config/componentFlags';
 import { COMPONENT_META } from '../config/componentMeta';
 
@@ -285,9 +285,88 @@ export const Sidebar: React.FC = () => {
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
   const selectComponent = useMockpitStore((s) => s.selectComponent);
   const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
+  const notificationGhostActive = useMockpitStore((s) => s.notificationGhostActive);
+  const setNotificationGhostActive = useMockpitStore((s) => s.setNotificationGhostActive);
+  const updateComponentStaticProps = useMockpitStore((s) => s.updateComponentStaticProps);
+
+  const [sortMode, setSortMode] = useState<'az' | 'stack'>('az');
+  const [filterQuery, setFilterQuery] = useState('');
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const categoryHeaderRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const notificationItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Reset pending delete if component disappears
+  useEffect(() => {
+    if (pendingDeleteId && !notificationComponents.some((c) => c.id === pendingDeleteId)) {
+      setPendingDeleteId(null);
+    }
+  }, [notificationComponents, pendingDeleteId]);
+
+  // Cancel pending delete on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPendingDeleteId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Cancel pending delete on click outside notification instances
+  useEffect(() => {
+    if (!pendingDeleteId) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-notification-instance]')) {
+        setPendingDeleteId(null);
+      }
+    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, [pendingDeleteId]);
+
+  const getNotificationLabel = (comp: ComponentInstance) => comp.staticProps?.message || 'VEHICLE ALERT';
+
+  const activeNotificationComponents = useMemo(
+    () => notificationComponents.filter((comp) => isNotificationEnabled(comp)),
+    [notificationComponents]
+  );
+
+  const inactiveNotificationComponents = useMemo(
+    () => notificationComponents.filter((comp) => !isNotificationEnabled(comp)),
+    [notificationComponents]
+  );
+
+  const sortNotificationList = (list: ComponentInstance[]) => {
+    if (sortMode === 'stack') {
+      return [...list];
+    }
+    return [...list].sort((a, b) => {
+      const labelA = getNotificationLabel(a);
+      const labelB = getNotificationLabel(b);
+      return labelA.localeCompare(labelB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  };
+
+  const filterNotificationList = (list: ComponentInstance[]) => {
+    if (!filterQuery.trim()) return list;
+    const query = filterQuery.trim().toLowerCase();
+    return list.filter((comp) =>
+      getNotificationLabel(comp).toLowerCase().includes(query)
+    );
+  };
+
+  const displayedActiveComponents = useMemo(
+    () => filterNotificationList(sortNotificationList(activeNotificationComponents)),
+    [activeNotificationComponents, sortMode, filterQuery]
+  );
+
+  const displayedInactiveComponents = useMemo(
+    () => filterNotificationList(sortNotificationList(inactiveNotificationComponents)),
+    [inactiveNotificationComponents, sortMode, filterQuery]
+  );
 
   const [activeCategory, setActiveCategory] = useState<string | null>(() => {
     if (activeView === 'home') return 'home';
@@ -333,7 +412,13 @@ export const Sidebar: React.FC = () => {
     ) {
       return;
     }
-    selectComponent(null);
+    const isNotificationSelected = Boolean(
+      selectedComponentId && notificationComponents.some((c) => c.id === selectedComponentId)
+    );
+    if (isNotificationSelected || notificationGhostActive) {
+      selectComponent(null);
+      setNotificationGhostActive(false);
+    }
   };
 
   const toggleCategory = (catKey: string) => {
@@ -412,21 +497,27 @@ export const Sidebar: React.FC = () => {
         {/* Notifications Expanded Content */}
         {activeCategory === 'notifications' && (
           <div data-keep-selection="true" className="p-3 space-y-3 bg-slate-950/40 border-t border-slate-800/60">
-            {/* Global Stack Position Selector */}
+            {/* Global Position Selector */}
             <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
               <label className="text-[10px] font-mono font-bold text-slate-400 uppercase block mb-1.5">
-                Global Stack Position
+                Global Position
               </label>
               <div className="grid grid-cols-3 gap-1">
                 {(
                   [
-                    { id: 'top-center', label: 'Top Ctr' },
-                    { id: 'top-right', label: 'Top R' },
-                    { id: 'bottom-center', label: 'Btm Ctr' },
+                    { id: 'top-left', label: 'Top L', title: 'Top Left' },
+                    { id: 'top-center', label: 'Top Ctr', title: 'Top Center' },
+                    { id: 'top-right', label: 'Top R', title: 'Top Right' },
+                    { id: 'bottom-left', label: 'Btm L', title: 'Bottom Left' },
+                    { id: 'bottom-center', label: 'Btm Ctr', title: 'Bottom Center' },
+                    { id: 'bottom-right', label: 'Btm R', title: 'Bottom Right' },
                   ] as const
                 ).map((pos) => (
                   <button
                     key={pos.id}
+                    data-testid="notification-position-option"
+                    data-position={pos.id}
+                    title={pos.title}
                     onClick={() => setNotificationStackPosition(pos.id as NotificationStackPosition)}
                     className={`py-1 px-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer truncate ${
                       notificationStackPosition === pos.id
@@ -486,87 +577,357 @@ export const Sidebar: React.FC = () => {
 
             {/* List of Configured Notification Instances */}
             {notificationComponents.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider px-1">
-                  Active Stack ({notificationComponents.length})
+              <div className="space-y-3 pt-2 border-t border-slate-800/80">
+                {/* Segmented Sort Control: A–Z (default) | Stack order */}
+                <div className="flex items-center justify-between gap-1 p-0.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] font-mono font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setSortMode('az')}
+                    className={`flex-1 py-1 px-2 rounded-md transition-colors text-center cursor-pointer ${
+                      sortMode === 'az'
+                        ? 'bg-amber-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    A–Z
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSortMode('stack')}
+                    className={`flex-1 py-1 px-2 rounded-md transition-colors text-center cursor-pointer ${
+                      sortMode === 'stack'
+                        ? 'bg-amber-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    Stack order
+                  </button>
                 </div>
-                {notificationComponents.map((comp, idx) => {
-                  const isSelected = selectedComponentId === comp.id;
-                  const primaryBinding = comp.bindings[0];
-                  let summaryText = 'Condition-bound (no binding)';
-                  if (comp.staticProps?.triggerMode === 'event') {
-                    summaryText = `Event: ${comp.staticProps?.triggerEvent || 'transition'}`;
-                  } else if (primaryBinding) {
-                    if (primaryBinding.conditions && primaryBinding.conditions.length > 0) {
-                      const firstCond = primaryBinding.conditions[0];
-                      const extraConds = primaryBinding.conditions.length > 1 ? ` (+${primaryBinding.conditions.length - 1} AND)` : '';
-                      summaryText = `If ${firstCond.stateField} ${firstCond.condition} ${firstCond.value}${extraConds} → ${primaryBinding.targetProp}`;
-                    } else if (primaryBinding.stateField) {
-                      summaryText = `If ${primaryBinding.stateField} ${primaryBinding.condition} ${primaryBinding.value} → ${primaryBinding.targetProp}`;
-                    }
-                    if (comp.bindings.length > 1) {
-                      summaryText += ` (+${comp.bindings.length - 1})`;
-                    }
-                  }
 
-                  return (
-                    <div
-                      key={comp.id}
-                      ref={(el) => {
-                        notificationItemRefs.current[comp.id] = el;
-                      }}
-                      data-notification-instance="true"
-                      onClick={() => selectComponent(comp.id)}
-                      className={`p-2.5 rounded-xl border transition-all cursor-pointer text-xs ${
-                        isSelected
-                          ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/30 shadow-md'
-                          : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/70'
-                      }`}
+                {/* Text Filter Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={filterQuery}
+                    onChange={(e) => setFilterQuery(e.target.value)}
+                    placeholder="Filter notifications..."
+                    className="w-full px-2.5 py-1 text-xs font-mono rounded-lg bg-slate-900 border border-slate-800 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500/60 transition-colors"
+                  />
+                  {filterQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setFilterQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs cursor-pointer"
+                      title="Clear filter"
                     >
-                      <div className="flex items-center justify-between gap-1.5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 shrink-0">
-                            #{idx + 1}
-                          </span>
-                          <span className="font-bold text-slate-200 truncate">
-                            {comp.staticProps.message || 'VEHICLE ALERT'}
-                          </span>
-                        </div>
+                      &times;
+                    </button>
+                  )}
+                </div>
 
-                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            disabled={idx === 0}
-                            onClick={() => reorderNotificationComponent(comp.id, 'up')}
-                            className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                            title="Move Up"
-                          >
-                            <ChevronUp className="w-3 h-3" />
-                          </button>
-                          <button
-                            disabled={idx === notificationComponents.length - 1}
-                            onClick={() => reorderNotificationComponent(comp.id, 'down')}
-                            className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                            title="Move Down"
-                          >
-                            <ChevronDown className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => deleteComponent(comp.id)}
-                            className="p-1 rounded bg-slate-900 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
+                {/* Active Notifications Section */}
+                <div className="space-y-2">
+                  <div
+                    data-testid="active-notifications-header"
+                    className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider px-1"
+                  >
+                    Active Notifications ({activeNotificationComponents.length})
+                  </div>
 
-                      <div className="mt-1.5 pt-1.5 border-t border-slate-700/40 flex items-center justify-between text-[10px] font-mono">
-                        <span className="truncate text-slate-400">{summaryText}</span>
-                        <span className="text-sky-400 shrink-0 font-semibold hover:underline">Edit &rarr;</span>
-                      </div>
+                  {activeNotificationComponents.length === 0 ? (
+                    <div
+                      data-testid="active-notifications-empty"
+                      className="text-xs text-slate-500 font-mono italic px-2 py-2 text-center bg-slate-900/40 rounded-lg border border-slate-800/40"
+                    >
+                      None
                     </div>
-                  );
-                })}
+                  ) : displayedActiveComponents.length === 0 ? (
+                    <div className="text-xs text-slate-500 font-mono italic px-2 py-1.5 text-center">
+                      No matching active notifications
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[35vh] overflow-y-auto custom-scrollbar pr-0.5">
+                      {displayedActiveComponents.map((comp, idx) => {
+                        const isSelected = selectedComponentId === comp.id;
+                        const label = getNotificationLabel(comp);
+                        const isPendingDelete = pendingDeleteId === comp.id;
+
+                        return (
+                          <div
+                            key={comp.id}
+                            ref={(el) => {
+                              notificationItemRefs.current[comp.id] = el;
+                            }}
+                            data-notification-instance="true"
+                            data-notification-id={comp.id}
+                            data-notification-enabled="true"
+                            onClick={() => {
+                              if (pendingDeleteId && pendingDeleteId !== comp.id) {
+                                setPendingDeleteId(null);
+                              }
+                              selectComponent(comp.id);
+                            }}
+                            className={`p-2.5 rounded-xl border transition-all cursor-pointer text-xs ${
+                              isSelected
+                                ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/30 shadow-md'
+                                : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/70'
+                            }`}
+                          >
+                            {isPendingDelete ? (
+                              <div
+                                data-testid="notification-delete-confirm-bar"
+                                className="flex items-center justify-between gap-1.5 w-full py-0.5"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="text-slate-200 font-bold truncate text-[11px] font-mono">
+                                  Delete &ldquo;{label}&rdquo;?
+                                </span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingDeleteId(null);
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-mono font-bold cursor-pointer transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingDeleteId(null);
+                                      deleteComponent(comp.id);
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-mono font-bold cursor-pointer transition-colors shadow-sm"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between gap-1.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {sortMode === 'stack' && (
+                                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 shrink-0">
+                                      #{idx + 1}
+                                    </span>
+                                  )}
+                                  <span data-notification-label title={label} className="font-bold text-slate-200 truncate">
+                                    {label}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  {/* Active Toggle Switch */}
+                                  <button
+                                    type="button"
+                                    data-testid="notification-active-toggle"
+                                    data-notification-id={comp.id}
+                                    data-active="true"
+                                    title="Deactivate notification"
+                                    onClick={() => {
+                                      updateComponentStaticProps(comp.id, {
+                                        enabled: 'false',
+                                      });
+                                    }}
+                                    className="relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-emerald-500"
+                                  >
+                                    <span className="pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-3" />
+                                  </button>
+
+                                  {sortMode === 'stack' && (
+                                    <>
+                                      <button
+                                        disabled={idx === 0}
+                                        onClick={() => reorderNotificationComponent(comp.id, 'up')}
+                                        className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        title="Move Up"
+                                      >
+                                        <ChevronUp className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        disabled={idx === displayedActiveComponents.length - 1}
+                                        onClick={() => reorderNotificationComponent(comp.id, 'down')}
+                                        className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        title="Move Down"
+                                      >
+                                        <ChevronDown className="w-3 h-3" />
+                                      </button>
+                                    </>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingDeleteId(comp.id);
+                                    }}
+                                    className="p-1 rounded bg-slate-900 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Inactive Notifications Section */}
+                <div className="space-y-2 pt-2 border-t border-slate-800/60">
+                  <div
+                    data-testid="inactive-notifications-header"
+                    className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider px-1"
+                  >
+                    Inactive Notifications ({inactiveNotificationComponents.length})
+                  </div>
+
+                  {inactiveNotificationComponents.length === 0 ? (
+                    <div
+                      data-testid="inactive-notifications-empty"
+                      className="text-xs text-slate-500 font-mono italic px-2 py-2 text-center bg-slate-900/40 rounded-lg border border-slate-800/40"
+                    >
+                      Deactivate a notification to keep it without triggering it
+                    </div>
+                  ) : displayedInactiveComponents.length === 0 ? (
+                    <div className="text-xs text-slate-500 font-mono italic px-2 py-1.5 text-center">
+                      No matching inactive notifications
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[35vh] overflow-y-auto custom-scrollbar pr-0.5">
+                      {displayedInactiveComponents.map((comp, idx) => {
+                        const isSelected = selectedComponentId === comp.id;
+                        const label = getNotificationLabel(comp);
+                        const isPendingDelete = pendingDeleteId === comp.id;
+
+                        return (
+                          <div
+                            key={comp.id}
+                            ref={(el) => {
+                              notificationItemRefs.current[comp.id] = el;
+                            }}
+                            data-notification-instance="true"
+                            data-notification-id={comp.id}
+                            data-notification-enabled="false"
+                            onClick={() => {
+                              if (pendingDeleteId && pendingDeleteId !== comp.id) {
+                                setPendingDeleteId(null);
+                              }
+                              selectComponent(comp.id);
+                            }}
+                            className={`p-2.5 rounded-xl border transition-all cursor-pointer text-xs ${
+                              isSelected
+                                ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/30 shadow-md'
+                                : 'bg-slate-900/60 border-slate-800/60 opacity-65 hover:opacity-90 hover:border-slate-700'
+                            }`}
+                          >
+                            {isPendingDelete ? (
+                              <div
+                                data-testid="notification-delete-confirm-bar"
+                                className="flex items-center justify-between gap-1.5 w-full py-0.5"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="text-slate-200 font-bold truncate text-[11px] font-mono">
+                                  Delete &ldquo;{label}&rdquo;?
+                                </span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingDeleteId(null);
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-mono font-bold cursor-pointer transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingDeleteId(null);
+                                      deleteComponent(comp.id);
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-mono font-bold cursor-pointer transition-colors shadow-sm"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between gap-1.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {sortMode === 'stack' && (
+                                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
+                                      #{idx + 1}
+                                    </span>
+                                  )}
+                                  <span data-notification-label title={label} className="font-bold text-slate-400 truncate">
+                                    {label}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  {/* Active Toggle Switch */}
+                                  <button
+                                    type="button"
+                                    data-testid="notification-active-toggle"
+                                    data-notification-id={comp.id}
+                                    data-active="false"
+                                    title="Activate notification"
+                                    onClick={() => {
+                                      updateComponentStaticProps(comp.id, {
+                                        enabled: 'true',
+                                      });
+                                    }}
+                                    className="relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-slate-700"
+                                  >
+                                    <span className="pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0.5" />
+                                  </button>
+
+                                  {sortMode === 'stack' && (
+                                    <>
+                                      <button
+                                        disabled={idx === 0}
+                                        onClick={() => reorderNotificationComponent(comp.id, 'up')}
+                                        className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        title="Move Up"
+                                      >
+                                        <ChevronUp className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        disabled={idx === displayedInactiveComponents.length - 1}
+                                        onClick={() => reorderNotificationComponent(comp.id, 'down')}
+                                        className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        title="Move Down"
+                                      >
+                                        <ChevronDown className="w-3 h-3" />
+                                      </button>
+                                    </>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingDeleteId(comp.id);
+                                    }}
+                                    className="p-1 rounded bg-slate-900 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

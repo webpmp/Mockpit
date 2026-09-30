@@ -169,6 +169,14 @@ export type BindingCondition = '<' | '>' | '=' | '!=' | '>=' | '<=';
 
 export type TargetProp = 'color' | 'visible' | 'opacity' | 'text' | 'icon' | 'severity';
 
+export type ConditionLogic = 'AND' | 'OR';
+
+export interface ConditionGroup {
+  id: string;
+  logic: ConditionLogic;
+  children: Array<BindingConditionRule | ConditionGroup>;
+}
+
 export interface BindingConditionRule {
   stateField: BindingStateField | string;
   condition: BindingCondition;
@@ -177,7 +185,8 @@ export interface BindingConditionRule {
 
 export interface BindingGroup {
   id: string;
-  conditions: BindingConditionRule[];
+  conditions?: BindingConditionRule[];
+  conditionGroup?: ConditionGroup;
   targetProp: TargetProp;
   targetValue: string;
 }
@@ -188,6 +197,7 @@ export type Binding = {
   condition?: BindingCondition;
   value?: string | number | boolean;
   conditions?: BindingConditionRule[];
+  conditionGroup?: ConditionGroup;
   targetProp: TargetProp;
   targetValue: string; // What to set targetProp to when condition is met
 };
@@ -403,7 +413,22 @@ export const getComponentCategory = (type: ComponentType): ComponentCategory => 
   return 'standard';
 };
 
-export type NotificationStackPosition = 'top-center' | 'top-right' | 'bottom-center';
+export type NotificationStackPosition =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
+
+/**
+ * Helper to determine whether a notification component is enabled/active.
+ * A notification is active if staticProps.enabled is not 'false' (defaults to active when unset).
+ */
+export function isNotificationEnabled(comp: { staticProps?: Record<string, any> } | null | undefined): boolean {
+  if (!comp) return false;
+  return comp.staticProps?.enabled !== 'false';
+}
 
 export type ComponentsByScreen = Record<string, ComponentInstance[]>;
 

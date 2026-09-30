@@ -39,9 +39,20 @@ import {
   AppShellBackgroundMode,
   AppShellBackgroundConfig,
   BorderOverrides,
+  isNotificationEnabled,
 } from '../types';
+export { isNotificationEnabled } from '../types';
 import { checkIntegrationEligibility } from '../utils/componentIntegration';
 import { DEFAULT_BORDER_OVERRIDES } from '../utils/borderOverrides';
+import {
+  getResolvedProps,
+  notificationHasInteractionEvent,
+} from '../lib/bindingEvaluator';
+
+export const AUTO_MINIMIZE_TIMEOUT_MS = 6000;
+export const DEFAULT_NOTIFICATION_DURATION_SEC = 6;
+export const EVENT_NOTIFICATION_COOLDOWN_MS = 15000;
+export const LOCAL_STORAGE_NOTIFICATION_DURATION_KEY = 'mockpit_notification_duration_sec';
 
 import {
   TempGradientColors,
@@ -760,13 +771,36 @@ function loadSavedNotificationComponents(): ComponentInstance[] {
 function loadSavedStackPosition(): NotificationStackPosition {
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_STACK_POS_KEY);
-    if (saved && (saved === 'top-center' || saved === 'top-right' || saved === 'bottom-center')) {
+    if (
+      saved &&
+      (saved === 'top-left' ||
+        saved === 'top-center' ||
+        saved === 'top-right' ||
+        saved === 'bottom-left' ||
+        saved === 'bottom-center' ||
+        saved === 'bottom-right')
+    ) {
       return saved as NotificationStackPosition;
     }
   } catch (e) {
     console.error('Failed to load notification stack position from localStorage', e);
   }
   return 'top-center';
+}
+
+function loadSavedNotificationDuration(): number {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_NOTIFICATION_DURATION_KEY);
+    if (saved) {
+      const num = Number(saved);
+      if (num === 3 || num === 6 || num === 10 || num === 15) {
+        return num;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load notification duration from localStorage', e);
+  }
+  return DEFAULT_NOTIFICATION_DURATION_SEC;
 }
 
 function loadSavedVehicleState(): VehicleState {
@@ -1014,6 +1048,8 @@ interface MockpitStore {
   activeEventNotifIds: string[];
   interactionEvents: Record<string, boolean>;
   notificationStackPosition: NotificationStackPosition;
+  notificationDurationSec: number;
+  eventNotificationCooldowns: Record<string, { shownUntil: number; cooldownUntil: number }>;
   notificationLibraryExpandRequest: number;
   notificationGhostActive: boolean;
   components: ComponentInstance[];
@@ -1205,6 +1241,9 @@ interface MockpitStore {
   setActiveView: (view: ActiveView) => void;
   findScreenForComponentType: (type: ComponentType) => string | null;
   setNotificationStackPosition: (position: NotificationStackPosition) => void;
+  setNotificationDurationSec: (sec: number) => void;
+  setEventNotificationCooldown: (id: string, entry: { shownUntil: number; cooldownUntil: number }) => void;
+  clearEventNotificationCooldowns: () => void;
   requestExpandNotificationsLibrary: () => void;
   setNotificationGhostActive: (active: boolean) => void;
   reorderNotificationComponent: (id: string, direction: 'up' | 'down') => void;
@@ -1391,6 +1430,8 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   activeEventNotifIds: [],
   interactionEvents: {},
   notificationStackPosition: loadSavedStackPosition(),
+  notificationDurationSec: loadSavedNotificationDuration(),
+  eventNotificationCooldowns: {},
   notificationLibraryExpandRequest: 0,
   notificationGhostActive: false,
   components: initialScreens.home || [],
@@ -2912,7 +2953,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   triggerEventNotification: (eventName) => {
     set((state) => {
       const matching = state.notificationComponents.filter(
-        (c) => c.staticProps?.triggerMode === 'event' && c.staticProps?.triggerEvent === eventName
+        (c) => isNotificationEnabled(c) && c.staticProps?.triggerMode === 'event' && c.staticProps?.triggerEvent === eventName
       );
       if (matching.length === 0) return state;
 
@@ -3073,6 +3114,28 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     set({ notificationStackPosition: position });
   },
 
+  setNotificationDurationSec: (sec: number) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_NOTIFICATION_DURATION_KEY, String(sec));
+    } catch (e) {
+      console.error('Failed to save notification duration', e);
+    }
+    set({ notificationDurationSec: sec });
+  },
+
+  setEventNotificationCooldown: (id: string, entry: { shownUntil: number; cooldownUntil: number }) => {
+    set((state) => ({
+      eventNotificationCooldowns: {
+        ...state.eventNotificationCooldowns,
+        [id]: entry,
+      },
+    }));
+  },
+
+  clearEventNotificationCooldowns: () => {
+    set({ eventNotificationCooldowns: {} });
+  },
+
   requestExpandNotificationsLibrary: () => {
     set((state) => ({
       notificationLibraryExpandRequest: state.notificationLibraryExpandRequest + 1,
@@ -3085,14 +3148,29 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   reorderNotificationComponent: (id, direction) => {
     set((state) => {
       const list = [...state.notificationComponents];
-      const index = list.findIndex((c) => c.id === id);
-      if (index === -1) return state;
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= list.length) return state;
+      const targetComp = list.find((c) => c.id === id);
+      if (!targetComp) return state;
 
-      const temp = list[index];
-      list[index] = list[targetIndex];
-      list[targetIndex] = temp;
+      const isEnabled = isNotificationEnabled(targetComp);
+      const sectionIndices: number[] = [];
+      list.forEach((c, idx) => {
+        if (isNotificationEnabled(c) === isEnabled) {
+          sectionIndices.push(idx);
+        }
+      });
+
+      const posInSection = sectionIndices.indexOf(list.findIndex((c) => c.id === id));
+      if (posInSection === -1) return state;
+
+      const targetPosInSection = direction === 'up' ? posInSection - 1 : posInSection + 1;
+      if (targetPosInSection < 0 || targetPosInSection >= sectionIndices.length) return state;
+
+      const currentIndexInList = sectionIndices[posInSection];
+      const targetIndexInList = sectionIndices[targetPosInSection];
+
+      const temp = list[currentIndexInList];
+      list[currentIndexInList] = list[targetIndexInList];
+      list[targetIndexInList] = temp;
 
       try {
         localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(list));
@@ -3213,7 +3291,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   },
 
   addComponent: (type, x = 760, y = 280) => {
-    const id = `comp-${type}-${Date.now().toString(36)}`;
+    const id = `comp-${type}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
     const grid = get().gridConfig;
     let initialX = x;
     let initialY = y;
@@ -3304,6 +3382,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           color: '#f59e0b',
           severity: 'warning',
           triggerMode: 'condition',
+          enabled: 'true',
         };
         bindings = [
           {
@@ -3816,6 +3895,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         const updatedNotifs = state.notificationComponents.map((c) =>
           c.id === id ? { ...c, staticProps: { ...c.staticProps, ...staticProps } } : c
         );
+        const updatedActiveEventIds = staticProps.enabled === 'false'
+          ? state.activeEventNotifIds.filter((notifId) => notifId !== id)
+          : state.activeEventNotifIds;
         try {
           localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifs));
         } catch (e) {
@@ -3823,6 +3905,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         }
         return {
           notificationComponents: updatedNotifs,
+          activeEventNotifIds: updatedActiveEventIds,
         };
       }
 
@@ -3968,6 +4051,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         return {
           notificationComponents: updatedNotifs,
           selectedComponentId: state.selectedComponentId === id ? null : state.selectedComponentId,
+          notificationGhostActive: false,
         };
       }
 
@@ -4083,6 +4167,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         componentsByScreen: updatedScreens,
         components: updatedList,
         selectedComponentId: state.selectedComponentId === id ? null : state.selectedComponentId,
+        notificationGhostActive: false,
       };
     });
   },

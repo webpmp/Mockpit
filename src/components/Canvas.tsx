@@ -7,7 +7,7 @@ import { AppShellBackground } from './AppShellBackground';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { ConnectorLayer } from './vehicle/ConnectorLayer';
 import { useMockpitStore } from '../store/useMockpitStore';
-import { ActiveView, ComponentInstance, NotificationStackPosition, TransitionStyle, TEXT_SCALE_FACTORS } from '../types';
+import { ActiveView, ComponentInstance, NotificationStackPosition, TransitionStyle, TEXT_SCALE_FACTORS, isNotificationEnabled } from '../types';
 import { COMPONENT_FLAGS } from '../config/componentFlags';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, FOCUSED_APP_RECT } from '../config/constants';
 import { getResolvedProps } from '../lib/bindingEvaluator';
@@ -280,10 +280,26 @@ export const Canvas: React.FC = () => {
 
   // Track minimized notifications by ID
   const [minimizedNotifIds, setMinimizedNotifIds] = useState<Record<string, boolean>>({});
+  const [confirmDeleteNotificationId, setConfirmDeleteNotificationId] = useState<string | null>(null);
   const autoMinimizeTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
+
+  useEffect(() => {
+    setConfirmDeleteNotificationId(null);
+  }, [selectedComponentId]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setConfirmDeleteNotificationId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Active notifications evaluated against current vehicleState conditions + event notifications + transient notifications
   const activePersistentNotifications = notificationComponents.filter((comp) => {
+    if (!isNotificationEnabled(comp)) return false;
     if (comp.staticProps?.triggerMode === 'event') {
       return activeEventNotifIds.includes(comp.id);
     }
@@ -600,6 +616,7 @@ export const Canvas: React.FC = () => {
 
       {/* Outer Vehicle Center Display Frame */}
       <div
+        data-testid="canvas-frame"
         className={`relative bg-slate-950 border-8 border-black rounded-[32px] flex-shrink-0 transition-all duration-300 overflow-hidden ${
           backgroundMode === 'color' ? 'shadow-[0_0_50px_rgba(0,0,0,0.8)]' : ''
         }`}
@@ -1013,6 +1030,7 @@ export const Canvas: React.FC = () => {
 
             return (
               <div
+                data-testid="notification-stack-layer"
                 className={`absolute z-30 pointer-events-auto flex gap-3 transition-all duration-300 ease-out ${getNotificationStackPositionClasses(notificationStackPosition)}`}
               >
                 {fullNotifs.map((comp) => (
@@ -1043,12 +1061,14 @@ export const Canvas: React.FC = () => {
 
             return (
               <div
+                data-testid="notification-editor-slot"
                 className={`absolute z-30 pointer-events-auto flex gap-3 ${getNotificationStackPositionClasses(notificationStackPosition)}`}
               >
                 {selectedNotification ? (
                   // Selected State: render that one notification with ComponentRenderer (isPresentation={false}, isSelected={true})
                   <div
                     key={selectedNotification.id}
+                    data-notification-id={selectedNotification.id}
                     className="relative group cursor-pointer pointer-events-auto"
                     style={{
                       width: selectedNotification.width,
@@ -1073,17 +1093,50 @@ export const Canvas: React.FC = () => {
                         boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
                       }}
                     >
-                      {/* Delete Quick Handle */}
-                      <button
-                        className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
-                        title="Delete Component"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteComponent(selectedNotification.id);
-                        }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      {/* Delete Quick Handle / Confirmation */}
+                      {confirmDeleteNotificationId === selectedNotification.id ? (
+                        <div
+                          data-testid="editor-notification-delete-confirm"
+                          className="absolute -top-4 right-0 bg-slate-900 border border-rose-500/80 rounded-xl px-2.5 py-1 flex items-center gap-2 shadow-xl text-xs font-mono z-50 pointer-events-auto"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="text-[11px] text-slate-200 font-bold whitespace-nowrap">
+                            Delete &ldquo;{selectedNotification.staticProps?.message || 'Notification'}&rdquo;?
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteNotificationId(null);
+                            }}
+                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold cursor-pointer transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteNotificationId(null);
+                              deleteComponent(selectedNotification.id);
+                            }}
+                            className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold cursor-pointer transition-colors shadow-sm"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
+                          title="Delete Component"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteNotificationId(selectedNotification.id);
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
 
                       {/* Bottom-Right Resize Handle */}
                       <div
@@ -1109,7 +1162,7 @@ export const Canvas: React.FC = () => {
                     className={`w-[380px] h-[120px] rounded-2xl border-2 bg-slate-900/40 font-mono text-xs flex items-center justify-center cursor-pointer select-none ${
                       notificationGhostActive
                         ? 'border-solid text-slate-200 opacity-100'
-                        : 'border-dashed border-slate-400 text-slate-400 opacity-60'
+                        : 'border-dashed border-slate-500 text-slate-400 opacity-60'
                     }`}
                     style={
                       notificationGhostActive

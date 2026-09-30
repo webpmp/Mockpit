@@ -990,9 +990,23 @@ export const SettingsModal: React.FC = () => {
                 <label className="text-[11px] font-bold text-slate-200 font-mono block">
                   Background Mode
                 </label>
-                <span className="text-[10px] text-slate-400 font-mono">
-                  {backgroundMode === 'dashboard' ? 'Vehicle Infotainment Trim' : 'Minimal Solid Fill'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {backgroundMode === 'dashboard' ? 'Vehicle Infotainment Trim' : 'Minimal Solid Fill'}
+                  </span>
+                  {backgroundMode === 'dashboard' && (
+                    <button
+                      onClick={() => {
+                        setIsAdjustingBackground(true);
+                        setSettingsModalOpen(false);
+                      }}
+                      className="p-1.5 rounded-lg transition-all border cursor-pointer bg-slate-900/80 border-slate-800 text-slate-400 hover:text-sky-300 hover:border-sky-500/30"
+                      title="Adjust Dashboard Background Position & Scale"
+                    >
+                      <Move className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
