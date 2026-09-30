@@ -563,6 +563,9 @@ export const useUserTestingStore = create<UserTestingState>((set, get) => ({
     const test = get().tests.find((t) => t.id === testId);
     if (!test || test.tasks.length === 0) return null;
 
+    // Reset event notification cooldowns on session start (Spec v3 Section F)
+    useMockpitStore.getState().clearEventNotificationCooldowns();
+
     // 1. Snapshot researcher runtime state before any setup runs
     const mockpit = useMockpitStore.getState();
     const componentPropsByScreen: Record<string, Record<string, Record<string, string>>> = {};

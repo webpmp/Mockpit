@@ -280,6 +280,8 @@ export const Sidebar: React.FC = () => {
   const notificationComponents = useMockpitStore((s) => s.notificationComponents);
   const notificationStackPosition = useMockpitStore((s) => s.notificationStackPosition);
   const setNotificationStackPosition = useMockpitStore((s) => s.setNotificationStackPosition);
+  const notificationDurationSec = useMockpitStore((s) => s.notificationDurationSec);
+  const setNotificationDurationSec = useMockpitStore((s) => s.setNotificationDurationSec);
   const notificationLibraryExpandRequest = useMockpitStore((s) => s.notificationLibraryExpandRequest);
   const reorderNotificationComponent = useMockpitStore((s) => s.reorderNotificationComponent);
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
@@ -526,6 +528,31 @@ export const Sidebar: React.FC = () => {
                     }`}
                   >
                     {pos.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Global Duration Selector */}
+            <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase block mb-1.5">
+                Global Duration
+              </label>
+              <div className="grid grid-cols-4 gap-1">
+                {[3, 6, 10, 15].map((sec) => (
+                  <button
+                    key={sec}
+                    data-testid="notification-duration-option"
+                    data-seconds={sec}
+                    title={`${sec} seconds`}
+                    onClick={() => setNotificationDurationSec(sec)}
+                    className={`py-1 px-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer text-center ${
+                      notificationDurationSec === sec
+                        ? 'bg-amber-500 text-slate-950 shadow-sm'
+                        : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    {sec}s
                   </button>
                 ))}
               </div>

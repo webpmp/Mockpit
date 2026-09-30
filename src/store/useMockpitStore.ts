@@ -2969,7 +2969,11 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     }));
   },
 
-  emitInteractionEvent: (eventName: string, durationMs = 2500) => {
+  emitInteractionEvent: (eventName: string, durationMs?: number) => {
+    const effectiveDurationMs = typeof durationMs === 'number' && durationMs > 0
+      ? durationMs
+      : (get().notificationDurationSec || DEFAULT_NOTIFICATION_DURATION_SEC) * 1000;
+
     if (interactionEventTimers[eventName]) {
       clearTimeout(interactionEventTimers[eventName]);
       delete interactionEventTimers[eventName];
@@ -2982,10 +2986,10 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       },
     }));
 
-    if (durationMs > 0) {
+    if (effectiveDurationMs > 0) {
       interactionEventTimers[eventName] = setTimeout(() => {
         get().clearInteractionEvent(eventName);
-      }, durationMs);
+      }, effectiveDurationMs);
     }
   },
 
@@ -3078,11 +3082,13 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     }));
   },
 
-  setScreenMode: (mode) =>
+  setScreenMode: (mode) => {
+    get().clearEventNotificationCooldowns();
     set((state) => ({
       screenMode: mode,
       isSettingsOpen: mode === 'presentation' ? false : state.isSettingsOpen,
-    })),
+    }));
+  },
 
   setActiveView: (view) =>
     set((state) => ({

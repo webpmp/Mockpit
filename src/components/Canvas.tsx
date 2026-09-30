@@ -6,11 +6,11 @@ import { VehicleBackground } from './VehicleBackground';
 import { AppShellBackground } from './AppShellBackground';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { ConnectorLayer } from './vehicle/ConnectorLayer';
-import { useMockpitStore } from '../store/useMockpitStore';
+import { useMockpitStore, DEFAULT_NOTIFICATION_DURATION_SEC } from '../store/useMockpitStore';
 import { ActiveView, ComponentInstance, NotificationStackPosition, TransitionStyle, TEXT_SCALE_FACTORS, isNotificationEnabled } from '../types';
 import { COMPONENT_FLAGS } from '../config/componentFlags';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, FOCUSED_APP_RECT } from '../config/constants';
-import { getResolvedProps } from '../lib/bindingEvaluator';
+import { getResolvedProps, evaluateNotificationVisibility, notificationHasInteractionEvent } from '../lib/bindingEvaluator';
 import { ContactAvatar } from './ContactAvatar';
 import { WeatherScreenShell } from './weather/WeatherScreenShell';
 import { useWeatherStore } from '../store/useWeatherStore';
@@ -260,6 +260,9 @@ export const Canvas: React.FC = () => {
   const updateComponentSize = useMockpitStore((s) => s.updateComponentSize);
   const addComponent = useMockpitStore((s) => s.addComponent);
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
+  const notificationDurationSec = useMockpitStore((s) => s.notificationDurationSec);
+  const eventNotificationCooldowns = useMockpitStore((s) => s.eventNotificationCooldowns);
+  const setEventNotificationCooldown = useMockpitStore((s) => s.setEventNotificationCooldown);
 
   const isParticipantMode = useUserTestingStore((s) => s.isParticipantMode);
   const isPresentation = screenMode === 'presentation' || isParticipantMode;
@@ -303,8 +306,16 @@ export const Canvas: React.FC = () => {
     if (comp.staticProps?.triggerMode === 'event') {
       return activeEventNotifIds.includes(comp.id);
     }
-    const resolved = getResolvedProps(comp, vehicleState, interactionEvents);
-    return resolved.visible !== 'false' && resolved.visible !== '0';
+    const vis = evaluateNotificationVisibility(
+      comp,
+      vehicleState,
+      interactionEvents,
+      eventNotificationCooldowns,
+      Date.now(),
+      notificationDurationSec,
+      (id, entry) => setEventNotificationCooldown(id, entry)
+    );
+    return vis.visible;
   });
 
   const activeNotifications = [...activePersistentNotifications, ...transientNotifications];

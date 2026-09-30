@@ -6,8 +6,13 @@ import {
   ComponentInstance,
   ConditionGroup,
   VehicleState,
+  isNotificationEnabled,
 } from '../types';
-import { useMockpitStore } from '../store/useMockpitStore';
+import {
+  useMockpitStore,
+  DEFAULT_NOTIFICATION_DURATION_SEC,
+  EVENT_NOTIFICATION_COOLDOWN_MS,
+} from '../store/useMockpitStore';
 
 /**
  * Type guard to check if an item in ConditionGroup children is a nested ConditionGroup.
@@ -406,8 +411,18 @@ export function evaluateNotificationVisibility(
   vehicleState: VehicleState,
   interactionEvents: Record<string, boolean> = {},
   cooldowns: Record<string, { shownUntil: number; cooldownUntil: number }> = {},
-  now: number = Date.now()
+  now: number = Date.now(),
+  durationSec: number = DEFAULT_NOTIFICATION_DURATION_SEC,
+  onStartCooldown?: (id: string, entry: { shownUntil: number; cooldownUntil: number }) => void
 ): NotificationVisibilityResult {
+  if (!isNotificationEnabled(component)) {
+    return {
+      visible: false,
+      isEventDriven: false,
+      resolvedProps: {},
+    };
+  }
+
   const isEventDriven = notificationHasInteractionEvent(component);
   const resolved = getResolvedProps(component, vehicleState, interactionEvents);
 
@@ -421,8 +436,9 @@ export function evaluateNotificationVisibility(
 
   if (isEventDriven) {
     const cooldown = cooldowns[component.id];
+
+    // 1. Within active shownUntil window: verify state condition is satisfied
     if (cooldown && now < cooldown.shownUntil) {
-      // While in active shownUntil window: verify state part of the rule is met
       const simulatedEvents = { ...interactionEvents, speedIncreaseAttempted: true };
       const simulatedResolved = getResolvedProps(component, vehicleState, simulatedEvents);
       const isVisible = simulatedResolved.visible !== 'false' && simulatedResolved.visible !== '0';
@@ -432,7 +448,31 @@ export function evaluateNotificationVisibility(
         resolvedProps: simulatedResolved,
       };
     }
-    // Outside shown window or during quiet cooldown:
+
+    // 2. Quiet cooldown window (shownUntil <= now < cooldownUntil): suppressed
+    if (cooldown && now < cooldown.cooldownUntil) {
+      return {
+        visible: false,
+        isEventDriven: true,
+        resolvedProps: resolved,
+      };
+    }
+
+    // 3. Cooldown expired or not started yet: evaluate current condition
+    const isVisible = resolved.visible !== 'false' && resolved.visible !== '0';
+    if (isVisible) {
+      const shownUntil = now + durationSec * 1000;
+      const cooldownUntil = now + EVENT_NOTIFICATION_COOLDOWN_MS;
+      if (onStartCooldown) {
+        onStartCooldown(component.id, { shownUntil, cooldownUntil });
+      }
+      return {
+        visible: true,
+        isEventDriven: true,
+        resolvedProps: resolved,
+      };
+    }
+
     return {
       visible: false,
       isEventDriven: true,
