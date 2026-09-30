@@ -668,4 +668,131 @@ describe('Spec v3.2 — Multi-Condition Bindings & Cooldown Lifecycle Architectu
       );
     });
   });
+
+  describe('10. Behavior: Spec v3.4 Expanded Bindings Default Limited to Notifications', () => {
+    const notifSectionMarker =
+      'Any rule that matches shows the notification. Inside a rule, each group matches ALL or ANY of its conditions.';
+    const standardSectionMarker =
+      'Dynamic HMI logic rules that update styling when state changes.';
+
+    const notifComp: ComponentInstance = {
+      id: 'notif-spec-34',
+      type: 'warning',
+      x: 0,
+      y: 0,
+      width: 380,
+      height: 120,
+      staticProps: {
+        enabled: 'true',
+        triggerMode: 'condition',
+      },
+      bindings: [],
+    };
+
+    const speedComp: ComponentInstance = {
+      id: 'speed-spec-34',
+      type: 'speed',
+      x: 100,
+      y: 100,
+      width: 200,
+      height: 200,
+      staticProps: {},
+      bindings: [],
+    };
+
+    it('item 1: selecting a notification expands Show When section by default', async () => {
+      const React = (await import('react')).default;
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { Inspector } = await import('../Inspector');
+
+      const html = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: notifComp.id,
+          initialTab: 'component',
+          notificationComponents: [notifComp],
+          components: [speedComp],
+        })
+      );
+
+      assert.equal(
+        html.includes(notifSectionMarker),
+        true,
+        'Notification component Show When section must be expanded by default'
+      );
+    });
+
+    it('item 2: selecting a non-notification component collapses State Bindings by default', async () => {
+      const React = (await import('react')).default;
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { Inspector } = await import('../Inspector');
+
+      const html = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: speedComp.id,
+          initialTab: 'component',
+          notificationComponents: [notifComp],
+          components: [speedComp],
+        })
+      );
+
+      assert.equal(
+        html.includes(standardSectionMarker),
+        false,
+        'Non-notification component State Bindings section must be collapsed by default'
+      );
+    });
+
+    it('item 3: alternating selection (notification -> non-notification -> notification) yields expanded -> collapsed -> expanded', async () => {
+      const React = (await import('react')).default;
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { Inspector } = await import('../Inspector');
+
+      // Step 1: Notification
+      const html1 = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: notifComp.id,
+          initialTab: 'component',
+          notificationComponents: [notifComp],
+          components: [speedComp],
+        })
+      );
+      assert.equal(html1.includes(notifSectionMarker), true, 'Step 1: Notification must be expanded');
+
+      // Step 2: Non-notification
+      const html2 = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: speedComp.id,
+          initialTab: 'component',
+          notificationComponents: [notifComp],
+          components: [speedComp],
+        })
+      );
+      assert.equal(html2.includes(standardSectionMarker), false, 'Step 2: Non-notification must be collapsed');
+
+      // Step 3: Notification again
+      const html3 = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: notifComp.id,
+          initialTab: 'component',
+          notificationComponents: [notifComp],
+          components: [speedComp],
+        })
+      );
+      assert.equal(html3.includes(notifSectionMarker), true, 'Step 3: Notification must be expanded again');
+    });
+
+    it('source code invariant: bindings default is !isNotifComp and dependencies include isNotifComp', async () => {
+      const fs = await import('node:fs');
+      const inspectorCode = fs.readFileSync('src/components/Inspector.tsx', 'utf-8');
+
+      assert.ok(
+        inspectorCode.includes('bindings: !isNotifComp'),
+        'Inspector must use !isNotifComp for initial bindings collapse state'
+      );
+      assert.ok(
+        inspectorCode.includes('[selectedComponentId, isNotifComp]'),
+        'Inspector reset effect must depend on [selectedComponentId, isNotifComp]'
+      );
+    });
+  });
 });

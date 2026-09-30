@@ -973,12 +973,13 @@ export const Inspector: React.FC<InspectorProps> = ({
   };
 
   // Track expanded state of collapsible sections.
-  // Defaults: 'geometry', 'stacking' are collapsed (true), 'bindings' is expanded (false).
+  // Defaults: 'geometry' and 'stacking' are collapsed (true).
+  // 'bindings' is expanded (false) for notification components, collapsed (true) for standard components.
   // 'appearance' and other sections default to expanded (true).
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     geometry: true,
     stacking: true,
-    bindings: false,
+    bindings: !isNotifComp,
   });
 
   useEffect(() => {
@@ -990,10 +991,10 @@ export const Inspector: React.FC<InspectorProps> = ({
       setCollapsedSections({
         geometry: true,
         stacking: true,
-        bindings: false,
+        bindings: !isNotifComp,
       });
     }
-  }, [selectedComponentId]);
+  }, [selectedComponentId, isNotifComp]);
 
   const toggleSection = (sectionKey: string) => {
     setCollapsedSections((prev) => ({
