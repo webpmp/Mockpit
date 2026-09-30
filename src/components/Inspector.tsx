@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS, DEFAULT_NOTIFICATION_DURATION_SEC } from '../store/useMockpitStore';
 import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
-import { BindingCondition, BindingStateField, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType, EgoVehicleType, ConditionGroup, ConditionLogic, BindingConditionRule, BindingGroup, Binding } from '../types';
+import { BindingCondition, BindingStateField, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType, EgoVehicleType, ConditionGroup, ConditionLogic, BindingConditionRule, BindingGroup, Binding, ComponentInstance } from '../types';
 import { QUICK_ACCESS_OPTIONS, getDefaultQuickAccessDimensions } from '../config/quickAccessConfig';
 import { Plus, Trash2, Pencil, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check, Eye, EyeOff, Info } from 'lucide-react';
 import { geocodeAddress } from '../utils/geocoding';
@@ -850,13 +850,28 @@ const GeometryInput: React.FC<{
   );
 };
 
-export const Inspector: React.FC = () => {
-  const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
+export interface InspectorProps {
+  initialTab?: 'component' | 'screen' | 'layers';
+  selectedComponentId?: string | null;
+  notificationComponents?: ComponentInstance[];
+  components?: ComponentInstance[];
+}
+
+export const Inspector: React.FC<InspectorProps> = ({
+  initialTab,
+  selectedComponentId: propSelectedId,
+  notificationComponents: propNotifs,
+  components: propComps,
+}) => {
+  const storeSelectedComponentId = useMockpitStore((s) => s.selectedComponentId);
+  const selectedComponentId = propSelectedId !== undefined ? propSelectedId : storeSelectedComponentId;
   const vehicleState = useMockpitStore((s) => s.vehicleState);
   const setVehicleState = useMockpitStore((s) => s.setVehicleState);
   const resetVehicleOrigin = useMockpitStore((s) => s.resetVehicleOrigin);
-  const components = useMockpitStore((s) => s.components);
-  const notificationComponents = useMockpitStore((s) => s.notificationComponents);
+  const storeComponents = useMockpitStore((s) => s.components);
+  const components = propComps || storeComponents;
+  const storeNotifs = useMockpitStore((s) => s.notificationComponents);
+  const notificationComponents = propNotifs || storeNotifs;
   const notificationStackPosition = useMockpitStore((s) => s.notificationStackPosition);
   const activePalette = useMockpitStore((s) => s.activePalette);
   const setNotificationStackPosition = useMockpitStore((s) => s.setNotificationStackPosition);
@@ -925,7 +940,9 @@ export const Inspector: React.FC = () => {
 
   const [isAddingBinding, setIsAddingBinding] = useState(false);
   const [editingBindingId, setEditingBindingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'component' | 'screen' | 'layers'>('screen');
+  const [activeTab, setActiveTab] = useState<'component' | 'screen' | 'layers'>(
+    selectedComponentId ? 'component' : 'screen'
+  );
   const [originInputVal, setOriginInputVal] = useState<string>(vehicleState.originLocationName || 'San Francisco, CA');
   const [originGeocodeStatus, setOriginGeocodeStatus] = useState<'idle' | 'resolving' | 'success' | 'failed'>('idle');
 
@@ -956,12 +973,12 @@ export const Inspector: React.FC = () => {
   };
 
   // Track expanded state of collapsible sections.
-  // Defaults: 'geometry', 'stacking', 'bindings' are collapsed (false).
+  // Defaults: 'geometry', 'stacking' are collapsed (true), 'bindings' is expanded (false).
   // 'appearance' and other sections default to expanded (true).
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     geometry: true,
     stacking: true,
-    bindings: true,
+    bindings: false,
   });
 
   useEffect(() => {
@@ -973,7 +990,7 @@ export const Inspector: React.FC = () => {
       setCollapsedSections({
         geometry: true,
         stacking: true,
-        bindings: true,
+        bindings: false,
       });
     }
   }, [selectedComponentId]);
@@ -4620,145 +4637,168 @@ export const Inspector: React.FC = () => {
 
                 const isCustomLabel = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight', 'buttonLabel', 'reportTitle', 'details'].includes(key);
 
-                return (
-                <div key={key} className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
-                  <span className={`text-[11px] font-mono text-slate-400 ${isCustomLabel ? '' : 'capitalize'}`}>{getFieldLabel(key)}</span>
-                  {key === 'color' ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={val.startsWith('#') ? val : '#38bdf8'}
+                const propRow = (
+                  <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+                    <span className={`text-[11px] font-mono text-slate-400 ${isCustomLabel ? '' : 'capitalize'}`}>{getFieldLabel(key)}</span>
+                    {key === 'color' ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={typeof val === 'string' && val.startsWith('#') ? val : '#38bdf8'}
+                          onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                          className="w-6 h-6 rounded bg-transparent border-none cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={String(val ?? '')}
+                          onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                          className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                        />
+                      </div>
+                    ) : key === 'details' ? (
+                      <textarea
+                        value={val}
                         onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                        className="w-6 h-6 rounded bg-transparent border-none cursor-pointer"
+                        placeholder="Optional resolution instructions"
+                        rows={2}
+                        className="w-44 bg-slate-900 px-2 py-1 rounded text-slate-200 font-sans text-xs focus:outline-none border border-slate-700 resize-none"
                       />
+                    ) : key === 'severity' ? (
+                      <select
+                        value={val}
+                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                        className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                      >
+                        <option value="critical">Critical (Red)</option>
+                        <option value="warning">Warning (Amber)</option>
+                        <option value="info">Info (Blue)</option>
+                      </select>
+                    ) : key === 'triggerMode' ? (
+                      <select
+                        value={val}
+                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                        className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                      >
+                        <option value="condition">Condition-Bound</option>
+                        <option value="event">Event-Triggered</option>
+                      </select>
+                    ) : key === 'triggerEvent' ? (
+                      <select
+                        value={val}
+                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                        className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                      >
+                        <option value="cruise_on">Cruise Engaged (cruise_on)</option>
+                        <option value="cruise_off">Cruise Disengaged (cruise_off)</option>
+                        <option value="manual">Manual Trigger</option>
+                      </select>
+                    ) : key === 'icon' ? (
+                      <select
+                        value={val}
+                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                        className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                      >
+                        <option value="alert-triangle">Alert Triangle</option>
+                        <option value="door-open">Door Open</option>
+                        <option value="battery-warning">Battery Warning</option>
+                        <option value="thermometer">Thermometer</option>
+                        <option value="tire">Tire (TPMS)</option>
+                        <option value="zap">Zap / Charging</option>
+                        <option value="gauge">Gauge / Speed</option>
+                        <option value="bell">Bell</option>
+                        <option value="shield-alert">Shield Alert</option>
+                        <option value="wrench">Wrench / Service</option>
+                        <option value="lock">Lock</option>
+                        <option value="key">Key Fob</option>
+                        <option value="info">Info</option>
+                      </select>
+                    ) : (
                       <input
                         type="text"
                         value={val}
                         onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                        className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                        className="w-32 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
                       />
+                    )}
+                  </div>
+                );
+
+                if (key === 'triggerMode') {
+                  return (
+                    <div key={key} className="space-y-1.5">
+                      {propRow}
+                      {val === 'event' && (
+                        <p className="text-[10px] text-slate-400 leading-relaxed px-1">
+                          Event-Triggered notifications ignore Show When rules. Use Condition-Bound for gear, speed, and interaction conditions.
+                        </p>
+                      )}
                     </div>
-                  ) : key === 'details' ? (
-                    <textarea
-                      value={val}
-                      onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                      placeholder="Optional resolution instructions"
-                      rows={2}
-                      className="w-44 bg-slate-900 px-2 py-1 rounded text-slate-200 font-sans text-xs focus:outline-none border border-slate-700 resize-none"
-                    />
-                  ) : key === 'severity' ? (
-                    <select
-                      value={val}
-                      onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                      className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
-                    >
-                      <option value="critical">Critical (Red)</option>
-                      <option value="warning">Warning (Amber)</option>
-                      <option value="info">Info (Blue)</option>
-                    </select>
-                  ) : key === 'triggerMode' ? (
-                    <select
-                      value={val}
-                      onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                      className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
-                    >
-                      <option value="condition">Condition-Bound</option>
-                      <option value="event">Event-Triggered</option>
-                    </select>
-                  ) : key === 'triggerEvent' ? (
-                    <select
-                      value={val}
-                      onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                      className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
-                    >
-                      <option value="cruise_on">Cruise Engaged (cruise_on)</option>
-                      <option value="cruise_off">Cruise Disengaged (cruise_off)</option>
-                      <option value="manual">Manual Trigger</option>
-                    </select>
-                  ) : key === 'icon' ? (
-                    <select
-                      value={val}
-                      onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                      className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
-                    >
-                      <option value="alert-triangle">Alert Triangle</option>
-                      <option value="door-open">Door Open</option>
-                      <option value="battery-warning">Battery Warning</option>
-                      <option value="thermometer">Thermometer</option>
-                      <option value="tire">Tire (TPMS)</option>
-                      <option value="zap">Zap / Charging</option>
-                      <option value="gauge">Gauge / Speed</option>
-                      <option value="bell">Bell</option>
-                      <option value="shield-alert">Shield Alert</option>
-                      <option value="wrench">Wrench / Service</option>
-                      <option value="lock">Lock</option>
-                      <option value="key">Key Fob</option>
-                      <option value="info">Info</option>
-                    </select>
+                  );
+                }
+
+                return (
+                  <div key={key}>
+                    {propRow}
+                  </div>
+                );
+              })}
+            </div>
+            )}
+          </div>
+
+          {/* Behavior Bindings / Show When */}
+          <div className="border-b border-slate-800/80 pb-4">
+            <div className="flex items-center justify-between min-h-[44px]">
+              <button
+                type="button"
+                onClick={() => toggleSection('bindings')}
+                className="flex-1 flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    {isNotifComp
+                      ? `Show When (${selectedComp.bindings?.length || 0})`
+                      : `State Bindings (${selectedComp.bindings?.length || 0})`}
+                  </span>
+                </div>
+                <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+                  {collapsedSections.bindings ? (
+                    <ChevronRight className="w-4 h-4" />
                   ) : (
-                    <input
-                      type="text"
-                      value={val}
-                      onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                      className="w-32 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
-                    />
+                    <ChevronDown className="w-4 h-4" />
                   )}
                 </div>
-              );
-            })}
-          </div>
-          )}
-        </div>
+              </button>
+              <button
+                onClick={() => {
+                  if (collapsedSections.bindings) {
+                    setCollapsedSections((prev) => ({ ...prev, bindings: false }));
+                  }
+                  if (isAddingBinding) {
+                    setIsAddingBinding(false);
+                  } else {
+                    handleStartAddBinding();
+                  }
+                }}
+                data-testid="add-condition-rule-button"
+                className="p-1.5 ml-2 rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-slate-950 transition-colors text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> {isNotifComp ? '+ Condition Rule' : '+ Rule'}
+              </button>
+            </div>
 
-        {/* Behavior Bindings / Show When */}
-        <div className="border-b border-slate-800/80 pb-4">
-          <div className="flex items-center justify-between min-h-[44px]">
-            <button
-              type="button"
-              onClick={() => toggleSection('bindings')}
-              className="flex-1 flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  {isNotifComp
-                    ? `Show When (${selectedComp.bindings?.length || 0})`
-                    : `State Bindings (${selectedComp.bindings?.length || 0})`}
-                </span>
-              </div>
-              <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
-                {collapsedSections.bindings ? (
-                  <ChevronRight className="w-4 h-4" />
+            {!collapsedSections.bindings && (
+              <div className="mt-2 space-y-3">
+                {isNotifComp ? (
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Any rule that matches shows the notification. Inside a rule, each group matches ALL or ANY of its conditions.
+                  </p>
                 ) : (
-                  <ChevronDown className="w-4 h-4" />
+                  <p className="text-[10px] text-slate-400">
+                    Dynamic HMI logic rules that update styling when state changes.
+                  </p>
                 )}
-              </div>
-            </button>
-            <button
-              onClick={() => {
-                if (collapsedSections.bindings) {
-                  setCollapsedSections((prev) => ({ ...prev, bindings: false }));
-                }
-                if (isAddingBinding) {
-                  setIsAddingBinding(false);
-                } else {
-                  handleStartAddBinding();
-                }
-              }}
-              data-testid="add-condition-rule-button"
-              className="p-1.5 ml-2 rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-slate-950 transition-colors text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" /> {isNotifComp ? '+ Condition Rule' : '+ Rule'}
-            </button>
-          </div>
-
-          {!collapsedSections.bindings && (
-            <div className="mt-2 space-y-3">
-              <p className="text-[10px] text-slate-400">
-                {isNotifComp
-                  ? 'Display trigger conditions for this notification card.'
-                  : 'Dynamic HMI logic rules that update styling when state changes.'}
-              </p>
 
               {/* Form renderer for creating or editing a binding rule with ConditionGroup tree */}
               {(() => {

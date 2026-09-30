@@ -556,4 +556,116 @@ describe('Spec v3.2 — Multi-Condition Bindings & Cooldown Lifecycle Architectu
       assert.equal(res.isEventDriven, true);
     });
   });
+
+  describe('9. Behavior: Spec v3.3 Inspector Helper Text & Section Note Suite', () => {
+    const helperText =
+      'Event-Triggered notifications ignore Show When rules. Use Condition-Bound for gear, speed, and interaction conditions.';
+    const sectionNote =
+      'Any rule that matches shows the notification. Inside a rule, each group matches ALL or ANY of its conditions.';
+
+    const baseNotif: ComponentInstance = {
+      id: 'notif-spec-33',
+      type: 'warning',
+      x: 0,
+      y: 0,
+      width: 380,
+      height: 120,
+      staticProps: {
+        enabled: 'true',
+        triggerMode: 'event',
+        severity: 'warning',
+      },
+      bindings: [],
+    };
+
+    it('renders Event-Triggered helper text when triggerMode is event and section note in Show When', async () => {
+      // Mock minimal browser environment for React SSR render
+      const styleMock = {
+        setProperty: () => {},
+        removeProperty: () => {},
+        getPropertyValue: () => '',
+      };
+      const win: any = {
+        requestAnimationFrame: (cb: any) => setTimeout(cb, 0),
+        cancelAnimationFrame: (id: any) => clearTimeout(id),
+        navigator: { userAgent: 'node' },
+        screen: { deviceXDPI: 1, logicalXDPI: 1 },
+        devicePixelRatio: 1,
+        document: {
+          documentElement: { style: styleMock },
+          createElement: () => ({ style: styleMock, setAttribute: () => {} }),
+          head: { appendChild: () => {} },
+        },
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        localStorage: {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+          clear: () => {},
+        },
+      };
+      if (!(globalThis as any).window) (globalThis as any).window = win;
+      if (!(globalThis as any).document) (globalThis as any).document = win.document;
+      if (!(globalThis as any).localStorage) (globalThis as any).localStorage = win.localStorage;
+
+      const React = (await import('react')).default;
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { Inspector } = await import('../Inspector');
+
+      const eventNotif: ComponentInstance = {
+        ...baseNotif,
+        staticProps: { ...baseNotif.staticProps, triggerMode: 'event' },
+      };
+
+      const htmlEvent = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: eventNotif.id,
+          initialTab: 'component',
+          notificationComponents: [eventNotif],
+        })
+      );
+
+      assert.equal(
+        htmlEvent.includes(helperText),
+        true,
+        'Event-Triggered helper text must be rendered when triggerMode is event'
+      );
+      assert.equal(
+        htmlEvent.includes(sectionNote),
+        true,
+        'Show When section note must be rendered at top of Show When section'
+      );
+    });
+
+    it('hides Event-Triggered helper text when triggerMode is condition-bound, while preserving Show When section note', async () => {
+      const React = (await import('react')).default;
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { Inspector } = await import('../Inspector');
+
+      const conditionNotif: ComponentInstance = {
+        ...baseNotif,
+        staticProps: { ...baseNotif.staticProps, triggerMode: 'condition' },
+      };
+
+      const htmlCondition = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: conditionNotif.id,
+          initialTab: 'component',
+          notificationComponents: [conditionNotif],
+        })
+      );
+
+      assert.equal(
+        htmlCondition.includes(helperText),
+        false,
+        'Event-Triggered helper text must NOT be rendered when triggerMode is condition'
+      );
+      assert.equal(
+        htmlCondition.includes(sectionNote),
+        true,
+        'Show When section note must remain visible when triggerMode is condition'
+      );
+    });
+  });
 });
