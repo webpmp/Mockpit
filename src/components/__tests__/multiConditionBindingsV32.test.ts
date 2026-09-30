@@ -795,4 +795,161 @@ describe('Spec v3.2 — Multi-Condition Bindings & Cooldown Lifecycle Architectu
       );
     });
   });
+
+  describe('11. Behavior: Spec v5 Resolution Details Field on Every Notification', () => {
+    const newNotifWithoutDetails: ComponentInstance = {
+      id: 'notif-no-details-v5',
+      type: 'warning',
+      x: 0,
+      y: 0,
+      width: 380,
+      height: 120,
+      staticProps: {
+        message: 'TIRE DEFECT ALERT',
+        severity: 'warning',
+      },
+      bindings: [],
+    };
+
+    it('item 1: renders Inspector for notification with no details key with empty Resolution Details textarea', async () => {
+      const React = (await import('react')).default;
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { Inspector } = await import('../Inspector');
+
+      const html = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: newNotifWithoutDetails.id,
+          initialTab: 'component',
+          notificationComponents: [newNotifWithoutDetails],
+        })
+      );
+
+      assert.equal(html.includes('Resolution Details'), true, 'Resolution Details label must be present');
+      assert.equal(
+        html.includes('placeholder="Optional resolution instructions"'),
+        true,
+        'Textarea placeholder must be present'
+      );
+      const match = html.match(/<textarea[^>]*placeholder="Optional resolution instructions"[^>]*>([\s\S]*?)<\/textarea>/);
+      assert.ok(match, 'Textarea tag must exist in markup');
+      assert.equal(match![1], '', 'Textarea must be empty when staticProps.details is undefined');
+    });
+
+    it('item 2: renders comp-warning-door-1 with existing text and exactly one Resolution Details row', async () => {
+      const React = (await import('react')).default;
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { Inspector } = await import('../Inspector');
+      const { useMockpitStore } = await import('../../store/useMockpitStore');
+
+      const html = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: 'comp-warning-door-1',
+          initialTab: 'component',
+          notificationComponents: useMockpitStore.getState().notificationComponents,
+        })
+      );
+
+      const occurrences = (html.match(/Resolution Details/g) || []).length;
+      assert.equal(occurrences, 1, 'There must be exactly one Resolution Details row rendered');
+      assert.equal(
+        html.includes('Check and securely close all doors.'),
+        true,
+        'Textarea must contain existing details string'
+      );
+    });
+
+    it('item 3: card shows divider and details line when filled and neither when empty', async () => {
+      const React = (await import('react')).default;
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { ComponentRenderer } = await import('../ComponentRenderer');
+
+      const filledNotif: ComponentInstance = {
+        ...newNotifWithoutDetails,
+        staticProps: {
+          ...newNotifWithoutDetails.staticProps,
+          details: 'Please pull over safely and inspect tires.',
+        },
+      };
+
+      const clearedNotif: ComponentInstance = {
+        ...newNotifWithoutDetails,
+        staticProps: {
+          ...newNotifWithoutDetails.staticProps,
+          details: '',
+        },
+      };
+
+      const htmlFilled = renderToStaticMarkup(
+        React.createElement(ComponentRenderer, {
+          component: filledNotif,
+          isPresentation: false,
+        })
+      );
+
+      const htmlCleared = renderToStaticMarkup(
+        React.createElement(ComponentRenderer, {
+          component: clearedNotif,
+          isPresentation: false,
+        })
+      );
+
+      // Filled state: divider and details line present
+      assert.equal(
+        htmlFilled.includes('w-full h-px bg-slate-800 my-1.5'),
+        true,
+        'Filled card must have divider element'
+      );
+      assert.equal(
+        htmlFilled.includes('Please pull over safely and inspect tires.'),
+        true,
+        'Filled card must have details line text'
+      );
+
+      // Cleared state: neither divider nor details line present
+      assert.equal(
+        htmlCleared.includes('w-full h-px bg-slate-800 my-1.5'),
+        false,
+        'Cleared card must not have divider element'
+      );
+      assert.equal(
+        htmlCleared.includes('Please pull over safely and inspect tires.'),
+        false,
+        'Cleared card must not have details text'
+      );
+    });
+
+    it('item 4: renders Inspector for non-notification component without Resolution Details row', async () => {
+      const React = (await import('react')).default;
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { Inspector } = await import('../Inspector');
+
+      const speedComp: ComponentInstance = {
+        id: 'speed-comp-spec5',
+        type: 'speed',
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 200,
+        staticProps: {
+          color: '#38bdf8',
+        },
+        bindings: [],
+      };
+
+      const html = renderToStaticMarkup(
+        React.createElement(Inspector, {
+          selectedComponentId: speedComp.id,
+          initialTab: 'component',
+          components: [speedComp],
+          notificationComponents: [newNotifWithoutDetails],
+        })
+      );
+
+      assert.equal(
+        html.includes('Resolution Details'),
+        false,
+        'Non-notification component must not have a Resolution Details row'
+      );
+    });
+  });
 });

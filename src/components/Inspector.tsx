@@ -4518,231 +4518,269 @@ export const Inspector: React.FC<InspectorProps> = ({
               </div>
             )}
 
-            {Object.entries(selectedComp.staticProps)
-              .filter(
-                ([key]) =>
-                  key !== 'displayStyle' &&
-                  key !== 'maxSpeed' &&
-                  key !== 'label' &&
-                  key !== 'egoVehicleType' &&
-                  key !== 'egoVehicleColors' &&
-                  key !== 'modes' &&
-                  key !== 'service' &&
-                  key !== 'seatOrientation' &&
-                  key !== 'fanOrientation' &&
-                  key !== 'keyboardSlideDirection' &&
-                  key !== 'drainPercentPerInterval' &&
-                  key !== 'drainIntervalSeconds' &&
-                  key !== 'chargePercentPerInterval' &&
-                  key !== 'chargeIntervalSeconds' &&
-                  key !== 'lanesCount' &&
-                  key !== 'opposingLanesCount' &&
-                  key !== 'sameDirCount' &&
-                  key !== 'opposingDirCount' &&
-                  key !== 'intersectionEnabled' &&
-                  key !== 'crossTrafficCount' &&
-                  key !== 'trafficLightState' &&
-                  key !== 'crosswalkEnabled' &&
-                  key !== 'stopLineEnabled' &&
-                  key !== 'speedLimitValue' &&
-                  key !== 'speedLimitUnits' &&
-                  key !== 'speedLimitVisible' &&
-                  key !== 'speedLimitPosition' &&
-                  key !== 'speedLimitStyle' &&
-                  key !== 'blindSpotWarning' &&
-                  key !== 'leftBlindSpot' &&
-                  key !== 'rightBlindSpot' &&
-                  key !== 'blindSpotColor' &&
-                  key !== 'blindSpotOpacity' &&
-                  key !== 'sensorWarning' &&
-                  key !== 'sensorColor' &&
-                  key !== 'sensorOpacity' &&
-                  key !== 'showPedestrians' &&
-                  key !== 'showCones' &&
-                  key !== 'showConstruction' &&
-                  key !== 'trafficData' &&
-                  key !== 'sceneObjectsData' &&
-                  key !== 'tripStops' &&
-                  key !== 'destination' &&
-                  key !== 'destLat' &&
-                  key !== 'destLng' &&
-                  key !== 'waypoints' &&
-                  key !== 'startLat' &&
-                  key !== 'startLng' &&
-                  key !== 'consumptionRate' &&
-                  key !== 'distanceLabel' &&
-                  key !== 'estimatedTimeLabel' &&
-                  key !== 'energyRequiredLabel' &&
-                  key !== 'arrivalChargeLabel' &&
-                  key !== 'imageUrl' &&
-                  key !== 'title' &&
-                  key !== 'description' &&
-                  key !== 'statusCode' &&
-                  key !== 'statusMessage' &&
-                  key !== 'healthType' &&
-                  key !== 'healthValue' &&
-                  key !== 'removeBg' &&
-                  key !== 'bgTolerance' &&
-                  key !== 'bgEdgeSoftness' &&
-                  key !== 'highwayName' &&
-                  key !== 'nextExit' &&
-                  key !== 'distanceToManeuver' &&
-                  key !== 'maneuverType' &&
-                  key !== 'laneCount' &&
-                  key !== 'activeLaneIndex' &&
-                  key !== 'arrowColor' &&
-                  key !== 'headerArrowColor' &&
-                  key !== 'horizonColor' &&
-                  key !== 'guideLaneColor' &&
-                  key !== 'highwayBadgeColor' &&
-                  key !== 'backgroundColor' &&
-                  key !== 'groundColor' &&
-                  key !== 'skyColor' &&
-                  key !== 'horizonGlowColor' &&
-                  key !== 'horizonGlowIntensity' &&
-                  key !== 'horizonGlowSpread' &&
-                  key !== 'horizonGlowBalance' &&
-                  key !== 'horizonBoundaryColor' &&
-                  key !== 'horizonBoundaryOpacity' &&
-                  key !== 'roadColor' &&
-                  key !== 'highwayBadgeTextColor' &&
-                  key !== 'streetTitleColor' &&
-                  key !== 'instructionTextColor' &&
-                  key !== 'distanceTextColor' &&
-                  key !== 'trafficDensity' &&
-                  key !== 'grayscaleTraffic' &&
-                  key !== 'showHeader' &&
-                  key !== 'gearBarPosition' &&
-                  key !== 'buttonLabel' &&
-                  key !== 'reportTitle' &&
-                  key !== 'confirmLabel' &&
-                  key !== 'cancelLabel' &&
-                  key !== 'sendingLabel' &&
-                  key !== 'successLabel' &&
-                  !(selectedComp.type === 'nowPlaying' && (key === 'orientation' || key === 'autoDismissEnabled' || key === 'autoDismissSeconds' || key === 'dismissDirection' || key === 'slideDurationMs' || key === 'trackId' || key === 'songTransition' || key === 'songInfoDisplayDuration' || key === 'titleFontSize' || key === 'artistFontSize' || key === 'titleColor' || key === 'artistColor')) &&
-                  !(selectedComp.type === 'mediaDiscovery' && (key === 'mode' || key === 'layout')) &&
-                  !(selectedComp.type === 'mediaPlaylists' && key === 'cardLayoutMode') &&
-                  !(selectedComp.type === 'overheadVisualization' && key === 'color')
-              )
-              .map(([key, val]) => {
-                const getFieldLabel = (propKey: string) => {
-                  if (propKey === 'frontLeft') return 'Front Left';
-                  if (propKey === 'frontRight') return 'Front Right';
-                  if (propKey === 'rearLeft') return 'Rear Left';
-                  if (propKey === 'rearRight') return 'Rear Right';
-                  if (propKey === 'buttonLabel') return 'Button Label';
-                  if (propKey === 'reportTitle') return 'Report Title';
-                  if (propKey === 'details') return 'Resolution Details';
-                  return propKey;
-                };
+            {(() => {
+              let notifDetailsRendered = false;
 
-                const isCustomLabel = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight', 'buttonLabel', 'reportTitle', 'details'].includes(key);
+              const renderResolutionDetailsRow = () => (
+                <div
+                  key="resolution-details-row"
+                  className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2"
+                >
+                  <span className="text-[11px] font-mono text-slate-400">Resolution Details</span>
+                  <textarea
+                    value={selectedComp.staticProps.details ?? ''}
+                    onChange={(e) => handleStaticPropChange('details', e.target.value)}
+                    placeholder="Optional resolution instructions"
+                    rows={2}
+                    className="w-44 bg-slate-900 px-2 py-1 rounded text-slate-200 font-sans text-xs focus:outline-none border border-slate-700 resize-none"
+                  />
+                </div>
+              );
 
-                const propRow = (
-                  <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
-                    <span className={`text-[11px] font-mono text-slate-400 ${isCustomLabel ? '' : 'capitalize'}`}>{getFieldLabel(key)}</span>
-                    {key === 'color' ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={typeof val === 'string' && val.startsWith('#') ? val : '#38bdf8'}
+              const rows = Object.entries(selectedComp.staticProps)
+                .filter(
+                  ([key]) =>
+                    key !== 'displayStyle' &&
+                    key !== 'maxSpeed' &&
+                    key !== 'label' &&
+                    key !== 'egoVehicleType' &&
+                    key !== 'egoVehicleColors' &&
+                    key !== 'modes' &&
+                    key !== 'service' &&
+                    key !== 'seatOrientation' &&
+                    key !== 'fanOrientation' &&
+                    key !== 'keyboardSlideDirection' &&
+                    key !== 'drainPercentPerInterval' &&
+                    key !== 'drainIntervalSeconds' &&
+                    key !== 'chargePercentPerInterval' &&
+                    key !== 'chargeIntervalSeconds' &&
+                    key !== 'lanesCount' &&
+                    key !== 'opposingLanesCount' &&
+                    key !== 'sameDirCount' &&
+                    key !== 'opposingDirCount' &&
+                    key !== 'intersectionEnabled' &&
+                    key !== 'crossTrafficCount' &&
+                    key !== 'trafficLightState' &&
+                    key !== 'crosswalkEnabled' &&
+                    key !== 'stopLineEnabled' &&
+                    key !== 'speedLimitValue' &&
+                    key !== 'speedLimitUnits' &&
+                    key !== 'speedLimitVisible' &&
+                    key !== 'speedLimitPosition' &&
+                    key !== 'speedLimitStyle' &&
+                    key !== 'blindSpotWarning' &&
+                    key !== 'leftBlindSpot' &&
+                    key !== 'rightBlindSpot' &&
+                    key !== 'blindSpotColor' &&
+                    key !== 'blindSpotOpacity' &&
+                    key !== 'sensorWarning' &&
+                    key !== 'sensorColor' &&
+                    key !== 'sensorOpacity' &&
+                    key !== 'showPedestrians' &&
+                    key !== 'showCones' &&
+                    key !== 'showConstruction' &&
+                    key !== 'trafficData' &&
+                    key !== 'sceneObjectsData' &&
+                    key !== 'tripStops' &&
+                    key !== 'destination' &&
+                    key !== 'destLat' &&
+                    key !== 'destLng' &&
+                    key !== 'waypoints' &&
+                    key !== 'startLat' &&
+                    key !== 'startLng' &&
+                    key !== 'consumptionRate' &&
+                    key !== 'distanceLabel' &&
+                    key !== 'estimatedTimeLabel' &&
+                    key !== 'energyRequiredLabel' &&
+                    key !== 'arrivalChargeLabel' &&
+                    key !== 'imageUrl' &&
+                    key !== 'title' &&
+                    key !== 'description' &&
+                    key !== 'statusCode' &&
+                    key !== 'statusMessage' &&
+                    key !== 'healthType' &&
+                    key !== 'healthValue' &&
+                    key !== 'removeBg' &&
+                    key !== 'bgTolerance' &&
+                    key !== 'bgEdgeSoftness' &&
+                    key !== 'highwayName' &&
+                    key !== 'nextExit' &&
+                    key !== 'distanceToManeuver' &&
+                    key !== 'maneuverType' &&
+                    key !== 'laneCount' &&
+                    key !== 'activeLaneIndex' &&
+                    key !== 'arrowColor' &&
+                    key !== 'headerArrowColor' &&
+                    key !== 'horizonColor' &&
+                    key !== 'guideLaneColor' &&
+                    key !== 'highwayBadgeColor' &&
+                    key !== 'backgroundColor' &&
+                    key !== 'groundColor' &&
+                    key !== 'skyColor' &&
+                    key !== 'horizonGlowColor' &&
+                    key !== 'horizonGlowIntensity' &&
+                    key !== 'horizonGlowSpread' &&
+                    key !== 'horizonGlowBalance' &&
+                    key !== 'horizonBoundaryColor' &&
+                    key !== 'horizonBoundaryOpacity' &&
+                    key !== 'roadColor' &&
+                    key !== 'highwayBadgeTextColor' &&
+                    key !== 'streetTitleColor' &&
+                    key !== 'instructionTextColor' &&
+                    key !== 'distanceTextColor' &&
+                    key !== 'trafficDensity' &&
+                    key !== 'grayscaleTraffic' &&
+                    key !== 'showHeader' &&
+                    key !== 'gearBarPosition' &&
+                    key !== 'buttonLabel' &&
+                    key !== 'reportTitle' &&
+                    key !== 'confirmLabel' &&
+                    key !== 'cancelLabel' &&
+                    key !== 'sendingLabel' &&
+                    key !== 'successLabel' &&
+                    !(isNotifComp && key === 'details') &&
+                    !(selectedComp.type === 'nowPlaying' && (key === 'orientation' || key === 'autoDismissEnabled' || key === 'autoDismissSeconds' || key === 'dismissDirection' || key === 'slideDurationMs' || key === 'trackId' || key === 'songTransition' || key === 'songInfoDisplayDuration' || key === 'titleFontSize' || key === 'artistFontSize' || key === 'titleColor' || key === 'artistColor')) &&
+                    !(selectedComp.type === 'mediaDiscovery' && (key === 'mode' || key === 'layout')) &&
+                    !(selectedComp.type === 'mediaPlaylists' && key === 'cardLayoutMode') &&
+                    !(selectedComp.type === 'overheadVisualization' && key === 'color')
+                )
+                .map(([key, val]) => {
+                  const getFieldLabel = (propKey: string) => {
+                    if (propKey === 'frontLeft') return 'Front Left';
+                    if (propKey === 'frontRight') return 'Front Right';
+                    if (propKey === 'rearLeft') return 'Rear Left';
+                    if (propKey === 'rearRight') return 'Rear Right';
+                    if (propKey === 'buttonLabel') return 'Button Label';
+                    if (propKey === 'reportTitle') return 'Report Title';
+                    if (propKey === 'details') return 'Resolution Details';
+                    return propKey;
+                  };
+
+                  const isCustomLabel = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight', 'buttonLabel', 'reportTitle', 'details'].includes(key);
+
+                  const propRow = (
+                    <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between gap-2">
+                      <span className={`text-[11px] font-mono text-slate-400 ${isCustomLabel ? '' : 'capitalize'}`}>{getFieldLabel(key)}</span>
+                      {key === 'color' ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={typeof val === 'string' && val.startsWith('#') ? val : '#38bdf8'}
+                            onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                            className="w-6 h-6 rounded bg-transparent border-none cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={String(val ?? '')}
+                            onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                            className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                          />
+                        </div>
+                      ) : key === 'details' ? (
+                        <textarea
+                          value={val}
                           onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                          className="w-6 h-6 rounded bg-transparent border-none cursor-pointer"
+                          placeholder="Optional resolution instructions"
+                          rows={2}
+                          className="w-44 bg-slate-900 px-2 py-1 rounded text-slate-200 font-sans text-xs focus:outline-none border border-slate-700 resize-none"
                         />
+                      ) : key === 'severity' ? (
+                        <select
+                          value={val}
+                          onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                          className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                        >
+                          <option value="critical">Critical (Red)</option>
+                          <option value="warning">Warning (Amber)</option>
+                          <option value="info">Info (Blue)</option>
+                        </select>
+                      ) : key === 'triggerMode' ? (
+                        <select
+                          value={val}
+                          onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                          className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                        >
+                          <option value="condition">Condition-Bound</option>
+                          <option value="event">Event-Triggered</option>
+                        </select>
+                      ) : key === 'triggerEvent' ? (
+                        <select
+                          value={val}
+                          onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                          className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                        >
+                          <option value="cruise_on">Cruise Engaged (cruise_on)</option>
+                          <option value="cruise_off">Cruise Disengaged (cruise_off)</option>
+                          <option value="manual">Manual Trigger</option>
+                        </select>
+                      ) : key === 'icon' ? (
+                        <select
+                          value={val}
+                          onChange={(e) => handleStaticPropChange(key, e.target.value)}
+                          className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
+                        >
+                          <option value="alert-triangle">Alert Triangle</option>
+                          <option value="door-open">Door Open</option>
+                          <option value="battery-warning">Battery Warning</option>
+                          <option value="thermometer">Thermometer</option>
+                          <option value="tire">Tire (TPMS)</option>
+                          <option value="zap">Zap / Charging</option>
+                          <option value="gauge">Gauge / Speed</option>
+                          <option value="bell">Bell</option>
+                          <option value="shield-alert">Shield Alert</option>
+                          <option value="wrench">Wrench / Service</option>
+                          <option value="lock">Lock</option>
+                          <option value="key">Key Fob</option>
+                          <option value="info">Info</option>
+                        </select>
+                      ) : (
                         <input
                           type="text"
-                          value={String(val ?? '')}
+                          value={val}
                           onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                          className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                          className="w-32 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
                         />
-                      </div>
-                    ) : key === 'details' ? (
-                      <textarea
-                        value={val}
-                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                        placeholder="Optional resolution instructions"
-                        rows={2}
-                        className="w-44 bg-slate-900 px-2 py-1 rounded text-slate-200 font-sans text-xs focus:outline-none border border-slate-700 resize-none"
-                      />
-                    ) : key === 'severity' ? (
-                      <select
-                        value={val}
-                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                        className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
-                      >
-                        <option value="critical">Critical (Red)</option>
-                        <option value="warning">Warning (Amber)</option>
-                        <option value="info">Info (Blue)</option>
-                      </select>
-                    ) : key === 'triggerMode' ? (
-                      <select
-                        value={val}
-                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                        className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
-                      >
-                        <option value="condition">Condition-Bound</option>
-                        <option value="event">Event-Triggered</option>
-                      </select>
-                    ) : key === 'triggerEvent' ? (
-                      <select
-                        value={val}
-                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                        className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
-                      >
-                        <option value="cruise_on">Cruise Engaged (cruise_on)</option>
-                        <option value="cruise_off">Cruise Disengaged (cruise_off)</option>
-                        <option value="manual">Manual Trigger</option>
-                      </select>
-                    ) : key === 'icon' ? (
-                      <select
-                        value={val}
-                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                        className="w-36 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 cursor-pointer font-bold"
-                      >
-                        <option value="alert-triangle">Alert Triangle</option>
-                        <option value="door-open">Door Open</option>
-                        <option value="battery-warning">Battery Warning</option>
-                        <option value="thermometer">Thermometer</option>
-                        <option value="tire">Tire (TPMS)</option>
-                        <option value="zap">Zap / Charging</option>
-                        <option value="gauge">Gauge / Speed</option>
-                        <option value="bell">Bell</option>
-                        <option value="shield-alert">Shield Alert</option>
-                        <option value="wrench">Wrench / Service</option>
-                        <option value="lock">Lock</option>
-                        <option value="key">Key Fob</option>
-                        <option value="info">Info</option>
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={val}
-                        onChange={(e) => handleStaticPropChange(key, e.target.value)}
-                        className="w-32 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 text-right"
-                      />
-                    )}
-                  </div>
-                );
-
-                if (key === 'triggerMode') {
-                  return (
-                    <div key={key} className="space-y-1.5">
-                      {propRow}
-                      {val === 'event' && (
-                        <p className="text-[10px] text-slate-400 leading-relaxed px-1">
-                          Event-Triggered notifications ignore Show When rules. Use Condition-Bound for gear, speed, and interaction conditions.
-                        </p>
                       )}
                     </div>
                   );
-                }
 
-                return (
-                  <div key={key}>
-                    {propRow}
-                  </div>
-                );
-              })}
+                  if (key === 'triggerMode') {
+                    return (
+                      <div key={key} className="space-y-1.5">
+                        {propRow}
+                        {val === 'event' && (
+                          <p className="text-[10px] text-slate-400 leading-relaxed px-1">
+                            Event-Triggered notifications ignore Show When rules. Use Condition-Bound for gear, speed, and interaction conditions.
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (key === 'message' && isNotifComp) {
+                    notifDetailsRendered = true;
+                    return (
+                      <React.Fragment key={key}>
+                        <div>{propRow}</div>
+                        {renderResolutionDetailsRow()}
+                      </React.Fragment>
+                    );
+                  }
+
+                  return (
+                    <div key={key}>
+                      {propRow}
+                    </div>
+                  );
+                });
+
+              return (
+                <>
+                  {rows}
+                  {isNotifComp && !notifDetailsRendered && renderResolutionDetailsRow()}
+                </>
+              );
+            })()}
             </div>
             )}
           </div>
