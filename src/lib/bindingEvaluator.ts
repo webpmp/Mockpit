@@ -85,8 +85,16 @@ export function evaluateConditionRule(
     } else {
       rawValue = false;
     }
-  } else if (activeEvents && rawFieldName in activeEvents) {
-    rawValue = activeEvents[rawFieldName];
+  } else if (
+    activeEvents &&
+    (rawFieldName in activeEvents ||
+      normalizedField in activeEvents ||
+      Object.keys(activeEvents).some((k) => k.toLowerCase().replace(/[\s_-]/g, '') === normalizedField))
+  ) {
+    const matchedEventKey = Object.keys(activeEvents).find(
+      (k) => k === rawFieldName || k.toLowerCase().replace(/[\s_-]/g, '') === normalizedField
+    );
+    rawValue = matchedEventKey ? activeEvents[matchedEventKey] : false;
   } else {
     // Match against vehicle state case-insensitively
     const matchedStateKey = Object.keys(state).find(
@@ -114,7 +122,8 @@ export function evaluateConditionRule(
     case '<=': {
       return Number(rawValue) <= Number(targetValue);
     }
-    case '=': {
+    case '=':
+    case '==': {
       if (typeof rawValue === 'boolean') {
         const boolTarget = targetValue === true || targetValue === 'true' || targetValue === 1 || targetValue === '1';
         return rawValue === boolTarget;
@@ -352,12 +361,76 @@ export function formatConditionSummary(binding: Binding | BindingGroup): string 
   return 'Always visible';
 }
 
+export const KNOWN_VEHICLE_STATE_FIELDS = new Set([
+  'gear',
+  'speed',
+  'batterypercent',
+  'battery',
+  'ischarging',
+  'dooropen',
+  'drivemode',
+  'headlights',
+  'signalbars',
+  'maplat',
+  'maplng',
+  'originlat',
+  'originlng',
+  'originlocationname',
+  'originunresolved',
+  'cruisecontrolactive',
+  'cruisesetspeed',
+  'blindspotwarning',
+  'proximitywarning',
+  'tirepressurewarning',
+]);
+
 /**
- * Checks if a stateField represents a transient interaction event (e.g. speedIncreaseAttempted)
+ * Checks if a stateField represents a transient interaction event (e.g. speedIncreaseAttempted or custom/stub event)
  */
 export function isInteractionEventField(field: any): boolean {
-  const str = String(field || '').toLowerCase().replace(/[\s_-]/g, '');
-  return str === 'speedincreaseattempted';
+  if (!field) return false;
+  const str = String(field).trim().toLowerCase().replace(/[\s_-]/g, '');
+  if (str === 'speedincreaseattempted') return true;
+  return !KNOWN_VEHICLE_STATE_FIELDS.has(str);
+}
+
+/**
+ * Recursively collects all interaction event field names from a ConditionGroup
+ */
+export function collectInteractionEventsFromConditionGroup(group: ConditionGroup, acc: Set<string>): void {
+  if (!group || !group.children) return;
+  for (const child of group.children) {
+    if (isConditionGroup(child)) {
+      collectInteractionEventsFromConditionGroup(child, acc);
+    } else if (child && isInteractionEventField(child.stateField)) {
+      acc.add(String(child.stateField));
+    }
+  }
+}
+
+/**
+ * Collects every interaction-event field referenced by a notification component's rules (including nested groups)
+ */
+export function collectNotificationInteractionEvents(comp: ComponentInstance): string[] {
+  const events = new Set<string>();
+  if (!comp.bindings || comp.bindings.length === 0) return [];
+  for (const binding of comp.bindings) {
+    if (binding.conditionGroup) {
+      collectInteractionEventsFromConditionGroup(binding.conditionGroup, events);
+    }
+    if ('conditions' in binding && Array.isArray(binding.conditions)) {
+      for (const c of binding.conditions) {
+        if (c && isInteractionEventField(c.stateField)) {
+          events.add(String(c.stateField));
+        }
+      }
+    }
+    const single = binding as Binding;
+    if (single.stateField && isInteractionEventField(single.stateField)) {
+      events.add(String(single.stateField));
+    }
+  }
+  return Array.from(events);
 }
 
 /**
@@ -370,6 +443,19 @@ export function groupHasInteractionEvent(group: ConditionGroup): boolean {
       ? groupHasInteractionEvent(child)
       : isInteractionEventField(child.stateField)
   );
+}
+
+/**
+ * Validates that every group in a ConditionGroup tree is non-empty and has valid children
+ */
+export function isGroupTreeValid(group: ConditionGroup): boolean {
+  if (!group || !group.children || group.children.length === 0) return false;
+  return group.children.every((child) => {
+    if (isConditionGroup(child)) {
+      return isGroupTreeValid(child);
+    }
+    return Boolean(child && child.stateField && child.condition);
+  });
 }
 
 /**
@@ -401,10 +487,14 @@ export interface NotificationVisibilityResult {
   visible: boolean;
   isEventDriven: boolean;
   resolvedProps: Record<string, string>;
+  shouldStartWindow?: boolean;
+  shownUntil?: number;
+  cooldownUntil?: number;
 }
 
 /**
  * Unified shared evaluator for notification visibility and cooldown gating (Section F)
+ * Pure function: no render side effects or store callbacks.
  */
 export function evaluateNotificationVisibility(
   component: ComponentInstance,
@@ -413,13 +503,14 @@ export function evaluateNotificationVisibility(
   cooldowns: Record<string, { shownUntil: number; cooldownUntil: number }> = {},
   now: number = Date.now(),
   durationSec: number = DEFAULT_NOTIFICATION_DURATION_SEC,
-  onStartCooldown?: (id: string, entry: { shownUntil: number; cooldownUntil: number }) => void
+  _deprecatedCallback?: (id: string, entry: { shownUntil: number; cooldownUntil: number }) => void
 ): NotificationVisibilityResult {
   if (!isNotificationEnabled(component)) {
     return {
       visible: false,
       isEventDriven: false,
       resolvedProps: {},
+      shouldStartWindow: false,
     };
   }
 
@@ -431,21 +522,32 @@ export function evaluateNotificationVisibility(
       visible: true,
       isEventDriven: true,
       resolvedProps: resolved,
+      shouldStartWindow: false,
     };
   }
 
   if (isEventDriven) {
     const cooldown = cooldowns[component.id];
 
-    // 1. Within active shownUntil window: verify state condition is satisfied
+    // 1. Within active shownUntil window: verify state condition is satisfied with referenced events latched to true
     if (cooldown && now < cooldown.shownUntil) {
-      const simulatedEvents = { ...interactionEvents, speedIncreaseAttempted: true };
+      const referencedEvents = collectNotificationInteractionEvents(component);
+      const simulatedEvents: Record<string, boolean> = { ...interactionEvents };
+      if (referencedEvents.length > 0) {
+        for (const evt of referencedEvents) {
+          simulatedEvents[evt] = true;
+          simulatedEvents[evt.toLowerCase().replace(/[\s_-]/g, '')] = true;
+        }
+      } else {
+        simulatedEvents.speedIncreaseAttempted = true;
+      }
       const simulatedResolved = getResolvedProps(component, vehicleState, simulatedEvents);
       const isVisible = simulatedResolved.visible !== 'false' && simulatedResolved.visible !== '0';
       return {
         visible: isVisible,
         isEventDriven: true,
         resolvedProps: simulatedResolved,
+        shouldStartWindow: false,
       };
     }
 
@@ -455,21 +557,22 @@ export function evaluateNotificationVisibility(
         visible: false,
         isEventDriven: true,
         resolvedProps: resolved,
+        shouldStartWindow: false,
       };
     }
 
     // 3. Cooldown expired or not started yet: evaluate current condition
     const isVisible = resolved.visible !== 'false' && resolved.visible !== '0';
     if (isVisible) {
-      const shownUntil = now + durationSec * 1000;
+      const shownUntil = now + (durationSec || DEFAULT_NOTIFICATION_DURATION_SEC) * 1000;
       const cooldownUntil = now + EVENT_NOTIFICATION_COOLDOWN_MS;
-      if (onStartCooldown) {
-        onStartCooldown(component.id, { shownUntil, cooldownUntil });
-      }
       return {
         visible: true,
         isEventDriven: true,
         resolvedProps: resolved,
+        shouldStartWindow: true,
+        shownUntil,
+        cooldownUntil,
       };
     }
 
@@ -477,6 +580,7 @@ export function evaluateNotificationVisibility(
       visible: false,
       isEventDriven: true,
       resolvedProps: resolved,
+      shouldStartWindow: false,
     };
   }
 
@@ -486,5 +590,6 @@ export function evaluateNotificationVisibility(
     visible: isVisible,
     isEventDriven: false,
     resolvedProps: resolved,
+    shouldStartWindow: false,
   };
 }

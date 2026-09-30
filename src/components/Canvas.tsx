@@ -6,7 +6,7 @@ import { VehicleBackground } from './VehicleBackground';
 import { AppShellBackground } from './AppShellBackground';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { ConnectorLayer } from './vehicle/ConnectorLayer';
-import { useMockpitStore, DEFAULT_NOTIFICATION_DURATION_SEC } from '../store/useMockpitStore';
+import { useMockpitStore, DEFAULT_NOTIFICATION_DURATION_SEC, EVENT_NOTIFICATION_COOLDOWN_MS } from '../store/useMockpitStore';
 import { ActiveView, ComponentInstance, NotificationStackPosition, TransitionStyle, TEXT_SCALE_FACTORS, isNotificationEnabled } from '../types';
 import { COMPONENT_FLAGS } from '../config/componentFlags';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, FOCUSED_APP_RECT } from '../config/constants';
@@ -312,11 +312,74 @@ export const Canvas: React.FC = () => {
       interactionEvents,
       eventNotificationCooldowns,
       Date.now(),
-      notificationDurationSec,
-      (id, entry) => setEventNotificationCooldown(id, entry)
+      notificationDurationSec || DEFAULT_NOTIFICATION_DURATION_SEC
     );
     return vis.visible;
   });
+
+  // Start cooldown window for event-driven notifications in an effect (no render side-effects)
+  useEffect(() => {
+    const now = Date.now();
+    notificationComponents.forEach((comp) => {
+      if (!isNotificationEnabled(comp)) return;
+      if (comp.staticProps?.triggerMode === 'event') return;
+
+      const vis = evaluateNotificationVisibility(
+        comp,
+        vehicleState,
+        interactionEvents,
+        eventNotificationCooldowns,
+        now,
+        notificationDurationSec || DEFAULT_NOTIFICATION_DURATION_SEC
+      );
+
+      if (vis.shouldStartWindow && vis.shownUntil && vis.cooldownUntil) {
+        const currentCooldown = useMockpitStore.getState().eventNotificationCooldowns[comp.id];
+        if (!currentCooldown || now >= currentCooldown.cooldownUntil) {
+          setEventNotificationCooldown(comp.id, {
+            shownUntil: vis.shownUntil,
+            cooldownUntil: vis.cooldownUntil,
+          });
+        }
+      }
+    });
+  }, [
+    notificationComponents,
+    vehicleState,
+    interactionEvents,
+    eventNotificationCooldowns,
+    notificationDurationSec,
+    setEventNotificationCooldown,
+  ]);
+
+  const [, setTick] = useState(0);
+  const shownUntilTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Schedule a re-render at shownUntil so event-driven notifications clear on time without needing external state changes
+  useEffect(() => {
+    const now = Date.now();
+    activePersistentNotifications.forEach((comp) => {
+      if (notificationHasInteractionEvent(comp)) {
+        const cooldown = eventNotificationCooldowns[comp.id];
+        if (cooldown && cooldown.shownUntil > now) {
+          if (!shownUntilTimersRef.current[comp.id]) {
+            const delay = Math.max(0, cooldown.shownUntil - now);
+            shownUntilTimersRef.current[comp.id] = setTimeout(() => {
+              delete shownUntilTimersRef.current[comp.id];
+              setTick((t) => t + 1);
+            }, delay);
+          }
+        }
+      }
+    });
+
+    Object.keys(shownUntilTimersRef.current).forEach((id) => {
+      if (!activePersistentNotifications.some((c) => c.id === id)) {
+        clearTimeout(shownUntilTimersRef.current[id]);
+        delete shownUntilTimersRef.current[id];
+      }
+    });
+  }, [activePersistentNotifications, eventNotificationCooldowns]);
 
   const activeNotifications = [...activePersistentNotifications, ...transientNotifications];
 
@@ -355,7 +418,7 @@ export const Canvas: React.FC = () => {
       const hasTimer = !!autoMinimizeTimersRef.current[comp.id];
 
       // If this notification requests to start minimized (privacy setting),
-      // mark it minimized immediately instead of starting the 6s display timer.
+      // mark it minimized immediately instead of starting the display timer.
       if (comp.staticProps?.startMinimized === 'true' && !isMinimized) {
         setMinimizedNotifIds((prev) => ({ ...prev, [comp.id]: true }));
         return;
@@ -367,8 +430,12 @@ export const Canvas: React.FC = () => {
             delete autoMinimizeTimersRef.current[comp.id];
             return;
           }
-          if (comp.staticProps?.triggerMode === 'event') {
-            clearEventNotification(comp.id);
+          const isEventDriven = notificationHasInteractionEvent(comp);
+          if (comp.staticProps?.triggerMode === 'event' || isEventDriven) {
+            if (comp.staticProps?.triggerMode === 'event') {
+              clearEventNotification(comp.id);
+            }
+            // Event-driven condition-bound notification: clears with no badge (no setMinimizedNotifIds)
           } else if (comp.isTransient) {
             if (comp.staticProps?.showBadgeOnMinimize === 'true') {
               setMinimizedNotifIds((prev) => ({ ...prev, [comp.id]: true }));
@@ -379,10 +446,10 @@ export const Canvas: React.FC = () => {
             setMinimizedNotifIds((prev) => ({ ...prev, [comp.id]: true }));
           }
           delete autoMinimizeTimersRef.current[comp.id];
-        }, AUTO_MINIMIZE_TIMEOUT_MS);
+        }, (notificationDurationSec || DEFAULT_NOTIFICATION_DURATION_SEC) * 1000);
       }
     });
-  }, [isPresentation, activeNotifIdsKey, minimizedNotifIds, clearTransientNotification, clearEventNotification]);
+  }, [isPresentation, activeNotifIdsKey, minimizedNotifIds, clearTransientNotification, clearEventNotification, notificationDurationSec]);
 
   const handleMinimizeNotification = (id: string) => {
     if (autoMinimizeTimersRef.current[id]) {
@@ -390,8 +457,19 @@ export const Canvas: React.FC = () => {
       delete autoMinimizeTimersRef.current[id];
     }
     const comp = activeNotifications.find((c) => c.id === id);
+    const isEventDriven = comp ? notificationHasInteractionEvent(comp) : false;
     if (comp?.staticProps?.triggerMode === 'event') {
       clearEventNotification(id);
+    } else if (isEventDriven) {
+      // Event-driven condition-bound notification: clear without badge
+      const currentCooldown = eventNotificationCooldowns[id];
+      if (currentCooldown) {
+        setEventNotificationCooldown(id, {
+          shownUntil: Date.now(),
+          cooldownUntil: currentCooldown.cooldownUntil,
+        });
+      }
+      setTick((t) => t + 1);
     } else if (comp?.isTransient) {
       if (comp?.staticProps?.showBadgeOnMinimize === 'true') {
         setMinimizedNotifIds((prev) => ({ ...prev, [id]: true }));
@@ -409,11 +487,15 @@ export const Canvas: React.FC = () => {
       delete autoMinimizeTimersRef.current[id];
     }
     setMinimizedNotifIds((prev) => ({ ...prev, [id]: false }));
-    // Restart 6s timer when expanded back to full card
+    const comp = activeNotifications.find((c) => c.id === id);
+    const isEventDriven = comp ? notificationHasInteractionEvent(comp) : false;
+    // Restart timer when expanded back to full card
     autoMinimizeTimersRef.current[id] = setTimeout(() => {
-      setMinimizedNotifIds((prev) => ({ ...prev, [id]: true }));
+      if (!isEventDriven && comp?.staticProps?.triggerMode !== 'event') {
+        setMinimizedNotifIds((prev) => ({ ...prev, [id]: true }));
+      }
       delete autoMinimizeTimersRef.current[id];
-    }, AUTO_MINIMIZE_TIMEOUT_MS);
+    }, (notificationDurationSec || DEFAULT_NOTIFICATION_DURATION_SEC) * 1000);
   };
 
   // Dragging state

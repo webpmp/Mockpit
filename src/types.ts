@@ -165,7 +165,7 @@ export type VehicleState = {
 export type InteractionEventName = 'speedIncreaseAttempted';
 export type BindingStateField = keyof VehicleState | InteractionEventName;
 
-export type BindingCondition = '<' | '>' | '=' | '!=' | '>=' | '<=';
+export type BindingCondition = '<' | '>' | '=' | '==' | '!=' | '>=' | '<=';
 
 export type TargetProp = 'color' | 'visible' | 'opacity' | 'text' | 'icon' | 'severity';
 

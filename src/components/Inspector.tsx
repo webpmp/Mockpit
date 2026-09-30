@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS } from '../store/useMockpitStore';
+import { useMockpitStore, DEFAULT_COMPONENT_DIMENSIONS, DEFAULT_NOTIFICATION_DURATION_SEC } from '../store/useMockpitStore';
 import { useWeatherStore, WeatherConditionKey } from '../store/useWeatherStore';
-import { BindingCondition, BindingStateField, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType, EgoVehicleType } from '../types';
+import { BindingCondition, BindingStateField, NotificationStackPosition, TargetProp, TransitionStyle, VehicleState, ConnectorAnchor, ManeuverType, TripStop, ComponentType, EgoVehicleType, ConditionGroup, ConditionLogic, BindingConditionRule, BindingGroup, Binding } from '../types';
 import { QUICK_ACCESS_OPTIONS, getDefaultQuickAccessDimensions } from '../config/quickAccessConfig';
-import { Plus, Trash2, Pencil, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Pencil, Sliders, Layers, Sparkles, X, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Layout, Settings, Upload, RotateCcw, Link2, Unlink, Activity, ChevronDown, ChevronRight, Palette, CloudSun, MapPin, Check, Eye, EyeOff, Info } from 'lucide-react';
 import { geocodeAddress } from '../utils/geocoding';
 import {
   WeatherDetailCardKey,
@@ -13,7 +13,15 @@ import {
   isDetailCardVisible,
 } from '../types/weatherDetails';
 import { DEFAULT_COMPONENT_LABELS } from './ComponentRenderer';
-import { evaluateBinding } from '../lib/bindingEvaluator';
+import {
+  evaluateBinding,
+  isConditionGroup,
+  formatConditionSummary,
+  formatConditionGroupText,
+  isGroupTreeValid,
+  groupHasInteractionEvent,
+  isInteractionEventField,
+} from '../lib/bindingEvaluator';
 import { LayersPanel } from './LayersPanel';
 import { NumericStepper } from './NumericStepper';
 import { ManeuverGlyph } from './navigation/ManeuverGlyph';
@@ -873,6 +881,7 @@ export const Inspector: React.FC = () => {
   const setSelectedMusicService = useMockpitStore((s) => s.setSelectedMusicService);
   const vehicleBackground = useMockpitStore((s) => s.vehicleBackground);
   const screenMode = useMockpitStore((s) => s.screenMode);
+  const notificationDurationSec = useMockpitStore((s) => s.notificationDurationSec);
   const isEditor = screenMode === 'editor';
 
   const [selectedTargetParentId, setSelectedTargetParentId] = useState<string>('');
@@ -898,18 +907,19 @@ export const Inspector: React.FC = () => {
 
   const isNotifComp = selectedComp ? notificationComponents.some((c) => c.id === selectedComp.id) : false;
 
-  // New binding draft state (supports multiple conditions in a binding group)
-  const [newBindingConditions, setNewBindingConditions] = useState<Array<{
-    stateField: keyof VehicleState;
-    condition: BindingCondition;
-    value: string;
-  }>>([
-    {
-      stateField: 'batteryPercent',
-      condition: '<',
-      value: '15',
-    },
-  ]);
+  // Binding draft state with ConditionGroup support (Spec v3 B, C, E)
+  const [draftGroup, setDraftGroup] = useState<ConditionGroup>({
+    id: 'root-group',
+    logic: 'AND',
+    children: [
+      {
+        stateField: 'batteryPercent',
+        condition: '<',
+        value: '15',
+      },
+    ],
+  });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [newBindingTargetProp, setNewBindingTargetProp] = useState<TargetProp>('color');
   const [newBindingTargetValue, setNewBindingTargetValue] = useState<string>('#ef4444');
 
@@ -984,119 +994,148 @@ export const Inspector: React.FC = () => {
     setIsAddingBinding(false);
     setEditingBindingId(b.id);
 
-    let initialConditions: Array<{
-      stateField: keyof VehicleState;
-      condition: BindingCondition;
-      value: string;
-    }> = [];
-
-    if (b.conditions && Array.isArray(b.conditions) && b.conditions.length > 0) {
-      initialConditions = b.conditions.map((c: any) => ({
-        stateField: c.stateField,
-        condition: c.condition,
-        value: String(c.value),
-      }));
+    if (b.conditionGroup) {
+      setDraftGroup(JSON.parse(JSON.stringify(b.conditionGroup)));
+    } else if (b.conditions && Array.isArray(b.conditions) && b.conditions.length > 0) {
+      setDraftGroup({
+        id: `group-${Date.now()}`,
+        logic: 'AND',
+        children: b.conditions.map((c: any) => ({
+          stateField: c.stateField,
+          condition: c.condition,
+          value: String(c.value),
+        })),
+      });
     } else if (b.stateField) {
-      initialConditions = [
-        {
-          stateField: b.stateField,
-          condition: b.condition || '=',
-          value: String(b.value ?? ''),
-        },
-      ];
+      setDraftGroup({
+        id: `group-${Date.now()}`,
+        logic: 'AND',
+        children: [
+          {
+            stateField: b.stateField,
+            condition: b.condition || '=',
+            value: String(b.value ?? ''),
+          },
+        ],
+      });
     } else {
-      initialConditions = [
-        {
-          stateField: 'batteryPercent',
-          condition: '<',
-          value: '15',
-        },
-      ];
+      setDraftGroup({
+        id: `group-${Date.now()}`,
+        logic: 'AND',
+        children: [
+          isNotifComp
+            ? { stateField: 'speedIncreaseAttempted', condition: '=', value: 'true' }
+            : { stateField: 'batteryPercent', condition: '<', value: '15' },
+        ],
+      });
     }
 
-    setNewBindingConditions(initialConditions);
-    setNewBindingTargetProp(b.targetProp || 'color');
-    setNewBindingTargetValue(b.targetValue || '#ef4444');
+    const tProp = b.targetProp || (isNotifComp ? 'visible' : 'color');
+    const tVal = b.targetValue || (isNotifComp ? 'true' : '#ef4444');
+    setNewBindingTargetProp(tProp);
+    setNewBindingTargetValue(tVal);
+    setShowAdvanced(isNotifComp ? (tProp !== 'visible' || tVal !== 'true') : false);
   };
 
   const handleStartAddBinding = () => {
     setEditingBindingId(null);
     setIsAddingBinding(true);
-    setNewBindingConditions([
-      {
-        stateField: 'batteryPercent',
-        condition: '<',
-        value: '15',
-      },
-    ]);
-    setNewBindingTargetProp('color');
-    setNewBindingTargetValue('#ef4444');
+    setDraftGroup({
+      id: `group-${Date.now()}`,
+      logic: 'AND',
+      children: [
+        isNotifComp
+          ? { stateField: 'speedIncreaseAttempted', condition: '=', value: 'true' }
+          : { stateField: 'batteryPercent', condition: '<', value: '15' },
+      ],
+    });
+    setNewBindingTargetProp(isNotifComp ? 'visible' : 'color');
+    setNewBindingTargetValue(isNotifComp ? 'true' : '#ef4444');
+    setShowAdvanced(false);
   };
 
   const handleSaveBindingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedComp || newBindingConditions.length === 0) return;
+    if (!selectedComp || !isGroupTreeValid(draftGroup)) return;
 
-    const parsedConditions = newBindingConditions.map((cond) => {
-      let typedValue: string | number | boolean = cond.value;
+    const targetProp = isNotifComp && !showAdvanced ? 'visible' : newBindingTargetProp;
+    const targetValue = isNotifComp && !showAdvanced ? 'true' : newBindingTargetValue;
+
+    const cleanTypedRule = (rule: BindingConditionRule): BindingConditionRule => {
+      let typedValue: string | number | boolean = rule.value;
+      const normalized = String(rule.stateField || '').toLowerCase().replace(/[\s_-]/g, '');
       if (
-        cond.stateField === 'isCharging' ||
-        cond.stateField === 'doorOpen' ||
-        cond.stateField === 'cruiseControlActive' ||
-        cond.stateField === 'tirePressureWarning' ||
-        cond.stateField === 'speedIncreaseAttempted'
+        normalized === 'ischarging' ||
+        normalized === 'dooropen' ||
+        normalized === 'cruisecontrolactive' ||
+        normalized === 'tirepressurewarning' ||
+        normalized === 'speedincreaseattempted' ||
+        rule.value === 'true' ||
+        rule.value === 'false'
       ) {
-        typedValue = cond.value === 'true' || cond.value === true;
-      } else if (cond.stateField === 'speed' || cond.stateField === 'batteryPercent') {
-        typedValue = Number(cond.value) || 0;
+        typedValue = rule.value === 'true' || rule.value === true;
+      } else if (normalized === 'speed' || normalized === 'batterypercent') {
+        typedValue = Number(rule.value) || 0;
       }
       return {
-        stateField: cond.stateField,
-        condition: cond.condition,
+        stateField: rule.stateField,
+        condition: rule.condition,
         value: typedValue,
       };
+    };
+
+    const cleanGroupTree = (group: ConditionGroup): ConditionGroup => ({
+      id: group.id || `group-${Math.random().toString(36).slice(2, 6)}`,
+      logic: group.logic,
+      children: group.children.map((ch) =>
+        isConditionGroup(ch) ? cleanGroupTree(ch) : cleanTypedRule(ch)
+      ),
     });
 
-    if (editingBindingId) {
-      // Update existing binding in place, preserving its ID
-      if (parsedConditions.length === 1) {
-        updateBinding(selectedComp.id, editingBindingId, {
-          stateField: parsedConditions[0].stateField,
-          condition: parsedConditions[0].condition,
-          value: parsedConditions[0].value,
-          conditions: parsedConditions,
-          targetProp: newBindingTargetProp,
-          targetValue: newBindingTargetValue,
-        });
+    const hasNesting = draftGroup.logic === 'OR' || draftGroup.children.some((c) => isConditionGroup(c));
+
+    let payload: Partial<Binding>;
+
+    if (hasNesting) {
+      payload = {
+        conditionGroup: cleanGroupTree(draftGroup),
+        conditions: undefined,
+        stateField: undefined,
+        condition: undefined,
+        value: undefined,
+        targetProp,
+        targetValue,
+      };
+    } else {
+      const flatRules = draftGroup.children.map((c) => cleanTypedRule(c as BindingConditionRule));
+      if (flatRules.length === 1) {
+        payload = {
+          stateField: flatRules[0].stateField,
+          condition: flatRules[0].condition,
+          value: flatRules[0].value,
+          conditions: flatRules,
+          conditionGroup: undefined,
+          targetProp,
+          targetValue,
+        };
       } else {
-        updateBinding(selectedComp.id, editingBindingId, {
+        payload = {
+          conditions: flatRules,
+          conditionGroup: undefined,
           stateField: undefined,
           condition: undefined,
           value: undefined,
-          conditions: parsedConditions,
-          targetProp: newBindingTargetProp,
-          targetValue: newBindingTargetValue,
-        });
+          targetProp,
+          targetValue,
+        };
       }
+    }
+
+    if (editingBindingId) {
+      updateBinding(selectedComp.id, editingBindingId, payload);
       setEditingBindingId(null);
     } else {
-      // Add new binding
-      if (parsedConditions.length === 1) {
-        addBinding(selectedComp.id, {
-          stateField: parsedConditions[0].stateField,
-          condition: parsedConditions[0].condition,
-          value: parsedConditions[0].value,
-          conditions: parsedConditions,
-          targetProp: newBindingTargetProp,
-          targetValue: newBindingTargetValue,
-        });
-      } else {
-        addBinding(selectedComp.id, {
-          conditions: parsedConditions,
-          targetProp: newBindingTargetProp,
-          targetValue: newBindingTargetValue,
-        });
-      }
+      addBinding(selectedComp.id, payload as any);
       setIsAddingBinding(false);
     }
   };
@@ -4671,7 +4710,7 @@ export const Inspector: React.FC = () => {
           )}
         </div>
 
-        {/* Behavior Bindings */}
+        {/* Behavior Bindings / Show When */}
         <div className="border-b border-slate-800/80 pb-4">
           <div className="flex items-center justify-between min-h-[44px]">
             <button
@@ -4682,7 +4721,9 @@ export const Inspector: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  State Bindings ({selectedComp.bindings?.length || 0})
+                  {isNotifComp
+                    ? `Show When (${selectedComp.bindings?.length || 0})`
+                    : `State Bindings (${selectedComp.bindings?.length || 0})`}
                 </span>
               </div>
               <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
@@ -4704,100 +4745,212 @@ export const Inspector: React.FC = () => {
                   handleStartAddBinding();
                 }
               }}
+              data-testid="add-condition-rule-button"
               className="p-1.5 ml-2 rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-slate-950 transition-colors text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" /> Rule
+              <Plus className="w-3.5 h-3.5" /> {isNotifComp ? '+ Condition Rule' : '+ Rule'}
             </button>
           </div>
 
           {!collapsedSections.bindings && (
             <div className="mt-2 space-y-3">
               <p className="text-[10px] text-slate-400">
-                Dynamic HMI logic rules that update styling when state changes.
+                {isNotifComp
+                  ? 'Display trigger conditions for this notification card.'
+                  : 'Dynamic HMI logic rules that update styling when state changes.'}
               </p>
 
-              {/* Form renderer for creating or editing a binding rule */}
+              {/* Form renderer for creating or editing a binding rule with ConditionGroup tree */}
               {(() => {
-                const renderBindingForm = (isEditing: boolean, bindingId?: string) => (
-                  <form
-                    key={isEditing ? `edit-form-${bindingId}` : 'add-binding-form'}
-                    onSubmit={handleSaveBindingSubmit}
-                    className={`${
-                      isEditing ? 'rounded-xl' : 'mt-4 rounded-xl'
-                    } bg-slate-800/95 border border-sky-500/50 text-xs shadow-2xl flex flex-col max-h-[70vh] overflow-hidden`}
-                  >
-                    <div className="p-3 border-b border-slate-700/80 bg-slate-800 sticky top-0 z-10 flex items-center justify-between shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        {isEditing ? (
-                          <Pencil className="w-3.5 h-3.5 text-sky-400" />
-                        ) : (
-                          <Plus className="w-3.5 h-3.5 text-sky-400" />
-                        )}
-                        <h4 className="font-bold text-sky-400 text-xs">
-                          {isEditing ? 'Edit Binding Rule' : 'New Binding Rule'}
-                        </h4>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {isEditing ? 'Modify Dynamic Rule' : 'Dynamic Rule Editor'}
-                      </span>
-                    </div>
+                const renderConditionGroupEditor = (
+                  group: ConditionGroup,
+                  depth: number,
+                  onUpdate: (updated: ConditionGroup) => void,
+                  onDelete?: () => void
+                ): React.ReactNode => {
+                  const handleSetLogic = (logic: ConditionLogic) => {
+                    onUpdate({ ...group, logic });
+                  };
 
-                    <div className="p-3 space-y-3 overflow-y-auto max-h-[70vh] flex-1">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">
-                            Conditions (AND Logic)
+                  const handleAddCondition = () => {
+                    const newRule: BindingConditionRule = isNotifComp
+                      ? { stateField: 'gear', condition: '=', value: 'P' }
+                      : { stateField: 'batteryPercent', condition: '<', value: '15' };
+                    onUpdate({
+                      ...group,
+                      children: [...group.children, newRule],
+                    });
+                  };
+
+                  const handleAddGroup = () => {
+                    if (depth >= 3) return;
+                    const newChildGroup: ConditionGroup = {
+                      id: `group-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                      logic: group.logic === 'AND' ? 'OR' : 'AND',
+                      children: [
+                        isNotifComp
+                          ? { stateField: 'gear', condition: '=', value: 'P' }
+                          : { stateField: 'speed', condition: '>', value: '0' },
+                      ],
+                    };
+                    onUpdate({
+                      ...group,
+                      children: [...group.children, newChildGroup],
+                    });
+                  };
+
+                  const handleUpdateChild = (idx: number, updated: BindingConditionRule | ConditionGroup) => {
+                    const newChildren = [...group.children];
+                    newChildren[idx] = updated;
+                    onUpdate({ ...group, children: newChildren });
+                  };
+
+                  const handleDeleteChild = (idx: number) => {
+                    onUpdate({
+                      ...group,
+                      children: group.children.filter((_, i) => i !== idx),
+                    });
+                  };
+
+                  return (
+                    <div
+                      key={group.id || `depth-${depth}`}
+                      className={`rounded-lg border p-2.5 space-y-2.5 ${
+                        depth === 1
+                          ? 'bg-slate-900/90 border-slate-700/80'
+                          : depth === 2
+                          ? 'bg-slate-950/70 border-sky-500/40 ml-2'
+                          : 'bg-slate-950/90 border-indigo-500/40 ml-3'
+                      }`}
+                    >
+                      {/* Group Header */}
+                      <div className="flex items-center justify-between gap-1 flex-wrap pb-1 border-b border-slate-800">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] uppercase font-mono font-bold text-slate-400">
+                            {depth === 1 ? 'Rule Group' : `Nested Group (Depth ${depth})`}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setNewBindingConditions((prev) => [
-                                ...prev,
-                                { stateField: 'gear', condition: '=', value: 'P' },
-                              ])
-                            }
-                            className="text-[10px] font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 cursor-pointer"
-                          >
-                            <Plus className="w-3 h-3" /> Add Condition
-                          </button>
+                          <div className="inline-flex rounded-md border border-slate-800 bg-slate-950 p-0.5 ml-1">
+                            <button
+                              type="button"
+                              onClick={() => handleSetLogic('AND')}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono transition-colors cursor-pointer ${
+                                group.logic === 'AND'
+                                  ? 'bg-sky-500/30 text-sky-300 border border-sky-500/50 shadow-sm'
+                                  : 'text-slate-400 hover:text-slate-200'
+                              }`}
+                            >
+                              Match ALL (AND)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetLogic('OR')}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono transition-colors cursor-pointer ${
+                                group.logic === 'OR'
+                                  ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow-sm'
+                                  : 'text-slate-400 hover:text-slate-200'
+                              }`}
+                            >
+                              Match ANY (OR)
+                            </button>
+                          </div>
                         </div>
 
-                        {newBindingConditions.map((cond, idx) => (
-                          <div
-                            key={idx}
-                            className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-700/70 space-y-2 relative"
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={handleAddCondition}
+                            className="text-[10px] font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 hover:bg-sky-500/20 cursor-pointer"
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-sky-400 font-mono">
-                                {idx === 0 ? 'WHEN' : 'AND'}
-                              </span>
-                              {newBindingConditions.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setNewBindingConditions((prev) => prev.filter((_, i) => i !== idx))
-                                  }
-                                  className="text-slate-500 hover:text-rose-400 p-0.5 rounded cursor-pointer"
-                                  title="Remove condition"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              )}
-                            </div>
+                            <Plus className="w-3 h-3" /> + Condition
+                          </button>
+                          {depth < 3 && (
+                            <button
+                              type="button"
+                              onClick={handleAddGroup}
+                              className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 cursor-pointer"
+                              title="Add nested condition group"
+                            >
+                              <Plus className="w-3 h-3" /> + Group
+                            </button>
+                          )}
+                          {onDelete && (
+                            <button
+                              type="button"
+                              onClick={onDelete}
+                              className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-slate-800 cursor-pointer"
+                              title="Delete this group"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
 
-                            <div>
-                              <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
-                                State Field / Interaction Event
-                              </label>
-                              <select
-                                value={cond.stateField}
-                                onChange={(e) => {
-                                  const nextField = e.target.value as BindingStateField;
-                                  setNewBindingConditions((prev) =>
-                                    prev.map((c, i) =>
-                                      i === idx
-                                        ? {
-                                            ...c,
+                      {/* Group Children */}
+                      {group.children.length === 0 ? (
+                        <div className="p-2 text-center border border-dashed border-rose-500/40 rounded bg-rose-500/5 text-rose-300 text-[10px] font-mono">
+                          Empty group! Click &quot;+ Condition&quot; or &quot;+ Group&quot; to add rules.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {group.children.map((child, idx) => {
+                            if (isConditionGroup(child)) {
+                              return (
+                                <div key={child.id || idx} className="space-y-1">
+                                  {idx > 0 && (
+                                    <div className="flex items-center gap-1.5 py-0.5">
+                                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-sky-400 border border-slate-700">
+                                        {group.logic}
+                                      </span>
+                                      <div className="h-px bg-slate-800 flex-1" />
+                                    </div>
+                                  )}
+                                  {renderConditionGroupEditor(
+                                    child,
+                                    depth + 1,
+                                    (updatedChild) => handleUpdateChild(idx, updatedChild),
+                                    () => handleDeleteChild(idx)
+                                  )}
+                                </div>
+                              );
+                            }
+
+                            const rule = child as BindingConditionRule;
+                            return (
+                              <div key={idx} className="space-y-1">
+                                {idx > 0 && (
+                                  <div className="flex items-center gap-1.5 py-0.5">
+                                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-sky-400 border border-slate-700">
+                                      {group.logic}
+                                    </span>
+                                    <div className="h-px bg-slate-800 flex-1" />
+                                  </div>
+                                )}
+                                <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800 space-y-1.5 relative">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[9px] font-mono uppercase font-bold text-slate-400">
+                                      Condition #{idx + 1}
+                                    </span>
+                                    {group.children.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteChild(idx)}
+                                        className="text-slate-500 hover:text-rose-400 p-0.5 rounded cursor-pointer"
+                                        title="Remove condition"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-12 gap-1.5 items-center">
+                                    <div className="col-span-5">
+                                      <select
+                                        value={rule.stateField}
+                                        onChange={(e) => {
+                                          const nextField = e.target.value as BindingStateField;
+                                          handleUpdateChild(idx, {
+                                            ...rule,
                                             stateField: nextField,
                                             value:
                                               nextField === 'gear'
@@ -4809,182 +4962,295 @@ export const Inspector: React.FC = () => {
                                                   nextField === 'speedIncreaseAttempted'
                                                 ? 'true'
                                                 : '0',
+                                          });
+                                        }}
+                                        className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1 rounded focus:outline-none text-[11px]"
+                                      >
+                                        {VEHICLE_STATE_FIELDS.map((f) => (
+                                          <option key={f.field} value={f.field}>
+                                            {f.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    <div className="col-span-3">
+                                      <select
+                                        value={rule.condition}
+                                        onChange={(e) =>
+                                          handleUpdateChild(idx, {
+                                            ...rule,
+                                            condition: e.target.value as BindingCondition,
+                                          })
+                                        }
+                                        className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1 rounded focus:outline-none text-[11px]"
+                                      >
+                                        {CONDITIONS.map((c) => (
+                                          <option key={c} value={c}>
+                                            {c}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    <div className="col-span-4">
+                                      {rule.stateField === 'isCharging' ||
+                                      rule.stateField === 'doorOpen' ||
+                                      rule.stateField === 'cruiseControlActive' ||
+                                      rule.stateField === 'tirePressureWarning' ||
+                                      rule.stateField === 'speedIncreaseAttempted' ? (
+                                        <select
+                                          value={String(rule.value)}
+                                          onChange={(e) =>
+                                            handleUpdateChild(idx, { ...rule, value: e.target.value })
                                           }
-                                        : c
-                                    )
-                                  );
-                                }}
+                                          className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1 rounded focus:outline-none text-[11px]"
+                                        >
+                                          <option value="true">true</option>
+                                          <option value="false">false</option>
+                                        </select>
+                                      ) : rule.stateField === 'gear' ? (
+                                        <select
+                                          value={String(rule.value)}
+                                          onChange={(e) =>
+                                            handleUpdateChild(idx, { ...rule, value: e.target.value })
+                                          }
+                                          className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1 rounded focus:outline-none text-[11px]"
+                                        >
+                                          <option value="P">P</option>
+                                          <option value="R">R</option>
+                                          <option value="N">N</option>
+                                          <option value="D">D</option>
+                                        </select>
+                                      ) : rule.stateField === 'driveMode' ? (
+                                        <select
+                                          value={String(rule.value)}
+                                          onChange={(e) =>
+                                            handleUpdateChild(idx, { ...rule, value: e.target.value })
+                                          }
+                                          className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1 rounded focus:outline-none text-[11px]"
+                                        >
+                                          <option value="Eco">Eco</option>
+                                          <option value="Normal">Normal</option>
+                                          <option value="Sport">Sport</option>
+                                        </select>
+                                      ) : (
+                                        <input
+                                          type="text"
+                                          value={String(rule.value)}
+                                          onChange={(e) =>
+                                            handleUpdateChild(idx, { ...rule, value: e.target.value })
+                                          }
+                                          className="w-full bg-slate-900 border border-slate-700 text-slate-100 p-1 rounded focus:outline-none text-[11px]"
+                                        />
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                };
+
+                const renderBindingForm = (isEditing: boolean, bindingId?: string) => (
+                  <form
+                    key={isEditing ? `edit-form-${bindingId}` : 'add-binding-form'}
+                    onSubmit={handleSaveBindingSubmit}
+                    className={`${
+                      isEditing ? 'rounded-xl' : 'mt-4 rounded-xl'
+                    } bg-slate-800/95 border border-sky-500/50 text-xs shadow-2xl flex flex-col max-h-[75vh] overflow-hidden`}
+                  >
+                    <div className="p-3 border-b border-slate-700/80 bg-slate-800 sticky top-0 z-10 flex items-center justify-between shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        {isEditing ? (
+                          <Pencil className="w-3.5 h-3.5 text-sky-400" />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5 text-sky-400" />
+                        )}
+                        <h4 className="font-bold text-sky-400 text-xs">
+                          {isEditing ? 'Edit Condition Rule' : 'New Condition Rule'}
+                        </h4>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {isEditing ? 'Modify Condition Tree' : 'Condition Rule Editor'}
+                      </span>
+                    </div>
+
+                    <div className="p-3 space-y-3 overflow-y-auto max-h-[70vh] flex-1">
+                      {/* Condition Group Tree Editor */}
+                      {renderConditionGroupEditor(draftGroup, 1, setDraftGroup)}
+
+                      {/* Plain-Language Summary Box */}
+                      <div className="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block">
+                          Summary
+                        </span>
+                        <div className="text-[11px] text-sky-300 font-mono font-semibold">
+                          {formatConditionGroupText(draftGroup)
+                            ? `Show when ${formatConditionGroupText(draftGroup)}`
+                            : 'Empty group (will not trigger)'}
+                        </div>
+                      </div>
+
+                      {/* Event-Triggered Helper Text */}
+                      {groupHasInteractionEvent(draftGroup) && (
+                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-start gap-2">
+                          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>Event-Triggered:</strong> Stays visible for the global duration ({notificationDurationSec || DEFAULT_NOTIFICATION_DURATION_SEC}s), followed by a 15-second cooldown before it can trigger again.
+                          </span>
+                        </div>
+                      )}
+
+                      {/* THEN Action / Advanced Disclosure */}
+                      {isNotifComp ? (
+                        <div className="pt-2 border-t border-slate-700/80">
+                          <button
+                            type="button"
+                            onClick={() => setShowAdvanced(!showAdvanced)}
+                            className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1.5 cursor-pointer font-bold select-none"
+                          >
+                            <ChevronRight
+                              className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
+                            />
+                            <span>Advanced Target Properties</span>
+                          </button>
+
+                          {showAdvanced && (
+                            <div className="mt-2.5 pt-2 border-t border-slate-800 space-y-2">
+                              <span className="text-[10px] text-slate-400 uppercase font-mono font-bold block">
+                                THEN Action
+                              </span>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
+                                    Target Property
+                                  </label>
+                                  <select
+                                    value={newBindingTargetProp}
+                                    onChange={(e) => setNewBindingTargetProp(e.target.value as TargetProp)}
+                                    className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
+                                  >
+                                    {TARGET_PROPS.map((tp) => (
+                                      <option key={tp} value={tp}>
+                                        {tp}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
+                                    New Value
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={newBindingTargetValue}
+                                    onChange={(e) => setNewBindingTargetValue(e.target.value)}
+                                    placeholder="e.g. true, #ef4444"
+                                    className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="pt-2 border-t border-slate-700/80 space-y-2">
+                          <span className="text-[10px] text-slate-400 uppercase font-mono font-bold block">
+                            THEN Action
+                          </span>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
+                                Target Property
+                              </label>
+                              <select
+                                value={newBindingTargetProp}
+                                onChange={(e) => setNewBindingTargetProp(e.target.value as TargetProp)}
                                 className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
                               >
-                                {VEHICLE_STATE_FIELDS.map((f) => (
-                                  <option key={f.field} value={f.field}>
-                                    {f.label}
+                                {TARGET_PROPS.map((tp) => (
+                                  <option key={tp} value={tp}>
+                                    {tp}
                                   </option>
                                 ))}
                               </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
-                                  Condition
-                                </label>
+                            <div>
+                              <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
+                                New Value
+                              </label>
+                              {newBindingTargetProp === 'severity' ? (
                                 <select
-                                  value={cond.condition}
-                                  onChange={(e) =>
-                                    setNewBindingConditions((prev) =>
-                                      prev.map((c, i) =>
-                                        i === idx
-                                          ? { ...c, condition: e.target.value as BindingCondition }
-                                          : c
-                                      )
-                                    )
-                                  }
-                                  className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
+                                  value={newBindingTargetValue}
+                                  onChange={(e) => setNewBindingTargetValue(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
                                 >
-                                  {CONDITIONS.map((c) => (
-                                    <option key={c} value={c}>
-                                      {c}
-                                    </option>
-                                  ))}
+                                  <option value="critical">critical</option>
+                                  <option value="warning">warning</option>
+                                  <option value="info">info</option>
                                 </select>
-                              </div>
-
-                              <div>
-                                <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
-                                  Value
-                                </label>
-                                {cond.stateField === 'isCharging' ||
-                                cond.stateField === 'doorOpen' ||
-                                cond.stateField === 'cruiseControlActive' ||
-                                cond.stateField === 'tirePressureWarning' ||
-                                cond.stateField === 'speedIncreaseAttempted' ? (
-                                  <select
-                                    value={cond.value}
-                                    onChange={(e) =>
-                                      setNewBindingConditions((prev) =>
-                                        prev.map((c, i) => (i === idx ? { ...c, value: e.target.value } : c))
-                                      )
-                                    }
-                                    className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
-                                  >
-                                    <option value="true">true</option>
-                                    <option value="false">false</option>
-                                  </select>
-                                ) : cond.stateField === 'gear' ? (
-                                  <select
-                                    value={cond.value}
-                                    onChange={(e) =>
-                                      setNewBindingConditions((prev) =>
-                                        prev.map((c, i) => (i === idx ? { ...c, value: e.target.value } : c))
-                                      )
-                                    }
-                                    className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
-                                  >
-                                    <option value="P">P</option>
-                                    <option value="R">R</option>
-                                    <option value="N">N</option>
-                                    <option value="D">D</option>
-                                  </select>
-                                ) : (
-                                  <input
-                                    type="text"
-                                    value={cond.value}
-                                    onChange={(e) =>
-                                      setNewBindingConditions((prev) =>
-                                        prev.map((c, i) => (i === idx ? { ...c, value: e.target.value } : c))
-                                      )
-                                    }
-                                    className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
-                                  />
-                                )}
-                              </div>
+                              ) : newBindingTargetProp === 'icon' ? (
+                                <select
+                                  value={newBindingTargetValue}
+                                  onChange={(e) => setNewBindingTargetValue(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
+                                >
+                                  <option value="alert-triangle">alert-triangle</option>
+                                  <option value="door-open">door-open</option>
+                                  <option value="battery-warning">battery-warning</option>
+                                  <option value="thermometer">thermometer</option>
+                                  <option value="tire">tire</option>
+                                  <option value="zap">zap</option>
+                                  <option value="gauge">gauge</option>
+                                  <option value="bell">bell</option>
+                                  <option value="shield-alert">shield-alert</option>
+                                  <option value="wrench">wrench</option>
+                                  <option value="lock">lock</option>
+                                  <option value="key">key</option>
+                                  <option value="info">info</option>
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={newBindingTargetValue}
+                                  onChange={(e) => setNewBindingTargetValue(e.target.value)}
+                                  placeholder="e.g. #ef4444, true, {speed}"
+                                  className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
+                                />
+                              )}
                             </div>
                           </div>
-                        ))}
-                      </div>
 
-                      <div className="pt-2 border-t border-slate-700/80 space-y-2">
-                        <span className="text-[10px] text-slate-400 uppercase font-mono font-bold block">
-                          THEN Action
-                        </span>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
-                              Target Property
-                            </label>
-                            <select
-                              value={newBindingTargetProp}
-                              onChange={(e) => setNewBindingTargetProp(e.target.value as TargetProp)}
-                              className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none text-[11px]"
-                            >
-                              {TARGET_PROPS.map((tp) => (
-                                <option key={tp} value={tp}>
-                                  {tp}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="text-[9px] text-slate-400 uppercase font-mono block mb-0.5">
-                              New Value
-                            </label>
-                            {newBindingTargetProp === 'severity' ? (
-                              <select
-                                value={newBindingTargetValue}
-                                onChange={(e) => setNewBindingTargetValue(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
-                              >
-                                <option value="critical">critical</option>
-                                <option value="warning">warning</option>
-                                <option value="info">info</option>
-                              </select>
-                            ) : newBindingTargetProp === 'icon' ? (
-                              <select
-                                value={newBindingTargetValue}
-                                onChange={(e) => setNewBindingTargetValue(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
-                              >
-                                <option value="alert-triangle">alert-triangle</option>
-                                <option value="door-open">door-open</option>
-                                <option value="battery-warning">battery-warning</option>
-                                <option value="thermometer">thermometer</option>
-                                <option value="tire">tire</option>
-                                <option value="zap">zap</option>
-                                <option value="gauge">gauge</option>
-                                <option value="bell">bell</option>
-                                <option value="shield-alert">shield-alert</option>
-                                <option value="wrench">wrench</option>
-                                <option value="lock">lock</option>
-                                <option value="key">key</option>
-                                <option value="info">info</option>
-                              </select>
-                            ) : (
-                              <input
-                                type="text"
-                                value={newBindingTargetValue}
-                                onChange={(e) => setNewBindingTargetValue(e.target.value)}
-                                placeholder="e.g. #ef4444, true, {speed}"
-                                className="w-full bg-slate-950 border border-slate-700 text-slate-100 p-1.5 rounded focus:outline-none font-mono text-[11px]"
-                              />
-                            )}
+                          <div className="text-[10px] text-slate-400 italic">
+                            Tip: Use <span className="text-sky-300">{'{speed}'}</span> or{' '}
+                            <span className="text-sky-300">{'{batteryPercent}'}</span> in new value for dynamic state
+                            text.
                           </div>
                         </div>
+                      )}
 
-                        <div className="text-[10px] text-slate-400 italic">
-                          Tip: Use <span className="text-sky-300">{'{speed}'}</span> or{' '}
-                          <span className="text-sky-300">{'{batteryPercent}'}</span> in new value for dynamic state
-                          text.
+                      {/* Blocked Save Validation Error */}
+                      {!isGroupTreeValid(draftGroup) && (
+                        <div className="p-2 rounded bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10px] font-mono">
+                          Cannot save: all groups must contain at least one valid condition rule.
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     <div className="p-3 bg-slate-800 sticky bottom-0 z-10 border-t border-slate-700/80 flex gap-2 shrink-0">
                       <button
                         type="submit"
-                        className="flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold p-1.5 rounded transition-colors cursor-pointer text-xs"
+                        disabled={!isGroupTreeValid(draftGroup)}
+                        className={`flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold p-1.5 rounded transition-colors text-xs ${
+                          !isGroupTreeValid(draftGroup) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                        }`}
                       >
                         {isEditing ? 'Save Changes' : 'Save Rule'}
                       </button>
@@ -5007,7 +5273,9 @@ export const Inspector: React.FC = () => {
                     <div className="space-y-2.5">
                       {selectedComp.bindings?.length === 0 ? (
                         <div className="p-3 text-center border border-dashed border-slate-800 rounded-xl text-slate-500 text-xs font-mono">
-                          No bindings configured yet. Click "+ Rule" to add one.
+                          {isNotifComp
+                            ? 'No display trigger conditions yet. Click "+ Condition Rule" to add one.'
+                            : 'No bindings configured yet. Click "+ Rule" to add one.'}
                         </div>
                       ) : (
                         selectedComp.bindings.map((b) => {
@@ -5015,12 +5283,25 @@ export const Inspector: React.FC = () => {
                             return renderBindingForm(true, b.id);
                           }
 
+                          const summaryText = formatConditionSummary(b);
+
                           return (
                             <div
                               key={b.id}
                               className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono space-y-2 relative group hover:border-slate-700 transition-colors"
+                              data-testid="binding-card"
                             >
-                              {b.conditions && b.conditions.length > 0 ? (
+                              {/* Plain Language Summary */}
+                              <div className="text-[11px] text-sky-400 font-semibold font-mono">
+                                {summaryText}
+                              </div>
+
+                              {/* Structured representation */}
+                              {b.conditionGroup ? (
+                                <div className="text-[10px] text-slate-400 font-mono bg-slate-900/60 p-1.5 rounded border border-slate-800/80">
+                                  Logic: <span className="text-sky-300 font-bold">Match {b.conditionGroup.logic}</span> ({b.conditionGroup.children?.length || 0} items)
+                                </div>
+                              ) : b.conditions && b.conditions.length > 0 ? (
                                 <div className="space-y-1">
                                   {b.conditions.map((cond, cIdx) => (
                                     <div
