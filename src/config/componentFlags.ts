@@ -3,5 +3,6 @@ export const COMPONENT_FLAGS = {
   climate: true,
   phone: true,
   driveMode: true,
+  cruiseControl: true,
   tirePressure: true,
 };

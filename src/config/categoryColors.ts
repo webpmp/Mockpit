@@ -32,6 +32,7 @@ export const COMPONENT_TYPE_TO_CATEGORY: Partial<Record<ComponentType, SidebarCa
   speed: 'home',
   climate: 'home',
   driveMode: 'home',
+  cruiseControl: 'home',
 
   map: 'navigation',
   navHome: 'navigation',

@@ -571,6 +571,7 @@ export const DEFAULT_COMPONENT_DIMENSIONS: Record<ComponentType, { width: number
   climate: { width: 320, height: 150, maxHeight: 1080 },
   phone: { width: 340, height: 150, maxHeight: 1080 },
   driveMode: { width: 320, height: 160, maxHeight: 1080 },
+  cruiseControl: { width: 320, height: 160, maxHeight: 1080 },
   tirePressure: { width: 380, height: 210, maxHeight: 1080 },
   navHome: { width: 380, height: 160, maxHeight: 1080 },
   navFavorites: { width: 380, height: 260, maxHeight: 1080 },
@@ -3506,6 +3507,12 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
             targetValue: '#22c55e',
           },
         ];
+        break;
+      case 'cruiseControl':
+        width = 320;
+        height = 160;
+        staticProps = { label: 'Cruise Control' };
+        bindings = [];
         break;
       case 'tirePressure':
         width = 380;

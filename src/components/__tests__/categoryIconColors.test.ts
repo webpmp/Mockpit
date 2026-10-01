@@ -54,6 +54,7 @@ describe('Layer Icon Colors Match Component Library Category Colors', () => {
     'gear',
     'speed',
     'driveMode',
+    'cruiseControl',
   ];
 
   it('1. CATEGORY_ICON_HEX defines accurate hex colors matching the component library', () => {

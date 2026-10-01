@@ -274,6 +274,7 @@ export type ComponentType =
   | 'climate'
   | 'phone'
   | 'driveMode'
+  | 'cruiseControl'
   | 'tirePressure'
   | 'navHome'
   | 'navFavorites'

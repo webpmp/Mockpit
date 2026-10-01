@@ -12,6 +12,7 @@ export const COMPONENT_DISPLAY_NAMES: Record<string, string> = {
   gear: 'Gear Indicator',
   climate: 'Climate Control',
   driveMode: 'Drive Mode Selector',
+  cruiseControl: 'Cruise Control',
   tirePressure: 'Tire Pressure Monitor',
 
   // Navigation & Driving

@@ -45,6 +45,7 @@ export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
   speed: { type: 'speed', icon: Gauge, defaultColor: '#38bdf8' },
   climate: { type: 'climate', icon: Thermometer, defaultColor: '#fb923c' },
   driveMode: { type: 'driveMode', icon: Compass, defaultColor: '#38bdf8' },
+  cruiseControl: { type: 'cruiseControl', icon: Gauge, defaultColor: '#38bdf8' },
   tirePressure: { type: 'tirePressure', icon: CircleDot, defaultColor: '#818cf8' },
   map: { type: 'map', icon: MapPin, defaultColor: '#34d399' },
   navHome: { type: 'navHome', icon: Home, defaultColor: '#34d399' },

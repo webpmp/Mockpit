@@ -72,6 +72,16 @@ const HOME_WIDGET_ITEMS: ComponentLibraryItem[] = [
         },
       ]
     : []),
+  ...(COMPONENT_FLAGS.cruiseControl
+    ? [
+        {
+          type: 'cruiseControl' as ComponentType,
+          title: 'Cruise Control',
+          description: 'Turn adaptive cruise control on or off',
+          defaultBindingDesc: 'cruise control on/off toggle',
+        },
+      ]
+    : []),
 ];
 
 const NAVIGATION_WIDGET_ITEMS: ComponentLibraryItem[] = [

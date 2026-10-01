@@ -66,6 +66,7 @@ import { VehicleExplodedViewWidget } from './vehicle/VehicleExplodedViewWidget';
 import { VehicleStatusCalloutWidget } from './vehicle/VehicleStatusCalloutWidget';
 import { SendToServiceWidget } from './vehicle/SendToServiceWidget';
 import { DriveModeWidget } from './vehicle/DriveModeWidget';
+import { CruiseControlWidget } from './vehicle/CruiseControlWidget';
 import { GearWidget } from './vehicle/GearWidget';
 import { SpeedometerWidget } from './vehicle/SpeedometerWidget';
 import { MiniNav } from './navigation/MiniNav';
@@ -100,6 +101,7 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
   climate: 'Climate Control',
   phone: 'Phone & Contacts',
   driveMode: 'Drive Mode Selector',
+  cruiseControl: 'Cruise Control',
   tirePressure: 'Tire Pressure Monitor',
   navHome: 'Favorites & Recents',
   navFavorites: 'Favorites & Recents',
@@ -2365,6 +2367,20 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     case 'driveMode': {
       return (
         <DriveModeWidget
+          component={component}
+          resolved={resolved}
+          isSelected={isSelected}
+          isPresentation={isPresentation}
+          customColor={customColor}
+          baseOpacity={baseOpacity}
+          styleOpacity={styleOpacity}
+        />
+      );
+    }
+
+    case 'cruiseControl': {
+      return (
+        <CruiseControlWidget
           component={component}
           resolved={resolved}
           isSelected={isSelected}
