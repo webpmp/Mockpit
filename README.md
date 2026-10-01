@@ -56,6 +56,16 @@ A collection of interactive climate controls for temperature, airflow, and seati
 - **Vent Control:** Interactive airflow direction and fan speed controls.
 - **Seat Controls:** Multi-stage driver and passenger seat heating and ventilation.
 
+### Vehicle Diagnostics
+
+<img src="/public/mockpit-vehicle-diagnostics.png" alt="Mockpit Vehicle Diagnostics" width="300">
+
+A vehicle diagnostics interface for monitoring the current status of vehicle systems, reviewing warning codes and diagnostic details, and sending a diagnostic report to a service center.
+
+- **System Status:** View the current health and status of key vehicle systems and identify systems requiring attention.
+- **Warning Codes:** Displays active diagnostic and warning codes with detailed information about the issue and affected system.
+- **Diagnostic Report:** Generate and send a diagnostic report containing relevant vehicle system information and warning codes to a service center.
+
 ### Weather
 
 <img src="/public/comp-weather.png" alt="Mockpit Weather" width="300">
