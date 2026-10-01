@@ -200,7 +200,7 @@ describe('CruiseControlWidget — Spec v1 Suite', () => {
     // Compact size
     const compactComp: ComponentInstance = { ...baseComp, width: 200, height: 110 };
     const compactHtml = renderToStaticMarkup(React.createElement(CruiseControlWidget, { component: compactComp }));
-    assert.ok(compactHtml.includes('min-h-[44px]'));
+    assert.ok(compactHtml.includes('min-height:44px') || compactHtml.includes('min-height: 44px'));
     assert.ok(compactHtml.includes('w-8 h-8'));
     assert.ok(compactHtml.includes('w-2 h-2 rounded-full'));
     assert.ok(compactHtml.includes('OFF'));
@@ -208,11 +208,38 @@ describe('CruiseControlWidget — Spec v1 Suite', () => {
     // Ultra-compact size (hides header, but keeps button, dot, label)
     const ultraComp: ComponentInstance = { ...baseComp, width: 170, height: 80 };
     const ultraHtml = renderToStaticMarkup(React.createElement(CruiseControlWidget, { component: ultraComp }));
-    assert.ok(ultraHtml.includes('min-h-[44px]'));
+    assert.ok(ultraHtml.includes('min-height:44px') || ultraHtml.includes('min-height: 44px'));
     assert.ok(ultraHtml.includes('w-8 h-8'));
     assert.ok(ultraHtml.includes('w-2 h-2 rounded-full'));
     assert.ok(ultraHtml.includes('OFF'));
     // Header is hidden in ultra-compact
     assert.equal(ultraHtml.includes('Cruise Control</span></span></div>'), false);
+  });
+
+  it('9. Small icon-only widget allows selection, drag-move, and deletion in editor mode', () => {
+    const smallComp: ComponentInstance = { ...baseComp, width: 60, height: 60 };
+    useMockpitStore.setState({ selectedComponentId: null });
+
+    // Selecting smallComp
+    useMockpitStore.getState().selectComponent(smallComp.id);
+    assert.equal(useMockpitStore.getState().selectedComponentId, smallComp.id);
+
+    // Render with isSelected: true
+    const selectedHtml = renderToStaticMarkup(
+      React.createElement(CruiseControlWidget, { component: smallComp, isSelected: true, customColor: '#38bdf8' })
+    );
+    assert.ok(selectedHtml.includes('border-color:#38bdf8') || selectedHtml.includes('border-color: #38bdf8'));
+
+    // Move component
+    useMockpitStore.getState().updateComponentPosition(smallComp.id, 150, 200);
+    const moved = useMockpitStore.getState().components.find((c: any) => c.id === smallComp.id);
+    if (moved) {
+      assert.equal(moved.x, 150);
+      assert.equal(moved.y, 200);
+    }
+
+    // Delete component
+    useMockpitStore.getState().deleteComponent(smallComp.id);
+    assert.ok(!useMockpitStore.getState().components.some((c: any) => c.id === smallComp.id));
   });
 });

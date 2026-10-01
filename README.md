@@ -1,5 +1,7 @@
 # Mockpit
 
+![Mockpit Logo Screen](/public/mockpit-logo-screen.png)
+
 Prototyping vehicle infotainment systems with component-based, behavior-driven Human-Machine Interface (HMI) bindings.
 
 ![Mockpit Editor](/public/mockpit-editor-v2.png)
