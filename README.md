@@ -1,8 +1,8 @@
-# Mockpit
-
 ![Mockpit Logo Screen](/public/mockpit-logo-screen.png)
 
-Prototyping vehicle infotainment systems with component-based, behavior-driven Human-Machine Interface (HMI) bindings.
+# Mockpit
+
+Mockpit is a vehicle infotainment HMI prototyping environment for designing, connecting, and testing interactive interface components. It supports component-based UI composition, behavior-driven bindings, system notifications, configurable interaction rules, and user testing workflows to prototype how vehicle interfaces respond to user actions and system states.
 
 ![Mockpit Editor](/public/mockpit-editor-v2.png)
 
@@ -11,14 +11,6 @@ Prototyping vehicle infotainment systems with component-based, behavior-driven H
 ![Mockpit Presentation](/public/mockpit-tester.png)
 
 <p align="center"><strong>Presenter Mode</strong></p>
-
----
-
-## Overview
-
-Mockpit is an interactive prototyping application for designing, layout-testing, and simulating modern vehicle infotainment systems. It provides modular, highly responsive HMI components with realistic behavior, live state management, and real-time canvas positioning.
-
----
 
 ## Key Features
 
