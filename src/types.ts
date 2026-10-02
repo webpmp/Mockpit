@@ -88,37 +88,6 @@ export type PaletteConfig = {
   tertiary: string;  // Hex e.g. "#10b981"
 };
 
-export const BUILTIN_PALETTES: Record<Exclude<PalettePresetId, 'custom'>, PaletteConfig> = {
-  cyberSky: {
-    id: 'cyberSky',
-    name: 'Cyber Sky',
-    primary: '#38bdf8',
-    secondary: '#3b82f6',
-    tertiary: '#10b981',
-  },
-  neonAmber: {
-    id: 'neonAmber',
-    name: 'Neon Amber',
-    primary: '#f59e0b',
-    secondary: '#f97316',
-    tertiary: '#ef4444',
-  },
-  electricViolet: {
-    id: 'electricViolet',
-    name: 'Electric Violet',
-    primary: '#a855f7',
-    secondary: '#ec4899',
-    tertiary: '#06b6d4',
-  },
-  emeraldMint: {
-    id: 'emeraldMint',
-    name: 'Emerald Mint',
-    primary: '#10b981',
-    secondary: '#14b8a6',
-    tertiary: '#38bdf8',
-  },
-};
-
 export type ClimateFanSpeed = 'AUTO' | 'LOW' | 'MED' | 'HIGH';
 export type ClimateSeat = 'driver' | 'passenger';
 

@@ -28,8 +28,56 @@ import {
   DESIGN_SYSTEM_STORAGE_KEY,
   LEGACY_PALETTE_STORAGE_KEY,
   DesignSystemStorageState,
+  applyThemeCss,
+  immediateSaveDesignSystem,
 } from '../../designSystem';
-import { useMockpitStore, derivePaletteFromTheme } from '../../store/useMockpitStore';
+import {
+  useMockpitStore,
+  derivePaletteFromTheme,
+  loadDesignSystemState,
+} from '../../store/useMockpitStore';
+
+// In-memory shims for Node.js test environment
+let mockStorageMap = new Map<string, string>();
+const localStorageMock = {
+  getItem: (key: string) => mockStorageMap.get(key) ?? null,
+  setItem: (key: string, val: string) => { mockStorageMap.set(key, String(val)); },
+  removeItem: (key: string) => { mockStorageMap.delete(key); },
+  clear: () => { mockStorageMap.clear(); },
+};
+if (typeof globalThis.localStorage === 'undefined') {
+  (globalThis as any).localStorage = localStorageMock;
+}
+
+const mockStyleElement = {
+  id: 'mockpit-design-system-theme',
+  textContent: '',
+};
+if (typeof globalThis.document === 'undefined') {
+  (globalThis as any).document = {
+    getElementById: (id: string) => (id === 'mockpit-design-system-theme' ? mockStyleElement : null),
+    createElement: (tag: string) => (tag === 'style' ? mockStyleElement : {}),
+    head: {
+      appendChild: () => {},
+    },
+  };
+}
+
+function resetThemeTestState() {
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.removeItem(DESIGN_SYSTEM_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_PALETTE_STORAGE_KEY);
+    } catch {}
+  }
+  applyThemeCss(FACTORY_PRESETS.midnight);
+  useMockpitStore.setState({
+    activeThemeId: 'midnight',
+    userThemes: [],
+    isDesignSystemOpen: false,
+    activePalette: derivePaletteFromTheme(FACTORY_PRESETS.midnight),
+  });
+}
 
 // Completeness guard scaffold: list of canvas files that have been migrated
 // to the design system. Follow-up specs append to this list.
@@ -39,7 +87,7 @@ export const MIGRATED_CANVAS_FILES: readonly string[] = [
 
 describe('Design System Foundation Suite (Spec v1)', () => {
   beforeEach(() => {
-    useMockpitStore.getState().resetToSeedData();
+    resetThemeTestState();
   });
 
   describe('1. Role Registry', () => {
@@ -447,6 +495,115 @@ describe('Design System Foundation Suite (Spec v1)', () => {
       assert.equal(migrated.userThemes[0].colors.secondary, '#f97316');
       assert.equal(migrated.userThemes[0].colors.tertiary, '#ef4444');
       assert.equal(migrated.migratedLegacyPalette, true);
+    });
+
+    it('legacy migration then key removal: running load path creates Midnight V1, saves new key, and leaves no legacy key', () => {
+      localStorage.clear();
+      localStorage.setItem(
+        LEGACY_PALETTE_STORAGE_KEY,
+        JSON.stringify({
+          id: 'neonAmber',
+          name: 'Neon Amber',
+          primary: '#f59e0b',
+          secondary: '#f97316',
+          tertiary: '#ef4444',
+        })
+      );
+
+      const loaded = loadDesignSystemState();
+      assert.equal(loaded.activeTheme.name, 'Midnight V1');
+      assert.ok(localStorage.getItem(DESIGN_SYSTEM_STORAGE_KEY), 'New key must be saved');
+      assert.equal(localStorage.getItem(LEGACY_PALETTE_STORAGE_KEY), null, 'Legacy key must be removed');
+
+      // A second load with the new key removed afterwards (simulating a lost new key) does not recreate the migrated theme
+      localStorage.removeItem(DESIGN_SYSTEM_STORAGE_KEY);
+      const reloaded = loadDesignSystemState();
+      assert.equal(reloaded.activeThemeId, 'midnight', 'Must fallback to default midnight');
+      assert.equal(reloaded.userThemes.length, 0);
+    });
+
+    it('Cyber Sky legacy palette: no theme is created and legacy key is left untouched', () => {
+      localStorage.clear();
+      const cyberSkyData = JSON.stringify({
+        id: 'cyberSky',
+        name: 'Cyber Sky',
+        primary: '#38bdf8',
+        secondary: '#3b82f6',
+        tertiary: '#10b981',
+      });
+      localStorage.setItem(LEGACY_PALETTE_STORAGE_KEY, cyberSkyData);
+
+      const loaded = loadDesignSystemState();
+      assert.equal(loaded.activeThemeId, 'midnight');
+      assert.equal(loaded.userThemes.length, 0);
+      assert.equal(
+        localStorage.getItem(LEGACY_PALETTE_STORAGE_KEY),
+        cyberSkyData,
+        'Cyber Sky legacy key must be untouched'
+      );
+    });
+
+    it('save failure: if saving the new key throws, the legacy key is not removed', () => {
+      localStorage.clear();
+      const legacyData = JSON.stringify({
+        id: 'custom',
+        name: 'Custom',
+        primary: '#ff00aa',
+        secondary: '#00aaff',
+        tertiary: '#aaff00',
+      });
+      localStorage.setItem(LEGACY_PALETTE_STORAGE_KEY, legacyData);
+
+      const origSetItem = localStorage.setItem;
+      localStorage.setItem = (key: string, val: string) => {
+        if (key === DESIGN_SYSTEM_STORAGE_KEY) {
+          throw new Error('QuotaExceededError');
+        }
+        origSetItem.call(localStorage, key, val);
+      };
+
+      try {
+        loadDesignSystemState();
+      } finally {
+        localStorage.setItem = origSetItem;
+      }
+
+      assert.equal(
+        localStorage.getItem(LEGACY_PALETTE_STORAGE_KEY),
+        legacyData,
+        'Legacy key must be preserved when save throws'
+      );
+    });
+
+    it('seed reset leaves the theme alone: activeThemeId, userThemes, activePalette, storage key, and style tag are unchanged', () => {
+      useMockpitStore.getState().setActiveTheme('midnight');
+      useMockpitStore.getState().setRoleColor('primary', '#ff00aa');
+
+      const stateBefore = useMockpitStore.getState();
+      const activeThemeIdBefore = stateBefore.activeThemeId;
+      const userThemesBefore = stateBefore.userThemes;
+      const activePaletteBefore = stateBefore.activePalette;
+
+      immediateSaveDesignSystem({
+        version: 1,
+        activeThemeId: activeThemeIdBefore,
+        userThemes: userThemesBefore,
+      });
+
+      const dsKeyBefore = localStorage.getItem(DESIGN_SYSTEM_STORAGE_KEY);
+      const styleTagBefore = mockStyleElement.textContent;
+
+      assert.equal(isFactoryPreset(activeThemeIdBefore), false, 'A user theme should be active');
+      assert.equal(userThemesBefore.length, 1);
+
+      useMockpitStore.getState().resetToSeedData();
+
+      const stateAfter = useMockpitStore.getState();
+      assert.equal(stateAfter.activeThemeId, activeThemeIdBefore);
+      assert.deepEqual(stateAfter.userThemes, userThemesBefore);
+      assert.deepEqual(stateAfter.activePalette, activePaletteBefore);
+      assert.equal(localStorage.getItem(DESIGN_SYSTEM_STORAGE_KEY), dsKeyBefore);
+      assert.equal(mockStyleElement.textContent, styleTagBefore);
     });
 
     it('legacy migration is skipped if legacy palette is Cyber Sky or new key already exists', () => {

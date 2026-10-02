@@ -224,7 +224,7 @@ export const DesignSystemPanel: React.FC = () => {
             data-testid="design-system-reset-header-btn"
             disabled={!isUserTheme}
             onClick={() => setConfirmAction('reset')}
-            className={`px-2 py-1 rounded text-[11px] font-mono font-medium flex items-center gap-1 transition-colors ${
+            className={`px-2 py-1 rounded text-xs font-mono font-medium flex items-center gap-1 transition-colors ${
               isUserTheme
                 ? 'text-slate-400 hover:text-sky-300 hover:bg-slate-800 cursor-pointer'
                 : 'text-slate-600 cursor-not-allowed opacity-50'
@@ -285,7 +285,7 @@ export const DesignSystemPanel: React.FC = () => {
 
         {/* 2. Theme Dropdown & Menu */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+          <label className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block">
             Theme
           </label>
 
@@ -324,7 +324,7 @@ export const DesignSystemPanel: React.FC = () => {
                 </button>
               </div>
               {renameError && (
-                <div className="text-[11px] font-mono text-rose-400 flex items-center gap-1">
+                <div className="text-xs font-mono text-rose-400 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3 shrink-0" />
                   <span>{renameError}</span>
                 </div>
@@ -420,7 +420,7 @@ export const DesignSystemPanel: React.FC = () => {
             <span className="text-xs font-bold font-mono text-slate-200 tracking-wide uppercase">
               Colors
             </span>
-            <span className="text-[11px] font-mono text-slate-500">
+            <span className="text-xs font-mono text-slate-500">
               {totalFilteredCount} {totalFilteredCount === 1 ? 'role' : 'roles'}
             </span>
           </div>
@@ -451,7 +451,7 @@ export const DesignSystemPanel: React.FC = () => {
               )}
               <span>Live preview</span>
             </div>
-            <span className="text-[10px] font-mono text-slate-500">
+            <span className="text-xs font-mono text-slate-500">
               {isPreviewExpanded ? 'Hide' : 'Show'}
             </span>
           </button>
@@ -476,7 +476,7 @@ export const DesignSystemPanel: React.FC = () => {
 
               return (
                 <div key={group} className="space-y-2">
-                  <h3 className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                  <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
                     {group}
                   </h3>
 
@@ -497,7 +497,7 @@ export const DesignSystemPanel: React.FC = () => {
                         >
                           <div className="flex items-center justify-between gap-2">
                             {/* Swatch & Label */}
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
                               {/* Swatch with native color picker */}
                               <div className="relative w-7 h-7 rounded-lg overflow-hidden border border-slate-700 shrink-0 shadow-sm">
                                 <input
@@ -512,11 +512,11 @@ export const DesignSystemPanel: React.FC = () => {
                               </div>
 
                               {/* Label & Description */}
-                              <div className="min-w-0 flex flex-col">
+                              <div className="min-w-0 flex-1 flex flex-col">
                                 <span className="text-[13px] font-bold text-slate-200 font-mono leading-tight whitespace-nowrap">
                                   {role.label}
                                 </span>
-                                <span className="text-[12px] text-slate-400 font-sans leading-tight truncate">
+                                <span className="text-xs text-slate-400 font-sans leading-tight whitespace-normal break-words">
                                   {role.description}
                                 </span>
                               </div>
@@ -551,7 +551,7 @@ export const DesignSystemPanel: React.FC = () => {
 
                           {/* Inline Hex Validation Error */}
                           {error && (
-                            <div className="text-[11px] font-mono text-rose-400 pl-9">
+                            <div className="text-xs font-mono text-rose-400 pl-9">
                               {error}
                             </div>
                           )}

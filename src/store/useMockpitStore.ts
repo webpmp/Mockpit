@@ -18,10 +18,12 @@ import {
   validateAndNormalizeHex,
   applyThemeCss,
   parseAndValidateStorage,
+  serializeStorageState,
   checkAndMigrateLegacyPalette,
   debouncedSaveDesignSystem,
   immediateSaveDesignSystem,
   DESIGN_SYSTEM_STORAGE_KEY,
+  LEGACY_PALETTE_STORAGE_KEY,
   DesignSystemStorageState,
 } from '../designSystem';
 import {
@@ -29,7 +31,6 @@ import {
   ActiveView,
   Binding,
   BindingGroup,
-  BUILTIN_PALETTES,
   ComponentInstance,
   ComponentType,
   CopiedComponentState,
@@ -116,7 +117,6 @@ const LOCAL_STORAGE_STACK_POS_KEY = 'mockpit_notification_stack_pos_v1';
 const LOCAL_STORAGE_STATE_KEY = 'mockpit_vehicle_state_v1';
 const LOCAL_STORAGE_DOCK_ORDER_KEY = 'mockpit_dock_order_v1';
 const LOCAL_STORAGE_SCREENS_KEY = 'mockpit_screens_v1';
-const LOCAL_STORAGE_PALETTE_KEY = 'mockpit_palette_v1';
 const LOCAL_STORAGE_TEXT_SCALE_KEY = 'mockpit_text_scale_v1';
 const LOCAL_STORAGE_GRID_KEY = 'mockpit_grid_config_v1';
 const LOCAL_STORAGE_VEHICLE_BG_KEY = 'mockpit_vehicle_bg_config_v1';
@@ -896,7 +896,7 @@ export function derivePaletteFromTheme(theme: Theme): PaletteConfig {
   };
 }
 
-function loadDesignSystemState(): {
+export function loadDesignSystemState(): {
   activeThemeId: string;
   userThemes: UserTheme[];
   activeTheme: Theme;
@@ -905,7 +905,12 @@ function loadDesignSystemState(): {
   if (typeof localStorage !== 'undefined') {
     storageState = checkAndMigrateLegacyPalette((k) => localStorage.getItem(k));
     if (storageState) {
-      immediateSaveDesignSystem(storageState);
+      try {
+        localStorage.setItem(DESIGN_SYSTEM_STORAGE_KEY, serializeStorageState(storageState));
+        localStorage.removeItem(LEGACY_PALETTE_STORAGE_KEY);
+      } catch (e) {
+        console.error('Failed to save migrated design system to localStorage', e);
+      }
     } else {
       const raw = localStorage.getItem(DESIGN_SYSTEM_STORAGE_KEY);
       storageState = parseAndValidateStorage(raw);
@@ -4936,11 +4941,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         localStorage.setItem(LOCAL_STORAGE_VEHICLE_BG_KEY, JSON.stringify(DEFAULT_VEHICLE_BACKGROUND));
         localStorage.setItem(LOCAL_STORAGE_CLIMATE_STATE_KEY, JSON.stringify(INITIAL_CLIMATE_STATE));
         localStorage.removeItem(LOCAL_STORAGE_ACTIVE_TRIP_KEY);
-        localStorage.removeItem(DESIGN_SYSTEM_STORAGE_KEY);
       } catch (e) {
         console.error('Failed to reset store data', e);
       }
-      applyThemeCss(FACTORY_PRESETS.midnight);
       return {
         screens: DEFAULT_SCREENS,
         componentsByScreen: resetState,
@@ -4963,10 +4966,6 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         isPlaying: false,
         progressSec: 102,
         favoritedTrackIds: ['t1', 't7'],
-        activeThemeId: 'midnight',
-        userThemes: [],
-        isDesignSystemOpen: false,
-        activePalette: derivePaletteFromTheme(FACTORY_PRESETS.midnight),
       };
     });
     if (playbackInterval) {
