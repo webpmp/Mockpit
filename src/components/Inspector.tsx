@@ -2924,8 +2924,8 @@ export const Inspector: React.FC<InspectorProps> = ({
                       <option value="false">Off</option>
                     </select>
                   </div>
-                  <div className="flex items-center justify-between gap-2 pl-6">
-                    <span className="text-[11px] text-slate-300 font-mono whitespace-nowrap">Color</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-300 font-mono whitespace-nowrap">Warning Color</span>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -2957,8 +2957,8 @@ export const Inspector: React.FC<InspectorProps> = ({
                       <option value="false">Off</option>
                     </select>
                   </div>
-                  <div className="flex items-center justify-between gap-2 pl-6">
-                    <span className="text-[11px] text-slate-300 font-mono whitespace-nowrap">Color</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-300 font-mono whitespace-nowrap">Warning Color</span>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -4356,6 +4356,8 @@ export const Inspector: React.FC<InspectorProps> = ({
                     key !== 'distanceTextColor' &&
                     key !== 'trafficDensity' &&
                     key !== 'grayscaleTraffic' &&
+                    key !== 'highwayGantry' &&
+                    key !== 'streetLight' &&
                     key !== 'showHeader' &&
                     key !== 'gearBarPosition' &&
                     key !== 'buttonLabel' &&
