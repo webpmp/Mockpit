@@ -495,7 +495,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
           animate={{ opacity: seatPopoverPos ? 1 : 0, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.95 }}
           transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-          className="seat-popover-portal fixed z-[10050] p-2 rounded-2xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden select-none flex flex-row items-stretch gap-2 w-max max-w-none whitespace-nowrap"
+          className="seat-popover-portal ds-scope fixed z-[10050] p-2 rounded-2xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden select-none flex flex-row items-stretch gap-2 w-max max-w-none whitespace-nowrap"
           style={{ top: seatPopoverPos?.top ?? -9999, left: seatPopoverPos?.left ?? -9999 }}
           onClick={(e) => e.stopPropagation()}
         >

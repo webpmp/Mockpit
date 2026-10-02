@@ -1,6 +1,28 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+@theme static {
+  --color-ds-background: #020617;
+  --color-ds-surface: #0f172a;
+  --color-ds-surface-raised: #1e293b;
+  --color-ds-surface-hover: #334155;
+  --color-ds-content: #f1f5f9;
+  --color-ds-content-secondary: #cbd5e1;
+  --color-ds-content-muted: #94a3b8;
+  --color-ds-content-subtle: #64748b;
+  --color-ds-content-disabled: #475569;
+  --color-ds-line-subtle: #1e293b;
+  --color-ds-line: #334155;
+  --color-ds-line-strong: #475569;
+  --color-ds-primary: #38bdf8;
+  --color-ds-primary-hover: #0ea5e9;
+  --color-ds-secondary: #3b82f6;
+  --color-ds-tertiary: #10b981;
+  --color-ds-success: #10b981;
+  --color-ds-warning: #f59e0b;
+  --color-ds-error: #ef4444;
+}
+
 html,
 body,
 #root {

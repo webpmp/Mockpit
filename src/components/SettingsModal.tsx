@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, X, Palette, Check, Info, Sparkles, RefreshCw, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2, Car, Keyboard, Type, Thermometer, Sliders, RotateCcw, Monitor, Move, ZoomIn } from 'lucide-react';
+import { Settings, X, Palette, Info, Grid, Eye, EyeOff, Magnet, Image, Upload, Trash2, Car, Keyboard, Type, Thermometer, Sliders, RotateCcw, Monitor, Move, ZoomIn } from 'lucide-react';
 import { useMockpitStore } from '../store/useMockpitStore';
-import { BUILTIN_PALETTES, PaletteConfig, PalettePresetId, VehicleBackgroundPosition, KeyboardSlideDirection, TextScalePreset, TEXT_SCALE_FACTORS } from '../types';
+import { VehicleBackgroundPosition, KeyboardSlideDirection, TextScalePreset, TEXT_SCALE_FACTORS } from '../types';
 import { getAvailableVehicles } from '../utils/vehicleAssets';
 
 export const SettingsModal: React.FC = () => {
@@ -9,8 +9,6 @@ export const SettingsModal: React.FC = () => {
   const toggleSettingsModal = useMockpitStore((s) => s.toggleSettingsModal);
   const setSettingsModalOpen = useMockpitStore((s) => s.setSettingsModalOpen);
   const screenMode = useMockpitStore((s) => s.screenMode);
-  const activePalette = useMockpitStore((s) => s.activePalette);
-  const setPalette = useMockpitStore((s) => s.setPalette);
 
   const textScale = useMockpitStore((s) => s.textScale);
   const setTextScale = useMockpitStore((s) => s.setTextScale);
@@ -52,11 +50,6 @@ export const SettingsModal: React.FC = () => {
     }
   }, [screenMode, isSettingsOpen, setSettingsModalOpen]);
 
-  // Local state for custom color pickers
-  const [customPrimary, setCustomPrimary] = useState(activePalette.primary || '#38bdf8');
-  const [customSecondary, setCustomSecondary] = useState(activePalette.secondary || '#3b82f6');
-  const [customTertiary, setCustomTertiary] = useState(activePalette.tertiary || '#10b981');
-
   // Local state for grid size input to avoid triggering confirmation mid-keystroke
   const [localGridSize, setLocalGridSize] = useState<number>(gridConfig.size || 10);
 
@@ -64,49 +57,7 @@ export const SettingsModal: React.FC = () => {
     setLocalGridSize(gridConfig.size);
   }, [gridConfig.size]);
 
-  // Keep local state in sync when activePalette changes externally or preset selected
-  useEffect(() => {
-    setCustomPrimary(activePalette.primary);
-    setCustomSecondary(activePalette.secondary);
-    setCustomTertiary(activePalette.tertiary);
-  }, [activePalette]);
-
   if (!isSettingsOpen || screenMode === 'presentation') return null;
-
-  const handleSelectPreset = (presetKey: Exclude<PalettePresetId, 'custom'>) => {
-    const preset = BUILTIN_PALETTES[presetKey];
-    setPalette(preset);
-  };
-
-  const handleCustomChange = (field: 'primary' | 'secondary' | 'tertiary', hex: string) => {
-    let p = customPrimary;
-    let s = customSecondary;
-    let t = customTertiary;
-
-    if (field === 'primary') {
-      p = hex;
-      setCustomPrimary(hex);
-    } else if (field === 'secondary') {
-      s = hex;
-      setCustomSecondary(hex);
-    } else if (field === 'tertiary') {
-      t = hex;
-      setCustomTertiary(hex);
-    }
-
-    const customConfig: PaletteConfig = {
-      id: 'custom',
-      name: 'Custom',
-      primary: p,
-      secondary: s,
-      tertiary: t,
-    };
-    setPalette(customConfig);
-  };
-
-  const handleResetToDefault = () => {
-    setPalette(BUILTIN_PALETTES.cyberSky);
-  };
 
   return (
     <div className="fixed top-16 right-0 bottom-[42px] z-40 w-80 sm:w-96 bg-slate-950/95 border-l border-slate-800 shadow-2xl flex flex-col transition-all duration-300 animate-in slide-in-from-right overflow-hidden">
@@ -127,7 +78,7 @@ export const SettingsModal: React.FC = () => {
               SYSTEM SETTINGS
             </h2>
             <p className="text-[10px] text-slate-400">
-              Palette &amp; Visual System
+              Visual System &amp; Canvas Settings
             </p>
           </div>
         </div>
@@ -142,180 +93,8 @@ export const SettingsModal: React.FC = () => {
 
       {/* Scrollable Content */}
       <div className="p-4 space-y-5 overflow-y-auto custom-scrollbar flex-1">
-        {/* Palette Section */}
-        <div className="space-y-3.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-200 font-mono">
-              <Palette className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
-              <span>COLOR PALETTE SYSTEM</span>
-            </div>
-            <button
-              onClick={handleResetToDefault}
-              className="text-[11px] text-slate-400 hover:text-sky-400 flex items-center gap-1 transition-colors cursor-pointer font-mono"
-              title="Reset Palette to Cyber Sky Default"
-            >
-              <RefreshCw className="w-3 h-3" />
-              <span>Reset</span>
-            </button>
-          </div>
-
-          {/* Presets Grid */}
-          <div className="grid grid-cols-1 gap-2.5">
-            {(Object.keys(BUILTIN_PALETTES) as Array<Exclude<PalettePresetId, 'custom'>>).map(
-              (key) => {
-                const preset = BUILTIN_PALETTES[key];
-                const isSelected = activePalette.id === key;
-
-                return (
-                  <button
-                    key={key}
-                    onClick={() => handleSelectPreset(key)}
-                    className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer group ${
-                      isSelected
-                        ? 'bg-slate-900 shadow-[0_0_12px_rgba(255,255,255,0.08)]'
-                        : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/60'
-                    }`}
-                    style={{
-                      borderColor: isSelected ? 'var(--color-primary)' : undefined,
-                    }}
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs font-bold font-mono ${
-                            isSelected ? 'text-slate-100' : 'text-slate-300 group-hover:text-slate-100'
-                          }`}
-                        >
-                          {preset.name}
-                        </span>
-                        {isSelected && (
-                          <span
-                            className="w-2 h-2 rounded-full shadow-[0_0_6px_currentColor]"
-                            style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
-                          />
-                        )}
-                      </div>
-
-                      {/* Swatches */}
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-sm"
-                          style={{ backgroundColor: preset.primary }}
-                          title={`Primary: ${preset.primary}`}
-                        />
-                        <span
-                          className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-sm"
-                          style={{ backgroundColor: preset.secondary }}
-                          title={`Secondary: ${preset.secondary}`}
-                        />
-                        <span
-                          className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-sm"
-                          style={{ backgroundColor: preset.tertiary }}
-                          title={`Tertiary: ${preset.tertiary}`}
-                        />
-                      </div>
-                    </div>
-
-                    {isSelected && (
-                      <Check className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary)' }} />
-                    )}
-                  </button>
-                );
-              }
-            )}
-          </div>
-
-          {/* Custom Palette Option */}
-          <div
-            className={`p-3.5 rounded-xl border transition-all space-y-3 ${
-              activePalette.id === 'custom'
-                ? 'bg-slate-900 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
-                : 'bg-slate-950/60 border-slate-800/80'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-bold text-slate-100 font-mono uppercase">
-                  Custom Color Palette
-                </span>
-              </div>
-              {activePalette.id === 'custom' && (
-                <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/30">
-                  ACTIVE
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-2.5 pt-0.5">
-              {/* Primary Color Picker */}
-              <div className="space-y-1 bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
-                <label className="text-[11px] font-bold text-slate-300 font-mono shrink-0">
-                  Primary
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={customPrimary}
-                    onChange={(e) => handleCustomChange('primary', e.target.value)}
-                    className="w-6 h-6 rounded border-0 bg-transparent cursor-pointer shrink-0"
-                  />
-                  <input
-                    type="text"
-                    value={customPrimary}
-                    onChange={(e) => handleCustomChange('primary', e.target.value)}
-                    className="w-20 bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-              </div>
-
-              {/* Secondary Color Picker */}
-              <div className="space-y-1 bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
-                <label className="text-[11px] font-bold text-slate-300 font-mono shrink-0">
-                  Secondary
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={customSecondary}
-                    onChange={(e) => handleCustomChange('secondary', e.target.value)}
-                    className="w-6 h-6 rounded border-0 bg-transparent cursor-pointer shrink-0"
-                  />
-                  <input
-                    type="text"
-                    value={customSecondary}
-                    onChange={(e) => handleCustomChange('secondary', e.target.value)}
-                    className="w-20 bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-              </div>
-
-              {/* Tertiary Color Picker */}
-              <div className="space-y-1 bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex items-center justify-between gap-2">
-                <label className="text-[11px] font-bold text-slate-300 font-mono shrink-0">
-                  Tertiary
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={customTertiary}
-                    onChange={(e) => handleCustomChange('tertiary', e.target.value)}
-                    className="w-6 h-6 rounded border-0 bg-transparent cursor-pointer shrink-0"
-                  />
-                  <input
-                    type="text"
-                    value={customTertiary}
-                    onChange={(e) => handleCustomChange('tertiary', e.target.value)}
-                    className="w-20 bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Temperature Gradient Section */}
-        <div className="space-y-3.5 pt-4 border-t border-slate-800/80">
+        <div className="space-y-3.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-200 font-mono">
               <Thermometer className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />

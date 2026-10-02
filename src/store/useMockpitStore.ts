@@ -1,6 +1,30 @@
 import { create } from 'zustand';
 import { SEED_COMPONENTS } from '../data/seedProject';
 import {
+  RoleId,
+  FactoryId,
+  UserTheme,
+  Theme,
+  FACTORY_PRESETS,
+  FACTORY_THEME_LIST,
+  isFactoryPreset,
+  resolveTheme,
+  createUserThemeFromPreset,
+  updateUserThemeColor,
+  validateThemeName,
+  duplicateTheme as duplicateUserTheme,
+  resetThemeColors,
+  getDeleteFallbackThemeId,
+  validateAndNormalizeHex,
+  applyThemeCss,
+  parseAndValidateStorage,
+  checkAndMigrateLegacyPalette,
+  debouncedSaveDesignSystem,
+  immediateSaveDesignSystem,
+  DESIGN_SYSTEM_STORAGE_KEY,
+  DesignSystemStorageState,
+} from '../designSystem';
+import {
   ActiveInputState,
   ActiveView,
   Binding,
@@ -837,15 +861,6 @@ function loadSavedDockOrder(screens: ScreenDefinition[]): string[] {
   return REQUIRED_DOCK_SCREEN_IDS.filter((id) => screens.some((s) => s.id === id));
 }
 
-export function applyCssVariables(palette: PaletteConfig) {
-  if (typeof document !== 'undefined') {
-    const root = document.documentElement;
-    root.style.setProperty('--color-primary', palette.primary);
-    root.style.setProperty('--color-secondary', palette.secondary);
-    root.style.setProperty('--color-tertiary', palette.tertiary);
-  }
-}
-
 export function applyTextScaleVariables(scalePreset: TextScalePreset) {
   if (typeof document !== 'undefined') {
     const root = document.documentElement;
@@ -871,23 +886,46 @@ function loadSavedTextScale(): TextScalePreset {
   return defaultScale;
 }
 
-function loadSavedPalette(): PaletteConfig {
-  try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_PALETTE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && parsed.primary && parsed.secondary && parsed.tertiary) {
-        applyCssVariables(parsed);
-        return parsed;
-      }
-    }
-  } catch (e) {
-    console.error('Failed to load saved palette from localStorage', e);
-  }
-  const defaultPalette = BUILTIN_PALETTES.cyberSky;
-  applyCssVariables(defaultPalette);
-  return defaultPalette;
+export function derivePaletteFromTheme(theme: Theme): PaletteConfig {
+  return {
+    id: theme.id,
+    name: theme.name,
+    primary: theme.colors.primary,
+    secondary: theme.colors.secondary,
+    tertiary: theme.colors.tertiary,
+  };
 }
+
+function loadDesignSystemState(): {
+  activeThemeId: string;
+  userThemes: UserTheme[];
+  activeTheme: Theme;
+} {
+  let storageState: DesignSystemStorageState | null = null;
+  if (typeof localStorage !== 'undefined') {
+    storageState = checkAndMigrateLegacyPalette((k) => localStorage.getItem(k));
+    if (storageState) {
+      immediateSaveDesignSystem(storageState);
+    } else {
+      const raw = localStorage.getItem(DESIGN_SYSTEM_STORAGE_KEY);
+      storageState = parseAndValidateStorage(raw);
+    }
+  } else {
+    storageState = parseAndValidateStorage(null);
+  }
+
+  const activeTheme = resolveTheme(storageState.activeThemeId, storageState.userThemes);
+  applyThemeCss(activeTheme);
+
+  return {
+    activeThemeId: storageState.activeThemeId,
+    userThemes: storageState.userThemes,
+    activeTheme,
+  };
+}
+
+const initialDesignSystem = loadDesignSystemState();
+const initialPalette = derivePaletteFromTheme(initialDesignSystem.activeTheme);
 
 function loadSavedGridConfig(): GridConfig {
   try {
@@ -1095,8 +1133,19 @@ interface MockpitStore {
   setSettingsModalOpen: (open: boolean) => void;
   textScale: TextScalePreset;
   setTextScale: (scale: TextScalePreset) => void;
+  // Design System (Colors & Themes)
+  activeThemeId: string;
+  userThemes: UserTheme[];
+  isDesignSystemOpen: boolean;
+  setIsDesignSystemOpen: (isOpen: boolean) => void;
+  toggleDesignSystem: () => void;
+  setActiveTheme: (id: string) => void;
+  setRoleColor: (roleId: RoleId, hex: string) => void;
+  resetActiveTheme: () => void;
+  renameTheme: (id: string, name: string) => { success: boolean; error?: string };
+  duplicateTheme: (id: string) => string | null;
+  deleteTheme: (id: string) => void;
   activePalette: PaletteConfig;
-  setPalette: (palette: PaletteConfig) => void;
   gridConfig: GridConfig;
   setGridConfig: (config: Partial<GridConfig>) => void;
   toggleGridVisibility: () => void;
@@ -1314,7 +1363,6 @@ export const isPresetActive = (scenario: string, vs: VehicleState): boolean => {
 const initialScreensList = loadSavedScreens();
 const initialScreens = loadSavedComponentsByScreen();
 const initialNotifs = loadSavedNotificationComponents();
-const initialPalette = loadSavedPalette();
 
 function getInitialPlaybackTrackId(screens: Record<string, ComponentInstance[]>): string {
   try {
@@ -2052,15 +2100,174 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     set({ textScale: scale });
   },
 
+  // Design System
+  activeThemeId: initialDesignSystem.activeThemeId,
+  userThemes: initialDesignSystem.userThemes,
+  isDesignSystemOpen: false,
+  setIsDesignSystemOpen: (isOpen) => set({ isDesignSystemOpen: isOpen }),
+  toggleDesignSystem: () => set((state) => ({ isDesignSystemOpen: !state.isDesignSystemOpen })),
   activePalette: initialPalette,
-  setPalette: (palette) => {
-    applyCssVariables(palette);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_PALETTE_KEY, JSON.stringify(palette));
-    } catch (e) {
-      console.error('Failed to save palette to localStorage', e);
+
+  setActiveTheme: (id) => {
+    const { userThemes } = get();
+    const resolved = resolveTheme(id, userThemes);
+    applyThemeCss(resolved);
+    const derived = derivePaletteFromTheme(resolved);
+    set({ activeThemeId: id, activePalette: derived });
+    immediateSaveDesignSystem({
+      version: 1,
+      activeThemeId: id,
+      userThemes,
+    });
+  },
+
+  setRoleColor: (roleId, hex) => {
+    const { activeThemeId, userThemes } = get();
+    const normalized = validateAndNormalizeHex(hex);
+    if (!normalized) return;
+
+    if (isFactoryPreset(activeThemeId)) {
+      const preset = FACTORY_PRESETS[activeThemeId];
+      const userCopy = createUserThemeFromPreset(preset, userThemes, { [roleId]: normalized });
+      const updatedUserThemes = [...userThemes, userCopy];
+      applyThemeCss(userCopy);
+      const derived = derivePaletteFromTheme(userCopy);
+      set({
+        activeThemeId: userCopy.id,
+        userThemes: updatedUserThemes,
+        activePalette: derived,
+      });
+      debouncedSaveDesignSystem({
+        version: 1,
+        activeThemeId: userCopy.id,
+        userThemes: updatedUserThemes,
+      });
+    } else {
+      const updatedUserThemes = userThemes.map((t) => {
+        if (t.id === activeThemeId) {
+          return updateUserThemeColor(t, roleId, normalized);
+        }
+        return t;
+      });
+      const active = updatedUserThemes.find((t) => t.id === activeThemeId) || resolveTheme(activeThemeId, updatedUserThemes);
+      applyThemeCss(active);
+      const derived = derivePaletteFromTheme(active);
+      set({
+        userThemes: updatedUserThemes,
+        activePalette: derived,
+      });
+      debouncedSaveDesignSystem({
+        version: 1,
+        activeThemeId,
+        userThemes: updatedUserThemes,
+      });
     }
-    set({ activePalette: palette });
+  },
+
+  resetActiveTheme: () => {
+    const { activeThemeId, userThemes } = get();
+    if (isFactoryPreset(activeThemeId)) return;
+    const target = userThemes.find((t) => t.id === activeThemeId);
+    if (!target) return;
+
+    const reset = resetThemeColors(target);
+    const updatedUserThemes = userThemes.map((t) => (t.id === activeThemeId ? reset : t));
+    applyThemeCss(reset);
+    const derived = derivePaletteFromTheme(reset);
+    set({
+      userThemes: updatedUserThemes,
+      activePalette: derived,
+    });
+    immediateSaveDesignSystem({
+      version: 1,
+      activeThemeId,
+      userThemes: updatedUserThemes,
+    });
+  },
+
+  renameTheme: (id, name) => {
+    const { userThemes, activeThemeId } = get();
+    if (isFactoryPreset(id)) {
+      return { success: false, error: 'Cannot rename a factory preset' };
+    }
+    const target = userThemes.find((t) => t.id === id);
+    if (!target) {
+      return { success: false, error: 'Theme not found' };
+    }
+
+    const allThemes = [...FACTORY_THEME_LIST, ...userThemes];
+    const validation = validateThemeName(name, id, allThemes);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    const updatedUserThemes = userThemes.map((t) =>
+      t.id === id ? { ...t, name: validation.trimmed } : t
+    );
+    const active = resolveTheme(activeThemeId, updatedUserThemes);
+    const derived = derivePaletteFromTheme(active);
+
+    set({
+      userThemes: updatedUserThemes,
+      activePalette: derived,
+    });
+    immediateSaveDesignSystem({
+      version: 1,
+      activeThemeId,
+      userThemes: updatedUserThemes,
+    });
+    return { success: true };
+  },
+
+  duplicateTheme: (id) => {
+    const { userThemes } = get();
+    if (isFactoryPreset(id)) return null;
+    const target = userThemes.find((t) => t.id === id);
+    if (!target) return null;
+
+    const allThemes = [...FACTORY_THEME_LIST, ...userThemes];
+    const duplicate = duplicateUserTheme(target, allThemes);
+    const updatedUserThemes = [...userThemes, duplicate];
+
+    applyThemeCss(duplicate);
+    const derived = derivePaletteFromTheme(duplicate);
+
+    set({
+      activeThemeId: duplicate.id,
+      userThemes: updatedUserThemes,
+      activePalette: derived,
+    });
+    immediateSaveDesignSystem({
+      version: 1,
+      activeThemeId: duplicate.id,
+      userThemes: updatedUserThemes,
+    });
+    return duplicate.id;
+  },
+
+  deleteTheme: (id) => {
+    const { userThemes, activeThemeId } = get();
+    if (isFactoryPreset(id)) return;
+    const target = userThemes.find((t) => t.id === id);
+    if (!target) return;
+
+    const fallbackId = getDeleteFallbackThemeId(target, activeThemeId);
+    const updatedUserThemes = userThemes.filter((t) => t.id !== id);
+    const nextActive = resolveTheme(fallbackId, updatedUserThemes);
+
+    applyThemeCss(nextActive);
+    const derived = derivePaletteFromTheme(nextActive);
+
+    set({
+      activeThemeId: fallbackId,
+      userThemes: updatedUserThemes,
+      activePalette: derived,
+    });
+    immediateSaveDesignSystem({
+      version: 1,
+      activeThemeId: fallbackId,
+      userThemes: updatedUserThemes,
+    });
   },
 
   gridConfig: loadSavedGridConfig(),
@@ -3088,6 +3295,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     set((state) => ({
       screenMode: mode,
       isSettingsOpen: mode === 'presentation' ? false : state.isSettingsOpen,
+      isDesignSystemOpen: mode === 'editor' ? state.isDesignSystemOpen : false,
     }));
   },
 
@@ -4728,9 +4936,11 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         localStorage.setItem(LOCAL_STORAGE_VEHICLE_BG_KEY, JSON.stringify(DEFAULT_VEHICLE_BACKGROUND));
         localStorage.setItem(LOCAL_STORAGE_CLIMATE_STATE_KEY, JSON.stringify(INITIAL_CLIMATE_STATE));
         localStorage.removeItem(LOCAL_STORAGE_ACTIVE_TRIP_KEY);
+        localStorage.removeItem(DESIGN_SYSTEM_STORAGE_KEY);
       } catch (e) {
         console.error('Failed to reset store data', e);
       }
+      applyThemeCss(FACTORY_PRESETS.midnight);
       return {
         screens: DEFAULT_SCREENS,
         componentsByScreen: resetState,
@@ -4753,6 +4963,10 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         isPlaying: false,
         progressSec: 102,
         favoritedTrackIds: ['t1', 't7'],
+        activeThemeId: 'midnight',
+        userThemes: [],
+        isDesignSystemOpen: false,
+        activePalette: derivePaletteFromTheme(FACTORY_PRESETS.midnight),
       };
     });
     if (playbackInterval) {

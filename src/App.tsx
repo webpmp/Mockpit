@@ -5,6 +5,7 @@ import { HeaderNav } from './components/HeaderNav';
 import { Sidebar } from './components/Sidebar';
 import { Canvas } from './components/Canvas';
 import { Inspector } from './components/Inspector';
+import { DesignSystemPanel } from './components/designSystem/DesignSystemPanel';
 import { DebugStatePanel } from './components/DebugStatePanel';
 import { SettingsModal } from './components/SettingsModal';
 import { AuditPanel } from './components/hmi/AuditPanel';
@@ -15,6 +16,7 @@ import { ParticipantSessionComplete } from './testing/components/ParticipantSess
 
 export default function App() {
   const screenMode = useMockpitStore((s) => s.screenMode);
+  const isDesignSystemOpen = useMockpitStore((s) => s.isDesignSystemOpen);
   const isParticipantMode = useUserTestingStore((s) => s.isParticipantMode);
 
   useEffect(() => {
@@ -132,8 +134,8 @@ export default function App() {
               <Canvas />
             </div>
 
-            {/* Right Inspector Panel (Editor Mode) */}
-            {screenMode === 'editor' && <Inspector />}
+            {/* Right Inspector Panel / Design System Panel (Editor Mode) */}
+            {screenMode === 'editor' && (isDesignSystemOpen ? <DesignSystemPanel /> : <Inspector />)}
           </>
         )}
       </div>

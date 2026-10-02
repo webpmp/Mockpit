@@ -81,7 +81,7 @@ export const TEXT_SCALE_FACTORS: Record<TextScalePreset, number> = {
 export type PalettePresetId = 'cyberSky' | 'neonAmber' | 'electricViolet' | 'emeraldMint' | 'custom';
 
 export type PaletteConfig = {
-  id: PalettePresetId;
+  id: string;
   name: string;
   primary: string;   // Hex e.g. "#38bdf8"
   secondary: string; // Hex e.g. "#3b82f6"

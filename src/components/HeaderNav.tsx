@@ -20,6 +20,7 @@ import {
   Trash2,
   ShieldCheck,
   FlaskConical,
+  Palette,
 } from 'lucide-react';
 
 export const HeaderNav: React.FC = () => {
@@ -41,6 +42,8 @@ export const HeaderNav: React.FC = () => {
   const dockOrder = useMockpitStore((s) => s.dockOrder);
   const toggleDockMembership = useMockpitStore((s) => s.toggleDockMembership);
   const setAboutModalOpen = useMockpitStore((s) => s.setAboutModalOpen);
+  const isDesignSystemOpen = useMockpitStore((s) => s.isDesignSystemOpen);
+  const toggleDesignSystem = useMockpitStore((s) => s.toggleDesignSystem);
 
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -735,6 +738,30 @@ export const HeaderNav: React.FC = () => {
             </button>
           )}
 
+          {/* Design System Button (Editor Mode Only) */}
+          {screenMode === 'editor' && (
+            <button
+              onClick={toggleDesignSystem}
+              className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
+                isDesignSystemOpen
+                  ? 'bg-slate-900 border'
+                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+              style={
+                isDesignSystemOpen
+                  ? {
+                      borderColor: 'var(--color-primary)',
+                      color: 'var(--color-primary)',
+                      boxShadow: '0 0 10px color-mix(in srgb, var(--color-primary) 30%, transparent)',
+                    }
+                  : undefined
+              }
+              title="Design system"
+            >
+              <Palette className="w-4 h-4" />
+            </button>
+          )}
+
           <button
             onClick={toggleSettingsModal}
             className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
@@ -751,7 +778,7 @@ export const HeaderNav: React.FC = () => {
                   }
                 : undefined
             }
-            title="Settings (Palette System)"
+            title="Settings"
           >
             <Settings className="w-4 h-4" />
           </button>
