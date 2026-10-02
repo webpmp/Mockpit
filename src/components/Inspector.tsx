@@ -805,6 +805,26 @@ const VEHICLE_STATE_FIELDS: Array<{ field: BindingStateField; label: string; typ
 const CONDITIONS: BindingCondition[] = ['<', '>', '=', '!=', '>=', '<='];
 const TARGET_PROPS: TargetProp[] = ['color', 'visible', 'opacity', 'text', 'icon', 'severity'];
 
+const InspectorCheckbox: React.FC<
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> & {
+    onChange: (checked: boolean) => void;
+    wrapperClassName?: string;
+  }
+> = ({ onChange, className = '', wrapperClassName = '', ...rest }) => (
+  <span className={`relative inline-flex w-4 h-4 shrink-0 ${wrapperClassName}`}>
+    <input
+      type="checkbox"
+      onChange={(e) => onChange(e.target.checked)}
+      className={`peer appearance-none w-4 h-4 rounded bg-slate-900 border border-slate-700 checked:bg-sky-500 checked:border-sky-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 cursor-pointer ${className}`}
+      {...rest}
+    />
+    <Check
+      className="absolute inset-0 m-auto w-3 h-3 text-slate-950 pointer-events-none hidden peer-checked:block"
+      strokeWidth={3}
+    />
+  </span>
+);
+
 const GeometryInput: React.FC<{
   label: string;
   value: number;
@@ -1268,16 +1288,15 @@ export const Inspector: React.FC<InspectorProps> = ({
         {isNotifComp && selectedComp && (
           <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
             <label className="flex items-start gap-2 cursor-pointer min-w-0">
-              <input
-                type="checkbox"
+              <InspectorCheckbox
                 data-testid="inspector-notification-active-toggle"
                 checked={selectedComp.staticProps?.enabled !== 'false'}
-                onChange={(e) => {
+                onChange={(checked) => {
                   updateComponentStaticProps(selectedComp.id, {
-                    enabled: e.target.checked ? 'true' : 'false',
+                    enabled: checked ? 'true' : 'false',
                   });
                 }}
-                className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500 mt-0.5"
+                wrapperClassName="mt-0.5"
               />
               <div className="flex flex-col">
                 <span className={`font-bold ${
@@ -1324,13 +1343,11 @@ export const Inspector: React.FC<InspectorProps> = ({
               const headerShown = selectedComp.staticProps.showHeader !== 'false';
               return (
                 <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                  <InspectorCheckbox
                     checked={headerShown}
-                    onChange={(e) => handleStaticPropChange('showHeader', e.target.checked ? 'true' : 'false')}
+                    onChange={(checked) => handleStaticPropChange('showHeader', checked ? 'true' : 'false')}
                     aria-label="Show header"
                     title="Show header"
-                    className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
                   />
                   <span className={`shrink-0 text-[11px] font-mono font-bold uppercase ${headerShown ? 'text-slate-400' : 'text-slate-600'}`}>
                     Header Label
@@ -2152,13 +2169,12 @@ export const Inspector: React.FC<InspectorProps> = ({
                   {/* Auto-Dismiss Controls */}
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
                   <label className="flex items-start gap-2 cursor-pointer min-w-0">
-                    <input
-                      type="checkbox"
+                    <InspectorCheckbox
                       checked={selectedComp.staticProps.autoDismissEnabled === 'true'}
-                      onChange={(e) =>
-                        handleStaticPropChange('autoDismissEnabled', e.target.checked ? 'true' : 'false')
+                      onChange={(checked) =>
+                        handleStaticPropChange('autoDismissEnabled', checked ? 'true' : 'false')
                       }
-                      className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500 mt-0.5"
+                      wrapperClassName="mt-0.5"
                     />
                     <div className="flex flex-col">
                       <span className={`text-[11px] font-mono font-bold block ${
@@ -2435,13 +2451,11 @@ export const Inspector: React.FC<InspectorProps> = ({
                 </label>
                 <div className="pt-1">
                   <label className="flex items-center gap-2 cursor-pointer min-w-0">
-                    <input
-                      type="checkbox"
+                    <InspectorCheckbox
                       checked={selectedComp.staticProps.showNotificationPreview !== 'false'}
-                      onChange={(e) =>
-                        handleStaticPropChange('showNotificationPreview', e.target.checked ? 'true' : 'false')
+                      onChange={(checked) =>
+                        handleStaticPropChange('showNotificationPreview', checked ? 'true' : 'false')
                       }
-                      className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
                     />
                     <span className={`text-[11px] font-mono ${
                       selectedComp.staticProps.showNotificationPreview !== 'false' ? 'text-slate-300' : 'text-slate-600'
@@ -2802,11 +2816,9 @@ export const Inspector: React.FC<InspectorProps> = ({
                   </div>
                   <div className="pt-1 border-t border-slate-700/40">
                     <label className="flex items-center gap-2 cursor-pointer min-w-0">
-                      <input
-                        type="checkbox"
+                      <InspectorCheckbox
                         checked={selectedComp.staticProps.grayscaleTraffic !== 'false'}
-                        onChange={(e) => handleStaticPropChange('grayscaleTraffic', e.target.checked ? 'true' : 'false')}
-                        className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                        onChange={(checked) => handleStaticPropChange('grayscaleTraffic', checked ? 'true' : 'false')}
                       />
                       <span className={`text-[11px] font-mono ${
                         selectedComp.staticProps.grayscaleTraffic !== 'false' ? 'text-slate-300' : 'text-slate-600'
@@ -2825,11 +2837,9 @@ export const Inspector: React.FC<InspectorProps> = ({
                   <div className="space-y-1.5 pt-1">
                     <div>
                       <label className="flex items-center gap-2 cursor-pointer min-w-0">
-                        <input
-                          type="checkbox"
+                        <InspectorCheckbox
                           checked={selectedComp.staticProps.streetLight !== 'false'}
-                          onChange={(e) => handleStaticPropChange('streetLight', e.target.checked ? 'true' : 'false')}
-                          className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                          onChange={(checked) => handleStaticPropChange('streetLight', checked ? 'true' : 'false')}
                         />
                         <span className={`text-[11px] font-mono ${
                           selectedComp.staticProps.streetLight !== 'false' ? 'text-slate-300' : 'text-slate-600'
@@ -2840,11 +2850,9 @@ export const Inspector: React.FC<InspectorProps> = ({
                     </div>
                     <div className="pt-1 border-t border-slate-700/40">
                       <label className="flex items-center gap-2 cursor-pointer min-w-0">
-                        <input
-                          type="checkbox"
+                        <InspectorCheckbox
                           checked={selectedComp.staticProps.highwayGantry !== 'false'}
-                          onChange={(e) => handleStaticPropChange('highwayGantry', e.target.checked ? 'true' : 'false')}
-                          className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                          onChange={(checked) => handleStaticPropChange('highwayGantry', checked ? 'true' : 'false')}
                         />
                         <span className={`text-[11px] font-mono ${
                           selectedComp.staticProps.highwayGantry !== 'false' ? 'text-slate-300' : 'text-slate-600'
@@ -2870,12 +2878,10 @@ export const Inspector: React.FC<InspectorProps> = ({
                       <>
                         <div className="flex items-center justify-between gap-2">
                           <label className="flex items-center gap-2 cursor-pointer min-w-0">
-                            <input
-                              type="checkbox"
+                            <InspectorCheckbox
                               checked={shown}
-                              onChange={(e) => handleStaticPropChange('speedLimitVisible', e.target.checked ? 'true' : 'false')}
+                              onChange={(checked) => handleStaticPropChange('speedLimitVisible', checked ? 'true' : 'false')}
                               aria-label="Show speed limit sign"
-                              className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
                             />
                             <span className={`text-[11px] font-mono ${shown ? 'text-slate-300' : 'text-slate-600'}`}>Speed Limit</span>
                           </label>
