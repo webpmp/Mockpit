@@ -1266,32 +1266,32 @@ export const Inspector: React.FC<InspectorProps> = ({
         )}
 
         {isNotifComp && selectedComp && (
-          <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="font-bold text-slate-200">Active Status</span>
-              <span className="text-[10px] text-slate-400">
-                {selectedComp.staticProps?.enabled !== 'false'
-                  ? 'Active — triggers when conditions are met'
-                  : 'Inactive — kept in library without triggering'}
-              </span>
-            </div>
-            <button
-              type="button"
-              data-testid="inspector-notification-active-toggle"
-              onClick={() => {
-                const currentEnabled = selectedComp.staticProps?.enabled !== 'false';
-                updateComponentStaticProps(selectedComp.id, {
-                  enabled: currentEnabled ? 'false' : 'true',
-                });
-              }}
-              className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all cursor-pointer border ${
-                selectedComp.staticProps?.enabled !== 'false'
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-sm'
-                  : 'bg-slate-800 text-slate-400 border-slate-700'
-              }`}
-            >
-              {selectedComp.staticProps?.enabled !== 'false' ? 'Active' : 'Inactive'}
-            </button>
+          <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+            <label className="flex items-start gap-2 cursor-pointer min-w-0">
+              <input
+                type="checkbox"
+                data-testid="inspector-notification-active-toggle"
+                checked={selectedComp.staticProps?.enabled !== 'false'}
+                onChange={(e) => {
+                  updateComponentStaticProps(selectedComp.id, {
+                    enabled: e.target.checked ? 'true' : 'false',
+                  });
+                }}
+                className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500 mt-0.5"
+              />
+              <div className="flex flex-col">
+                <span className={`font-bold ${
+                  selectedComp.staticProps?.enabled !== 'false' ? 'text-slate-200' : 'text-slate-500'
+                }`}>
+                  Active Status
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {selectedComp.staticProps?.enabled !== 'false'
+                    ? 'Active — triggers when conditions are met'
+                    : 'Inactive — kept in library without triggering'}
+                </span>
+              </div>
+            </label>
           </div>
         )}
 
@@ -2151,26 +2151,28 @@ export const Inspector: React.FC<InspectorProps> = ({
 
                   {/* Auto-Dismiss Controls */}
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[11px] font-mono text-slate-300 font-bold block">Auto-Dismiss</span>
-                      <span className="text-[10px] text-slate-400">Slide off screen after song start</span>
+                  <label className="flex items-start gap-2 cursor-pointer min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={selectedComp.staticProps.autoDismissEnabled === 'true'}
+                      onChange={(e) =>
+                        handleStaticPropChange('autoDismissEnabled', e.target.checked ? 'true' : 'false')
+                      }
+                      className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500 mt-0.5"
+                    />
+                    <div className="flex flex-col">
+                      <span className={`text-[11px] font-mono font-bold block ${
+                        selectedComp.staticProps.autoDismissEnabled === 'true' ? 'text-slate-300' : 'text-slate-600'
+                      }`}>
+                        Auto-Dismiss
+                      </span>
+                      <span className={`text-[10px] ${
+                        selectedComp.staticProps.autoDismissEnabled === 'true' ? 'text-slate-400' : 'text-slate-500'
+                      }`}>
+                        Slide off screen after song start
+                      </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const current = selectedComp.staticProps.autoDismissEnabled === 'true';
-                        handleStaticPropChange('autoDismissEnabled', current ? 'false' : 'true');
-                      }}
-                      className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all border ${
-                        selectedComp.staticProps.autoDismissEnabled === 'true'
-                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/50'
-                          : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
-                      }`}
-                    >
-                      {selectedComp.staticProps.autoDismissEnabled === 'true' ? 'ON' : 'OFF'}
-                    </button>
-                  </div>
+                  </label>
 
                   {/* Auto-Dismiss Options: Slide Direction and Delay */}
                   {selectedComp.staticProps.autoDismissEnabled === 'true' && (
@@ -2431,16 +2433,22 @@ export const Inspector: React.FC<InspectorProps> = ({
                   <span>Notification Privacy</span>
                   <span className="text-[9px] text-sky-400 font-normal">Incoming Messages</span>
                 </label>
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-slate-300 font-mono">Show Message Preview</span>
-                  <input
-                    type="checkbox"
-                    checked={selectedComp.staticProps.showNotificationPreview !== 'false'}
-                    onChange={(e) =>
-                      handleStaticPropChange('showNotificationPreview', e.target.checked ? 'true' : 'false')
-                    }
-                    className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
-                  />
+                <div className="pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={selectedComp.staticProps.showNotificationPreview !== 'false'}
+                      onChange={(e) =>
+                        handleStaticPropChange('showNotificationPreview', e.target.checked ? 'true' : 'false')
+                      }
+                      className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                    />
+                    <span className={`text-[11px] font-mono ${
+                      selectedComp.staticProps.showNotificationPreview !== 'false' ? 'text-slate-300' : 'text-slate-600'
+                    }`}>
+                      Show Message Preview
+                    </span>
+                  </label>
                 </div>
               </div>
             )}
@@ -2792,14 +2800,20 @@ export const Inspector: React.FC<InspectorProps> = ({
                       />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-700/40">
-                    <span className="text-[11px] text-slate-300 font-mono">Grayscale Traffic Vehicles</span>
-                    <input
-                      type="checkbox"
-                      checked={selectedComp.staticProps.grayscaleTraffic !== 'false'}
-                      onChange={(e) => handleStaticPropChange('grayscaleTraffic', e.target.checked ? 'true' : 'false')}
-                      className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
-                    />
+                  <div className="pt-1 border-t border-slate-700/40">
+                    <label className="flex items-center gap-2 cursor-pointer min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedComp.staticProps.grayscaleTraffic !== 'false'}
+                        onChange={(e) => handleStaticPropChange('grayscaleTraffic', e.target.checked ? 'true' : 'false')}
+                        className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                      />
+                      <span className={`text-[11px] font-mono ${
+                        selectedComp.staticProps.grayscaleTraffic !== 'false' ? 'text-slate-300' : 'text-slate-600'
+                      }`}>
+                        Grayscale Traffic Vehicles
+                      </span>
+                    </label>
                   </div>
                 </div>
 
@@ -2809,79 +2823,88 @@ export const Inspector: React.FC<InspectorProps> = ({
                     Road Scenery
                   </span>
                   <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-slate-300 font-mono">Street Light</span>
-                      <input
-                        type="checkbox"
-                        checked={selectedComp.staticProps.streetLight !== 'false'}
-                        onChange={(e) => handleStaticPropChange('streetLight', e.target.checked ? 'true' : 'false')}
-                        className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
-                      />
+                    <div>
+                      <label className="flex items-center gap-2 cursor-pointer min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={selectedComp.staticProps.streetLight !== 'false'}
+                          onChange={(e) => handleStaticPropChange('streetLight', e.target.checked ? 'true' : 'false')}
+                          className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                        />
+                        <span className={`text-[11px] font-mono ${
+                          selectedComp.staticProps.streetLight !== 'false' ? 'text-slate-300' : 'text-slate-600'
+                        }`}>
+                          Street Light
+                        </span>
+                      </label>
                     </div>
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-700/40">
-                      <span className="text-[11px] text-slate-300 font-mono">Highway Gantry</span>
-                      <input
-                        type="checkbox"
-                        checked={selectedComp.staticProps.highwayGantry !== 'false'}
-                        onChange={(e) => handleStaticPropChange('highwayGantry', e.target.checked ? 'true' : 'false')}
-                        className="w-4 h-4 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
-                      />
+                    <div className="pt-1 border-t border-slate-700/40">
+                      <label className="flex items-center gap-2 cursor-pointer min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={selectedComp.staticProps.highwayGantry !== 'false'}
+                          onChange={(e) => handleStaticPropChange('highwayGantry', e.target.checked ? 'true' : 'false')}
+                          className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                        />
+                        <span className={`text-[11px] font-mono ${
+                          selectedComp.staticProps.highwayGantry !== 'false' ? 'text-slate-300' : 'text-slate-600'
+                        }`}>
+                          Highway Bridge
+                        </span>
+                      </label>
                     </div>
                   </div>
                 </div>
 
                 {/* Speed Limit Settings */}
                 <div className="bg-slate-800/80 p-2.5 rounded-lg border border-slate-700/60 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
-                      Speed Limit Sign
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleStaticPropChange(
-                          'speedLimitVisible',
-                          selectedComp.staticProps.speedLimitVisible === 'false' ? 'true' : 'false'
-                        )
-                      }
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono transition-colors ${
-                        selectedComp.staticProps.speedLimitVisible !== 'false'
-                          ? 'bg-sky-500 text-slate-950'
-                          : 'bg-slate-900 text-slate-400 border border-slate-700'
-                      }`}
-                    >
-                      {selectedComp.staticProps.speedLimitVisible !== 'false' ? 'SHOW' : 'HIDE'}
-                    </button>
-                  </div>
+                  <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
+                    Speed Limit Sign
+                  </span>
 
-                  {selectedComp.staticProps.speedLimitVisible !== 'false' && (
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <div>
-                        <label className="text-[9px] text-slate-400 block font-mono">Value</label>
-                        <input
-                          type="text"
-                          value={selectedComp.staticProps.speedLimitValue || '65'}
-                          onChange={(e) => handleStaticPropChange('speedLimitValue', e.target.value)}
-                          className="w-full bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] text-slate-400 block font-mono">Position</label>
-                        <select
-                          value={
-                            selectedComp.staticProps.speedLimitPosition === 'bottom-left'
-                              ? 'bottom-left'
-                              : 'bottom-right'
-                          }
-                          onChange={(e) => handleStaticPropChange('speedLimitPosition', e.target.value)}
-                          className="w-full bg-slate-900 px-1.5 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
-                        >
-                          <option value="bottom-right">Bottom Right</option>
-                          <option value="bottom-left">Bottom Left</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
+                  {(() => {
+                    const shown = selectedComp.staticProps.speedLimitVisible !== 'false';
+                    const edit = (props: Record<string, string>) =>
+                      updateComponentStaticProps(selectedComp.id, shown ? props : { ...props, speedLimitVisible: 'true' });
+                    return (
+                      <>
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="flex items-center gap-2 cursor-pointer min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={shown}
+                              onChange={(e) => handleStaticPropChange('speedLimitVisible', e.target.checked ? 'true' : 'false')}
+                              aria-label="Show speed limit sign"
+                              className="w-4 h-4 shrink-0 rounded bg-slate-900 border border-slate-700 text-sky-500 focus:ring-0 cursor-pointer accent-sky-500"
+                            />
+                            <span className={`text-[11px] font-mono ${shown ? 'text-slate-300' : 'text-slate-600'}`}>Speed Limit</span>
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={3}
+                            value={selectedComp.staticProps.speedLimitValue || '65'}
+                            onChange={(e) => edit({ speedLimitValue: e.target.value })}
+                            className={`w-12 shrink-0 bg-slate-900 px-2 py-1 rounded font-mono text-xs focus:outline-none border border-slate-700 text-right ${shown ? 'text-slate-200' : 'text-slate-500'}`}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-2 pl-6">
+                          <span className={`text-[11px] font-mono ${shown ? 'text-slate-300' : 'text-slate-600'}`}>Position</span>
+                          <select
+                            value={
+                              selectedComp.staticProps.speedLimitPosition === 'bottom-left'
+                                ? 'bottom-left'
+                                : 'bottom-right'
+                            }
+                            onChange={(e) => edit({ speedLimitPosition: e.target.value })}
+                            className={`shrink-0 bg-slate-900 px-1.5 py-1 rounded font-mono text-xs focus:outline-none border border-slate-700 ${shown ? 'text-slate-200' : 'text-slate-500'}`}
+                          >
+                            <option value="bottom-right">Bottom Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                          </select>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* ADAS Spatial Warnings */}
@@ -2889,20 +2912,20 @@ export const Inspector: React.FC<InspectorProps> = ({
                   <span className="text-[10px] text-sky-400 font-mono font-bold uppercase block">
                     ADAS Warnings
                   </span>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-slate-300 font-mono">Blind Spot Warning</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-300 font-mono whitespace-nowrap">Blind Spot Warning</span>
                     <select
                       value={selectedComp.staticProps.blindSpotWarning || 'auto'}
                       onChange={(e) => handleStaticPropChange('blindSpotWarning', e.target.value)}
-                      className="bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      className="shrink-0 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
                     >
-                      <option value="auto">Auto (Proximity)</option>
-                      <option value="true">Force ON</option>
-                      <option value="false">Force OFF</option>
+                      <option value="auto">Auto</option>
+                      <option value="true">On</option>
+                      <option value="false">Off</option>
                     </select>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-slate-300 font-mono">Blind Spot Color</span>
+                  <div className="flex items-center justify-between gap-2 pl-6">
+                    <span className="text-[11px] text-slate-300 font-mono whitespace-nowrap">Color</span>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -2922,20 +2945,20 @@ export const Inspector: React.FC<InspectorProps> = ({
                       />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-700/40">
-                    <span className="text-[11px] text-slate-300 font-mono">Proximity Sensor Arc</span>
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-700/40">
+                    <span className="text-[11px] text-slate-300 font-mono whitespace-nowrap">Proximity Sensor Arc</span>
                     <select
                       value={selectedComp.staticProps.sensorWarning || 'auto'}
                       onChange={(e) => handleStaticPropChange('sensorWarning', e.target.value)}
-                      className="bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
+                      className="shrink-0 bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700"
                     >
-                      <option value="auto">Auto (Proximity)</option>
-                      <option value="true">Force ON</option>
-                      <option value="false">Force OFF</option>
+                      <option value="auto">Auto</option>
+                      <option value="true">On</option>
+                      <option value="false">Off</option>
                     </select>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-slate-300 font-mono">Proximity Sensor Color</span>
+                  <div className="flex items-center justify-between gap-2 pl-6">
+                    <span className="text-[11px] text-slate-300 font-mono whitespace-nowrap">Color</span>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
