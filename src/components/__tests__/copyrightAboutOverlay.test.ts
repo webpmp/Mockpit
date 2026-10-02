@@ -88,4 +88,11 @@ describe('Copyright Attribution + About Overlay Suite', () => {
     assert.doesNotMatch(headerContent, /<img[^>]*src="\/logo\//);
     assert.doesNotMatch(modalContent, /<img[^>]*src="\/logo\//);
   });
+
+  it('8. Expanded Drive Simulator contains copyright footer for MOCKPIT by Chris Adkins', () => {
+    const debugPath = path.resolve(process.cwd(), 'src/components/DebugStatePanel.tsx');
+    const debugContent = fs.readFileSync(debugPath, 'utf8');
+
+    assert.match(debugContent, /© 2026 MOCKPIT by Chris Adkins • All Rights Reserved/);
+  });
 });

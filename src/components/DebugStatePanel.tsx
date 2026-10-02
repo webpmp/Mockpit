@@ -547,6 +547,13 @@ export const DebugStatePanel: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Footer Copyright */}
+          <div className="pt-3 pb-1 border-t border-slate-800/80 flex items-center justify-center text-center">
+            <span className="text-[11px] font-mono text-slate-400 select-none tracking-wide">
+              © 2026 MOCKPIT by Chris Adkins • All Rights Reserved
+            </span>
+          </div>
         </div>
       )}
     </div>
