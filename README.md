@@ -82,7 +82,7 @@ A fixed-layout weather experience providing current conditions, forecasts, radar
 - **Weather Alerts:** Active weather alerts and advisories for the selected location.
 - **Current Observations:** Detailed conditions including Feels Like temperature, UV Index, Dew Point, Air Pressure, and Visibility.
 
-### Component Integration
+## Component Integration
 
 Mockpit supports **Component Integration**, allowing otherwise independent components to be visually connected through a parent/child relationship. This provides additional layout options while keeping each component independently selectable, editable, and configurable.
 
@@ -108,7 +108,7 @@ Mockpit supports **Component Integration**, allowing otherwise independent compo
     <td align="center">
       <img src="/public/comp-overlay-connected-v2.png" height="314" alt="Components Overlaid Connected">
       <br>
-      <strong>Overlaid Components Connected</strong>
+      <strong>Integrated Components</strong>
     </td>
   </tr>
 </table>
@@ -125,7 +125,7 @@ The intended workflow is to position and size components first, then connect the
 
 This enables layouts such as a Driver Mode Selector positioned over a Speedometer, a Navigation Search component integrated into the top of a Navigation Map, or a Tire Pressure Monitor positioned below a Tire Pressure Status component.
 
-### Auditor Mode & Automotive HMI Safety Compliance
+## Auditor Mode & Automotive HMI Safety Compliance
 
 Mockpit includes an Auditor mode for evaluating vehicle infotainment designs against automotive HMI and accessibility guidelines.
 
@@ -138,7 +138,7 @@ Mockpit includes an Auditor mode for evaluating vehicle infotainment designs aga
 - **Canvas Deep Linking:** Selecting "Select on canvas" from a finding switches to Editor mode, activates the relevant screen, and selects the component.
 - **Rule Registry:** Searchable reference library containing evaluated HMI guidelines, regulatory citations, design rationale, and display calibration settings.
 
-### Canvas & Customization Workspace
+## Canvas & Customization Workspace
 
 The main workspace provides direct manipulation of HMI components and the vehicle environment.
 
