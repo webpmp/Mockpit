@@ -16,7 +16,7 @@ Mockpit is a vehicle infotainment HMI prototyping environment for designing, con
 
 <p align="center"><strong>User Test</strong></p>
 
-## Key Features
+## Component Library
 
 ### Driving & Telemetry
 
