@@ -83,6 +83,8 @@ function resetThemeTestState() {
 // to the design system. Follow-up specs append to this list.
 export const MIGRATED_CANVAS_FILES: readonly string[] = [
   'src/components/designSystem/ThemePreview.tsx',
+  'src/components/ContactAvatar.tsx',
+  'src/components/VirtualKeyboard.tsx',
 ];
 
 describe('Design System Foundation Suite (Spec v1)', () => {

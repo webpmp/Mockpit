@@ -29,7 +29,7 @@ export const ContactAvatar: React.FC<ContactAvatarProps> = ({
   if (showPhoto) {
     return (
       <div
-        className={`rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-slate-800 ${className}`}
+        className={`rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-ds-surface-raised ${className}`}
       >
         <img
           src={resolvedUrl}
@@ -43,7 +43,7 @@ export const ContactAvatar: React.FC<ContactAvatarProps> = ({
 
   return (
     <div
-      className={`rounded-full flex items-center justify-center text-slate-100 font-bold shrink-0 ${className} ${fontSizeClassName}`}
+      className={`rounded-full flex items-center justify-center text-ds-content font-bold shrink-0 ${className} ${fontSizeClassName}`}
       style={{ backgroundColor: getAvatarColor(name) }}
     >
       {getInitials(name)}

@@ -160,8 +160,8 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
         </div>
       ) : (
         /* Note: App screens start empty on reset until authored */
-        <div className="w-full h-full rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-md p-8 flex flex-col items-center justify-center text-slate-400">
-          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-sky-400 mb-3">
+        <div className="w-full h-full rounded-2xl bg-ds-surface/90 border border-ds-line-subtle/80 backdrop-blur-md p-8 flex flex-col items-center justify-center text-ds-content-muted">
+          <div className="p-4 rounded-2xl bg-ds-background border border-ds-line text-ds-primary mb-3">
             {activeView === 'navigation' && <MapPin className="w-10 h-10" />}
             {activeView === 'media' && <Music className="w-10 h-10" />}
             {activeView === 'phone' && <Phone className="w-10 h-10" />}
@@ -169,10 +169,10 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
               <Layout className="w-10 h-10" />
             )}
           </div>
-          <h3 className="text-base font-bold text-slate-200 tracking-wider uppercase font-mono">
+          <h3 className="text-base font-bold text-ds-content tracking-wider uppercase font-mono">
             {(activeScreenDef?.name || activeView).toUpperCase()} SCREEN IS EMPTY
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm text-center mt-1.5 font-mono">
+          <p className="text-xs text-ds-content-subtle max-w-sm text-center mt-1.5 font-mono">
             This screen starts empty until authored. Switch to Editor Mode and select this screen tab to add components.
           </p>
         </div>
@@ -710,7 +710,7 @@ export const Canvas: React.FC = () => {
       {/* Outer Vehicle Center Display Frame */}
       <div
         data-testid="canvas-frame"
-        className={`relative bg-slate-950 border-8 border-black rounded-[32px] flex-shrink-0 transition-all duration-300 overflow-hidden ${
+        className={`relative bg-ds-background border-8 border-black rounded-[32px] flex-shrink-0 transition-all duration-300 overflow-hidden ${
           backgroundMode === 'color' ? 'shadow-[0_0_50px_rgba(0,0,0,0.8)]' : ''
         }`}
         style={{
@@ -724,7 +724,7 @@ export const Canvas: React.FC = () => {
       >
         {/* Scaled Inner Canvas */}
         <div
-          className="vehicle-hmi-canvas canvas-coordinate-space absolute inset-0 origin-top-left overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
+          className="vehicle-hmi-canvas canvas-coordinate-space absolute inset-0 origin-top-left overflow-hidden bg-gradient-to-br from-ds-background via-ds-surface to-ds-background"
           style={{
             width: `${CANVAS_WIDTH}px`,
             height: `${CANVAS_HEIGHT}px`,
@@ -777,7 +777,7 @@ export const Canvas: React.FC = () => {
           })()}
 
           {/* Infotainment Dashboard Header Bar */}
-          <div className="absolute top-0 left-0 right-0 h-11 px-8 bg-slate-950/90 backdrop-blur border-b border-slate-800/60 flex items-center justify-between text-sm font-mono text-slate-400 z-30 pointer-events-auto">
+          <div className="absolute top-0 left-0 right-0 h-11 px-8 bg-ds-background/90 backdrop-blur border-b border-ds-line-subtle/60 flex items-center justify-between text-sm font-mono text-ds-content-muted z-30 pointer-events-auto">
             <div className="flex items-center gap-4">
               {/* Minimized Notifications Row */}
               {isPresentation && (() => {
@@ -819,7 +819,7 @@ export const Canvas: React.FC = () => {
                               handleExpandNotification(comp.id);
                             }
                           }}
-                          className="px-2.5 py-0.5 rounded-full bg-slate-900 border hover:bg-slate-800 text-slate-100 transition-all flex items-center gap-1.5 cursor-pointer shadow-md group hover:scale-105 active:scale-95 pointer-events-auto"
+                          className="px-2.5 py-0.5 rounded-full bg-ds-surface border hover:bg-ds-surface-raised text-ds-content transition-all flex items-center gap-1.5 cursor-pointer shadow-md group hover:scale-105 active:scale-95 pointer-events-auto"
                           style={{ borderColor: `${color}90` }}
                           title={`Click to view: ${message}`}
                         >
@@ -851,11 +851,11 @@ export const Canvas: React.FC = () => {
               {totalUnread > 0 && (
                 <button
                   onClick={() => setActiveView('phone')}
-                  className="relative flex items-center justify-center p-1.5 rounded-full hover:bg-slate-800 text-slate-300 hover:text-slate-100 transition-all cursor-pointer pointer-events-auto"
+                  className="relative flex items-center justify-center p-1.5 rounded-full hover:bg-ds-surface-raised text-ds-content-secondary hover:text-ds-content transition-all cursor-pointer pointer-events-auto"
                   title={`Messages (${totalUnread} unread)`}
                 >
                   <MessageSquare className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-mono font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center ring-2 ring-slate-950">
+                  <span className="absolute -top-1 -right-1 bg-ds-error text-white text-[9px] font-mono font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center ring-2 ring-ds-background">
                     {totalUnread > 99 ? '99+' : totalUnread}
                   </span>
                 </button>
@@ -869,13 +869,13 @@ export const Canvas: React.FC = () => {
                   <button
                     id="header-battery-btn"
                     onClick={() => setBatteryDisplayMode((prev) => (prev === 'percent' ? 'range' : 'percent'))}
-                    className="flex items-center gap-1.5 font-normal text-slate-300 cursor-pointer pointer-events-auto hover:text-slate-100 transition-colors"
+                    className="flex items-center gap-1.5 font-normal text-ds-content-secondary cursor-pointer pointer-events-auto hover:text-ds-content transition-colors"
                     title={batteryDisplayMode === 'percent' ? 'Tap to switch to range' : 'Tap to switch to battery percentage'}
                   >
                     {vehicleState.isCharging ? (
-                      <Zap className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400 animate-pulse" />
+                      <Zap className="w-3.5 h-3.5 text-ds-success fill-ds-success animate-pulse" />
                     ) : (
-                      <Battery className={`w-4 h-4 ${batteryPercent <= 15 ? 'text-rose-400' : 'text-slate-400'}`} />
+                      <Battery className={`w-4 h-4 ${batteryPercent <= 15 ? 'text-ds-error' : 'text-ds-content-muted'}`} />
                     )}
                     <span>
                       {batteryDisplayMode === 'percent' ? `${batteryPercent}%` : `${batteryRange} mi`}
@@ -887,17 +887,17 @@ export const Canvas: React.FC = () => {
               <button
                 id="header-weather-temp-btn"
                 onClick={() => setActiveView('weather')}
-                className="font-normal text-slate-300 cursor-pointer pointer-events-auto hover:text-slate-100 transition-colors"
+                className="font-normal text-ds-content-secondary cursor-pointer pointer-events-auto hover:text-ds-content transition-colors"
                 title="Open Weather Forecast"
               >
                 {weatherCurrent?.temperature !== undefined
                   ? `${Math.round(weatherCurrent.temperature)}°${weatherUnit}`
                   : '72°F'}
               </button>
-              <span className="font-normal text-slate-300">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="font-normal text-ds-content-secondary">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               {/* Animated 1-5 bar signal indicator (v0.11) */}
               <div
-                className="flex items-center gap-1.5 font-mono text-emerald-400 pr-4 shrink-0"
+                className="flex items-center gap-1.5 font-mono text-ds-success pr-4 shrink-0"
                 title={`Signal: ${vehicleState.signalBars ?? 4}/5 bars`}
               >
                 <div className="flex items-end gap-0.5 h-3.5">
@@ -908,7 +908,7 @@ export const Canvas: React.FC = () => {
                       <span
                         key={bar}
                         className={`w-1 rounded-xs transition-all duration-300 ${
-                          isActive ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-slate-800'
+                          isActive ? 'bg-ds-success shadow-[0_0_6px_var(--color-ds-success,#10b981)]' : 'bg-ds-surface-raised'
                         }`}
                         style={{ height: `${bar * 20}%` }}
                       />
@@ -937,18 +937,18 @@ export const Canvas: React.FC = () => {
 
           {/* Empty Canvas Overlay in Editor Mode for Screen Views */}
           {!isPresentation && !['weather', 'weather-radar'].includes(activeView) && components.length === 0 && (
-            <div className="absolute inset-x-16 inset-y-20 z-10 border-2 border-dashed border-slate-800/80 rounded-3xl flex flex-col items-center justify-center text-slate-500 bg-slate-900/20 pointer-events-none">
-              <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 mb-3 text-sky-400">
+            <div className="absolute inset-x-16 inset-y-20 z-10 border-2 border-dashed border-ds-line-subtle/80 rounded-3xl flex flex-col items-center justify-center text-ds-content-subtle bg-ds-surface/20 pointer-events-none">
+              <div className="p-3.5 rounded-2xl bg-ds-surface border border-ds-line mb-3 text-ds-primary">
                 {activeView === 'navigation' && <MapPin className="w-8 h-8" />}
                 {activeView === 'media' && <Music className="w-8 h-8" />}
                 {activeView === 'phone' && <Phone className="w-8 h-8" />}
                 {activeView === 'home' && <LayoutGrid className="w-8 h-8" />}
                 {!['navigation', 'media', 'phone', 'home'].includes(activeView) && <Layout className="w-8 h-8" />}
               </div>
-              <p className="text-sm font-bold text-slate-300 uppercase font-mono tracking-wider">
+              <p className="text-sm font-bold text-ds-content-secondary uppercase font-mono tracking-wider">
                 {activeScreenDisplayName.toUpperCase()} SCREEN CANVAS EMPTY
               </p>
-              <p className="text-xs text-slate-500 max-w-md text-center mt-1 font-mono">
+              <p className="text-xs text-ds-content-subtle max-w-md text-center mt-1 font-mono">
                 Drag components from the library on the left, or click the + icon next to a component to add it to this screen.
               </p>
             </div>

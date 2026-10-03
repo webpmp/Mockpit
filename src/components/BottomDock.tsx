@@ -161,10 +161,10 @@ export const BottomDock: React.FC = () => {
   return (
     <div
       id="mockpit-bottom-dock"
-      className={`relative pointer-events-auto flex items-center gap-1.5 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] transition-all ${
+      className={`relative pointer-events-auto flex items-center gap-1.5 bg-ds-background/85 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] transition-all ${
         isEditor
           ? 'border border-dashed border-sky-500/50 bg-slate-950/90 shadow-[0_0_15px_rgba(56,189,248,0.2)]'
-          : 'border border-slate-800/80'
+          : 'border border-ds-line-subtle/80'
       }`}
     >
       {topLevelScreens.map((item, index) => {
@@ -207,8 +207,8 @@ export const BottomDock: React.FC = () => {
             }}
             className={`mockpit-dock-item flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-colors duration-150 relative group cursor-pointer select-none border ${
               isItemActive
-                ? 'bg-slate-800/90 text-slate-100'
-                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                ? 'bg-ds-surface-raised/90 text-ds-content'
+                : 'border-transparent text-ds-content-muted hover:text-ds-content hover:bg-ds-surface/60'
             } ${isDragging ? 'opacity-40 border-dashed border-sky-400' : ''}`}
             title={
               isEditor && !isHome

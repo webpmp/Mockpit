@@ -291,7 +291,7 @@ export const QuickAccessOverlay: React.FC = () => {
     >
       {/* Overlay Outer Shell */}
       <div
-        className="w-full h-full relative rounded-2xl bg-slate-950/95 backdrop-blur-xl border border-slate-700/80 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
+        className="w-full h-full relative rounded-2xl bg-ds-background/95 backdrop-blur-xl border border-ds-line/80 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
       >
         {/* Rendered Component Content */}
         <div className="w-full h-full relative overflow-hidden flex-1">
