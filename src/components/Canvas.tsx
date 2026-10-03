@@ -208,6 +208,7 @@ const sortNotificationsBySeverity = (
   });
 };
 
+// ds-raw-start: grid color helper
 function hexToRgba(hex: string, opacityPercent: number): string {
   let clean = (hex || '#38bdf8').replace('#', '');
   if (clean.length === 3) {
@@ -223,6 +224,7 @@ function hexToRgba(hex: string, opacityPercent: number): string {
   const a = Math.max(0, Math.min(100, opacityPercent)) / 100;
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
+// ds-raw-end
 
 export const Canvas: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -708,11 +710,13 @@ export const Canvas: React.FC = () => {
       <AppShellBackground canvasScale={scale} />
 
       {/* Outer Vehicle Center Display Frame */}
+      {/* ds-raw-start: device bezel outside canvas scope */}
       <div
         data-testid="canvas-frame"
-        className={`relative bg-ds-background border-8 border-black rounded-[32px] flex-shrink-0 transition-all duration-300 overflow-hidden ${
+        className={`relative bg-slate-950 border-8 border-black rounded-[32px] flex-shrink-0 transition-all duration-300 overflow-hidden ${
           backgroundMode === 'color' ? 'shadow-[0_0_50px_rgba(0,0,0,0.8)]' : ''
         }`}
+        /* ds-raw-end */
         style={{
           width: `${CANVAS_WIDTH * scale}px`,
           height: `${CANVAS_HEIGHT * scale}px`,
@@ -798,7 +802,7 @@ export const Canvas: React.FC = () => {
                     {minimizedNotifs.map((comp) => {
                       const resolved = getResolvedProps(comp, vehicleState, interactionEvents);
                       const iconKey = resolved.icon || comp.staticProps?.icon || 'alert-triangle';
-                      const color = resolved.color || comp.staticProps?.color || '#f59e0b';
+                      const color = resolved.color || comp.staticProps?.color || 'var(--color-ds-warning)';
                       const title = comp.staticProps?.title;
                       const message = title || resolved.message || resolved.text || 'ALERT';
                       const avatarName = comp.staticProps?.avatarName || title;
@@ -820,7 +824,7 @@ export const Canvas: React.FC = () => {
                             }
                           }}
                           className="px-2.5 py-0.5 rounded-full bg-ds-surface border hover:bg-ds-surface-raised text-ds-content transition-all flex items-center gap-1.5 cursor-pointer shadow-md group hover:scale-105 active:scale-95 pointer-events-auto"
-                          style={{ borderColor: `${color}90` }}
+                          style={{ borderColor: `color-mix(in srgb, ${color} 56%, transparent)` }}
                           title={`Click to view: ${message}`}
                         >
                           <span style={{ color }}>
@@ -1050,6 +1054,7 @@ export const Canvas: React.FC = () => {
                           boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
                         }}
                       >
+                        {/* ds-raw-start: editor control with own fill */}
                         {/* Delete Quick Handle */}
                         <button
                           className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
@@ -1061,7 +1066,9 @@ export const Canvas: React.FC = () => {
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
+                        {/* ds-raw-end */}
 
+                        {/* ds-raw-start: editor control with own fill */}
                         {/* Bottom-Right Resize Handle */}
                         <div
                           className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
@@ -1070,6 +1077,7 @@ export const Canvas: React.FC = () => {
                         >
                           <Maximize2 className="w-3 h-3" />
                         </div>
+                        {/* ds-raw-end */}
                       </div>
                     )}
                   </div>
@@ -1186,6 +1194,7 @@ export const Canvas: React.FC = () => {
                         boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
                       }}
                     >
+                      {/* ds-raw-start: editor control with own fill */}
                       {/* Delete Quick Handle / Confirmation */}
                       {confirmDeleteNotificationId === selectedNotification.id ? (
                         <div
@@ -1230,7 +1239,9 @@ export const Canvas: React.FC = () => {
                           <Trash2 className="w-3 h-3" />
                         </button>
                       )}
+                      {/* ds-raw-end */}
 
+                      {/* ds-raw-start: editor control with own fill */}
                       {/* Bottom-Right Resize Handle */}
                       <div
                         className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
@@ -1246,16 +1257,17 @@ export const Canvas: React.FC = () => {
                       >
                         <Maximize2 className="w-3 h-3" />
                       </div>
+                      {/* ds-raw-end */}
                     </div>
                   </div>
                 ) : (
-                  // Ghost State: resting vs active (selected-looking) state
+                  /* Ghost State: resting vs active (selected-looking) state */
                   <div
                     data-testid="notification-ghost"
-                    className={`w-[380px] h-[120px] rounded-2xl border-2 bg-slate-900/40 font-mono text-xs flex items-center justify-center cursor-pointer select-none ${
+                    className={`w-[380px] h-[120px] rounded-2xl border-2 bg-ds-surface/40 font-mono text-xs flex items-center justify-center cursor-pointer select-none ${
                       notificationGhostActive
-                        ? 'border-solid text-slate-200 opacity-100'
-                        : 'border-dashed border-slate-500 text-slate-400 opacity-60'
+                        ? 'border-solid text-ds-content opacity-100'
+                        : 'border-dashed border-ds-line-strong text-ds-content-muted opacity-60'
                     }`}
                     style={
                       notificationGhostActive
@@ -1284,7 +1296,7 @@ export const Canvas: React.FC = () => {
           <div
             className={`absolute bottom-0 left-0 right-0 h-[84px] z-[9999] ${
               !isPresentation && !isParticipantMode
-                ? 'border-t-2 border-dashed border-sky-400/60 bg-sky-950/20 backdrop-blur-[1px]'
+                ? 'border-t-2 border-dashed border-ds-primary/60 bg-ds-primary/10 backdrop-blur-[1px]'
                 : ''
             } flex items-center justify-center pointer-events-none`}
           >

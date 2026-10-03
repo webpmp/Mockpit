@@ -163,7 +163,7 @@ export const BottomDock: React.FC = () => {
       id="mockpit-bottom-dock"
       className={`relative pointer-events-auto flex items-center gap-1.5 bg-ds-background/85 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] transition-all ${
         isEditor
-          ? 'border border-dashed border-sky-500/50 bg-slate-950/90 shadow-[0_0_15px_rgba(56,189,248,0.2)]'
+          ? 'border border-dashed border-ds-primary/50 bg-ds-background/90 shadow-[0_0_15px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]'
           : 'border border-ds-line-subtle/80'
       }`}
     >
@@ -209,7 +209,7 @@ export const BottomDock: React.FC = () => {
               isItemActive
                 ? 'bg-ds-surface-raised/90 text-ds-content'
                 : 'border-transparent text-ds-content-muted hover:text-ds-content hover:bg-ds-surface/60'
-            } ${isDragging ? 'opacity-40 border-dashed border-sky-400' : ''}`}
+            } ${isDragging ? 'opacity-40 border-dashed border-ds-primary' : ''}`}
             title={
               isEditor && !isHome
                 ? `${item.name} (Short press: Quick Access / Switch, Long press: Full screen, Drag to reorder)`
@@ -228,8 +228,8 @@ export const BottomDock: React.FC = () => {
                     e.stopPropagation();
                     handleMove(item.id, 'left');
                   }}
-                  className={`p-0.5 rounded bg-slate-900 border border-slate-700 text-sky-400 hover:bg-sky-500 hover:text-slate-950 transition-colors cursor-pointer ${
-                    !canMoveLeft ? 'opacity-20 cursor-not-allowed hover:bg-slate-900 hover:text-sky-400' : ''
+                  className={`p-0.5 rounded bg-ds-surface border border-ds-line text-ds-primary hover:bg-ds-primary-hover hover:text-ds-on-primary transition-colors cursor-pointer ${
+                    !canMoveLeft ? 'opacity-20 cursor-not-allowed hover:bg-ds-surface hover:text-ds-primary' : ''
                   }`}
                   title="Move left"
                 >
@@ -242,8 +242,8 @@ export const BottomDock: React.FC = () => {
                     e.stopPropagation();
                     handleMove(item.id, 'right');
                   }}
-                  className={`p-0.5 rounded bg-slate-900 border border-slate-700 text-sky-400 hover:bg-sky-500 hover:text-slate-950 transition-colors cursor-pointer ${
-                    !canMoveRight ? 'opacity-20 cursor-not-allowed hover:bg-slate-900 hover:text-sky-400' : ''
+                  className={`p-0.5 rounded bg-ds-surface border border-ds-line text-ds-primary hover:bg-ds-primary-hover hover:text-ds-on-primary transition-colors cursor-pointer ${
+                    !canMoveRight ? 'opacity-20 cursor-not-allowed hover:bg-ds-surface hover:text-ds-primary' : ''
                   }`}
                   title="Move right"
                 >
@@ -254,7 +254,7 @@ export const BottomDock: React.FC = () => {
 
             {/* Drag Handle hint for non-Home items in Editor */}
             {isEditor && !isHome && (
-              <span className="absolute -top-1.5 left-1 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <span className="absolute -top-1.5 left-1 text-ds-content-subtle opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <GripVertical className="w-2.5 h-2.5" />
               </span>
             )}

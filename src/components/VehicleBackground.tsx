@@ -52,8 +52,10 @@ export const VehicleBackground: React.FC = () => {
   const userScaleRatio = (scale ?? 100) / 100;
   const baseScaleVal = userScaleRatio;
 
+  // ds-raw-start: exempt fallback
   // Dynamically resolve active canvas theme color for vehicle tinting
   const tintColor = activePalette?.primary || gridConfig?.color || '#38bdf8';
+  // ds-raw-end
 
   const positionClass = POSITION_CLASSES[position] || POSITION_CLASSES['center'];
   const transformOrigin = TRANSFORM_ORIGIN[position] || TRANSFORM_ORIGIN['center'];

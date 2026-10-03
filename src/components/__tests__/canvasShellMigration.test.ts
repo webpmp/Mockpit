@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { findRawColors, findMarkerErrors } from './dsGuardHelpers';
 
 describe('Canvas Shell Color Migration Suite (Spec 2)', () => {
   it('1. ContactAvatar uses role classes and no raw slate colors', () => {
@@ -66,7 +67,7 @@ describe('Canvas Shell Color Migration Suite (Spec 2)', () => {
     const content = fs.readFileSync(filePath, 'utf8');
 
     // Canvas frame & background
-    assert.ok(content.includes('bg-ds-background border-8 border-black'), 'Canvas frame must use bg-ds-background');
+    assert.ok(content.includes('bg-slate-950 border-8 border-black'), 'Canvas frame must use bg-slate-950');
     assert.ok(content.includes('bg-gradient-to-br from-ds-background via-ds-surface to-ds-background'), 'Canvas bg must use ds gradient');
 
     // Empty screen placeholder
@@ -95,5 +96,49 @@ describe('Canvas Shell Color Migration Suite (Spec 2)', () => {
       content.includes("const tintColor = activePalette?.primary || gridConfig?.color || '#38bdf8';"),
       'VehicleBackground must preserve exempt fallback #38bdf8'
     );
+  });
+
+  it('7. findMarkerErrors on all 6 canvas shell files reports zero errors', () => {
+    const files = [
+      'src/components/Canvas.tsx',
+      'src/components/BottomDock.tsx',
+      'src/components/QuickAccessOverlay.tsx',
+      'src/components/VirtualKeyboard.tsx',
+      'src/components/ContactAvatar.tsx',
+      'src/components/VehicleBackground.tsx',
+    ];
+
+    for (const file of files) {
+      const filePath = path.resolve(process.cwd(), file);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const errors = findMarkerErrors(content);
+      assert.equal(
+        errors.length,
+        0,
+        `Marker syntax error in ${file}:\n${errors.join('\n')}`
+      );
+    }
+  });
+
+  it('8. findRawColors on all 6 canvas shell files reports zero raw palette or hex tokens', () => {
+    const files = [
+      'src/components/Canvas.tsx',
+      'src/components/BottomDock.tsx',
+      'src/components/QuickAccessOverlay.tsx',
+      'src/components/VirtualKeyboard.tsx',
+      'src/components/ContactAvatar.tsx',
+      'src/components/VehicleBackground.tsx',
+    ];
+
+    for (const file of files) {
+      const filePath = path.resolve(process.cwd(), file);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const findings = findRawColors(content);
+      assert.equal(
+        findings.length,
+        0,
+        `Raw color findings in ${file}:\n${findings.map((f) => `  line ${f.line}: ${f.text}`).join('\n')}`
+      );
+    }
   });
 });

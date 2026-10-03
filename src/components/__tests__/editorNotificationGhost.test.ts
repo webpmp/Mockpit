@@ -285,8 +285,8 @@ describe('Editor Notification Ghost and Library-Driven Selection — Spec v1 & v
       const ternaryClasses = ghostMatch[2];
 
       assert.ok(!baseClasses.includes('transition'), 'Ghost element must not have transition classes');
-      assert.ok(ternaryClasses.includes('border-dashed border-slate-500 text-slate-400 opacity-60'));
-      assert.ok(ternaryClasses.includes('border-solid text-slate-200 opacity-100'));
+      assert.ok(ternaryClasses.includes('border-dashed border-ds-line-strong text-ds-content-muted opacity-60'));
+      assert.ok(ternaryClasses.includes('border-solid text-ds-content opacity-100'));
     });
 
     it('Sidebar expanded notifications container has data-keep-selection="true"', async () => {

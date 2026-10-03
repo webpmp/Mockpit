@@ -31,12 +31,12 @@ describe('Quick Actions Caret Tooltip Attachment Suite', () => {
   it('3. Verifies surface and border variables match component interior and border', () => {
     assert.ok(fileContent.includes('id="quick-access-caret"'), 'Caret element must be retained');
     assert.ok(
-      fileContent.includes('rgba(15, 23, 42, 0.9)'),
-      'Must use rgba(15, 23, 42, 0.9) for --quick-access-surface'
+      fileContent.includes('color-mix(in srgb, var(--color-ds-surface) 90%, transparent)'),
+      'Must use color-mix(in srgb, var(--color-ds-surface) 90%, transparent) for --quick-access-surface'
     );
     assert.ok(
-      fileContent.includes('#1e293b'),
-      'Must use #1e293b for --quick-access-border'
+      fileContent.includes('var(--color-ds-line-subtle)'),
+      'Must use var(--color-ds-line-subtle) for --quick-access-border'
     );
     assert.ok(
       !fileContent.includes('drop-shadow-md'),

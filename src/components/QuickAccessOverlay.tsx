@@ -317,6 +317,7 @@ export const QuickAccessOverlay: React.FC = () => {
             />
           )}
 
+          {/* ds-raw-start: editor control with own fill */}
           {/* Resize Handle - visible and interactive ONLY in editor mode */}
           <div
             id="quick-access-resize-handle"
@@ -334,6 +335,7 @@ export const QuickAccessOverlay: React.FC = () => {
               {currentWidth} × {currentHeight}
             </div>
           )}
+          {/* ds-raw-end */}
         </>
       )}
 
@@ -346,8 +348,8 @@ export const QuickAccessOverlay: React.FC = () => {
           bottom: '-17px',
           width: '36px',
           height: '20px',
-          ['--quick-access-surface' as string]: 'rgba(15, 23, 42, 0.9)',
-          ['--quick-access-border' as string]: isComponentSelectedInEditor ? 'var(--color-primary, #38bdf8)' : '#1e293b',
+          ['--quick-access-surface' as string]: 'color-mix(in srgb, var(--color-ds-surface) 90%, transparent)',
+          ['--quick-access-border' as string]: isComponentSelectedInEditor ? 'var(--color-primary, #38bdf8)' : 'var(--color-ds-line-subtle)',
         }}
       >
         {/* Mask that covers the parent's bottom border */}
