@@ -91,10 +91,18 @@ describe('Design System Foundation Suite (Spec v1)', () => {
   });
 
   describe('1. Role Registry', () => {
-    it('defines exactly 19 unique color roles', () => {
-      assert.equal(COLOR_ROLES.length, 19);
+    it('defines exactly 20 unique color roles', () => {
+      assert.equal(COLOR_ROLES.length, 20);
       const ids = new Set(COLOR_ROLES.map((r) => r.id));
-      assert.equal(ids.size, 19);
+      assert.equal(ids.size, 20);
+
+      const onPrimaryRole = COLOR_ROLES.find((r) => r.id === 'on-primary')!;
+      assert.ok(onPrimaryRole, 'on-primary role must exist in registry');
+      assert.equal(onPrimaryRole.label, 'Text on primary');
+      assert.equal(onPrimaryRole.group, 'Accent');
+      assert.equal(onPrimaryRole.description, 'Text and icons on solid primary fills');
+      assert.equal(onPrimaryRole.cssVar, '--color-ds-on-primary');
+      assert.ok(isValidHex(onPrimaryRole.defaultValue));
     });
 
     it('every role has label, group, description, valid default hex, and cssVar matching --color-ds-<id>', () => {
@@ -120,7 +128,7 @@ describe('Design System Foundation Suite (Spec v1)', () => {
   });
 
   describe('2. Factory Presets', () => {
-    it('defines all 5 factory presets with all 19 roles', () => {
+    it('defines all 5 factory presets with all 20 roles', () => {
       const expectedIds: FactoryId[] = ['midnight', 'arctic', 'warm', 'high-contrast', 'monochrome'];
       assert.equal(FACTORY_THEME_LIST.length, 5);
 
@@ -136,6 +144,13 @@ describe('Design System Foundation Suite (Spec v1)', () => {
           assert.ok(isValidHex(color), `Preset ${id} color for ${role.id} is invalid hex: ${color}`);
         }
       }
+
+      // on-primary specific preset values
+      assert.equal(FACTORY_PRESETS.midnight.colors['on-primary'], '#020617');
+      assert.equal(FACTORY_PRESETS.arctic.colors['on-primary'], '#ffffff');
+      assert.equal(FACTORY_PRESETS.warm.colors['on-primary'], '#1c1917');
+      assert.equal(FACTORY_PRESETS['high-contrast'].colors['on-primary'], '#000000');
+      assert.equal(FACTORY_PRESETS.monochrome.colors['on-primary'], '#0a0a0a');
     });
 
     it('Midnight preset matches registry default values exactly', () => {
@@ -361,7 +376,7 @@ describe('Design System Foundation Suite (Spec v1)', () => {
   });
 
   describe('5. CSS Generation (buildThemeCss)', () => {
-    it('contains all 19 role variables and 3 palette-bridge variables', () => {
+    it('contains all 20 role variables and 3 palette-bridge variables', () => {
       const css = buildThemeCss(FACTORY_PRESETS.midnight);
       for (const role of COLOR_ROLES) {
         assert.ok(
@@ -372,6 +387,20 @@ describe('Design System Foundation Suite (Spec v1)', () => {
       assert.ok(css.includes('--color-primary: #38bdf8;'));
       assert.ok(css.includes('--color-secondary: #3b82f6;'));
       assert.ok(css.includes('--color-tertiary: #10b981;'));
+    });
+
+    it('buildThemeCss output contains --color-ds-on-primary and emits no fallback lines because of on-primary alone', () => {
+      const modifiedColors = {
+        ...FACTORY_PRESETS.midnight.colors,
+        'on-primary': '#ffffff',
+      };
+      const css = buildThemeCss({ colors: modifiedColors });
+      assert.ok(css.includes('--color-ds-on-primary: #ffffff;'));
+      // Style tag differs from Midnight only in that variable line; no fallback lines added
+      assert.equal(css.includes('--color-slate-'), false);
+      assert.equal(css.includes('--color-sky-'), false);
+      assert.equal(css.includes('--color-rose-'), false);
+      assert.equal(css.includes('--color-red-'), false);
     });
 
     it('emits NO fallback lines under Midnight', () => {
@@ -409,6 +438,37 @@ describe('Design System Foundation Suite (Spec v1)', () => {
   });
 
   describe('6. Storage & Serialization', () => {
+    it('stored state containing a user theme with 19 colors (no on-primary) loads and fills on-primary from base preset', () => {
+      const colors19: Record<string, string> = {};
+      for (const role of COLOR_ROLES) {
+        if (role.id !== 'on-primary') {
+          colors19[role.id] = FACTORY_PRESETS.arctic.colors[role.id];
+        }
+      }
+      assert.equal(Object.keys(colors19).length, 19);
+
+      const storedJson = JSON.stringify({
+        version: 1,
+        activeThemeId: 'u19',
+        userThemes: [
+          {
+            id: 'u19',
+            name: 'Legacy Arctic V1',
+            baseId: 'arctic',
+            colors: colors19,
+          },
+        ],
+      });
+
+      const parsed = parseAndValidateStorage(storedJson);
+      assert.equal(parsed.userThemes.length, 1);
+      assert.equal(
+        parsed.userThemes[0].colors['on-primary'],
+        FACTORY_PRESETS.arctic.colors['on-primary']
+      );
+      assert.equal(parsed.userThemes[0].colors['on-primary'], '#ffffff');
+    });
+
     it('round-trips serialize and parse storage state', () => {
       const testState: DesignSystemStorageState = {
         version: 1,

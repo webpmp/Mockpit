@@ -13,6 +13,7 @@ export type RoleId =
   | 'line-strong'
   | 'primary'
   | 'primary-hover'
+  | 'on-primary'
   | 'secondary'
   | 'tertiary'
   | 'success'
@@ -150,6 +151,14 @@ export const COLOR_ROLES: readonly RoleDefinition[] = [
     description: 'Hovered or pressed primary',
     defaultValue: '#0ea5e9',
     cssVar: '--color-ds-primary-hover',
+  },
+  {
+    id: 'on-primary',
+    label: 'Text on primary',
+    group: 'Accent',
+    description: 'Text and icons on solid primary fills',
+    defaultValue: '#020617',
+    cssVar: '--color-ds-on-primary',
   },
   {
     id: 'secondary',

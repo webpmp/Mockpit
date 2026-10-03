@@ -47,7 +47,7 @@ export function buildThemeCss(themeOrColors: Theme | { colors: ThemeColors }): s
 
   const lines: string[] = [];
 
-  // 1. All 19 role variables
+  // 1. All 20 role variables
   for (const role of COLOR_ROLES) {
     const val = colors[role.id] || role.defaultValue;
     lines.push(`  ${role.cssVar}: ${val};`);

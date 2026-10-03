@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle, AlertCircle } from 'lucide-react';
 
 export const ThemePreview: React.FC = () => {
   return (
@@ -16,21 +17,28 @@ export const ThemePreview: React.FC = () => {
         </span>
       </div>
 
-      {/* Buttons row: Climate normal, Media selected */}
-      <div className="flex items-center gap-2">
+      {/* Buttons row: Climate normal, Media selected, Start solid primary */}
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
           data-testid="theme-preview-climate-btn"
-          className="flex-1 py-1 px-2 rounded-lg text-xs font-medium border border-ds-line bg-ds-surface-raised text-ds-content hover:bg-ds-surface-hover transition-colors"
+          className="flex-1 py-1 px-2 rounded-lg text-xs font-medium border border-ds-line bg-ds-surface-raised text-ds-content hover:bg-ds-surface-hover transition-colors text-center"
         >
           Climate
         </button>
         <button
           type="button"
           data-testid="theme-preview-media-btn"
-          className="flex-1 py-1 px-2 rounded-lg text-xs font-medium border border-ds-primary bg-ds-primary/20 text-ds-primary transition-colors"
+          className="flex-1 py-1 px-2 rounded-lg text-xs font-medium border border-ds-primary bg-ds-primary/20 text-ds-primary transition-colors text-center"
         >
           Media
+        </button>
+        <button
+          type="button"
+          data-testid="theme-preview-start-btn"
+          className="flex-1 py-1 px-2 rounded-lg text-xs font-medium bg-ds-primary text-ds-on-primary transition-colors text-center"
+        >
+          Start
         </button>
       </div>
 
@@ -48,10 +56,12 @@ export const ThemePreview: React.FC = () => {
       {/* Status chips row */}
       <div className="flex items-center gap-2 pt-0.5">
         <div className="flex-1 flex items-center justify-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-ds-warning/40 bg-ds-warning/15 text-ds-warning">
-          <span>⚠️ Warning</span>
+          <AlertTriangle className="w-3 h-3 shrink-0" />
+          <span>Warning</span>
         </div>
         <div className="flex-1 flex items-center justify-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-ds-error/40 bg-ds-error/15 text-ds-error">
-          <span>🛑 Error</span>
+          <AlertCircle className="w-3 h-3 shrink-0" />
+          <span>Error</span>
         </div>
       </div>
     </div>
