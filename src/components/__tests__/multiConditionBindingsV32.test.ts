@@ -895,7 +895,7 @@ describe('Spec v3.2 — Multi-Condition Bindings & Cooldown Lifecycle Architectu
 
       // Filled state: divider and details line present
       assert.equal(
-        htmlFilled.includes('w-full h-px bg-slate-800 my-1.5'),
+        htmlFilled.includes('w-full h-px bg-ds-line-subtle my-1.5'),
         true,
         'Filled card must have divider element'
       );
@@ -907,7 +907,7 @@ describe('Spec v3.2 — Multi-Condition Bindings & Cooldown Lifecycle Architectu
 
       // Cleared state: neither divider nor details line present
       assert.equal(
-        htmlCleared.includes('w-full h-px bg-slate-800 my-1.5'),
+        htmlCleared.includes('w-full h-px bg-ds-line-subtle my-1.5'),
         false,
         'Cleared card must not have divider element'
       );
