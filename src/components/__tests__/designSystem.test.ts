@@ -91,6 +91,9 @@ export const MIGRATED_CANVAS_FILES: readonly string[] = [
   'src/components/QuickAccessOverlay.tsx',
   'src/components/VehicleBackground.tsx',
   'src/components/ComponentRenderer.tsx',
+  'src/components/phone/PhoneDialPadWidget.tsx',
+  'src/components/phone/PhoneContactsWidget.tsx',
+  'src/components/phone/PhoneMessagingWidget.tsx',
 ];
 
 describe('Design System Foundation Suite (Spec v1)', () => {
