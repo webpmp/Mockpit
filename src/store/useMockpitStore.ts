@@ -67,7 +67,7 @@ import {
   isNotificationEnabled,
 } from '../types';
 export { isNotificationEnabled } from '../types';
-import { checkIntegrationEligibility } from '../utils/componentIntegration';
+import { checkIntegrationEligibility, snapChildInsideParent } from '../utils/componentIntegration';
 import { DEFAULT_BORDER_OVERRIDES } from '../utils/borderOverrides';
 import {
   getResolvedProps,
@@ -4422,9 +4422,11 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
       let newChildBorderOverrides: BorderOverrides;
       let newParentBorderOverrides: BorderOverrides | undefined;
+      let insideBounds: { x: number; y: number; width: number; height: number } | undefined;
 
       if (style === 'inside') {
         newChildBorderOverrides = { top: false, right: false, bottom: false, left: false };
+        insideBounds = snapChildInsideParent(child, parent);
       } else {
         newChildBorderOverrides = child.borderOverrides
           ? { ...child.borderOverrides }
@@ -4457,6 +4459,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         if (c.id === childId) {
           return {
             ...c,
+            ...(insideBounds ? insideBounds : {}),
             parentId,
             integrationStyle: style,
             attachmentPosition,

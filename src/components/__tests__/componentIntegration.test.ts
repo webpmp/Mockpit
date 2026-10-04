@@ -5,6 +5,8 @@ import {
   computeInsideAttachmentPosition,
   getEligibleParentCandidates,
   formatAttachmentPosition,
+  getComponentBorderWidthPx,
+  snapChildInsideParent,
 } from '../../utils/componentIntegration';
 import {
   getBorderClasses,
@@ -555,6 +557,147 @@ describe('Component Integration (Parent/Child Visual Relationships) Suite', () =
       // Dragging child: both child and parent get transition-none
       assert.equal(isTransitionNone('search-child', comps, 'search-child'), true);
       assert.equal(isTransitionNone('map-parent', comps, 'search-child'), true);
+    });
+  });
+
+  describe('8. Connected Components: Parent Border 100% Visible & Inside Snap (Spec v1)', () => {
+    it('getComponentBorderWidthPx returns 2 for warning toast and 1 for others', () => {
+      const warningComp = createMockComponent('warn-1', 0, 0, 300, 100, { type: 'warning' });
+      const speedComp = createMockComponent('speed-1', 0, 0, 400, 400, { type: 'speed' });
+      const cruiseComp = createMockComponent('cruise-1', 0, 0, 200, 150, { type: 'cruiseControl' });
+
+      assert.equal(getComponentBorderWidthPx(warningComp), 2);
+      assert.equal(getComponentBorderWidthPx(speedComp), 1);
+      assert.equal(getComponentBorderWidthPx(cruiseComp), 1);
+    });
+
+    it('snapChildInsideParent clamps child bounds inside parent inner border box', () => {
+      // Parent: 400x300 at (100, 100), bw = 1. Inner box: x=101, y=101, w=398, h=298.
+      const parent = createMockComponent('speed-parent', 100, 100, 400, 300, { type: 'speed' });
+
+      // Child positioned partially overshooting left/top edges
+      const childOvershootTopLeft = createMockComponent('child-tl', 90, 95, 150, 100);
+      const snappedTL = snapChildInsideParent(childOvershootTopLeft, parent);
+      assert.equal(snappedTL.x, 101, 'Child left clamped to innerX (101)');
+      assert.equal(snappedTL.y, 101, 'Child top clamped to innerY (101)');
+      assert.equal(snappedTL.width, 150);
+      assert.equal(snappedTL.height, 100);
+
+      // Child positioned overshooting right/bottom edges
+      const childOvershootBottomRight = createMockComponent('child-br', 400, 350, 150, 100);
+      const snappedBR = snapChildInsideParent(childOvershootBottomRight, parent);
+      // Max X = innerX + innerWidth - width = 101 + 398 - 150 = 349
+      // Max Y = innerY + innerHeight - height = 101 + 298 - 100 = 299
+      assert.equal(snappedBR.x, 349, 'Child right clamped to inner border edge');
+      assert.equal(snappedBR.y, 299, 'Child bottom clamped to inner border edge');
+      assert.equal(snappedBR.x + snappedBR.width, parent.x + parent.width - 1);
+      assert.equal(snappedBR.y + snappedBR.height, parent.y + parent.height - 1);
+    });
+
+    it('snapChildInsideParent shrinks child if child exceeds parent inner box dimensions', () => {
+      // Parent: 300x200 at (50, 50), warning comp (bw = 2).
+      // Inner box: x=52, y=52, w=296, h=196.
+      const parent = createMockComponent('warn-parent', 50, 50, 300, 200, { type: 'warning' });
+      const childOversized = createMockComponent('oversized-child', 40, 40, 350, 250);
+
+      const snapped = snapChildInsideParent(childOversized, parent);
+      assert.equal(snapped.width, 296, 'Child width shrunk to fit innerWidth');
+      assert.equal(snapped.height, 196, 'Child height shrunk to fit innerHeight');
+      assert.equal(snapped.x, 52, 'Child x clamped to innerX');
+      assert.equal(snapped.y, 52, 'Child y clamped to innerY');
+    });
+
+    it('connectComponent with inside style snaps child bounds, turns off child borders, and leaves parent border untouched', () => {
+      const state = useMockpitStore.getState();
+      const screenId = state.activeView;
+
+      // Speedometer parent: 400x400 at (100, 100)
+      const parent = createMockComponent('speedo-parent', 100, 100, 400, 400, {
+        type: 'speed',
+        borderOverrides: { top: true, right: true, bottom: true, left: true },
+      });
+      // Cruise child: 180x180 at (100, 100) (inside overlap area = 100% >= 90%, overshoots parent border by 1px on left and top)
+      const child = createMockComponent('cruise-child', 100, 100, 180, 180, {
+        type: 'cruiseControl',
+        staticProps: { showHeader: 'true' },
+        borderOverrides: { top: true, right: true, bottom: true, left: true },
+      });
+
+      useMockpitStore.setState({
+        componentsByScreen: {
+          ...state.componentsByScreen,
+          [screenId]: [parent, child],
+        },
+        components: [parent, child],
+      });
+
+      // Connect
+      useMockpitStore.getState().connectComponent('cruise-child', 'speedo-parent');
+
+      const comps = useMockpitStore.getState().componentsByScreen[screenId];
+      const updatedChild = comps.find((c) => c.id === 'cruise-child')!;
+      const updatedParent = comps.find((c) => c.id === 'speedo-parent')!;
+
+      // 1. Child integration metadata
+      assert.equal(updatedChild.parentId, 'speedo-parent');
+      assert.equal(updatedChild.integrationStyle, 'inside');
+
+      // 2. Child bounds snapped to inner box (x: 101, y: 101)
+      assert.equal(updatedChild.x, 101);
+      assert.equal(updatedChild.y, 101);
+      assert.equal(updatedChild.width, 180);
+      assert.equal(updatedChild.height, 180);
+
+      // 3. Child borders all turned off
+      assert.deepEqual(updatedChild.borderOverrides, {
+        top: false,
+        right: false,
+        bottom: false,
+        left: false,
+      });
+
+      // 4. Parent borders are NOT altered (all borders remain true, 100% visible)
+      assert.deepEqual(updatedParent.borderOverrides, {
+        top: true,
+        right: true,
+        bottom: true,
+        left: true,
+      });
+    });
+
+    it('Canvas wrapper sets data-integrated-child="inside" for inside children, and CSS overrides child surface', async () => {
+      const fs = await import('fs');
+      const canvasCode = fs.readFileSync('src/components/Canvas.tsx', 'utf8');
+      const indexCss = fs.readFileSync('src/index.css', 'utf8');
+
+      // Canvas.tsx has data-integrated-child on both presenter and editor wrappers
+      assert.match(
+        canvasCode,
+        /data-integrated-child=\{comp\.parentId && comp\.integrationStyle === 'inside' \? 'inside' : undefined\}/,
+        'Canvas must apply data-integrated-child="inside" attribute'
+      );
+
+      // index.css has rules targeting [data-integrated-child="inside"]
+      assert.match(
+        indexCss,
+        /\[data-integrated-child="inside"\]/,
+        'index.css must define rules for [data-integrated-child="inside"]'
+      );
+      assert.match(
+        indexCss,
+        /background:\s*transparent\s*!important/,
+        'CSS rule must set background: transparent !important'
+      );
+      assert.match(
+        indexCss,
+        /backdrop-filter:\s*none\s*!important/,
+        'CSS rule must set backdrop-filter: none !important'
+      );
+      assert.match(
+        indexCss,
+        /box-shadow:\s*none\s*!important/,
+        'CSS rule must set box-shadow: none !important'
+      );
     });
   });
 });

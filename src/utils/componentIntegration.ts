@@ -229,3 +229,52 @@ export function formatAttachmentPosition(pos: AttachmentPosition): string {
       return pos;
   }
 }
+
+/**
+ * Returns the border width in px for a component root.
+ * Default is 1px; components using 'border-2' (e.g. warning alerts) return 2px.
+ */
+export function getComponentBorderWidthPx(component: ComponentInstance): number {
+  if (component.type === 'warning') {
+    return 2;
+  }
+  return 1;
+}
+
+/**
+ * Snaps and clamps an 'inside' child component's bounding geometry to lie
+ * strictly within the parent's inner border box on connection.
+ *
+ * Inner box = parent (x + bw, y + bw, width - 2*bw, height - 2*bw).
+ * If the child is larger than the inner box on an axis, it shrinks to fit;
+ * then its position is clamped into the box.
+ */
+export function snapChildInsideParent(
+  child: ComponentInstance,
+  parent: ComponentInstance
+): { x: number; y: number; width: number; height: number } {
+  const bw = getComponentBorderWidthPx(parent);
+  const innerX = parent.x + bw;
+  const innerY = parent.y + bw;
+  const innerWidth = Math.max(0, parent.width - 2 * bw);
+  const innerHeight = Math.max(0, parent.height - 2 * bw);
+
+  const width = Math.min(child.width, innerWidth);
+  const height = Math.min(child.height, innerHeight);
+
+  const minX = innerX;
+  const maxX = innerX + innerWidth - width;
+  const clampedX = maxX >= minX ? Math.max(minX, Math.min(child.x, maxX)) : minX;
+
+  const minY = innerY;
+  const maxY = innerY + innerHeight - height;
+  const clampedY = maxY >= minY ? Math.max(minY, Math.min(child.y, maxY)) : minY;
+
+  return {
+    x: clampedX,
+    y: clampedY,
+    width,
+    height,
+  };
+}
+

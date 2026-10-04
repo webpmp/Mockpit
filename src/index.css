@@ -140,3 +140,17 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* Connected Components: child inherits parent's background for inside integration */
+[data-integrated-child="inside"] > *:first-child,
+[data-integrated-child="inside"] > * {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+[data-integrated-child="inside"] > .pointer-events-none {
+  box-shadow: 0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent) !important;
+}
+

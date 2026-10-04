@@ -139,6 +139,7 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
               return (
                 <div
                   key={comp.id}
+                  data-integrated-child={comp.parentId && comp.integrationStyle === 'inside' ? 'inside' : undefined}
                   className="absolute pointer-events-auto"
                   style={{
                     left: comp.x - offsetX,
@@ -1016,6 +1017,7 @@ export const Canvas: React.FC = () => {
                     return (
                       <div
                         key={comp.id}
+                        data-integrated-child={comp.parentId && comp.integrationStyle === 'inside' ? 'inside' : undefined}
                         className={`absolute group cursor-pointer pointer-events-auto ${
                           dragInfo?.id === comp.id || resizeInfo?.id === comp.id || isCounterpartOfActiveDrag
                             ? 'transition-none'
