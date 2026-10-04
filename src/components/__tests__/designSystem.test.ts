@@ -90,6 +90,7 @@ export const MIGRATED_CANVAS_FILES: readonly string[] = [
   'src/components/BottomDock.tsx',
   'src/components/QuickAccessOverlay.tsx',
   'src/components/VehicleBackground.tsx',
+  'src/components/ComponentRenderer.tsx',
 ];
 
 describe('Design System Foundation Suite (Spec v1)', () => {

@@ -123,7 +123,7 @@ export const DEFAULT_COMPONENT_LABELS: Record<string, string> = {
 };
 
 export const getAlphaColor = (color: string, hexAlpha: string, mixPercent: number = 25): string => {
-  if (!color) return 'var(--color-primary)';
+  if (!color) return 'var(--color-ds-primary)';
   if (color.startsWith('var(')) {
     return `color-mix(in srgb, ${color} ${mixPercent}%, transparent)`;
   }
@@ -186,8 +186,8 @@ export const ComponentHeader: React.FC< ComponentHeaderProps > = ({
   if (hidden) return null;
 
   const baseHeaderClass = hideDivider
-    ? 'flex items-center justify-between text-[11px] font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none leading-none'
-    : 'flex items-center justify-between h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60';
+    ? 'flex items-center justify-between text-[11px] font-bold tracking-wider text-ds-content-muted uppercase z-10 shrink-0 select-none leading-none'
+    : 'flex items-center justify-between h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-ds-content-muted uppercase z-10 shrink-0 select-none pb-1 border-b border-ds-line-subtle/60';
 
   return (
     <div className={`${baseHeaderClass} ${className}`}>
@@ -264,7 +264,7 @@ const MessageToastCard: React.FC<{
 
   return (
     <div
-      className={`w-full rounded-2xl bg-slate-950/95 ${getBorderClasses(component.borderOverrides, '', 'border-2')} p-3 flex flex-col justify-between shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+      className={`w-full rounded-2xl bg-ds-background/95 ${getBorderClasses(component.borderOverrides, '', 'border-2')} p-3 flex flex-col justify-between shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
       style={{
         borderColor: customColor,
         boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
@@ -279,7 +279,7 @@ const MessageToastCard: React.FC<{
         rightElement={
           <button
             onClick={handleDismissClick}
-            className="p-1 rounded bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            className="p-1 rounded bg-ds-surface/90 border border-ds-line/80 text-ds-content-secondary hover:text-ds-content hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0"
             title="Dismiss Alert (X)"
           >
             <X className="w-3.5 h-3.5" />
@@ -305,7 +305,7 @@ const MessageToastCard: React.FC<{
         ) : avatarName ? (
           <ContactAvatar
             name={avatarName}
-            className="w-9 h-9 border border-slate-700/80 shadow-md shrink-0"
+            className="w-9 h-9 border border-ds-line/80 shadow-md shrink-0"
             fontSizeClassName="text-xs font-extrabold"
           />
         ) : (
@@ -322,8 +322,8 @@ const MessageToastCard: React.FC<{
         )}
 
         <div className="flex flex-col justify-center min-w-0 flex-1">
-          {title && <span className="text-[11px] font-bold text-slate-400 font-mono">{title}</span>}
-          <p className="text-xs text-slate-100 font-medium leading-snug line-clamp-2 break-words mt-0.5">
+          {title && <span className="text-[11px] font-bold text-ds-content-muted font-mono">{title}</span>}
+          <p className="text-xs text-ds-content font-medium leading-snug line-clamp-2 break-words mt-0.5">
             {message}
           </p>
         </div>
@@ -388,7 +388,7 @@ export const renderNotificationIcon = (
 
 const customPinIcon = L.divIcon({
   className: 'custom-map-pin',
-  html: `<div style="background-color: var(--color-primary, #38bdf8); width: 14px; height: 14px; border-radius: 50%; border: 3px solid #0f172a; box-shadow: 0 0 10px var(--color-primary, #38bdf8);"></div>`,
+  html: `<div style="background-color: var(--color-ds-primary); width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--color-ds-surface); box-shadow: 0 0 10px var(--color-ds-primary);"></div>`,
   iconSize: [14, 14],
   iconAnchor: [7, 7],
 });
@@ -439,7 +439,7 @@ const NavHomeWidget: React.FC<{
     <div
       id={`component-${component.type}`}
       data-component-type="navHome"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -449,7 +449,7 @@ const NavHomeWidget: React.FC<{
         isPresentation={isPresentation}
         hidden={component.staticProps?.showHeader === 'false'}
         rightElement={
-          <span className="text-[0.5625rem] font-mono px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 font-semibold">
+          <span className="text-[0.5625rem] font-mono px-1.5 py-0.5 rounded bg-ds-surface-raised/80 text-ds-content-secondary border border-ds-line/60 font-semibold">
             SAVED
           </span>
         }
@@ -467,7 +467,7 @@ const NavHomeWidget: React.FC<{
           placeholder="Enter Home city or address..."
           componentId={component.id}
           keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-          icon={<MapPin className="w-3.5 h-3.5 text-slate-400" />}
+          icon={<MapPin className="w-3.5 h-3.5 text-ds-content-muted" />}
         />
       </div>
 
@@ -481,9 +481,9 @@ const NavHomeWidget: React.FC<{
             stops: [],
           });
         }}
-        className="w-full py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+        className="w-full py-1.5 px-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line"
       >
-        <Navigation className="w-3.5 h-3.5 text-slate-400" /> Navigate Home
+        <Navigation className="w-3.5 h-3.5 text-ds-content-muted" /> Navigate Home
       </button>
     </div>
   );
@@ -548,7 +548,7 @@ const NavFavoritesWidget: React.FC<{
       ref={containerRef}
       id={`component-${component.type}`}
       data-component-type="navFavorites"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -562,11 +562,11 @@ const NavFavoritesWidget: React.FC<{
       <div className="flex-1 min-h-0 my-2 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
         {/* Favorites Section */}
         <div className="space-y-1">
-          <span className="text-[0.5625rem] font-mono text-slate-500 uppercase tracking-wider font-semibold block px-1">
+          <span className="text-[0.5625rem] font-mono text-ds-content-subtle uppercase tracking-wider font-semibold block px-1">
             SAVED PLACES
           </span>
           {favorites.length === 0 ? (
-            <div className="text-[0.6875rem] text-slate-500 font-mono italic px-2 py-1">
+            <div className="text-[0.6875rem] text-ds-content-subtle font-mono italic px-2 py-1">
               No saved favorite locations.
             </div>
           ) : (
@@ -582,13 +582,15 @@ const NavFavoritesWidget: React.FC<{
                     stops: [],
                   });
                 }}
-                className="group p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
+                className="group p-2 rounded-xl bg-ds-background/60 hover:bg-ds-surface-raised/80 border border-ds-line-subtle/80 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
               >
                 <div className="min-w-0 pr-2 flex items-center gap-2">
+                  {/* ds-raw-start: favorites gold is a fixed iconographic color */}
                   <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />
+                  {/* ds-raw-end */}
                   <div className="min-w-0">
-                    <div className="text-[0.75rem] font-bold text-slate-200 truncate">{fav.label}</div>
-                    <div className="text-[0.625rem] text-slate-400 truncate">{fav.address}</div>
+                    <div className="text-[0.75rem] font-bold text-ds-content truncate">{fav.label}</div>
+                    <div className="text-[0.625rem] text-ds-content-muted truncate">{fav.address}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -597,7 +599,7 @@ const NavFavoritesWidget: React.FC<{
                       e.stopPropagation();
                       removeFavorite(fav.id);
                     }}
-                    className="p-1.5 rounded-lg hover:bg-slate-700/80 text-slate-500 hover:text-rose-400 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
+                    className="p-1.5 rounded-lg hover:bg-ds-surface-hover/80 text-ds-content-subtle hover:text-ds-error transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
                     title="Delete Favorite"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -610,8 +612,8 @@ const NavFavoritesWidget: React.FC<{
 
         {/* Inline Add Favorite Form */}
         {isAdding ? (
-          <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 space-y-2">
-            <div className="text-[0.625rem] font-mono text-slate-300 font-bold uppercase">Add New Favorite</div>
+          <div className="p-2.5 rounded-xl bg-ds-background/80 border border-ds-line/80 space-y-2">
+            <div className="text-[0.625rem] font-mono text-ds-content-secondary font-bold uppercase">Add New Favorite</div>
             <MockpitInput
               value={newLabel}
               onChange={setNewLabel}
@@ -631,7 +633,7 @@ const NavFavoritesWidget: React.FC<{
               placeholder="Enter city or landmark..."
               componentId={component.id}
               keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-              icon={<MapPin className="w-3.5 h-3.5 text-slate-400" />}
+              icon={<MapPin className="w-3.5 h-3.5 text-ds-content-muted" />}
             />
             <div className="flex items-center gap-2 pt-1">
               <button
@@ -642,10 +644,11 @@ const NavFavoritesWidget: React.FC<{
                   setNewLat(null);
                   setNewLng(null);
                 }}
-                className="flex-1 py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-colors cursor-pointer border border-slate-700 min-h-[36px]"
+                className="flex-1 py-1.5 px-2 rounded-lg bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content-muted hover:text-ds-content text-xs font-mono font-bold transition-colors cursor-pointer border border-ds-line min-h-[36px]"
               >
                 Cancel
               </button>
+              {/* ds-raw-start: favorites gold is a fixed iconographic color */}
               <button
                 onClick={handleSaveFavorite}
                 disabled={!newAddress.trim() || newLat === null}
@@ -653,21 +656,22 @@ const NavFavoritesWidget: React.FC<{
               >
                 Save Favorite
               </button>
+              {/* ds-raw-end */}
             </div>
           </div>
         ) : (
           <button
             onClick={() => setIsAdding(true)}
-            className="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700 min-h-[44px]"
+            className="w-full py-2 px-3 rounded-xl bg-ds-surface-raised/80 hover:bg-ds-surface-hover text-ds-content text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line min-h-[44px]"
           >
-            <Plus className="w-4 h-4 text-slate-400" /> Add Favorite
+            <Plus className="w-4 h-4 text-ds-content-muted" /> Add Favorite
           </button>
         )}
 
         {/* Recents Section */}
         {recents.length > 0 && (
-          <div className="space-y-1 pt-2 border-t border-slate-800/80">
-            <span className="text-[0.5625rem] font-mono text-slate-500 uppercase tracking-wider font-semibold block px-1">
+          <div className="space-y-1 pt-2 border-t border-ds-line-subtle/80">
+            <span className="text-[0.5625rem] font-mono text-ds-content-subtle uppercase tracking-wider font-semibold block px-1">
               RECENT DESTINATIONS
             </span>
             {recents.map((recent) => (
@@ -682,25 +686,27 @@ const NavFavoritesWidget: React.FC<{
                     stops: [],
                   });
                 }}
-                className="group p-2 rounded-xl bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/60 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
+                className="group p-2 rounded-xl bg-ds-background/40 hover:bg-ds-surface-raised/60 border border-ds-line-subtle/60 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
               >
                 <div className="min-w-0 pr-2 flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <Clock className="w-3.5 h-3.5 text-ds-content-subtle shrink-0" />
                   <div className="min-w-0">
-                    <div className="text-[0.6875rem] font-bold text-slate-300 truncate">{recent.label}</div>
-                    <div className="text-[0.5625rem] text-slate-500 truncate">{recent.address}</div>
+                    <div className="text-[0.6875rem] font-bold text-ds-content-secondary truncate">{recent.label}</div>
+                    <div className="text-[0.5625rem] text-ds-content-subtle truncate">{recent.address}</div>
                   </div>
                 </div>
+                {/* ds-raw-start: favorites gold is a fixed iconographic color */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     promoteRecentToFavorite(recent.id, recent.label);
                   }}
-                  className="p-1.5 rounded-lg hover:bg-slate-700/80 text-slate-400 hover:text-amber-300 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
+                  className="p-1.5 rounded-lg hover:bg-ds-surface-hover/80 text-ds-content-muted hover:text-amber-300 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
                   title="Save as Favorite"
                 >
                   <Star className="w-3.5 h-3.5" />
                 </button>
+                {/* ds-raw-end */}
               </div>
             ))}
           </div>
@@ -1046,7 +1052,7 @@ const NavDestinationWidget: React.FC<{
       ref={cardRef}
       id={`component-${component.type}`}
       data-component-type="navDestination"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -1062,47 +1068,47 @@ const NavDestinationWidget: React.FC<{
           {/* Active Mode: Live Trip Estimate 2x2 Grid */}
           {activeTrip && estimate && (
             estimate.isUnresolved ? (
-              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-amber-300">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+              <div className="p-2.5 rounded-xl bg-ds-warning/10 border border-ds-warning/30 flex items-center gap-2 text-ds-warning">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-ds-warning" />
                 <span className="text-[0.6875rem] font-mono font-medium leading-tight">
                   {estimate.unresolvedMessage}
                 </span>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-1.5 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
-                <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
-                  <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+              <div className="grid grid-cols-2 gap-1.5 bg-ds-background/60 p-2 rounded-xl border border-ds-line-subtle/80">
+                <div className="bg-ds-surface/80 p-2 rounded-lg border border-ds-line-subtle/60 flex flex-col justify-between">
+                  <span className="text-[0.5625rem] text-ds-content-muted block font-mono uppercase font-semibold leading-tight mb-0.5">
                     Distance
                   </span>
-                  <span className="text-xs font-bold text-slate-100 font-mono leading-tight">
+                  <span className="text-xs font-bold text-ds-content font-mono leading-tight">
                     {estimate.formattedDistance}
                   </span>
                 </div>
 
-                <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
-                  <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                <div className="bg-ds-surface/80 p-2 rounded-lg border border-ds-line-subtle/60 flex flex-col justify-between">
+                  <span className="text-[0.5625rem] text-ds-content-muted block font-mono uppercase font-semibold leading-tight mb-0.5">
                     Estimated Time
                   </span>
-                  <span className="text-xs font-bold text-slate-100 font-mono leading-tight">
+                  <span className="text-xs font-bold text-ds-content font-mono leading-tight">
                     {estimate.formattedDuration}
                   </span>
                 </div>
 
-                <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
-                  <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                <div className="bg-ds-surface/80 p-2 rounded-lg border border-ds-line-subtle/60 flex flex-col justify-between">
+                  <span className="text-[0.5625rem] text-ds-content-muted block font-mono uppercase font-semibold leading-tight mb-0.5">
                     Energy Required
                   </span>
-                  <span className="text-[0.6875rem] font-bold text-slate-100 font-mono leading-tight">
+                  <span className="text-[0.6875rem] font-bold text-ds-content font-mono leading-tight">
                     {estimate.formattedEnergy}
                   </span>
                 </div>
 
-                <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60 flex flex-col justify-between">
-                  <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-0.5">
+                <div className="bg-ds-surface/80 p-2 rounded-lg border border-ds-line-subtle/60 flex flex-col justify-between">
+                  <span className="text-[0.5625rem] text-ds-content-muted block font-mono uppercase font-semibold leading-tight mb-0.5">
                     Arrival Charge
                   </span>
                   <span className={`text-[0.6875rem] font-bold font-mono leading-tight ${
-                    estimate.isOutOfRange ? 'text-amber-400' : 'text-emerald-400'
+                    estimate.isOutOfRange ? 'text-ds-warning' : 'text-ds-success'
                   }`}>
                     {estimate.formattedArrivalBattery}
                   </span>
@@ -1112,18 +1118,18 @@ const NavDestinationWidget: React.FC<{
           )}
 
           {/* Destination with Name and Address Geocode */}
-          <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5">
+          <div className="p-2 rounded-xl bg-ds-background/60 border border-ds-line-subtle space-y-1.5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-200 font-mono">
-                <Flag className="w-3.5 h-3.5 text-sky-400" />
+              <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-ds-content font-mono">
+                <Flag className="w-3.5 h-3.5 text-ds-primary" />
                 <span>DESTINATION</span>
               </div>
               <button
                 type="button"
                 onClick={handleAddStop}
-                className="min-h-[44px] px-2.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-[0.625rem] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer border border-dashed border-slate-700/80 hover:border-slate-600"
+                className="min-h-[44px] px-2.5 rounded-lg bg-ds-background/40 hover:bg-ds-surface-raised/80 text-ds-content-secondary hover:text-ds-content text-[0.625rem] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer border border-dashed border-ds-line/80 hover:border-ds-line-strong"
               >
-                <Plus className="w-3.5 h-3.5 text-slate-400" />
+                <Plus className="w-3.5 h-3.5 text-ds-content-muted" />
                 <span>Add Stop</span>
               </button>
             </div>
@@ -1147,11 +1153,11 @@ const NavDestinationWidget: React.FC<{
           {currentStops.map((stop, i) => (
             <div
               key={stop.id || i}
-              className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1.5 transition-all"
+              className="p-2 rounded-xl bg-ds-background/40 border border-ds-line-subtle/80 space-y-1.5 transition-all"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-slate-300 font-mono">
-                  <span className="w-4 h-4 rounded-full bg-slate-800 text-[0.5625rem] font-bold font-mono flex items-center justify-center text-slate-300 shrink-0 border border-slate-700">
+                <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-ds-content-secondary font-mono">
+                  <span className="w-4 h-4 rounded-full bg-ds-surface-raised text-[0.5625rem] font-bold font-mono flex items-center justify-center text-ds-content-secondary shrink-0 border border-ds-line">
                     {i + 1}
                   </span>
                   <span>STOP {i + 1}</span>
@@ -1160,7 +1166,7 @@ const NavDestinationWidget: React.FC<{
                   onClick={() => handleRemoveStop(i)}
                   aria-label={`Remove stop ${i + 1}`}
                   title="Remove Stop"
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 hover:text-rose-400 transition-colors cursor-pointer rounded-lg hover:bg-slate-900"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ds-content-subtle hover:text-ds-error transition-colors cursor-pointer rounded-lg hover:bg-ds-surface"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -1177,7 +1183,7 @@ const NavDestinationWidget: React.FC<{
                 keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
               />
               {stopLegs[i] && (
-                <div className="text-[0.5625rem] font-mono text-slate-400 pl-0.5">
+                <div className="text-[0.5625rem] font-mono text-ds-content-muted pl-0.5">
                   {stopLegs[i].isUnresolved
                     ? '--'
                     : `${stopLegs[i].formattedDistance} · est. ${stopLegs[i].formattedDuration}`}
@@ -1188,14 +1194,14 @@ const NavDestinationWidget: React.FC<{
         </div>
       </div>
 
-      <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
+      <div className="flex items-center gap-2 pt-1 border-t border-ds-line-subtle/60">
         {activeTrip ? (
           showCancelConfirm ? (
             <div className="w-full flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowCancelConfirm(false)}
-                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl border border-slate-800 bg-slate-950/80 hover:bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
+                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl border border-ds-line-subtle bg-ds-background/80 hover:bg-ds-surface text-ds-content-muted hover:text-ds-content text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
               >
                 Keep Trip
               </button>
@@ -1205,7 +1211,7 @@ const NavDestinationWidget: React.FC<{
                   setShowCancelConfirm(false);
                   cancelTripGuidance();
                 }}
-                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
+                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content border border-ds-line text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
               >
                 Confirm Cancel
               </button>
@@ -1213,9 +1219,9 @@ const NavDestinationWidget: React.FC<{
           ) : (
             <button
               onClick={() => setShowCancelConfirm(true)}
-              className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+              className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line"
             >
-              <XCircle className="w-3.5 h-3.5 text-slate-400" /> Cancel Guidance
+              <XCircle className="w-3.5 h-3.5 text-ds-content-muted" /> Cancel Guidance
             </button>
           )
         ) : (
@@ -1230,9 +1236,9 @@ const NavDestinationWidget: React.FC<{
                 destGeocoded: destGeocoded,
               })
             }
-            className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+            className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line"
           >
-            <Navigation className="w-3.5 h-3.5 text-slate-400" /> Start Guidance
+            <Navigation className="w-3.5 h-3.5 text-ds-content-muted" /> Start Guidance
           </button>
         )}
       </div>
@@ -1351,7 +1357,7 @@ const NavSearchWidget: React.FC<{
     <div
       id={`component-${component.type}`}
       data-component-type="navSearch"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -1361,7 +1367,7 @@ const NavSearchWidget: React.FC<{
         isPresentation={isPresentation}
         hidden={component.staticProps?.showHeader === 'false'}
         rightElement={
-          <span className="text-[0.5625rem] font-mono text-slate-400">NEARBY</span>
+          <span className="text-[0.5625rem] font-mono text-ds-content-muted">NEARBY</span>
         }
       />
 
@@ -1383,7 +1389,7 @@ const NavSearchWidget: React.FC<{
           placeholder="Search EV chargers, food, parking..."
           componentId={component.id}
           keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-          icon={<Search className="w-3.5 h-3.5 text-slate-500" />}
+          icon={<Search className="w-3.5 h-3.5 text-ds-content-subtle" />}
           className="min-h-[44px]"
         />
       </div>
@@ -1392,11 +1398,11 @@ const NavSearchWidget: React.FC<{
         <div ref={resultsPanelRef} className="flex-1 min-h-0 flex flex-col justify-between">
           <div className="flex-1 min-h-0 my-1 space-y-1 overflow-y-auto pr-1 custom-scrollbar max-h-[180px]">
             {loading ? (
-              <div className="text-[0.6875rem] text-slate-400 font-mono italic p-2 text-center animate-pulse">
+              <div className="text-[0.6875rem] text-ds-content-muted font-mono italic p-2 text-center animate-pulse">
                 Searching nearby...
               </div>
             ) : displayedPOIs.length === 0 ? (
-              <div className="text-[0.6875rem] text-slate-500 italic p-1">No matching results</div>
+              <div className="text-[0.6875rem] text-ds-content-subtle italic p-1">No matching results</div>
             ) : (
               displayedPOIs.map((poi, idx) => (
                 <div
@@ -1410,25 +1416,25 @@ const NavSearchWidget: React.FC<{
                       stops: [],
                     });
                   }}
-                  className="p-1.5 rounded-lg bg-slate-950/50 hover:bg-slate-800/80 border border-slate-800/80 flex items-center justify-between cursor-pointer transition-colors"
+                  className="p-1.5 rounded-lg bg-ds-background/50 hover:bg-ds-surface-raised/80 border border-ds-line-subtle/80 flex items-center justify-between cursor-pointer transition-colors"
                 >
                   <div className="min-w-0 pr-1">
-                    <div className="text-[0.6875rem] font-bold text-slate-200 truncate">{poi.name}</div>
-                    <div className="text-[0.5625rem] text-emerald-400 font-mono">{poi.status}</div>
+                    <div className="text-[0.6875rem] font-bold text-ds-content truncate">{poi.name}</div>
+                    <div className="text-[0.5625rem] text-ds-success font-mono">{poi.status}</div>
                   </div>
-                  <span className="text-[0.625rem] font-mono text-slate-400 shrink-0 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                  <span className="text-[0.625rem] font-mono text-ds-content-muted shrink-0 bg-ds-surface px-1.5 py-0.5 rounded border border-ds-line-subtle">
                     {poi.dist}
                   </span>
                 </div>
               ))
             )}
           </div>
-          <div className="text-[0.5625rem] text-slate-500 font-mono text-center pt-1 border-t border-slate-800/60">
+          <div className="text-[0.5625rem] text-ds-content-subtle font-mono text-center pt-1 border-t border-ds-line-subtle/60">
             {query.trim() ? 'LIVE POI SEARCH RESULTS' : 'POPULAR NEARBY'}
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-[0.625rem] text-slate-600 font-mono">
+        <div className="flex-1 flex items-center justify-center text-[0.625rem] text-ds-content-subtle font-mono">
           Focus search to view nearby points of interest
         </div>
       )}
@@ -1552,7 +1558,7 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
 
   return (
     <div
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -1583,17 +1589,17 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
           let valClasses = 'text-xs font-black font-mono';
 
           if (status === 'critical') {
-            containerClasses += ' bg-red-950/60 border-red-500/80 shadow-[0_0_12px_rgba(239,68,68,0.3)] animate-pulse';
-            labelClasses += ' text-red-400';
-            valClasses += ' text-red-300';
+            containerClasses += ' bg-ds-error/20 border-ds-error/80 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-error)_30%,transparent)] animate-pulse';
+            labelClasses += ' text-ds-error';
+            valClasses += ' text-ds-error';
           } else if (status === 'warning') {
-            containerClasses += ' bg-amber-950/50 border-amber-500/80 shadow-[0_0_10px_rgba(245,158,11,0.2)]';
-            labelClasses += ' text-amber-400';
-            valClasses += ' text-amber-300';
+            containerClasses += ' bg-ds-warning/20 border-ds-warning/80 shadow-[0_0_10px_color-mix(in_srgb,var(--color-ds-warning)_20%,transparent)]';
+            labelClasses += ' text-ds-warning';
+            valClasses += ' text-ds-warning';
           } else {
-            containerClasses += ' bg-slate-950/60 border-slate-800/80';
-            labelClasses += ' text-slate-500';
-            valClasses += ' text-slate-100';
+            containerClasses += ' bg-ds-background/60 border-ds-line-subtle/80';
+            labelClasses += ' text-ds-content-subtle';
+            valClasses += ' text-ds-content';
           }
 
           const displayedLabel = useAbbreviation ? tire.code : tire.label;
@@ -1607,7 +1613,7 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
                 {status !== 'normal' && (
                   <span
                     className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                      status === 'critical' ? 'bg-red-500 animate-ping' : 'bg-amber-400'
+                      status === 'critical' ? 'bg-ds-error animate-ping' : 'bg-ds-warning'
                     }`}
                   />
                 )}
@@ -1739,7 +1745,7 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
     }
   }, [activeView, findTripPlannerScreenId, setActiveView, triggerNavDestinationAction]);
 
-  const wrapperClasses = `w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`;
+  const wrapperClasses = `w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`;
   const wrapperStyle = { borderColor: isSelected ? customColor : undefined, opacity: styleOpacity };
 
   if (!activeTrip) {
@@ -1753,10 +1759,10 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
       <div className={wrapperClasses} style={wrapperStyle}>
         <ComponentHeader type="navTripSummary" label={headerLabel} customColor={customColor} isPresentation={isPresentation} hidden={component.staticProps?.showHeader === 'false'} />
         <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center p-3 my-auto">
-          <span className="text-xs font-mono text-slate-400">No active trip.</span>
+          <span className="text-xs font-mono text-ds-content-muted">No active trip.</span>
           <button
             onClick={goToTripPlanner}
-            className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold border border-slate-700 cursor-pointer transition-colors shadow-sm"
+            className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-mono font-bold border border-ds-line cursor-pointer transition-colors shadow-sm"
           >
             Set Destination
           </button>
@@ -1793,13 +1799,13 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
         ref={nameRowRef}
         className={`px-0.5 gap-2 ${stackedLayout ? 'flex flex-col' : 'flex items-center justify-between'}`}
       >
-        <span className="text-sm font-bold text-slate-100 font-mono whitespace-nowrap">
+        <span className="text-sm font-bold text-ds-content font-mono whitespace-nowrap">
           {activeTrip.destinationName}
         </span>
         {estimate.isUnresolved ? (
           <span
             ref={statBlockRef as any}
-            className={`self-start text-[0.625rem] font-mono text-amber-300 shrink-0 ${stackedLayout ? '' : 'text-right'}`}
+            className={`self-start text-[0.625rem] font-mono text-ds-warning shrink-0 ${stackedLayout ? '' : 'text-right'}`}
           >
             {estimate.unresolvedMessage}
           </span>
@@ -1808,28 +1814,28 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
             ref={statBlockRef}
             className={`self-start shrink-0 leading-tight ${stackedLayout ? 'text-left' : 'text-right'}`}
           >
-            <div className="text-xs font-bold text-slate-100 font-mono">{estimate.formattedDuration}</div>
-            <div className="text-[0.625rem] text-slate-400 font-mono">{roundedDistance}</div>
+            <div className="text-xs font-bold text-ds-content font-mono">{estimate.formattedDuration}</div>
+            <div className="text-[0.625rem] text-ds-content-muted font-mono">{roundedDistance}</div>
           </div>
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800/60">
+      <div className="flex items-center gap-1.5 pt-1 border-t border-ds-line-subtle/60">
         <button
           type="button"
           onClick={handleTripSummaryAddStop}
-          className="shrink-0 min-h-[36px] px-2.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/80 text-slate-300 hover:text-slate-100 text-[0.625rem] font-bold font-mono border border-slate-700/60 flex items-center gap-1 transition-colors cursor-pointer"
+          className="shrink-0 min-h-[36px] px-2.5 rounded-lg bg-ds-background/40 hover:bg-ds-surface-raised/80 text-ds-content-secondary hover:text-ds-content text-[0.625rem] font-bold font-mono border border-ds-line/60 flex items-center gap-1 transition-colors cursor-pointer"
         >
-          <Plus className="w-3 h-3 text-slate-400" />
+          <Plus className="w-3 h-3 text-ds-content-muted" />
           <span>Add Stop</span>
         </button>
         {stopCount > 0 && (
           <button
             type="button"
             onClick={goToTripPlanner}
-            className="shrink-0 min-h-[36px] px-2 rounded-lg bg-slate-950/40 hover:bg-slate-800/80 text-slate-400 hover:text-slate-200 text-[0.625rem] font-bold font-mono border border-slate-700/60 flex items-center gap-1 transition-colors cursor-pointer"
+            className="shrink-0 min-h-[36px] px-2 rounded-lg bg-ds-background/40 hover:bg-ds-surface-raised/80 text-ds-content-muted hover:text-ds-content text-[0.625rem] font-bold font-mono border border-ds-line/60 flex items-center gap-1 transition-colors cursor-pointer"
           >
-            <MapPin className="w-3 h-3 text-slate-400" />
+            <MapPin className="w-3 h-3 text-ds-content-muted" />
             <span>{stopCount} Stop{stopCount > 1 ? 's' : ''}</span>
           </button>
         )}
@@ -1850,7 +1856,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   const activePalette = useMockpitStore((s) => s.activePalette);
   const activeTrip = useMockpitStore((s) => s.activeTrip);
   const interactionEvents = useMockpitStore((s) => s.interactionEvents);
-  const primaryColor = activePalette?.primary || '#38bdf8';
+  const primaryColor = activePalette?.primary || 'var(--color-ds-primary)';
   const resolved = getResolvedProps(component, vehicleState, interactionEvents);
 
   // Visibility logic
@@ -1894,11 +1900,14 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   if (hasActiveColorBinding && resolved.color) {
     customColor = resolved.color;
   } else if (component.type === 'warning') {
-    customColor = resolved.color || component.staticProps?.color || '#f59e0b';
+    customColor = resolved.color || component.staticProps?.color || 'var(--color-ds-warning)';
   } else {
     const isDefaultOrPresetColor = !resolved.color || 
       resolved.color === 'var(--color-primary)' || 
+      resolved.color === 'var(--color-ds-primary)' || 
+      // ds-raw-start: legacy midnight default color fallback check
       resolved.color === '#38bdf8' || 
+      // ds-raw-end
       resolved.color === defaultTypeColor;
     customColor = isDefaultOrPresetColor ? primaryColor : resolved.color;
   }
@@ -1948,7 +1957,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -1959,15 +1968,15 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             hidden={component.staticProps?.showHeader === 'false'}
             rightElement={
               vehicleState.isCharging ? (
-                <span className="flex items-center gap-1 text-emerald-400 font-bold text-[0.625rem] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  <Zap className="w-3 h-3 fill-emerald-400" />
+                <span className="flex items-center gap-1 text-ds-success font-bold text-[0.625rem] bg-ds-success/10 px-2 py-0.5 rounded-full border border-ds-success/20">
+                  <Zap className="w-3 h-3 fill-ds-success" />
                   CHARGING
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={handleToggleBatteryUnit}
-                  className="text-[0.625rem] font-mono font-bold text-slate-400 hover:text-sky-300 uppercase px-1.5 py-0.5 rounded bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 transition-colors cursor-pointer"
+                  className="text-[0.625rem] font-mono font-bold text-ds-content-muted hover:text-ds-primary uppercase px-1.5 py-0.5 rounded bg-ds-surface-raised/60 hover:bg-ds-surface-raised border border-ds-line/60 transition-colors cursor-pointer"
                   title="Click to toggle display unit (% / miles)"
                 >
                   {isMiles ? `${roundedPercent}%` : `${liveRange} MILE RANGE`}
@@ -1985,14 +1994,14 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               {primaryDisplay}
             </div>
             {vehicleState.isCharging && (
-              <div className="text-xs text-slate-400 font-mono">
+              <div className="text-xs text-ds-content-muted font-mono">
                 {chargingInfoText}
               </div>
             )}
           </div>
 
           {/* Battery Level Progress Bar */}
-          <div className="w-full bg-slate-800/80 h-3 rounded-full overflow-hidden p-0.5 border border-slate-700/50">
+          <div className="w-full bg-ds-surface-raised/80 h-3 rounded-full overflow-hidden p-0.5 border border-ds-line/50">
             <div
               className="h-full rounded-full transition-all duration-500 ease-out"
               style={{
@@ -2102,7 +2111,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-950/95 ${getBorderClasses(component.borderOverrides, '', 'border-2')} p-3.5 flex flex-col justify-center shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-ds-background/95 ${getBorderClasses(component.borderOverrides, '', 'border-2')} p-3.5 flex flex-col justify-center shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
           style={{
             borderColor: customColor,
             boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
@@ -2123,7 +2132,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
                     e.stopPropagation();
                     onMinimize();
                   }}
-                  className="p-1 rounded bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                  className="p-1 rounded bg-ds-surface/90 border border-ds-line/80 text-ds-content-secondary hover:text-ds-content hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0"
                   title="Minimize Alert (X)"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -2145,13 +2154,13 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             </div>
 
             <div className="flex flex-col justify-center min-w-0 flex-1">
-              <span className="text-sm font-extrabold tracking-tight text-slate-100 leading-snug">
+              <span className="text-sm font-extrabold tracking-tight text-ds-content leading-snug">
                 {message}
               </span>
               {details ? (
                 <>
-                  <div className="w-full h-px bg-slate-800 my-1.5" />
-                  <span className="text-xs text-slate-300 font-normal leading-relaxed">
+                  <div className="w-full h-px bg-ds-line-subtle my-1.5" />
+                  <span className="text-xs text-ds-content-secondary font-normal leading-relaxed">
                     {details}
                   </span>
                 </>
@@ -2171,7 +2180,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} flex flex-col shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} flex flex-col shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -2182,7 +2191,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             hidden={component.staticProps?.showHeader === 'false'}
             className="px-3 pt-3"
             rightElement={
-              <span className="text-[0.5625rem] font-mono text-slate-500">
+              <span className="text-[0.5625rem] font-mono text-ds-content-subtle">
                 {lat.toFixed(2)}°, {lng.toFixed(2)}°
               </span>
             }
@@ -2209,7 +2218,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
                   position={[activeTrip.destLat, activeTrip.destLng]}
                   icon={L.divIcon({
                     className: 'custom-dest-pin',
-                    html: `<div style="background-color: #f59e0b; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #0f172a; box-shadow: 0 0 10px #f59e0b;"></div>`,
+                    html: `<div style="background-color: var(--color-ds-warning); width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--color-ds-surface); box-shadow: 0 0 10px var(--color-ds-warning);"></div>`,
                     iconSize: [14, 14],
                     iconAnchor: [7, 7],
                   })}
@@ -2223,7 +2232,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
                   position={[poi.lat, poi.lng]}
                   icon={L.divIcon({
                     className: 'custom-poi-pin',
-                    html: `<div style="background-color: #10b981; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #0f172a; box-shadow: 0 0 8px #10b981;"></div>`,
+                    html: `<div style="background-color: var(--color-ds-success); width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--color-ds-surface); box-shadow: 0 0 8px var(--color-ds-success);"></div>`,
                     iconSize: [10, 10],
                     iconAnchor: [5, 5],
                   })}
@@ -2333,7 +2342,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
 
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -2343,21 +2352,21 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             isPresentation={isPresentation}
             hidden={component.staticProps?.showHeader === 'false'}
             rightElement={
-              <span className="text-[0.5625rem] text-emerald-400 font-mono">CONNECTED</span>
+              <span className="text-[0.5625rem] text-ds-success font-mono">CONNECTED</span>
             }
           />
 
           <div className="flex-1 min-h-0 my-1 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 font-bold text-xs shrink-0">
+            <div className="w-9 h-9 rounded-full bg-ds-surface-raised border border-ds-line flex items-center justify-center text-ds-content font-bold text-xs shrink-0">
               {contact.charAt(0)}
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-bold text-slate-100 truncate">{contact}</div>
-              <div className="text-xs text-slate-400 font-mono truncate">{number}</div>
+              <div className="text-sm font-bold text-ds-content truncate">{contact}</div>
+              <div className="text-xs text-ds-content-muted font-mono truncate">{number}</div>
             </div>
           </div>
 
-          <div className="text-[0.625rem] text-slate-500 font-mono pt-1 border-t border-slate-800/60">
+          <div className="text-[0.625rem] text-ds-content-subtle font-mono pt-1 border-t border-ds-line-subtle/60">
             Hands-free calling ready
           </div>
         </div>
@@ -2477,7 +2486,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           <div
             id={`component-${component.type}`}
             data-component-type="navTripEstimate"
-            className={`w-full min-h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+            className={`w-full min-h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
             style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
           >
             <ComponentHeader
@@ -2489,7 +2498,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             />
 
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center p-3 my-auto">
-              <span className="text-xs font-mono text-slate-400">No active trip.</span>
+              <span className="text-xs font-mono text-ds-content-muted">No active trip.</span>
               <button
                 onClick={() => {
                   const el = document.getElementById('component-navDestination') || document.querySelector('[data-component-type="navDestination"]');
@@ -2497,7 +2506,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }
                 }}
-                className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold border border-slate-700 cursor-pointer transition-colors shadow-sm"
+                className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-mono font-bold border border-ds-line cursor-pointer transition-colors shadow-sm"
               >
                 Set Destination
               </button>
@@ -2522,7 +2531,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         <div
           id={`component-${component.type}`}
           data-component-type="navTripEstimate"
-          className={`w-full min-h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+          className={`w-full min-h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between gap-2.5 shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -2534,33 +2543,33 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           />
 
           <div className="grid grid-cols-2 gap-2 my-auto">
-            <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
-              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
+            <div className="bg-ds-background/60 p-2 rounded-xl border border-ds-line-subtle flex flex-col justify-between">
+              <span className="text-[0.5625rem] text-ds-content-muted block font-mono uppercase font-semibold leading-tight mb-1">
                 {distanceLabel}
               </span>
-              <span className="text-xs font-bold text-slate-100 font-mono leading-tight">{estimate.formattedDistance}</span>
+              <span className="text-xs font-bold text-ds-content font-mono leading-tight">{estimate.formattedDistance}</span>
             </div>
 
-            <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
-              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
+            <div className="bg-ds-background/60 p-2 rounded-xl border border-ds-line-subtle flex flex-col justify-between">
+              <span className="text-[0.5625rem] text-ds-content-muted block font-mono uppercase font-semibold leading-tight mb-1">
                 {estimatedTimeLabel}
               </span>
-              <span className="text-xs font-bold text-slate-100 font-mono leading-tight">{estimate.formattedDuration}</span>
+              <span className="text-xs font-bold text-ds-content font-mono leading-tight">{estimate.formattedDuration}</span>
             </div>
 
-            <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
-              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
+            <div className="bg-ds-background/60 p-2 rounded-xl border border-ds-line-subtle flex flex-col justify-between">
+              <span className="text-[0.5625rem] text-ds-content-muted block font-mono uppercase font-semibold leading-tight mb-1">
                 {energyRequiredLabel}
               </span>
-              <span className="text-[0.6875rem] font-bold text-slate-100 font-mono leading-tight">{estimate.formattedEnergy}</span>
+              <span className="text-[0.6875rem] font-bold text-ds-content font-mono leading-tight">{estimate.formattedEnergy}</span>
             </div>
 
-            <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex flex-col justify-between">
-              <span className="text-[0.5625rem] text-slate-400 block font-mono uppercase font-semibold leading-tight mb-1">
+            <div className="bg-ds-background/60 p-2 rounded-xl border border-ds-line-subtle flex flex-col justify-between">
+              <span className="text-[0.5625rem] text-ds-content-muted block font-mono uppercase font-semibold leading-tight mb-1">
                 {arrivalChargeLabel}
               </span>
               <span className={`text-[0.6875rem] font-bold font-mono leading-tight ${
-                estimate.isOutOfRange ? 'text-amber-400' : 'text-emerald-400'
+                estimate.isOutOfRange ? 'text-ds-warning' : 'text-ds-success'
               }`}>
                 {estimate.formattedArrivalBattery}
               </span>
@@ -2587,7 +2596,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     case 'overheadVisualization': {
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-950 flex flex-col overflow-hidden shadow-xl ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-ds-background flex flex-col overflow-hidden shadow-xl ${baseOpacity}`}
           style={{ opacity: styleOpacity }}
         >
           <OverheadDrivingVisualization
@@ -2784,7 +2793,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     default:
       return (
         <div
-          className={`w-full h-full rounded-2xl bg-slate-900 ${getBorderClasses(component.borderOverrides)} p-4 text-white ${baseOpacity}`}
+          className={`w-full h-full rounded-2xl bg-ds-surface ${getBorderClasses(component.borderOverrides)} p-4 text-white ${baseOpacity}`}
           style={{ opacity: styleOpacity }}
         >
           {component.type}
