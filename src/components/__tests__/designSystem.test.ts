@@ -2,6 +2,7 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { findRawColors, findMarkerErrors } from './dsGuardHelpers';
 import {
   COLOR_ROLES,
   ROLE_GROUPS,
@@ -85,6 +86,10 @@ export const MIGRATED_CANVAS_FILES: readonly string[] = [
   'src/components/designSystem/ThemePreview.tsx',
   'src/components/ContactAvatar.tsx',
   'src/components/VirtualKeyboard.tsx',
+  'src/components/Canvas.tsx',
+  'src/components/BottomDock.tsx',
+  'src/components/QuickAccessOverlay.tsx',
+  'src/components/VehicleBackground.tsx',
 ];
 
 describe('Design System Foundation Suite (Spec v1)', () => {
@@ -698,30 +703,24 @@ describe('Design System Foundation Suite (Spec v1)', () => {
 
   describe('7. Completeness Guard Scaffold', () => {
     it('asserts none of the listed migrated files contain raw palette classes or hex literals', () => {
-      const rawPaletteClassRegex =
-        /\b(?:bg|text|border|ring|from|via|to|fill|stroke|divide|outline|shadow|decoration|accent|caret)-(?:slate|gray|zinc|neutral|stone|sky|blue|emerald|green|amber|yellow|orange|rose|red|violet|purple)-\d+/;
-      const rawHexRegex = /#[0-9a-fA-F]{3,8}\b/;
-
       for (const filePath of MIGRATED_CANVAS_FILES) {
         const fullPath = path.resolve(process.cwd(), filePath);
         assert.ok(fs.existsSync(fullPath), `Migrated canvas file must exist: ${filePath}`);
 
         const content = fs.readFileSync(fullPath, 'utf8');
 
-        // Check for raw palette classes
-        const classMatch = content.match(rawPaletteClassRegex);
+        const markerErrors = findMarkerErrors(content);
         assert.equal(
-          classMatch,
-          null,
-          `File ${filePath} contains raw palette class "${classMatch?.[0]}". Migrated canvas files must only use ds-* classes.`
+          markerErrors.length,
+          0,
+          `File ${filePath} contains marker errors:\n${markerErrors.join('\n')}`
         );
 
-        // Check for raw hex literals
-        const hexMatch = content.match(rawHexRegex);
+        const rawColors = findRawColors(content);
         assert.equal(
-          hexMatch,
-          null,
-          `File ${filePath} contains hex literal "${hexMatch?.[0]}". Migrated canvas files must not use raw hex literals.`
+          rawColors.length,
+          0,
+          `File ${filePath} contains raw color findings:\n${rawColors.map((f) => `  line ${f.line}: ${f.text}`).join('\n')}`
         );
       }
     });
