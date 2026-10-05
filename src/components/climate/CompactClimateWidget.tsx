@@ -57,7 +57,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
   component,
   resolved,
   isSelected,
-  customColor = '#38bdf8',
+  customColor = 'var(--color-ds-primary)',
   baseOpacity,
   styleOpacity,
 }) => {
@@ -409,6 +409,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
 
   // Helper for seat button styling levels
   const getSeatButtonClasses = (heat: number, cool: number, isOpen: boolean): string => {
+    // ds-raw-start: thermal color code is fixed (heat/cool)
     if (heat === 1) {
       return 'bg-amber-400/15 border-amber-400/40 text-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.25)]';
     }
@@ -427,10 +428,11 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
     if (cool === 3) {
       return 'bg-blue-500/35 border-blue-400 text-blue-200 shadow-[0_0_18px_rgba(59,130,246,0.55)] ring-1 ring-blue-400/50';
     }
+    // ds-raw-end
     if (isOpen) {
-      return 'bg-slate-950 border-sky-500 text-sky-300 ring-2 ring-sky-500/30 shadow-[0_0_12px_rgba(14,165,233,0.3)]';
+      return 'bg-ds-background border-ds-primary text-ds-primary ring-2 ring-ds-primary/30 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_30%,transparent)]';
     }
-    return 'bg-slate-950/50 border-slate-800/80 text-slate-500 hover:text-slate-300 hover:border-slate-700';
+    return 'bg-ds-background/50 border-ds-line-subtle/80 text-ds-content-subtle hover:text-ds-content-secondary hover:border-ds-line';
   };
 
   const renderSeatIcon = () => {
@@ -466,6 +468,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
     const intensityClass = (lvl: Level) => {
       const isActive = !isOff && ((isHeating && heat === lvl) || (isCooling && cool === lvl));
       if (isActive) {
+        // ds-raw-start: thermal color code is fixed (heat/cool)
         if (isHeating) {
           if (lvl === 1) return 'bg-amber-400 text-slate-950 font-black shadow-[0_0_14px_rgba(251,191,36,0.5)] border border-amber-300';
           if (lvl === 2) return 'bg-orange-500 text-slate-950 font-black shadow-[0_0_14px_rgba(249,115,22,0.5)] border border-orange-400';
@@ -474,10 +477,11 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
         if (lvl === 1) return 'bg-sky-300 text-slate-950 font-black shadow-[0_0_14px_rgba(125,211,252,0.5)] border border-sky-200';
         if (lvl === 2) return 'bg-blue-400 text-slate-950 font-black shadow-[0_0_14px_rgba(96,165,250,0.5)] border border-blue-300';
         return 'bg-blue-500 text-slate-950 font-black shadow-[0_0_14px_rgba(59,130,246,0.5)] border border-blue-400';
+        // ds-raw-end
       }
       return isOff
-        ? 'bg-slate-950/50 text-slate-500 border border-slate-800/60'
-        : 'bg-slate-950/70 text-slate-400 border border-slate-800/90';
+        ? 'bg-ds-background/50 text-ds-content-subtle border border-ds-line-subtle/60'
+        : 'bg-ds-background/70 text-ds-content-muted border border-ds-line-subtle/90';
     };
 
     const levelWord = (lvl: Level) => (lvl === 1 ? 'low' : lvl === 2 ? 'medium' : 'high');
@@ -495,7 +499,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
           animate={{ opacity: seatPopoverPos ? 1 : 0, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.95 }}
           transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-          className="seat-popover-portal ds-scope fixed z-[10050] p-2 rounded-2xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden select-none flex flex-row items-stretch gap-2 w-max max-w-none whitespace-nowrap"
+          className="seat-popover-portal ds-scope fixed z-[10050] p-2 rounded-2xl bg-ds-background/95 border border-ds-line/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden select-none flex flex-row items-stretch gap-2 w-max max-w-none whitespace-nowrap"
           style={{ top: seatPopoverPos?.top ?? -9999, left: seatPopoverPos?.left ?? -9999 }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -503,15 +507,16 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
           <div
             role="group"
             aria-label={`${seatLabel} seat: Climate mode`}
-            className="flex items-stretch gap-0.5 p-0.5 rounded-xl bg-slate-950/70 border border-slate-800/90"
+            className="flex items-stretch gap-0.5 p-0.5 rounded-xl bg-ds-background/70 border border-ds-line-subtle/90"
           >
+            {/* ds-raw-start: thermal color code is fixed (heat/cool) */}
             <button
               type="button"
               onClick={() => handleModeToggle(seat, 'heat')}
               className={`flex-1 min-w-[64px] flex flex-col items-center justify-center gap-2 px-3 py-2 rounded-l-[10px] rounded-r-[4px] font-mono font-bold text-[10px] sm:text-xs tracking-wider select-none cursor-pointer active:brightness-75 ${
                 isHeating
-                  ? 'bg-slate-950 text-orange-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
-                  : 'bg-slate-800 text-slate-400'
+                  ? 'bg-ds-background text-orange-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
+                  : 'bg-ds-surface-raised text-ds-content-muted'
               }`}
               title={isHeating ? `${seatLabel} seat: Turn HEAT OFF` : `${seatLabel} seat: Select HEAT`}
               aria-label={isHeating ? `${seatLabel} seat: Turn HEAT OFF` : `${seatLabel} seat: Select HEAT`}
@@ -519,18 +524,20 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
               <span
                 aria-hidden="true"
                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  isHeating ? 'bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.7)]' : 'bg-slate-700'
+                  isHeating ? 'bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.7)]' : 'bg-ds-surface-hover'
                 }`}
               />
               HEAT
             </button>
+            {/* ds-raw-end */}
+            {/* ds-raw-start: thermal color code is fixed (heat/cool) */}
             <button
               type="button"
               onClick={() => handleModeToggle(seat, 'cool')}
               className={`flex-1 min-w-[64px] flex flex-col items-center justify-center gap-2 px-3 py-2 rounded-r-[10px] rounded-l-[4px] font-mono font-bold text-[10px] sm:text-xs tracking-wider select-none cursor-pointer active:brightness-75 ${
                 isCooling
-                  ? 'bg-slate-950 text-sky-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
-                  : 'bg-slate-800 text-slate-400'
+                  ? 'bg-ds-background text-sky-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
+                  : 'bg-ds-surface-raised text-ds-content-muted'
               }`}
               title={isCooling ? `${seatLabel} seat: Turn COOL OFF` : `${seatLabel} seat: Select COOL`}
               aria-label={isCooling ? `${seatLabel} seat: Turn COOL OFF` : `${seatLabel} seat: Select COOL`}
@@ -538,11 +545,12 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
               <span
                 aria-hidden="true"
                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  isCooling ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-slate-700'
+                  isCooling ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-ds-surface-hover'
                 }`}
               />
               COOL
             </button>
+            {/* ds-raw-end */}
           </div>
 
           {/* Single shared LOW / MED / HIGH intensity row */}
@@ -574,7 +582,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.96 }}
           transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-          className={`absolute right-0 bottom-[calc(100%+6px)] z-50 p-1 rounded-xl bg-slate-950/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden ${
+          className={`absolute right-0 bottom-[calc(100%+6px)] z-50 p-1 rounded-xl bg-ds-background/95 border border-ds-line/80 shadow-2xl backdrop-blur-xl box-border overflow-hidden ${
             fanOrientation === 'vertical'
               ? 'flex flex-col gap-1 w-24 sm:w-28'
               : 'flex items-center gap-1'
@@ -595,13 +603,13 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   fanOrientation === 'vertical' ? 'w-full py-1.5' : 'px-2.5 py-1'
                 } rounded-lg font-mono text-xs sm:text-[12.5px] font-bold tracking-wider transition-all select-none cursor-pointer whitespace-nowrap text-center ${
                   isCurrent
-                    ? 'bg-cyan-500/25 border border-cyan-500/60 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 border border-transparent'
+                    ? 'bg-ds-primary/25 border border-ds-primary/60 text-ds-primary shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_25%,transparent)]'
+                    : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/80 border border-transparent'
                 }`}
                 style={{
                   color: isCurrent ? customColor : undefined,
-                  borderColor: isCurrent ? `${customColor}80` : undefined,
-                  backgroundColor: isCurrent ? `${customColor}25` : undefined,
+                  borderColor: isCurrent ? `color-mix(in srgb, ${customColor} 50%, transparent)` : undefined,
+                  backgroundColor: isCurrent ? `color-mix(in srgb, ${customColor} 15%, transparent)` : undefined,
                 }}
               >
                 {option}
@@ -616,7 +624,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`@container w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} ${
+      className={`@container w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} ${
         isComfortable ? 'p-3.5 sm:p-4' : isVeryNarrow ? 'p-2.5' : 'p-3'
       } flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative select-none ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
@@ -642,15 +650,15 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 onPointerMove={handlePointerMoveTemp}
                 onPointerUp={handlePointerUpTemp}
                 onPointerCancel={handlePointerUpTemp}
-                className="group flex items-center gap-1 cursor-ns-resize touch-none select-none py-0.5 px-0.5 rounded-lg hover:bg-slate-800/40 min-w-0"
+                className="group flex items-center gap-1 cursor-ns-resize touch-none select-none py-0.5 px-0.5 rounded-lg hover:bg-ds-surface-raised/40 min-w-0"
                 title="Drag vertically to adjust temperature"
               >
-                <ArrowUpDown className="w-3.5 h-3.5 shrink-0 text-slate-400 group-hover:text-slate-200" />
+                <ArrowUpDown className="w-3.5 h-3.5 shrink-0 text-ds-content-muted group-hover:text-ds-content" />
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-2xl font-black text-slate-100 font-mono leading-none">
+                  <span className="text-2xl font-black text-ds-content font-mono leading-none">
                     {activeTemp}°
                   </span>
-                  <span className="text-xs font-bold text-slate-400 font-mono">F</span>
+                  <span className="text-xs font-bold text-ds-content-muted font-mono">F</span>
                 </div>
               </div>
             </div>
@@ -662,8 +670,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 onClick={handleToggleSync}
                 className={`font-mono text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-lg border transition-all select-none cursor-pointer active:scale-95 whitespace-nowrap ${
                   isSynced
-                    ? 'text-cyan-300 bg-cyan-500/15 border-cyan-500/35 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
-                    : 'text-slate-400 bg-slate-800/70 border-slate-700/60'
+                    ? 'text-ds-primary bg-ds-primary/15 border-ds-primary/35 shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]'
+                    : 'text-ds-content-muted bg-ds-surface-raised/70 border-ds-line/60'
                 }`}
                 title={isSynced ? 'Unsync cabin temperatures' : 'Sync cabin temperatures'}
                 aria-label={isSynced ? 'Unsync dual-zone cabin temperature' : 'Sync dual-zone cabin temperature'}
@@ -681,10 +689,10 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                     e.stopPropagation();
                     setIsFanOpen((prev) => !prev);
                   }}
-                  className="flex items-center gap-1 text-xs font-mono px-2 py-1 rounded-lg border border-slate-800 bg-slate-950/70 text-slate-300 active:scale-95"
+                  className="flex items-center gap-1 text-xs font-mono px-2 py-1 rounded-lg border border-ds-line-subtle bg-ds-background/70 text-ds-content-secondary active:scale-95"
                   title="Fan speed selection"
                 >
-                  <Fan className="w-3 h-3 text-slate-400 shrink-0" />
+                  <Fan className="w-3 h-3 text-ds-content-muted shrink-0" />
                   <span className="font-bold">{fanSpeed}</span>
                 </button>
                 {renderFanDropdown()}
@@ -699,8 +707,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
               onClick={handleSelectDriver}
               className={`font-mono text-xs font-bold uppercase py-0.5 px-2 rounded-lg transition-all ${
                 isDriverActive
-                  ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35'
-                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                  ? 'text-ds-primary bg-ds-primary/15 border border-ds-primary/35'
+                  : 'text-ds-content-muted hover:text-ds-content border border-transparent'
               }`}
             >
               DRIVER
@@ -731,8 +739,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
               onClick={handleSelectPassenger}
               className={`font-mono text-xs font-bold uppercase py-0.5 px-2 rounded-lg transition-all ${
                 isPassengerActive
-                  ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35'
-                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                  ? 'text-ds-primary bg-ds-primary/15 border border-ds-primary/35'
+                  : 'text-ds-content-muted hover:text-ds-content border border-transparent'
               }`}
             >
               PASSENGER
@@ -774,25 +782,25 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 onPointerCancel={handlePointerUpTemp}
                 className={`group flex items-center gap-1.5 sm:gap-2 cursor-ns-resize touch-none select-none py-0.5 px-1 -ml-1 rounded-xl transition-all duration-150 relative min-w-0 ${
                   isDraggingTemp
-                    ? 'scale-[1.02] bg-cyan-500/10 ring-1 ring-cyan-400/40'
-                    : 'hover:bg-slate-800/40'
+                    ? 'scale-[1.02] bg-ds-primary/10 ring-1 ring-ds-primary/40'
+                    : 'hover:bg-ds-surface-raised/40'
                 }`}
                 title="Drag vertically to adjust temperature"
               >
                 <ArrowUpDown
                   className={`w-4.5 h-4.5 shrink-0 transition-all duration-150 ${
-                    isDraggingTemp ? 'text-cyan-400 scale-110' : 'text-slate-400 group-hover:text-slate-200'
+                    isDraggingTemp ? 'text-ds-primary scale-110' : 'text-ds-content-muted group-hover:text-ds-content'
                   }`}
                 />
                 <div className="flex items-baseline gap-0.5">
                   <span
                     className={`${
                       isComfortable ? 'text-4xl' : 'text-3xl'
-                    } font-black tracking-tight text-slate-100 font-mono leading-none`}
+                    } font-black tracking-tight text-ds-content font-mono leading-none`}
                   >
                     {activeTemp}°
                   </span>
-                  <span className="text-xs sm:text-sm font-bold text-slate-400 font-mono self-start mt-0.5">
+                  <span className="text-xs sm:text-sm font-bold text-ds-content-muted font-mono self-start mt-0.5">
                     F
                   </span>
                 </div>
@@ -808,8 +816,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   isComfortable ? 'px-3 py-1.5' : 'px-2.5 py-1'
                 } rounded-xl border transition-all select-none cursor-pointer active:scale-95 whitespace-nowrap ${
                   isSynced
-                    ? 'text-cyan-300 bg-cyan-500/15 border-cyan-500/35 shadow-[0_0_10px_rgba(6,182,212,0.25)] hover:bg-cyan-500/25'
-                    : 'text-slate-400 bg-slate-800/70 border-slate-700/60 hover:text-slate-200 hover:bg-slate-800'
+                    ? 'text-ds-primary bg-ds-primary/15 border-ds-primary/35 shadow-[0_0_10px_color-mix(in_srgb,var(--color-ds-primary)_25%,transparent)] hover:bg-ds-primary/25'
+                    : 'text-ds-content-muted bg-ds-surface-raised/70 border-ds-line/60 hover:text-ds-content hover:bg-ds-surface-raised'
                 }`}
                 title={isSynced ? 'Unsync cabin temperatures' : 'Sync cabin temperatures'}
                 aria-label={isSynced ? 'Unsync dual-zone cabin temperature' : 'Sync dual-zone cabin temperature'}
@@ -831,14 +839,14 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                     isComfortable ? 'px-3 py-1.5' : 'px-2.5 py-1'
                   } rounded-xl border transition-all duration-150 cursor-pointer select-none active:scale-95 ${
                     isFanOpen
-                      ? 'bg-slate-950 border-cyan-500/60 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
-                      : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-slate-100'
+                      ? 'bg-ds-background border-ds-primary/60 text-ds-primary shadow-[0_0_10px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]'
+                      : 'bg-ds-background/70 border-ds-line-subtle text-ds-content-secondary hover:border-ds-line hover:text-ds-content'
                   }`}
                   title="Fan speed selection"
                 >
-                  <Fan className={`w-3.5 h-3.5 shrink-0 transition-transform duration-300 ${isFanOpen ? 'rotate-90 text-cyan-400' : 'text-slate-400'}`} />
+                  <Fan className={`w-3.5 h-3.5 shrink-0 transition-transform duration-300 ${isFanOpen ? 'rotate-90 text-ds-primary' : 'text-ds-content-muted'}`} />
                   <span className="font-bold tracking-wider whitespace-nowrap">{fanSpeed}</span>
-                  <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-200 ${isFanOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`} />
+                  <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-200 ${isFanOpen ? 'rotate-180 text-ds-primary' : 'text-ds-content-subtle'}`} />
                 </button>
                 {renderFanDropdown()}
               </div>
@@ -855,8 +863,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 onClick={handleSelectDriver}
                 className={`font-mono text-xs sm:text-[13px] font-bold tracking-wider uppercase transition-all py-1 px-1.5 sm:px-2 rounded-lg cursor-pointer select-none whitespace-nowrap ${
                   isDriverActive
-                    ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
-                    : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-slate-800/40'
+                    ? 'text-ds-primary bg-ds-primary/15 border border-ds-primary/35 shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]'
+                    : 'text-ds-content-muted hover:text-ds-content border border-transparent hover:bg-ds-surface-raised/40'
                 }`}
                 title="Select Driver cabin zone"
               >
@@ -918,8 +926,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 onClick={handleSelectPassenger}
                 className={`font-mono text-xs sm:text-[13px] font-bold tracking-wider uppercase transition-all py-1 px-1.5 sm:px-2 rounded-lg cursor-pointer select-none whitespace-nowrap ${
                   isPassengerActive
-                    ? 'text-cyan-300 bg-cyan-500/15 border border-cyan-500/35 shadow-[0_0_8px_rgba(6,182,212,0.2)]'
-                    : 'text-slate-400 hover:text-slate-200 border border-transparent hover:bg-slate-800/40'
+                    ? 'text-ds-primary bg-ds-primary/15 border border-ds-primary/35 shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]'
+                    : 'text-ds-content-muted hover:text-ds-content border border-transparent hover:bg-ds-surface-raised/40'
                 }`}
                 title="Select Passenger cabin zone"
               >

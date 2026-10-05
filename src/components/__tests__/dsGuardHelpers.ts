@@ -90,7 +90,7 @@ export function findRawColors(source: string): RawColorFinding[] {
     let sanitized = line.replace(/var\(\s*--[a-zA-Z0-9_-]+\s*,\s*#[0-9a-fA-F]{3,8}\s*\)/g, 'var(--exempt)');
 
     // 2. Black/white rgba: rgba(0,0,0,x) or rgb(0,0,0)
-    sanitized = sanitized.replace(/rgba?\(\s*0\s*,\s*0\s*,\s*0(?:\s*,\s*[\d.]+%?\s*)?\)/g, 'rgba(0,0,0,exempt)');
+    sanitized = sanitized.replace(/rgba?\(\s*0\s*,\s*0\s*,\s*0(?:\s*,\s*[\d.]+%?\s*)?\)/g, 'black_rgba_exempt');
 
     // Check for raw palette utility classes
     const paletteMatches = sanitized.match(rawPaletteRegex);

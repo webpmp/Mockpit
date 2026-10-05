@@ -172,6 +172,7 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
     const rawLastCool = seat === 'driver' ? driverLastCool : passengerLastCool;
     const currentStoredLvl = targetMode === 'heat' ? (isHeating ? heat : rawLastHeat) : (isCooling ? cool : rawLastCool);
 
+    // ds-raw-start: thermal color code is fixed (heat/cool)
     const seatColorClass = isHeating
       ? heat === 1
         ? 'text-amber-400'
@@ -185,23 +186,24 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
         ? 'text-cyan-400'
         : 'text-blue-500'
       : isCurrentActive
-      ? 'text-sky-500'
-      : 'text-slate-700';
+      ? 'text-ds-primary'
+      : 'text-ds-content-disabled';
+    // ds-raw-end
 
     return (
       <div
         onClick={() => setClimateState({ selectedSeat: seat })}
-        className={`flex-1 min-w-0 h-full bg-slate-950/60 border rounded-xl p-[3%] flex flex-col items-center justify-between gap-2 overflow-hidden cursor-pointer transition-all ${
+        className={`flex-1 min-w-0 h-full bg-ds-background/60 border rounded-xl p-[3%] flex flex-col items-center justify-between gap-2 overflow-hidden cursor-pointer transition-all ${
           isCurrentActive
-            ? 'border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.15)]'
-            : 'border-slate-800/80'
+            ? 'border-ds-primary/50 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_15%,transparent)]'
+            : 'border-ds-line-subtle/80'
         }`}
       >
         {/* Seat Header Label */}
         <div className="w-full flex items-center px-1 shrink-0">
           <span
             className={`text-[clamp(12px,3.5cqw,18px)] font-mono font-bold uppercase tracking-wider truncate ${
-              isCurrentActive ? 'text-sky-300' : 'text-slate-300'
+              isCurrentActive ? 'text-ds-primary' : 'text-ds-content-secondary'
             }`}
           >
             {label}
@@ -237,15 +239,16 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
           <div
             role="group"
             aria-label={`${label}: Climate mode`}
-            className="flex items-stretch gap-0.5 p-0.5 shrink-0 rounded-xl bg-slate-950/70 border border-slate-800/90"
+            className="flex items-stretch gap-0.5 p-0.5 shrink-0 rounded-xl bg-ds-background/70 border border-ds-line-subtle/90"
           >
+            {/* ds-raw-start: thermal color code is fixed (heat/cool) */}
             <button
               type="button"
               onClick={() => handleModeToggle(seat, 'heat')}
               className={`min-w-[64px] flex flex-col items-center justify-center gap-2 px-3 rounded-l-[10px] rounded-r-[4px] font-mono font-bold text-[10px] sm:text-xs tracking-wider select-none cursor-pointer active:brightness-75 ${
                 isHeating
-                  ? 'bg-slate-950 text-orange-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
-                  : 'bg-slate-800 text-slate-400'
+                  ? 'bg-ds-background text-orange-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
+                  : 'bg-ds-surface-raised text-ds-content-muted'
               }`}
               title={isHeating ? `${label}: Turn HEAT OFF` : `${label}: Select HEAT`}
               aria-label={isHeating ? `${label}: Turn HEAT OFF` : `${label}: Select HEAT`}
@@ -253,19 +256,21 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
               <span
                 aria-hidden="true"
                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  isHeating ? 'bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.7)]' : 'bg-slate-700'
+                  isHeating ? 'bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.7)]' : 'bg-ds-surface-hover'
                 }`}
               />
               HEAT
             </button>
+            {/* ds-raw-end */}
 
+            {/* ds-raw-start: thermal color code is fixed (heat/cool) */}
             <button
               type="button"
               onClick={() => handleModeToggle(seat, 'cool')}
               className={`min-w-[64px] flex flex-col items-center justify-center gap-2 px-3 rounded-r-[10px] rounded-l-[4px] font-mono font-bold text-[10px] sm:text-xs tracking-wider select-none cursor-pointer active:brightness-75 ${
                 isCooling
-                  ? 'bg-slate-950 text-cyan-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
-                  : 'bg-slate-800 text-slate-400'
+                  ? 'bg-ds-background text-cyan-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
+                  : 'bg-ds-surface-raised text-ds-content-muted'
               }`}
               title={isCooling ? `${label}: Turn COOL OFF` : `${label}: Select COOL`}
               aria-label={isCooling ? `${label}: Turn COOL OFF` : `${label}: Select COOL`}
@@ -273,11 +278,12 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
               <span
                 aria-hidden="true"
                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  isCooling ? 'bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.7)]' : 'bg-slate-700'
+                  isCooling ? 'bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.7)]' : 'bg-ds-surface-hover'
                 }`}
               />
               COOL
             </button>
+            {/* ds-raw-end */}
           </div>
 
           {/* LOW / MED / HIGH Contextual Intensity Controls - Taller, Prominent & Near Square */}
@@ -292,15 +298,18 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
               const isIntensityActive = !isOff && ((isHeating && heat === lvl) || (isCooling && cool === lvl));
               const modeWord = isHeating ? 'Heat' : isCooling ? 'Cool' : targetMode === 'heat' ? 'Heat' : 'Cool';
 
-              let buttonStyle = 'bg-slate-950/50 text-slate-500 border border-slate-800/60';
+              let buttonStyle = 'bg-ds-background/50 text-ds-content-subtle border border-ds-line-subtle/60';
+              // ds-raw-start: thermal color code is fixed (heat/cool)
               if (isIntensityActive) {
                 if (isHeating) {
                   buttonStyle = 'bg-orange-500 text-slate-950 font-black shadow-[0_0_14px_rgba(249,115,22,0.5)] border border-orange-400';
                 } else if (isCooling) {
                   buttonStyle = 'bg-cyan-400 text-slate-950 font-black shadow-[0_0_14px_rgba(6,182,212,0.5)] border border-cyan-300';
                 }
-              } else if (!isOff) {
-                buttonStyle = 'bg-slate-950/70 text-slate-400 border border-slate-800/90';
+              }
+              // ds-raw-end
+              else if (!isOff) {
+                buttonStyle = 'bg-ds-background/70 text-ds-content-muted border border-ds-line-subtle/90';
               }
 
               return (
@@ -324,7 +333,7 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
 
   return (
     <div
-      className={`@container w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+      className={`@container w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       {/* Component Title Header */}

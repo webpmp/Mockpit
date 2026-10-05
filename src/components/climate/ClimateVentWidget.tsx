@@ -46,6 +46,7 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
   styleOpacity,
 }) => {
   const headerLabel = resolved.label || component.staticProps?.label || 'Vent Dashboard';
+  const primaryAccent = customColor || 'var(--color-ds-primary)';
 
   const [vents, setVents] = useState<Record<'left' | 'center' | 'right', VentState>>({
     left: { id: 'left', label: 'LEFT', isOpen: true, angle: 135 },
@@ -152,7 +153,7 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
 
   return (
     <div
-      className={`@container w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+      className={`@container w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -182,13 +183,13 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                 }}
                 className={`h-7 px-2.5 rounded-full text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1.5 border shrink-0 ${
                   vent.isOpen
-                    ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
-                    : 'bg-slate-950/70 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/60'
+                    ? 'bg-ds-primary/20 border-ds-primary/60 text-ds-primary shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_30%,transparent)]'
+                    : 'bg-ds-background/70 border-ds-line-subtle text-ds-content-subtle hover:text-ds-content-secondary hover:bg-ds-surface-raised/60'
                 }`}
                 style={{
-                  borderColor: vent.isOpen && customColor ? `${customColor}80` : undefined,
+                  borderColor: vent.isOpen && customColor ? `color-mix(in srgb, ${customColor} 50%, transparent)` : undefined,
                   color: vent.isOpen && customColor ? customColor : undefined,
-                  boxShadow: vent.isOpen && customColor ? `0 0 8px ${customColor}35` : undefined,
+                  boxShadow: vent.isOpen && customColor ? `0 0 8px color-mix(in srgb, ${customColor} 21%, transparent)` : undefined,
                 }}
                 title={vent.isOpen ? `Turn ${vent.label} vent OFF` : `Turn ${vent.label} vent ON`}
                 aria-label={vent.isOpen ? `Turn ${vent.label} vent OFF` : `Turn ${vent.label} vent ON`}
@@ -196,8 +197,8 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                 <span
                   className={`w-1.5 h-1.5 rounded-full transition-all shrink-0 ${
                     vent.isOpen
-                      ? 'bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.9)]'
-                      : 'bg-slate-600'
+                      ? 'bg-ds-primary shadow-[0_0_6px_color-mix(in_srgb,var(--color-ds-primary)_90%,transparent)]'
+                      : 'bg-ds-line-strong'
                   }`}
                   style={{
                     backgroundColor: vent.isOpen && customColor ? customColor : undefined,
@@ -217,14 +218,14 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                 onLostPointerCapture={(e) => handlePointerUp(e, id)}
                 className={`w-full max-w-[105px] sm:max-w-[120px] aspect-square rounded-full border-2 flex items-center justify-center relative touch-none select-none transition-all shadow-inner ${
                   !vent.isOpen
-                    ? 'bg-slate-950/90 border-slate-700 shadow-inner cursor-not-allowed'
+                    ? 'bg-ds-background/90 border-ds-line shadow-inner cursor-not-allowed'
                     : isDragging
-                    ? 'bg-slate-950/95 border-slate-500 cursor-grabbing shadow-lg'
-                    : 'bg-slate-950/95 border-slate-700 hover:border-slate-500 cursor-grab'
+                    ? 'bg-ds-background/95 border-ds-line-strong cursor-grabbing shadow-lg'
+                    : 'bg-ds-background/95 border-ds-line hover:border-ds-line-strong cursor-grab'
                 }`}
                 style={{
                   boxShadow: vent.isOpen
-                    ? `0 0 12px ${customColor}25, inset 0 2px 4px rgba(0,0,0,0.8)`
+                    ? `0 0 12px color-mix(in srgb, ${primaryAccent} 15%, transparent), inset 0 2px 4px rgba(0,0,0,0.8)`
                     : 'inset 0 2px 5px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3)',
                 }}
               >
@@ -238,25 +239,25 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                   >
                     {/* Full-diameter background air beam */}
                     <div
-                      className="w-full h-3.5 bg-gradient-to-r from-transparent via-cyan-400/30 to-cyan-300/80 blur-[0.5px]"
+                      className="w-full h-3.5 bg-gradient-to-r from-transparent via-ds-primary/30 to-ds-primary/80 blur-[0.5px]"
                       style={{
-                        background: `linear-gradient(to right, transparent 0%, ${customColor || '#22d3ee'}20 20%, ${customColor || '#22d3ee'}60 75%, ${customColor || '#22d3ee'}99 100%)`,
+                        background: `linear-gradient(to right, transparent 0%, color-mix(in srgb, ${primaryAccent} 13%, transparent) 20%, color-mix(in srgb, ${primaryAccent} 38%, transparent) 75%, color-mix(in srgb, ${primaryAccent} 60%, transparent) 100%)`,
                       }}
                     />
 
                     {/* Arrow shaft spanning 100% across the full diameter */}
                     <div
-                      className="absolute inset-x-0 h-1.5 shadow-[0_0_10px_rgba(34,211,238,0.8)]"
+                      className="absolute inset-x-0 h-1.5 shadow-[0_0_10px_color-mix(in_srgb,var(--color-ds-primary)_80%,transparent)]"
                       style={{
-                        background: `linear-gradient(to right, transparent 2%, ${customColor || '#38bdf8'}40 25%, ${customColor || '#38bdf8'} 75%, #ffffff 100%)`,
+                        background: `linear-gradient(to right, transparent 2%, color-mix(in srgb, ${primaryAccent} 25%, transparent) 25%, ${primaryAccent} 75%, white 100%)`,
                       }}
                     />
 
                     {/* Static glow layer across the diameter */}
                     <div
-                      className="absolute inset-x-2 h-2.5 rounded-full opacity-85 shadow-[0_0_14px_rgba(34,211,238,0.9)]"
+                      className="absolute inset-x-2 h-2.5 rounded-full opacity-85 shadow-[0_0_14px_color-mix(in_srgb,var(--color-ds-primary)_90%,transparent)]"
                       style={{
-                        background: `linear-gradient(to right, transparent 0%, ${customColor || '#67e8f9'}50 50%, #ffffff 96%)`,
+                        background: `linear-gradient(to right, transparent 0%, color-mix(in srgb, ${primaryAccent} 31%, transparent) 50%, white 96%)`,
                       }}
                     />
 
@@ -264,7 +265,7 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                     <div
                       className="absolute right-1 w-3.5 h-3.5 border-t-[2.5px] border-r-[2.5px] border-white rotate-45 shrink-0"
                       style={{
-                        filter: `drop-shadow(0 0 6px ${customColor || '#22d3ee'})`,
+                        filter: `drop-shadow(0 0 6px ${primaryAccent})`,
                       }}
                     />
 
@@ -272,8 +273,8 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                     <div
                       className="absolute right-1.5 w-3 h-3 rounded-full opacity-85"
                       style={{
-                        backgroundColor: customColor || '#67e8f9',
-                        boxShadow: `0 0 12px ${customColor || '#22d3ee'}`,
+                        backgroundColor: primaryAccent,
+                        boxShadow: `0 0 12px ${primaryAccent}`,
                       }}
                     />
                   </div>
@@ -287,19 +288,19 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                   }}
                 >
                   <div
-                    className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-slate-400' : 'bg-slate-500'}`}
+                    className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-ds-content-muted' : 'bg-ds-content-subtle'}`}
                   />
                   <div
-                    className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-slate-400' : 'bg-slate-500'}`}
+                    className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-ds-content-muted' : 'bg-ds-content-subtle'}`}
                   />
                   <div
-                    className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-slate-400' : 'bg-slate-500'}`}
+                    className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-ds-content-muted' : 'bg-ds-content-subtle'}`}
                   />
                 </div>
               </div>
 
               {/* Spatial Label */}
-              <span className="text-[clamp(12px,3.5cqw,18px)] font-mono font-bold text-slate-300 uppercase tracking-wider shrink-0">
+              <span className="text-[clamp(12px,3.5cqw,18px)] font-mono font-bold text-ds-content-secondary uppercase tracking-wider shrink-0">
                 {vent.label}
               </span>
             </div>
