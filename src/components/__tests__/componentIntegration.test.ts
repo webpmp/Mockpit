@@ -677,11 +677,11 @@ describe('Component Integration (Parent/Child Visual Relationships) Suite', () =
         'Canvas must apply data-integrated-child="inside" attribute'
       );
 
-      // index.css has rules targeting [data-integrated-child="inside"]
+      // index.css has single rule targeting [data-integrated-child="inside"] > :first-child
       assert.match(
         indexCss,
-        /\[data-integrated-child="inside"\]/,
-        'index.css must define rules for [data-integrated-child="inside"]'
+        /\[data-integrated-child="inside"\]\s*>\s*:first-child/,
+        'index.css must define rule for [data-integrated-child="inside"] > :first-child'
       );
       assert.match(
         indexCss,
@@ -695,8 +695,25 @@ describe('Component Integration (Parent/Child Visual Relationships) Suite', () =
       );
       assert.match(
         indexCss,
+        /-webkit-backdrop-filter:\s*none\s*!important/,
+        'CSS rule must set -webkit-backdrop-filter: none !important'
+      );
+      assert.match(
+        indexCss,
         /box-shadow:\s*none\s*!important/,
         'CSS rule must set box-shadow: none !important'
+      );
+
+      // Must NOT contain broad selector > * or > .pointer-events-none
+      assert.equal(
+        /\[data-integrated-child="inside"\]\s*>\s*\*/.test(indexCss),
+        false,
+        'index.css must not have broad [data-integrated-child="inside"] > * selector'
+      );
+      assert.equal(
+        /\[data-integrated-child="inside"\]\s*>\s*\.pointer-events-none/.test(indexCss),
+        false,
+        'index.css must not have [data-integrated-child="inside"] > .pointer-events-none selector'
       );
     });
   });

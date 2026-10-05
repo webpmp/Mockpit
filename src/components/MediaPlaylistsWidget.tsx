@@ -30,6 +30,8 @@ export const MediaPlaylistsWidget: React.FC<MediaPlaylistsWidgetProps> = ({
 
   const cardLayoutMode = (component.staticProps?.cardLayoutMode as 'grid' | 'carousel') || 'grid';
 
+  const primaryAccent = customColor || 'var(--color-ds-primary)';
+
   const activeService: MusicServiceType =
     (selectedMusicService as MusicServiceType) ||
     (component.staticProps?.service as MusicServiceType) ||
@@ -51,14 +53,14 @@ export const MediaPlaylistsWidget: React.FC<MediaPlaylistsWidgetProps> = ({
         onClick={() => handleSelectPlaylist(playlist.id)}
         className={`w-[148px] shrink-0 flex flex-col items-center text-center p-2 rounded-xl border transition-all cursor-pointer group ${
           isCardSelected
-            ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/50 shadow-md'
-            : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/40'
+            ? 'bg-ds-surface-raised/90 border-ds-primary ring-1 ring-ds-primary/50 shadow-md'
+            : 'bg-ds-background/40 border-ds-line-subtle/80 hover:border-ds-line hover:bg-ds-surface-raised/40'
         }`}
         style={
           isCardSelected
             ? {
-                borderColor: customColor || '#38bdf8',
-                boxShadow: `0 0 0 1px ${customColor || '#38bdf8'}50`,
+                borderColor: primaryAccent,
+                boxShadow: `0 0 0 1px color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
               }
             : undefined
         }
@@ -73,12 +75,12 @@ export const MediaPlaylistsWidget: React.FC<MediaPlaylistsWidgetProps> = ({
         {/* Playlist Name & Track Count (strictly no badges/disclaimers) */}
         <div className="w-full mt-2 space-y-0.5 px-0.5">
           <div
-            className="text-sm font-semibold text-slate-100 truncate text-center"
+            className="text-sm font-semibold text-ds-content truncate text-center"
             title={playlist.name}
           >
             {playlist.name}
           </div>
-          <div className="text-xs font-mono text-slate-400 text-center">
+          <div className="text-xs font-mono text-ds-content-muted text-center">
             {playlist.trackCount} tracks
           </div>
         </div>
@@ -89,7 +91,7 @@ export const MediaPlaylistsWidget: React.FC<MediaPlaylistsWidgetProps> = ({
   return (
     <div
       data-component-type="mediaPlaylists"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden select-none`}
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden select-none`}
       style={{
         borderColor: isSelected ? customColor : undefined,
         opacity: styleOpacity,

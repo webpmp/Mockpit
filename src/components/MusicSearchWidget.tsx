@@ -266,19 +266,19 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
       data-component-type="mediaSearch"
       onKeyDown={handleContainerKeyDown}
       tabIndex={0}
-      className={`relative w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 outline-none ${baseOpacity}`}
+      className={`relative w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 outline-none ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       {/* Header Row (shown at wider sizes, §3) */}
       {showHeader && (
-        <div className="flex items-center justify-between h-9 pb-2 border-b border-slate-800/60 shrink-0">
+        <div className="flex items-center justify-between h-9 pb-2 border-b border-ds-line-subtle/60 shrink-0">
           <div className="flex items-center gap-1.5 min-w-0">
-            <Search className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 truncate">
+            <Search className="w-3.5 h-3.5 text-ds-primary shrink-0" />
+            <span className="text-xs font-bold uppercase tracking-wider text-ds-content-muted truncate">
               {headerLabel}
             </span>
           </div>
-          <span className="text-[0.5625rem] font-mono text-slate-400 uppercase tracking-wider shrink-0">
+          <span className="text-[0.5625rem] font-mono text-ds-content-muted uppercase tracking-wider shrink-0">
             ALL SOURCES
           </span>
         </div>
@@ -301,14 +301,14 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
             placeholder='Search songs, artists, "play something..."'
             componentId={component.id}
             keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-            icon={<Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
-            className="min-h-[44px] font-mono text-xs text-slate-100 placeholder-slate-500"
+            icon={<Search className="w-3.5 h-3.5 text-ds-content-subtle shrink-0" />}
+            className="min-h-[44px] font-mono text-xs text-ds-content placeholder-ds-content-subtle"
             rightElement={
               hasQuery ? (
                 <button
                   type="button"
                   onClick={clearSearch}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors mr-1"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-ds-surface-raised text-ds-content-muted hover:text-ds-content transition-colors mr-1"
                   title="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -325,10 +325,10 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
             onClick={handleToggleListening}
             className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center border transition-colors ${
               isListening
-                ? 'bg-amber-500/20 border-amber-500/80 text-amber-400 ring-2 ring-amber-500'
+                ? 'bg-ds-warning/20 border-ds-warning/80 text-ds-warning ring-2 ring-ds-warning'
                 : isSpeechSupported
-                ? 'bg-slate-800/80 hover:bg-slate-700 border-slate-700 text-slate-400 hover:text-slate-200'
-                : 'bg-slate-800/40 border-slate-800 text-slate-600 cursor-not-allowed'
+                ? 'bg-ds-surface-raised/80 hover:bg-ds-surface-hover border-ds-line text-ds-content-muted hover:text-ds-content'
+                : 'bg-ds-surface-raised/40 border-ds-line-subtle text-ds-content-disabled cursor-not-allowed'
             }`}
             title={
               isListening
@@ -347,8 +347,8 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
             onClick={handleIdentifyMusic}
             className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center border transition-colors ${
               isRecognizingAudio
-                ? 'bg-cyan-500/20 border-cyan-500/80 text-cyan-400 ring-2 ring-cyan-500'
-                : 'bg-slate-800/80 hover:bg-slate-700 border-slate-700 text-slate-400 hover:text-slate-200'
+                ? 'bg-ds-primary/20 border-ds-primary/80 text-ds-primary ring-2 ring-ds-primary'
+                : 'bg-ds-surface-raised/80 hover:bg-ds-surface-hover border-ds-line text-ds-content-muted hover:text-ds-content'
             }`}
             title={
               isRecognizingAudio
@@ -357,7 +357,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
             }
           >
             {isRecognizingAudio ? (
-              <Activity className="w-4 h-4 text-cyan-400" />
+              <Activity className="w-4 h-4 text-ds-primary" />
             ) : (
               <Radio className="w-4 h-4" />
             )}
@@ -367,22 +367,22 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
 
       {/* Floating Results Dropdown (replaces inline Dynamic Content / Hint Row) */}
       {(isListening || isRecognizingAudio || hasQuery || (isFocused && autocompleteSuggestions.length > 0)) && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl p-2 max-h-[320px] overflow-hidden">
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-ds-background border border-ds-line-subtle rounded-xl shadow-2xl p-2 max-h-[320px] overflow-hidden">
           {isListening ? (
-            <div className="w-full flex items-center justify-center text-xs font-mono text-amber-400 bg-amber-950/30 border border-amber-800/40 rounded-xl p-2">
+            <div className="w-full flex items-center justify-center text-xs font-mono text-ds-warning bg-ds-warning/10 border border-ds-warning/30 rounded-xl p-2">
               <span className="font-bold">Listening…</span>
-              <span className="ml-2 text-[0.6875rem] text-amber-300/80">Speak a song title, artist, or genre</span>
+              <span className="ml-2 text-[0.6875rem] text-ds-warning/80">Speak a song title, artist, or genre</span>
             </div>
           ) : isRecognizingAudio ? (
-            <div className="w-full flex items-center justify-center text-xs font-mono text-cyan-400 bg-cyan-950/30 border border-cyan-800/40 rounded-xl p-2">
+            <div className="w-full flex items-center justify-center text-xs font-mono text-ds-primary bg-ds-primary/10 border border-ds-primary/30 rounded-xl p-2">
               <span className="font-bold">Identifying song…</span>
-              <span className="ml-2 text-[0.6875rem] text-cyan-300/80">Listening to ambient audio</span>
+              <span className="ml-2 text-[0.6875rem] text-ds-primary/80">Listening to ambient audio</span>
             </div>
           ) : hasQuery ? (
             /* Results View (§8 & §9) */
             <div className="w-full flex flex-col">
               {nluMatchTitle && (
-                <div className="text-[0.6875rem] font-mono text-sky-400 mb-1 flex items-center gap-1.5 px-1">
+                <div className="text-[0.6875rem] font-mono text-ds-primary mb-1 flex items-center gap-1.5 px-1">
                   <span>Smart Intent: {nluMatchTitle}</span>
                 </div>
               )}
@@ -391,7 +391,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
                 {/* Songs Section (Music only, §8) */}
                 {musicResults.length > 0 && (
                   <div className="space-y-1.5">
-                    <div className="text-[0.625rem] font-mono uppercase tracking-wider text-slate-400 px-1">
+                    <div className="text-[0.625rem] font-mono uppercase tracking-wider text-ds-content-muted px-1">
                       Songs & Tracks ({musicResults.length})
                     </div>
                     {musicResults.map((item, idx) => {
@@ -402,30 +402,30 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
                           onClick={() => handlePlayItem(item)}
                           className={`p-2 rounded-xl border flex items-center justify-between cursor-pointer transition-colors group min-h-[44px] ${
                             isItemFocused
-                              ? 'bg-slate-800 border-sky-500'
-                              : 'bg-slate-950/60 hover:bg-slate-800/80 border-slate-800/80'
+                              ? 'bg-ds-surface-raised border-ds-primary'
+                              : 'bg-ds-background/60 hover:bg-ds-surface-raised/80 border-ds-line-subtle/80'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                            <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700">
+                            <div className="w-8 h-8 rounded-lg bg-ds-surface-raised flex items-center justify-center shrink-0 border border-ds-line">
                               {lastPlayedId === item.id ? (
-                                <Volume2 className="w-4 h-4 text-emerald-400" />
+                                <Volume2 className="w-4 h-4 text-ds-success" />
                               ) : (
-                                <Play className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-400 fill-current" />
+                                <Play className="w-3.5 h-3.5 text-ds-content-muted group-hover:text-ds-primary fill-current" />
                               )}
                             </div>
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-slate-200 truncate group-hover:text-white">
+                              <div className="text-xs font-bold text-ds-content truncate group-hover:text-white">
                                 {item.title}
                               </div>
-                              <div className="text-[0.625rem] text-slate-400 font-mono truncate">
+                              <div className="text-[0.625rem] text-ds-content-muted font-mono truncate">
                                 {item.artist} {item.album ? `· ${item.album}` : ''} · {item.sourceLabel}
                               </div>
                             </div>
                           </div>
 
                           {item.duration && (
-                            <span className="text-[0.625rem] font-mono text-slate-400 shrink-0">
+                            <span className="text-[0.625rem] font-mono text-ds-content-muted shrink-0">
                               {item.duration}
                             </span>
                           )}
@@ -437,17 +437,17 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
 
                 {/* Spoken Word Section (Podcasts & Audiobooks, collapsed by default, §8) */}
                 {spokenWordResults.length > 0 && (
-                  <div className="space-y-1.5 pt-1 border-t border-slate-800/60">
+                  <div className="space-y-1.5 pt-1 border-t border-ds-line-subtle/60">
                     <button
                       type="button"
                       onClick={() => setIsSpokenWordExpanded((prev) => !prev)}
-                      className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/80 text-[0.6875rem] font-mono text-slate-300 transition-colors min-h-[36px]"
+                      className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg bg-ds-background/40 hover:bg-ds-surface-raised/60 border border-ds-line-subtle/80 text-[0.6875rem] font-mono text-ds-content-secondary transition-colors min-h-[36px]"
                     >
                       <span>Podcasts & audiobooks ({spokenWordResults.length})</span>
                       {isSpokenWordExpanded ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                        <ChevronUp className="w-3.5 h-3.5 text-ds-content-muted" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                        <ChevronDown className="w-3.5 h-3.5 text-ds-content-muted" />
                       )}
                     </button>
 
@@ -462,30 +462,30 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
                               onClick={() => handlePlayItem(item)}
                               className={`p-2 rounded-xl border flex items-center justify-between cursor-pointer transition-colors group min-h-[44px] ${
                                 isItemFocused
-                                  ? 'bg-slate-800 border-sky-500'
-                                  : 'bg-slate-950/60 hover:bg-slate-800/80 border-slate-800/80'
+                                  ? 'bg-ds-surface-raised border-ds-primary'
+                                  : 'bg-ds-background/60 hover:bg-ds-surface-raised/80 border-ds-line-subtle/80'
                               }`}
                             >
                               <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700">
+                                <div className="w-8 h-8 rounded-lg bg-ds-surface-raised flex items-center justify-center shrink-0 border border-ds-line">
                                   {lastPlayedId === item.id ? (
-                                    <Volume2 className="w-4 h-4 text-emerald-400" />
+                                    <Volume2 className="w-4 h-4 text-ds-success" />
                                   ) : (
-                                    <Play className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-400 fill-current" />
+                                    <Play className="w-3.5 h-3.5 text-ds-content-muted group-hover:text-ds-primary fill-current" />
                                   )}
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-xs font-bold text-slate-200 truncate group-hover:text-white">
+                                  <div className="text-xs font-bold text-ds-content truncate group-hover:text-white">
                                     {item.title}
                                   </div>
-                                  <div className="text-[0.625rem] text-slate-400 font-mono truncate">
+                                  <div className="text-[0.625rem] text-ds-content-muted font-mono truncate">
                                     {item.artist} · {item.sourceLabel}
                                   </div>
                                 </div>
                               </div>
 
                               {item.duration && (
-                                <span className="text-[0.625rem] font-mono text-slate-400 shrink-0">
+                                <span className="text-[0.625rem] font-mono text-ds-content-muted shrink-0">
                                   {item.duration}
                                 </span>
                               )}
@@ -498,7 +498,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
                 )}
 
                 {musicResults.length === 0 && spokenWordResults.length === 0 && (
-                  <div className="text-[0.6875rem] text-slate-500 italic p-2 text-center font-mono">
+                  <div className="text-[0.6875rem] text-ds-content-subtle italic p-2 text-center font-mono">
                     No matching music, podcasts, or audiobooks found
                   </div>
                 )}
@@ -507,7 +507,7 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
           ) : (
             /* Autocomplete List (§10) */
             <div className="space-y-2 overflow-y-auto pr-1 custom-scrollbar max-h-[280px]">
-              <div className="text-[0.625rem] font-mono text-slate-500 uppercase tracking-wider px-1">
+              <div className="text-[0.625rem] font-mono text-ds-content-subtle uppercase tracking-wider px-1">
                 Suggestions
               </div>
               <div className="space-y-2">
@@ -521,12 +521,12 @@ export const MusicSearchWidget: React.FC<MusicSearchWidgetProps> = ({
                     }}
                     className={`w-full p-2.5 rounded-xl border text-left font-mono text-xs flex items-center justify-between min-h-[44px] transition-colors ${
                       focusedIndex === idx
-                        ? 'bg-slate-800 border-sky-500 text-sky-300'
-                        : 'bg-slate-950/70 hover:bg-slate-800/80 border-slate-800 text-slate-300'
+                        ? 'bg-ds-surface-raised border-ds-primary text-ds-primary'
+                        : 'bg-ds-background/70 hover:bg-ds-surface-raised/80 border-ds-line-subtle text-ds-content-secondary'
                     }`}
                   >
                     <span className="truncate">{suggestion}</span>
-                    <span className="text-[0.625rem] text-slate-500 font-mono">Search</span>
+                    <span className="text-[0.625rem] text-ds-content-subtle font-mono">Search</span>
                   </button>
                 ))}
               </div>

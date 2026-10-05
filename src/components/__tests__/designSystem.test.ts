@@ -98,6 +98,11 @@ export const MIGRATED_CANVAS_FILES: readonly string[] = [
   'src/components/climate/ClimateSeatsWidget.tsx',
   'src/components/climate/ClimateVentWidget.tsx',
   'src/components/climate/ClimateTempWidget.tsx',
+  'src/components/NowPlayingWidget.tsx',
+  'src/components/MusicSearchWidget.tsx',
+  'src/components/MusicMediaPlayer.tsx',
+  'src/components/MediaDiscoveryWidget.tsx',
+  'src/components/MediaPlaylistsWidget.tsx',
 ];
 
 describe('Design System Foundation Suite (Spec v1)', () => {

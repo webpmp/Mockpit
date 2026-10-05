@@ -40,6 +40,8 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
 
+  const primaryAccent = customColor || 'var(--color-ds-primary)';
+
   const tracks = mode === 'trending' ? DISCOVERY_TRACKS_TRENDING : DISCOVERY_TRACKS_FORYOU;
 
   // Resolve cover art for all discovery tracks
@@ -76,14 +78,14 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
         onClick={() => handleCardClick(track)}
         className={`w-[148px] shrink-0 flex flex-col items-start p-2 rounded-xl border transition-all cursor-pointer group text-left ${
           isCardSelected
-            ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/50 shadow-md'
-            : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/40'
+            ? 'bg-ds-surface-raised/90 border-ds-primary ring-1 ring-ds-primary/50 shadow-md'
+            : 'bg-ds-background/40 border-ds-line-subtle/80 hover:border-ds-line hover:bg-ds-surface-raised/40'
         }`}
         style={
           isCardSelected
             ? {
-                borderColor: customColor || '#38bdf8',
-                boxShadow: `0 0 0 1px ${customColor || '#38bdf8'}50`,
+                borderColor: primaryAccent,
+                boxShadow: `0 0 0 1px color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
               }
             : undefined
         }
@@ -93,6 +95,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
           className={`w-[120px] h-[120px] mx-auto rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0 group-hover:scale-[1.02] transition-transform`}
         >
           {/* Trending Static Rank Badge - strictly no animate-pulse */}
+          {/* ds-raw-start: rank/trending gold is fixed */}
           {mode === 'trending' && track.rank && (
             <div
               className="absolute top-1.5 left-1.5 bg-amber-500 text-slate-950 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded shadow-md z-10 select-none"
@@ -101,6 +104,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
               #{track.rank}
             </div>
           )}
+          {/* ds-raw-end */}
 
           {/* Artwork Image or Centered Icon */}
           {coverArt?.status === 'found' && coverArt?.coverUrl ? (
@@ -118,13 +122,13 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
         {/* Track Title (1 line, truncate) & Artist (1 line, truncate) */}
         <div className="w-full mt-2 space-y-0.5 px-0.5">
           <div
-            className="text-sm font-semibold text-slate-100 truncate w-full"
+            className="text-sm font-semibold text-ds-content truncate w-full"
             title={track.title}
           >
             {track.title}
           </div>
           <div
-            className="text-xs text-slate-400 truncate w-full"
+            className="text-xs text-ds-content-muted truncate w-full"
             title={track.artist}
           >
             {track.artist}
@@ -139,7 +143,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
   return (
     <div
       data-component-type="mediaDiscovery"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden select-none`}
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden select-none`}
       style={{
         borderColor: isSelected ? customColor : undefined,
         opacity: styleOpacity,
@@ -161,9 +165,9 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
               }}
               className="text-xs font-mono font-extrabold uppercase px-3 py-1.5 min-h-[36px] rounded-full border flex items-center gap-1.5 hover:brightness-110 transition-all cursor-pointer shadow-sm active:scale-95"
               style={{
-                color: customColor || '#38bdf8',
-                borderColor: `${customColor || '#38bdf8'}50`,
-                backgroundColor: `${customColor || '#38bdf8'}20`,
+                color: primaryAccent,
+                borderColor: `color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
+                backgroundColor: `color-mix(in srgb, ${primaryAccent} 13%, transparent)`,
               }}
               title="Switch Discovery Mode"
             >
@@ -189,7 +193,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                     setIsModeDropdownOpen(false);
                   }}
                 />
-                <div className="absolute right-0 top-full mt-1.5 z-40 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl p-1.5 min-w-[140px] space-y-1 animate-in fade-in duration-150">
+                <div className="absolute right-0 top-full mt-1.5 z-40 bg-ds-background border border-ds-line-subtle rounded-xl shadow-2xl p-1.5 min-w-[140px] space-y-1 animate-in fade-in duration-150">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -198,11 +202,13 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                     }}
                     className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer text-left min-h-[44px] ${
                       mode === 'trending'
-                        ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
-                        : 'text-slate-300 hover:bg-slate-800'
+                        ? 'bg-ds-primary/20 text-ds-primary border border-ds-primary/30'
+                        : 'text-ds-content-secondary hover:bg-ds-surface-raised'
                     }`}
                   >
+                    {/* ds-raw-start: rank/trending gold is fixed */}
                     <TrendingUp className="w-4 h-4 text-amber-400 shrink-0" />
+                    {/* ds-raw-end */}
                     <span>Trending</span>
                   </button>
 
@@ -214,11 +220,13 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                     }}
                     className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer text-left min-h-[44px] ${
                       mode === 'foryou'
-                        ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
-                        : 'text-slate-300 hover:bg-slate-800'
+                        ? 'bg-ds-primary/20 text-ds-primary border border-ds-primary/30'
+                        : 'text-ds-content-secondary hover:bg-ds-surface-raised'
                     }`}
                   >
+                    {/* ds-raw-start: section icon identity color is fixed */}
                     <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                    {/* ds-raw-end */}
                     <span>For You</span>
                   </button>
                 </div>
@@ -255,14 +263,14 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                 onClick={() => handleCardClick(track)}
                 className={`flex items-center gap-3 p-2 rounded-xl border transition-all cursor-pointer group text-left min-h-[76px] w-full ${
                   isCardSelected
-                    ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/50 shadow-md'
-                    : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/40'
+                    ? 'bg-ds-surface-raised/90 border-ds-primary ring-1 ring-ds-primary/50 shadow-md'
+                    : 'bg-ds-background/40 border-ds-line-subtle/80 hover:border-ds-line hover:bg-ds-surface-raised/40'
                 }`}
                 style={
                   isCardSelected
                     ? {
-                        borderColor: customColor || '#38bdf8',
-                        boxShadow: `0 0 0 1px ${customColor || '#38bdf8'}50`,
+                        borderColor: primaryAccent,
+                        boxShadow: `0 0 0 1px color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
                       }
                     : undefined
                 }
@@ -272,6 +280,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                   className={`w-16 h-16 rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0 group-hover:scale-[1.02] transition-transform`}
                 >
                   {/* Trending Static Rank Badge */}
+                  {/* ds-raw-start: rank/trending gold is fixed */}
                   {mode === 'trending' && track.rank && (
                     <div
                       className="absolute top-1 left-1 bg-amber-500 text-slate-950 font-mono font-bold text-[10px] px-1 py-0.2 rounded shadow-sm z-10 select-none"
@@ -280,6 +289,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                       #{track.rank}
                     </div>
                   )}
+                  {/* ds-raw-end */}
 
                   {/* Artwork Image or Centered Icon */}
                   {coverArt?.status === 'found' && coverArt?.coverUrl ? (
@@ -297,18 +307,18 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                 {/* Track Details */}
                 <div className="flex-1 min-w-0 space-y-0.5">
                   <div
-                    className="text-sm font-semibold text-slate-100 truncate"
+                    className="text-sm font-semibold text-ds-content truncate"
                     title={track.title}
                   >
                     {track.title}
                   </div>
                   <div
-                    className="text-xs text-slate-400 truncate"
+                    className="text-xs text-ds-content-muted truncate"
                     title={track.artist}
                   >
                     {track.artist}
                   </div>
-                  <div className="text-[11px] font-mono text-slate-500 truncate">
+                  <div className="text-[11px] font-mono text-ds-content-subtle truncate">
                     {track.album} • {track.duration}
                   </div>
                 </div>

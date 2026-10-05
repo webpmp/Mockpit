@@ -173,6 +173,7 @@ const PlaybackScrubber: React.FC<PlaybackScrubberProps> = ({
   const [dragTime, setDragTime] = useState<number>(currentTime);
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const trackRef = useRef<HTMLDivElement>(null);
+  const primaryAccent = customColor || 'var(--color-ds-primary)';
 
   // Safe duration and time calculation
   const safeDuration = isNaN(duration) || duration <= 0 || !isFinite(duration) ? 0 : duration;
@@ -314,36 +315,38 @@ const PlaybackScrubber: React.FC<PlaybackScrubberProps> = ({
         }}
       >
         {/* Background Track */}
-        <div className="w-full bg-slate-800/90 h-[6px] rounded-full overflow-hidden relative border border-slate-700/50">
+        <div className="w-full bg-ds-surface-raised/90 h-[6px] rounded-full overflow-hidden relative border border-ds-line/50">
           {/* Played Portion */}
           <div
             className={`h-full rounded-full ${isDragging ? '' : 'transition-all duration-150 ease-out'}`}
             style={{
               width: `${percentage}%`,
-              backgroundColor: customColor,
-              boxShadow: `0 0 10px ${customColor}80`,
+              backgroundColor: primaryAccent,
+              boxShadow: `0 0 10px color-mix(in srgb, ${primaryAccent} 50%, transparent)`,
             }}
           />
         </div>
 
         {/* Scrubber Thumb */}
+        {/* ds-raw-start: white over album art is fixed */}
         <div
           className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 @[240px]:w-4 @[240px]:h-4 rounded-full bg-white shadow-lg pointer-events-none transition-transform duration-100 ease-out ${
             isDragging || isHovered ? 'scale-110' : 'scale-100'
           }`}
           style={{
             left: `${percentage}%`,
-            border: `2px solid ${customColor}`,
-            boxShadow: `0 0 8px ${customColor}A0, 0 2px 4px rgba(0,0,0,0.6)`,
+            border: `2px solid ${primaryAccent}`,
+            boxShadow: `0 0 8px color-mix(in srgb, ${primaryAccent} 63%, transparent), 0 2px 4px rgba(0,0,0,0.6)`,
           }}
         />
+        {/* ds-raw-end */}
       </div>
 
       {/* Time Indicators: Elapsed and Duration (Flush left and right with seek bar) */}
       {showTimestamps && (
         <div
           data-testid="nowplaying-timestamps-row"
-          className="flex items-center justify-between text-[10px] @[240px]:text-xs font-mono text-slate-400 font-semibold select-none tabular-nums mt-0.5 leading-none w-full tracking-tight"
+          className="flex items-center justify-between text-[10px] @[240px]:text-xs font-mono text-ds-content-muted font-semibold select-none tabular-nums mt-0.5 leading-none w-full tracking-tight"
         >
           <span className="shrink-0 text-left whitespace-nowrap">{formatMediaTime(safeCurrentTime)}</span>
           <span className="shrink-0 text-right whitespace-nowrap">{formatMediaTime(safeDuration)}</span>
@@ -499,6 +502,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
   );
 
   // Inspector-configurable typography and colors
+  const primaryAccent = customColor || 'var(--color-ds-primary)';
   const titleFontSizeProp = component.staticProps?.titleFontSize || 'default';
   const artistFontSizeProp = component.staticProps?.artistFontSize || 'default';
   const titleColorProp = component.staticProps?.titleColor;
@@ -697,19 +701,19 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
       {!isPresentation && isActuallyDismissed && !isSelected && (
         <div
           data-testid="nowplaying-editor-ghost"
-          className="absolute inset-0 rounded-2xl border-2 border-dashed border-sky-500/50 bg-slate-950/35 backdrop-blur-[2px] flex flex-col items-center justify-center p-2 text-center transition-all hover:border-sky-400 hover:bg-slate-900/60 cursor-pointer pointer-events-auto shadow-md z-10"
+          className="absolute inset-0 rounded-2xl border-2 border-dashed border-ds-primary/50 bg-ds-background/35 backdrop-blur-[2px] flex flex-col items-center justify-center p-2 text-center transition-all hover:border-ds-primary hover:bg-ds-surface/60 cursor-pointer pointer-events-auto shadow-md z-10"
           onClick={(e) => {
             e.stopPropagation();
             resetDismissTimer();
           }}
           title="Now Playing (Auto-dismissed)"
         >
-          <div className="flex items-center gap-1.5 text-sky-400 font-mono text-[11px] font-bold uppercase tracking-wider truncate max-w-full px-1">
+          <div className="flex items-center gap-1.5 text-ds-primary font-mono text-[11px] font-bold uppercase tracking-wider truncate max-w-full px-1">
             <Music className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{headerLabel}</span>
           </div>
           {componentHeight >= 80 && (
-            <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-1">
+            <span className="text-[10px] text-ds-content-muted font-mono mt-0.5 truncate max-w-full px-1">
               Auto-dismissed
             </span>
           )}
@@ -723,7 +727,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
             resetDismissTimer();
           }
         }}
-        className={`w-full h-full min-w-0 min-h-0 rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} ${paddingClass} flex flex-col shadow-lg backdrop-blur-md relative select-none @container overflow-hidden ${baseOpacity} ${
+        className={`w-full h-full min-w-0 min-h-0 rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} ${paddingClass} flex flex-col shadow-lg backdrop-blur-md relative select-none @container overflow-hidden ${baseOpacity} ${
           isActuallyDismissed && isPresentation ? 'pointer-events-none' : 'pointer-events-auto'
         }`}
         style={{
@@ -778,7 +782,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
               style={{ width: 'clamp(48px, 22cqw, 110px)' }}
             >
               <div
-                className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-slate-100' : ''}`}
+                className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-ds-content' : ''}`}
                 style={{
                   color: titleColorProp || undefined,
                   ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
@@ -787,7 +791,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 {currentTrack.title}
               </div>
               <div
-                className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-slate-400' : ''}`}
+                className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
                 style={{
                   color: artistColorProp || undefined,
                   ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
@@ -821,7 +825,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                   minHeight: `${buttonHeightPx}px`,
                   aspectRatio: '1 / 1',
                 }}
-                className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                 title="Previous track"
                 aria-label="Previous track"
               >
@@ -836,17 +840,19 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                   minWidth: `${playButtonWidthPx}px`,
                   minHeight: `${playButtonHeightPx}px`,
                   aspectRatio: '1 / 1',
-                  backgroundColor: customColor,
-                  boxShadow: `0 0 12px ${customColor}60`,
+                  backgroundColor: customColor || undefined,
+                  boxShadow: `0 0 12px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
                 }}
-                className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
+                className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
+                  !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+                }`}
                 title={isPlaying ? 'Pause' : 'Play'}
                 aria-label={isPlaying ? 'Pause' : 'Play'}
               >
                 {isPlaying ? (
-                  <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
+                  <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-ds-on-primary" />
                 ) : (
-                  <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+                  <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-ds-on-primary" />
                 )}
               </button>
 
@@ -859,7 +865,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                   minHeight: `${buttonHeightPx}px`,
                   aspectRatio: '1 / 1',
                 }}
-                className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                 title="Next track"
                 aria-label="Next track"
               >
@@ -911,7 +917,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     )}
                     <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
                       <div
-                        className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-slate-100' : ''}`}
+                        className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-ds-content' : ''}`}
                         style={{
                           color: titleColorProp || undefined,
                           ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
@@ -920,7 +926,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                         {currentTrack.title}
                       </div>
                       <div
-                        className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-slate-400' : ''}`}
+                        className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
                         style={{
                           color: artistColorProp || undefined,
                           ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
@@ -930,7 +936,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       </div>
                     </div>
                   </div>
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
+                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-ds-surface-raised text-ds-content-secondary border border-ds-line/60 shrink-0">
                     Now Playing
                   </div>
                 </motion.div>
@@ -969,7 +975,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                         minHeight: `${buttonHeightPx}px`,
                         aspectRatio: '1 / 1',
                       }}
-                      className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                      className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                       title="Previous track"
                       aria-label="Previous track"
                     >
@@ -984,17 +990,19 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                         minWidth: `${playButtonWidthPx}px`,
                         minHeight: `${playButtonHeightPx}px`,
                         aspectRatio: '1 / 1',
-                        backgroundColor: customColor,
-                        boxShadow: `0 0 12px ${customColor}60`,
+                        backgroundColor: customColor || undefined,
+                        boxShadow: `0 0 12px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
                       }}
-                      className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
+                      className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
+                        !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+                      }`}
                       title={isPlaying ? 'Pause' : 'Play'}
                       aria-label={isPlaying ? 'Pause' : 'Play'}
                     >
                       {isPlaying ? (
-                        <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
+                        <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-ds-on-primary" />
                       ) : (
-                        <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+                        <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-ds-on-primary" />
                       )}
                     </button>
 
@@ -1007,7 +1015,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                         minHeight: `${buttonHeightPx}px`,
                         aspectRatio: '1 / 1',
                       }}
-                      className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                      className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                       title="Next track"
                       aria-label="Next track"
                     >
@@ -1068,7 +1076,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 )}
                 <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
                   <div
-                    className={`${titleFontSizeClasses.tall} font-extrabold truncate leading-snug ${!titleColorProp ? 'text-slate-100' : ''}`}
+                    className={`${titleFontSizeClasses.tall} font-extrabold truncate leading-snug ${!titleColorProp ? 'text-ds-content' : ''}`}
                     style={{
                       color: titleColorProp || undefined,
                       ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
@@ -1077,7 +1085,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     {currentTrack.title}
                   </div>
                   <div
-                    className={`${artistFontSizeClasses.tall} truncate font-medium leading-snug ${!artistColorProp ? 'text-slate-400' : ''}`}
+                    className={`${artistFontSizeClasses.tall} truncate font-medium leading-snug ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
                     style={{
                       color: artistColorProp || undefined,
                       ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
@@ -1123,7 +1131,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 minHeight: `${buttonHeightPx}px`,
                 aspectRatio: '1 / 1',
               }}
-              className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+              className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
               title="Previous track"
               aria-label="Previous track"
             >
@@ -1138,17 +1146,19 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 minWidth: `${playButtonWidthPx}px`,
                 minHeight: `${playButtonHeightPx}px`,
                 aspectRatio: '1 / 1',
-                backgroundColor: customColor,
-                boxShadow: `0 0 14px ${customColor}60`,
+                backgroundColor: customColor || undefined,
+                boxShadow: `0 0 14px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
               }}
-              className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
+              className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
+                !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+              }`}
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
               {isPlaying ? (
-                <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
+                <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-ds-on-primary" />
               ) : (
-                <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+                <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-ds-on-primary" />
               )}
             </button>
 
@@ -1161,7 +1171,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 minHeight: `${buttonHeightPx}px`,
                 aspectRatio: '1 / 1',
               }}
-              className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+              className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
               title="Next track"
               aria-label="Next track"
             >
@@ -1176,7 +1186,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
               <div className="flex-1 min-h-[6px]" />
 
               {/* Separator + Secondary Controls (Favorite, Shuffle, Repeat) */}
-              <div className="flex items-center justify-center gap-2.5 shrink-0 pt-1.5 border-t border-slate-800/50 w-full">
+              <div className="flex items-center justify-center gap-2.5 shrink-0 pt-1.5 border-t border-ds-line-subtle/50 w-full">
                 {/* Favorite */}
                 {showFavoriteButton && (
                   <button
@@ -1190,7 +1200,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                       isFavorited
                         ? 'text-white'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/60'
                     }`}
                     title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
                     aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
@@ -1216,8 +1226,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       }}
                       className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
                         isShuffle
-                          ? 'text-slate-100 bg-slate-800 border border-slate-700'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                          ? 'text-ds-content bg-ds-surface-raised border border-ds-line'
+                          : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
                       }`}
                       title="Shuffle"
                       aria-label="Shuffle"
@@ -1239,8 +1249,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       }}
                       className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
                         isRepeat
-                          ? 'text-slate-100 bg-slate-800 border border-slate-700'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                          ? 'text-ds-content bg-ds-surface-raised border border-ds-line'
+                          : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
                       }`}
                       title="Repeat"
                       aria-label="Repeat"
@@ -1311,7 +1321,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                   )}
                   <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
                     <div
-                      className={`${titleFontSizeClasses.horizontal} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-slate-100' : ''}`}
+                      className={`${titleFontSizeClasses.horizontal} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-ds-content' : ''}`}
                       style={{
                         color: titleColorProp || undefined,
                         ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
@@ -1320,7 +1330,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       {currentTrack.title}
                     </div>
                     <div
-                      className={`${artistFontSizeClasses.horizontal} truncate font-medium leading-tight ${!artistColorProp ? 'text-slate-400' : ''}`}
+                      className={`${artistFontSizeClasses.horizontal} truncate font-medium leading-tight ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
                       style={{
                         color: artistColorProp || undefined,
                         ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
@@ -1348,7 +1358,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                       isFavorited
                         ? 'text-white'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                        : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
                     }`}
                     title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
                     aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
@@ -1373,8 +1383,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       }}
                       className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
                         isShuffle
-                          ? 'text-slate-100 bg-slate-800 border border-slate-700'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                          ? 'text-ds-content bg-ds-surface-raised border border-ds-line'
+                          : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
                       }`}
                       title="Shuffle"
                       aria-label="Shuffle"
@@ -1396,8 +1406,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       }}
                       className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
                         isRepeat
-                          ? 'text-slate-100 bg-slate-800 border border-slate-700'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                          ? 'text-ds-content bg-ds-surface-raised border border-ds-line'
+                          : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
                       }`}
                       title="Repeat"
                       aria-label="Repeat"
@@ -1437,7 +1447,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       minHeight: `${buttonHeightPx}px`,
                       aspectRatio: '1 / 1',
                     }}
-                    className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                    className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                     title="Previous track"
                     aria-label="Previous track"
                   >
@@ -1452,17 +1462,19 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       minWidth: `${playButtonWidthPx}px`,
                       minHeight: `${playButtonHeightPx}px`,
                       aspectRatio: '1 / 1',
-                      backgroundColor: customColor,
-                      boxShadow: `0 0 14px ${customColor}60`,
+                      backgroundColor: customColor || undefined,
+                      boxShadow: `0 0 14px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
                     }}
-                    className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
+                    className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
+                      !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+                    }`}
                     title={isPlaying ? 'Pause' : 'Play'}
                     aria-label={isPlaying ? 'Pause' : 'Play'}
                   >
                     {isPlaying ? (
-                      <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
+                      <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-ds-on-primary" />
                     ) : (
-                      <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+                      <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-ds-on-primary" />
                     )}
                   </button>
 
@@ -1475,7 +1487,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       minHeight: `${buttonHeightPx}px`,
                       aspectRatio: '1 / 1',
                     }}
-                    className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                    className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                     title="Next track"
                     aria-label="Next track"
                   >
@@ -1518,7 +1530,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     minHeight: `${buttonHeightPx}px`,
                     aspectRatio: '1 / 1',
                   }}
-                  className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                  className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                   title="Previous track"
                   aria-label="Previous track"
                 >
@@ -1533,17 +1545,19 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     minWidth: `${playButtonWidthPx}px`,
                     minHeight: `${playButtonHeightPx}px`,
                     aspectRatio: '1 / 1',
-                    backgroundColor: customColor,
-                    boxShadow: `0 0 14px ${customColor}60`,
+                    backgroundColor: customColor || undefined,
+                    boxShadow: `0 0 14px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
                   }}
-                  className="rounded-full text-slate-950 flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square"
+                  className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
+                    !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+                  }`}
                   title={isPlaying ? 'Pause' : 'Play'}
                   aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isPlaying ? (
-                    <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-slate-950" />
+                    <Pause style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current text-ds-on-primary" />
                   ) : (
-                    <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-slate-950" />
+                    <Play style={{ width: `${iconSizePx}px`, height: `${iconSizePx}px` }} className="fill-current ml-0.5 text-ds-on-primary" />
                   )}
                 </button>
 
@@ -1556,7 +1570,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     minHeight: `${buttonHeightPx}px`,
                     aspectRatio: '1 / 1',
                   }}
-                  className="rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                  className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                   title="Next track"
                   aria-label="Next track"
                 >
