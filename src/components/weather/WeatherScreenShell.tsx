@@ -48,12 +48,12 @@ export function WeatherScreenShell({
   return (
     <div
       id="weather-screen-shell"
-      className={`w-full h-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none p-5 md:p-6 rounded-3xl border border-slate-800/80 shadow-2xl ${className}`}
+      className={`w-full h-full bg-ds-background text-ds-content flex flex-col overflow-hidden select-none p-5 md:p-6 rounded-3xl border border-ds-line-subtle/80 shadow-2xl ${className}`}
     >
       {/* Static Header: rendered ONCE outside the carousel, fixed throughout swipes */}
       <header
         id="weather-screen-header"
-        className="flex items-center justify-between border-b border-slate-800/80 pb-3.5 mb-3.5 shrink-0 relative z-50"
+        className="flex items-center justify-between border-b border-ds-line-subtle/80 pb-3.5 mb-3.5 shrink-0 relative z-50"
       >
         <div className="flex items-center gap-4">
           <WeatherLocationControl headingClassName="text-xl md:text-2xl" />
@@ -63,7 +63,7 @@ export function WeatherScreenShell({
         {isErrorWithCache && (
           <div
             id="weather-stale-notice"
-            className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-1.5 text-xs font-mono font-bold"
+            className="px-3 py-1.5 rounded-xl bg-ds-warning/10 border border-ds-warning/30 text-ds-warning flex items-center gap-1.5 text-xs font-mono font-bold"
           >
             <AlertCircle className="w-3.5 h-3.5" />
             <span>Showing last update</span>

@@ -53,6 +53,7 @@ export const WeatherIcon: React.FC<WeatherIconProps> = ({ condition: rawConditio
   const moonGradId = 'weather-moon-gradient';
   const thunderGradId = 'weather-thunder-gradient';
 
+  // ds-raw-start: weather condition illustration palette is fixed
   return (
     <svg
       width={dimension}
@@ -354,4 +355,5 @@ export const WeatherIcon: React.FC<WeatherIconProps> = ({ condition: rawConditio
       )}
     </svg>
   );
+  // ds-raw-end
 };

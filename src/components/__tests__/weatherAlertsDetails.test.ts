@@ -117,12 +117,12 @@ describe('Weather Alerts & Details Panel — v1 Suite', () => {
 
     // Both peer cards share identical styling and header treatment
     assert.ok(
-      content.includes('rounded-2xl border border-slate-800 bg-slate-900/40 p-3.5 flex flex-col gap-2.5 shrink-0'),
+      content.includes('rounded-2xl border border-ds-line-subtle bg-ds-surface/40 p-3.5 flex flex-col gap-2.5 shrink-0'),
       'Peer cards have identical border and background styling'
     );
     assert.ok(
       content.includes(
-        'text-xs sm:text-sm font-extrabold uppercase tracking-widest text-slate-200 font-mono pb-2 border-b border-slate-800/80'
+        'text-xs sm:text-sm font-extrabold uppercase tracking-widest text-ds-content font-mono pb-2 border-b border-ds-line-subtle/80'
       ),
       'Both cards share identical heading styling with bottom border'
     );
@@ -157,13 +157,13 @@ describe('Weather Alerts & Details Panel — v1 Suite', () => {
     const detailRowFile = path.resolve('src/components/weather/WeatherDetailRow.tsx');
     assert.ok(fs.existsSync(detailRowFile), 'WeatherDetailRow.tsx exists');
     const content = fs.readFileSync(detailRowFile, 'utf-8');
-    assert.ok(content.includes('bg-slate-950/55'), 'Has card styling bg-slate-950/55');
-    assert.ok(content.includes('border border-slate-800'), 'Has border-slate-800');
+    assert.ok(content.includes('bg-ds-background/55'), 'Has card styling bg-ds-background/55');
+    assert.ok(content.includes('border border-ds-line-subtle'), 'Has border-ds-line-subtle');
     assert.ok(content.includes('w-7 h-7 rounded-lg'), 'Icon box enlarged to w-7 h-7');
     assert.ok(content.includes('w-4 h-4'), 'Icon size enlarged to w-4 h-4');
-    assert.ok(content.includes('text-xs font-bold uppercase tracking-wide text-slate-300 font-mono'), 'Label upgraded to text-xs');
-    assert.ok(content.includes('text-lg font-black font-mono text-slate-100'), 'Value upgraded to text-lg');
-    assert.ok(content.includes('text-[10px] font-bold font-mono text-slate-500'), 'Sub badge is text-[10px]');
+    assert.ok(content.includes('text-xs font-bold uppercase tracking-wide text-ds-content-secondary font-mono'), 'Label upgraded to text-xs');
+    assert.ok(content.includes('text-lg font-black font-mono text-ds-content'), 'Value upgraded to text-lg');
+    assert.ok(content.includes('text-[10px] font-bold font-mono text-ds-content-subtle'), 'Sub badge is text-[10px]');
   });
 
   it('7. Weather Alerts & Details Panel — v1.3 auto-fit CSS grid and WeatherDetailCard', () => {
@@ -187,7 +187,7 @@ describe('Weather Alerts & Details Panel — v1 Suite', () => {
 
     // Sizing and typography invariants for v2.8
     assert.ok(cardContent.includes('h-[235px]'), 'Card has fixed h-[235px] (v2.8)');
-    assert.ok(cardContent.includes('w-14 h-14 text-sky-300 shrink-0'), 'Icon is w-14 h-14 shrink-0 (v2.8)');
+    assert.ok(cardContent.includes('w-14 h-14 text-ds-primary shrink-0'), 'Icon is w-14 h-14 shrink-0 (v2.8)');
     assert.ok(cardContent.includes('strokeWidth={1.5}'), 'Icon uses strokeWidth 1.5');
     assert.ok(
       cardContent.includes('flex flex-col items-center justify-center gap-3 text-center min-w-0 p-4'),
@@ -198,8 +198,8 @@ describe('Weather Alerts & Details Panel — v1 Suite', () => {
       'Label uses break-words and no truncate'
     );
     assert.ok(!cardContent.includes('truncate'), 'No truncate class on label');
-    assert.ok(cardContent.includes('text-lg font-black font-mono text-slate-100'), 'Value uses text-lg font-black');
-    assert.ok(cardContent.includes('text-[10px] font-bold font-mono text-slate-500'), 'Sub uses text-[10px] font-bold');
+    assert.ok(cardContent.includes('text-lg font-black font-mono text-ds-content'), 'Value uses text-lg font-black');
+    assert.ok(cardContent.includes('text-[10px] font-bold font-mono text-ds-content-subtle'), 'Sub uses text-[10px] font-bold');
   });
 
   it('8. Weather Alerts & Details Panel — v2 Inspector controls, order, and visibility', () => {
@@ -268,10 +268,10 @@ describe('Weather Alerts & Details Panel — v1 Suite', () => {
     const cardContent = fs.readFileSync(detailCardFile, 'utf-8');
 
     // Matches exact v2.8 fix snippet:
-    // - bg-slate-950/55 border border-slate-800 rounded-xl h-[235px] flex flex-col items-center justify-center gap-3 text-center min-w-0 p-4
-    // - <Icon className="w-14 h-14 text-sky-300 shrink-0" strokeWidth={1.5} />
-    // - label text-[10px] font-bold uppercase tracking-wide text-slate-300 font-mono leading-tight break-words
-    // - value text-lg font-black font-mono text-slate-100 leading-none
+    // - bg-ds-background/55 border border-ds-line-subtle rounded-xl h-[235px] flex flex-col items-center justify-center gap-3 text-center min-w-0 p-4
+    // - <Icon className="w-14 h-14 text-ds-primary shrink-0" strokeWidth={1.5} />
+    // - label text-[10px] font-bold uppercase tracking-wide text-ds-content-secondary font-mono leading-tight break-words
+    // - value text-lg font-black font-mono text-ds-content leading-none
     assert.ok(
       cardContent.includes('h-[235px] flex flex-col items-center justify-center gap-3 text-center min-w-0 p-4'),
       'WeatherDetailCard uses fixed h-[235px], justify-center, p-4 and gap-3'
@@ -285,11 +285,11 @@ describe('Weather Alerts & Details Panel — v1 Suite', () => {
       'Icon has no background box or button styling'
     );
     assert.ok(
-      cardContent.includes('<Icon className="w-14 h-14 text-sky-300 shrink-0" strokeWidth={1.5} />'),
+      cardContent.includes('<Icon className="w-14 h-14 text-ds-primary shrink-0" strokeWidth={1.5} />'),
       'WeatherDetailCard renders fixed w-14 h-14 icon with shrink-0 and strokeWidth 1.5'
     );
     assert.ok(
-      cardContent.includes('text-[10px] font-bold uppercase tracking-wide text-slate-300 font-mono leading-tight break-words'),
+      cardContent.includes('text-[10px] font-bold uppercase tracking-wide text-ds-content-secondary font-mono leading-tight break-words'),
       'WeatherDetailCard label styling preserves break-words without truncate'
     );
   });

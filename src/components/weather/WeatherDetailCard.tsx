@@ -35,15 +35,15 @@ export function WeatherDetailCard({
   return (
     <div
       id={cardId}
-      className="bg-slate-950/55 border border-slate-800 rounded-xl h-[235px] flex flex-col items-center justify-center gap-3 text-center min-w-0 p-4"
+      className="bg-ds-background/55 border border-ds-line-subtle rounded-xl h-[235px] flex flex-col items-center justify-center gap-3 text-center min-w-0 p-4"
     >
-      <Icon className="w-14 h-14 text-sky-300 shrink-0" strokeWidth={1.5} />
-      <span className="text-[10px] font-bold uppercase tracking-wide text-slate-300 font-mono leading-tight break-words">
+      <Icon className="w-14 h-14 text-ds-primary shrink-0" strokeWidth={1.5} />
+      <span className="text-[10px] font-bold uppercase tracking-wide text-ds-content-secondary font-mono leading-tight break-words">
         {label}
       </span>
       <div className="flex items-baseline gap-1">
-        <span className="text-lg font-black font-mono text-slate-100 leading-none">{value}</span>
-        {sub && <span className="text-[10px] font-bold font-mono text-slate-500">{sub}</span>}
+        <span className="text-lg font-black font-mono text-ds-content leading-none">{value}</span>
+        {sub && <span className="text-[10px] font-bold font-mono text-ds-content-subtle">{sub}</span>}
       </div>
     </div>
   );

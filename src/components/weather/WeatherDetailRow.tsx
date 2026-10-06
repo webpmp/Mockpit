@@ -31,17 +31,17 @@ export function WeatherDetailRow({ icon: Icon, label, value, sub, id }: WeatherD
   return (
     <div
       id={rowId}
-      className="bg-slate-950/55 border border-slate-800 rounded-xl flex items-center justify-between px-3.5 py-2.5"
+      className="bg-ds-background/55 border border-ds-line-subtle rounded-xl flex items-center justify-between px-3.5 py-2.5"
     >
       <div className="flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-300 shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-ds-primary/10 border border-ds-primary/25 flex items-center justify-center text-ds-primary shrink-0">
           <Icon className="w-4 h-4" />
         </div>
-        <span className="text-xs font-bold uppercase tracking-wide text-slate-300 font-mono">{label}</span>
+        <span className="text-xs font-bold uppercase tracking-wide text-ds-content-secondary font-mono">{label}</span>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className="text-lg font-black font-mono text-slate-100">{value}</span>
-        {sub && <span className="text-[10px] font-bold font-mono text-slate-500">{sub}</span>}
+        <span className="text-lg font-black font-mono text-ds-content">{value}</span>
+        {sub && <span className="text-[10px] font-bold font-mono text-ds-content-subtle">{sub}</span>}
       </div>
     </div>
   );

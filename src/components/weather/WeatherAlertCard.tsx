@@ -58,39 +58,41 @@ const SEVERITY_CONFIG: Record<
 > = {
   extreme: {
     label: 'EXTREME',
-    badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/50',
-    border: 'border-rose-500/40',
-    glow: 'shadow-[0_0_15px_rgba(244,63,94,0.15)]',
-    iconBg: 'bg-rose-500/20 text-rose-400 border-rose-500/40',
-    iconColor: 'text-rose-400',
-    textColor: 'text-rose-200',
+    badgeBg: 'bg-ds-error/20 text-ds-error border-ds-error/50',
+    border: 'border-ds-error/40',
+    glow: '0 0 15px color-mix(in srgb, var(--color-ds-error) 15%, transparent)',
+    iconBg: 'bg-ds-error/20 text-ds-error border-ds-error/40',
+    iconColor: 'text-ds-error',
+    textColor: 'text-ds-error',
   },
   high: {
     label: 'HIGH ALERT',
-    badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/50',
-    border: 'border-amber-500/40',
-    glow: 'shadow-[0_0_15px_rgba(245,158,11,0.15)]',
-    iconBg: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
-    iconColor: 'text-amber-400',
-    textColor: 'text-amber-200',
+    badgeBg: 'bg-ds-warning/20 text-ds-warning border-ds-warning/50',
+    border: 'border-ds-warning/40',
+    glow: '0 0 15px color-mix(in srgb, var(--color-ds-warning) 15%, transparent)',
+    iconBg: 'bg-ds-warning/20 text-ds-warning border-ds-warning/40',
+    iconColor: 'text-ds-warning',
+    textColor: 'text-ds-warning',
   },
+  // ds-raw-start: ADVISORY (moderate) severity yellow is fixed
   moderate: {
     label: 'ADVISORY',
     badgeBg: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/40',
     border: 'border-yellow-500/30',
-    glow: 'shadow-[0_0_10px_rgba(234,179,8,0.1)]',
+    glow: '0 0 10px rgba(234,179,8,0.1)',
     iconBg: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
     iconColor: 'text-yellow-400',
     textColor: 'text-yellow-200',
   },
+  // ds-raw-end
   info: {
     label: 'INFO',
-    badgeBg: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
-    border: 'border-sky-500/30',
-    glow: 'shadow-none',
-    iconBg: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
-    iconColor: 'text-sky-400',
-    textColor: 'text-sky-200',
+    badgeBg: 'bg-ds-primary/15 text-ds-primary border-ds-primary/30',
+    border: 'border-ds-primary/30',
+    glow: 'none',
+    iconBg: 'bg-ds-primary/15 text-ds-primary border-ds-primary/30',
+    iconColor: 'text-ds-primary',
+    textColor: 'text-ds-primary',
   },
 };
 
@@ -103,7 +105,8 @@ export const WeatherAlertCard: React.FC<WeatherAlertCardProps> = ({ alert, class
       id={`weather-alert-card-${alert.id}`}
       role="article"
       aria-label={`${config.label}: ${alert.title}. ${alert.description}`}
-      className={`relative w-full rounded-xl bg-slate-900/90 backdrop-blur-md border ${config.border} ${config.glow} p-3.5 flex flex-col gap-2 transition-all select-none ${className}`}
+      style={{ boxShadow: config.glow !== 'none' ? config.glow : undefined }}
+      className={`relative w-full rounded-xl bg-ds-surface/90 backdrop-blur-md border ${config.border} p-3.5 flex flex-col gap-2 transition-all select-none ${className}`}
     >
       {/* Top Row: Icon + Title + Severity Pill & Timing */}
       <div className="flex items-start justify-between gap-3">
@@ -118,7 +121,7 @@ export const WeatherAlertCard: React.FC<WeatherAlertCardProps> = ({ alert, class
 
           {/* Alert Title */}
           <div className="min-w-0">
-            <h4 className="text-xs sm:text-sm font-extrabold uppercase font-mono tracking-wider text-slate-100 truncate">
+            <h4 className="text-xs sm:text-sm font-extrabold uppercase font-mono tracking-wider text-ds-content truncate">
               {alert.title}
             </h4>
           </div>
@@ -131,18 +134,18 @@ export const WeatherAlertCard: React.FC<WeatherAlertCardProps> = ({ alert, class
           >
             {config.label}
           </span>
-          <span className="text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 flex items-center gap-1">
-            <Clock className="w-2.5 h-2.5 text-slate-400" />
+          <span className="text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-ds-surface-raised border border-ds-line text-ds-content-secondary flex items-center gap-1">
+            <Clock className="w-2.5 h-2.5 text-ds-content-muted" />
             {alert.timing}
           </span>
         </div>
       </div>
 
       {/* Description & Dynamic Detail Metrics */}
-      <div className="pl-[3.75rem] text-xs text-slate-300 font-sans space-y-1">
+      <div className="pl-[3.75rem] text-xs text-ds-content-secondary font-sans space-y-1">
         <p className="leading-snug">{alert.description}</p>
         {alert.detail && (
-          <p className="text-[11px] font-mono text-slate-400 leading-snug">
+          <p className="text-[11px] font-mono text-ds-content-muted leading-snug">
             {alert.detail}
           </p>
         )}

@@ -55,7 +55,9 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
     airQuality && airQuality.aqi !== null && airQuality.aqi !== undefined
       ? `Air quality index ${airQuality.aqi}, category ${aqiInfo?.categoryPhrase || 'Good'}`
       : 'Air quality data unavailable';
+  // ds-raw-start: AQI scale colors are fixed
   const aqiTextColor = aqiInfo?.textColor || 'text-emerald-400';
+  // ds-raw-end
 
   const sunriseDisplay = sunTime?.sunriseFormatted || '—';
   const sunsetDisplay = sunTime?.sunsetFormatted || '—';
@@ -63,46 +65,46 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
   return (
     <div
       id="mini-weather-view"
-      className={`relative bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl shadow-xl text-slate-100 flex justify-center items-center w-full h-full min-h-0 ${className}`}
+      className={`relative bg-ds-surface/90 backdrop-blur-md border border-ds-line-subtle rounded-2xl shadow-xl text-ds-content flex justify-center items-center w-full h-full min-h-0 ${className}`}
       style={{ padding: '32px', gap: '48px' }}
     >
       {/* Left Stats Column */}
       <div
         id="mini-weather-left-stats"
-        className="flex-none flex flex-col justify-center border-r border-slate-800"
+        className="flex-none flex flex-col justify-center border-r border-ds-line-subtle"
         style={{ width: '260px', gap: '28px', paddingRight: '24px' }}
       >
         <div className="flex flex-col gap-1">
-          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
+          <span className="text-ds-content-muted font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Wind
           </span>
           <span
             id="mini-weather-wind-value"
-            className="font-bold text-slate-100 whitespace-nowrap"
+            className="font-bold text-ds-content whitespace-nowrap"
             style={{ fontSize: '26px' }}
           >
             {windDisplay}
           </span>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
+          <span className="text-ds-content-muted font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Humidity
           </span>
           <span
             id="mini-weather-humidity-value"
-            className="font-bold text-slate-100 whitespace-nowrap"
+            className="font-bold text-ds-content whitespace-nowrap"
             style={{ fontSize: '26px' }}
           >
             {humidityDisplay}
           </span>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
+          <span className="text-ds-content-muted font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Precipitation
           </span>
           <span
             id="mini-weather-precip-value"
-            className="font-bold text-slate-100 whitespace-nowrap"
+            className="font-bold text-ds-content whitespace-nowrap"
             style={{ fontSize: '26px' }}
           >
             {precipDisplay}
@@ -114,7 +116,7 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
       <div className="flex-none flex flex-col items-center justify-center" style={{ gap: '20px' }}>
         {/* Condition Icon */}
         <div
-          className="flex items-center justify-center rounded-full bg-slate-950/40 border border-slate-800/60 shadow-inner"
+          className="flex items-center justify-center rounded-full bg-ds-background/40 border border-ds-line-subtle/60 shadow-inner"
           style={{ padding: '16px' }}
         >
           <WeatherIcon condition={icon} size={200} />
@@ -124,7 +126,7 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
         <div className="flex flex-col items-center">
           <div
             id="mini-weather-temperature"
-            className="font-black tracking-tighter text-slate-100 font-mono leading-none"
+            className="font-black tracking-tighter text-ds-content font-mono leading-none"
             style={{ fontSize: '120px' }}
           >
             {Math.round(temperature)}°{unit}
@@ -136,20 +138,22 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
             className="flex items-center font-mono font-bold"
             style={{ marginTop: '12px', gap: '12px' }}
           >
+            {/* ds-raw-start: high/low temperature colors are fixed (thermal domain) */}
             <span
-              className="rounded-lg bg-slate-950/80 border border-slate-800 text-amber-400 font-bold leading-none"
+              className="rounded-lg bg-ds-background/80 border border-ds-line-subtle text-amber-400 font-bold leading-none"
               style={{ padding: '12px 24px', fontSize: '34px' }}
               aria-label="High temperature"
             >
               {Math.round(high)}°
             </span>
             <span
-              className="rounded-lg bg-slate-950/80 border border-slate-800 text-sky-400 font-bold leading-none"
+              className="rounded-lg bg-ds-background/80 border border-ds-line-subtle text-sky-400 font-bold leading-none"
               style={{ padding: '12px 24px', fontSize: '34px' }}
               aria-label="Low temperature"
             >
               {Math.round(low)}°
             </span>
+            {/* ds-raw-end */}
           </div>
         </div>
       </div>
@@ -157,11 +161,11 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
       {/* Right Stats Column */}
       <div
         id="mini-weather-right-stats"
-        className="flex-none flex flex-col justify-center border-l border-slate-800"
+        className="flex-none flex flex-col justify-center border-l border-ds-line-subtle"
         style={{ width: '260px', gap: '28px', paddingLeft: '24px' }}
       >
         <div className="flex flex-col gap-1">
-          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
+          <span className="text-ds-content-muted font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Air Quality
           </span>
           <span
@@ -174,9 +178,10 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
           </span>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
+          <span className="text-ds-content-muted font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Sunrise
           </span>
+          {/* ds-raw-start: sunrise/sunset colors are fixed */}
           <span
             id="sunrise-stat-value"
             className="font-bold text-amber-400 whitespace-nowrap"
@@ -184,11 +189,13 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
           >
             {sunriseDisplay}
           </span>
+          {/* ds-raw-end */}
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-slate-400 font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
+          <span className="text-ds-content-muted font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Sunset
           </span>
+          {/* ds-raw-start: sunrise/sunset colors are fixed */}
           <span
             id="sunset-stat-value"
             className="font-bold text-orange-400 whitespace-nowrap"
@@ -196,6 +203,7 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
           >
             {sunsetDisplay}
           </span>
+          {/* ds-raw-end */}
         </div>
       </div>
     </div>

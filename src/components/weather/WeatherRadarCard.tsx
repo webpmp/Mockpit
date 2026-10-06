@@ -70,7 +70,7 @@ const RadarTileMosaic: React.FC<{
           : null;
 
         return (
-          <div key={`${tile.x}-${tile.y}`} className="relative w-[256px] h-[256px] bg-slate-200">
+          <div key={`${tile.x}-${tile.y}`} className="relative w-[256px] h-[256px] bg-ds-surface-raised">
             {/* Base Map Tile with filter to desaturate & brighten for high contrast against radar overlay */}
             <img
               src={baseMapUrl}
@@ -99,16 +99,16 @@ const RadarTileMosaic: React.FC<{
       <div className="relative flex items-center justify-center">
         {reticleSize === 'lg' ? (
           <>
-            <div className="w-8 h-8 rounded-full border border-sky-500/40 absolute" />
-            <div className="w-4 h-4 rounded-full bg-sky-500/25 border border-sky-500 flex items-center justify-center shadow-lg">
-              <div className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_6px_#0284c7]" />
+            <div className="w-8 h-8 rounded-full border border-ds-primary/40 absolute" />
+            <div className="w-4 h-4 rounded-full bg-ds-primary/25 border border-ds-primary flex items-center justify-center shadow-lg">
+              <div className="w-2 h-2 rounded-full bg-ds-primary shadow-[0_0_6px_var(--color-ds-primary-hover)]" />
             </div>
           </>
         ) : (
           <>
-            <div className="w-6 h-6 rounded-full border border-sky-500/40 absolute" />
-            <div className="w-3.5 h-3.5 rounded-full bg-sky-500/25 border border-sky-500 flex items-center justify-center shadow-lg">
-              <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+            <div className="w-6 h-6 rounded-full border border-ds-primary/40 absolute" />
+            <div className="w-3.5 h-3.5 rounded-full bg-ds-primary/25 border border-ds-primary flex items-center justify-center shadow-lg">
+              <div className="w-1.5 h-1.5 rounded-full bg-ds-primary" />
             </div>
           </>
         )}
@@ -213,15 +213,15 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
     return (
       <div
         id="weather-radar-card"
-        className={`relative h-full aspect-square rounded-2xl overflow-hidden bg-slate-200 border border-slate-800/90 select-none shadow-2xl ${className}`}
+        className={`relative h-full aspect-square rounded-2xl overflow-hidden bg-ds-surface-raised border border-ds-line-subtle/90 select-none shadow-2xl ${className}`}
       >
         {hasError ? (
-          <div className="flex flex-col items-center justify-center w-full h-full gap-2 text-slate-700 p-4 text-center">
-            <AlertTriangle className="w-6 h-6 text-amber-600" />
+          <div className="flex flex-col items-center justify-center w-full h-full gap-2 text-ds-content-muted p-4 text-center">
+            <AlertTriangle className="w-6 h-6 text-ds-warning" />
             <span className="text-xs font-mono font-bold">RADAR FEED TEMPORARILY UNAVAILABLE</span>
             <button
               onClick={fetchRadarData}
-              className="mt-1 px-3 py-1 text-xs font-mono font-bold bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-100 border border-slate-700 transition-colors cursor-pointer"
+              className="mt-1 px-3 py-1 text-xs font-mono font-bold bg-ds-surface-raised hover:bg-ds-line rounded-lg text-ds-content border border-ds-line transition-colors cursor-pointer"
             >
               Retry
             </button>
@@ -238,12 +238,14 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
             />
 
             {/* Bottom-left: Intensity legend overlay chip */}
-            <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/85 backdrop-blur-sm border border-slate-800 text-[10px] font-mono shadow-md text-slate-200">
-              <span className="text-slate-400 uppercase font-bold">INTENSITY:</span>
+            <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-ds-background/85 backdrop-blur-sm border border-ds-line-subtle text-[10px] font-mono shadow-md text-ds-content-secondary">
+              <span className="text-ds-content-muted uppercase font-bold">INTENSITY:</span>
+              {/* ds-raw-start: radar reflectivity color scale is fixed */}
               <span className="inline-block w-2 h-2 rounded-full bg-sky-400" title="Light" />
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" title="Moderate" />
               <span className="inline-block w-2 h-2 rounded-full bg-amber-400" title="Heavy" />
               <span className="inline-block w-2 h-2 rounded-full bg-pink-500" title="Severe" />
+              {/* ds-raw-end */}
             </div>
 
             {/* Top-right: Enlarged Refresh button (meets >=44x44px minimum tap target) */}
@@ -251,7 +253,7 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
               id="weather-radar-refresh-btn"
               onClick={fetchRadarData}
               disabled={isLoading}
-              className="absolute top-3 right-3 z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-slate-950/85 backdrop-blur-sm border border-slate-800 text-slate-300 hover:text-slate-100 transition-colors disabled:opacity-50 cursor-pointer shadow-md"
+              className="absolute top-3 right-3 z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-ds-background/85 backdrop-blur-sm border border-ds-line-subtle text-ds-content-secondary hover:text-ds-content transition-colors disabled:opacity-50 cursor-pointer shadow-md"
               title="Refresh Radar"
               aria-label="Refresh radar"
             >
@@ -259,7 +261,7 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
             </button>
 
             {/* Bottom-right: Source Watermark */}
-            <div className="absolute bottom-3 right-3 z-20 px-2.5 py-1 rounded-lg bg-slate-950/85 backdrop-blur-sm border border-slate-800 text-[10px] font-mono text-slate-400 flex items-center gap-1.5 shadow-md">
+            <div className="absolute bottom-3 right-3 z-20 px-2.5 py-1 rounded-lg bg-ds-background/85 backdrop-blur-sm border border-ds-line-subtle text-[10px] font-mono text-ds-content-muted flex items-center gap-1.5 shadow-md">
               <Layers className="w-3 h-3" />
               RAINVIEWER • © OpenStreetMap contributors
             </div>
@@ -289,27 +291,27 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
             }
           : undefined
       }
-      className={`bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-2xl p-2.5 sm:p-3 flex flex-col items-center justify-center shadow-lg text-slate-100 ${
+      className={`bg-ds-surface/80 backdrop-blur-sm border border-ds-line-subtle rounded-2xl p-2.5 sm:p-3 flex flex-col items-center justify-center shadow-lg text-ds-content ${
         onExpand ? 'cursor-pointer' : ''
       } ${className}`}
     >
       <div
         className={
           sizeMode === 'height'
-            ? 'relative h-full w-auto aspect-square mx-auto rounded-xl overflow-hidden bg-slate-200 border border-slate-800/90 select-none flex items-center justify-center'
-            : 'relative w-full aspect-square max-h-[340px] mx-auto rounded-xl overflow-hidden bg-slate-200 border border-slate-800/90 select-none flex items-center justify-center'
+            ? 'relative h-full w-auto aspect-square mx-auto rounded-xl overflow-hidden bg-ds-surface-raised border border-ds-line-subtle/90 select-none flex items-center justify-center'
+            : 'relative w-full aspect-square max-h-[340px] mx-auto rounded-xl overflow-hidden bg-ds-surface-raised border border-ds-line-subtle/90 select-none flex items-center justify-center'
         }
       >
         {hasError ? (
-          <div className="flex flex-col items-center gap-1.5 text-slate-700 p-3 text-center">
-            <AlertTriangle className="w-5 h-5 text-amber-600" />
+          <div className="flex flex-col items-center gap-1.5 text-ds-content-muted p-3 text-center">
+            <AlertTriangle className="w-5 h-5 text-ds-warning" />
             <span className="text-[11px] font-mono font-bold">RADAR FEED TEMPORARILY UNAVAILABLE</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 fetchRadarData();
               }}
-              className="mt-1 px-2.5 py-0.5 text-[10px] font-mono font-bold bg-slate-800 hover:bg-slate-700 rounded-md text-slate-100 border border-slate-700 transition-colors cursor-pointer"
+              className="mt-1 px-2.5 py-0.5 text-[10px] font-mono font-bold bg-ds-surface-raised hover:bg-ds-line rounded-md text-ds-content border border-ds-line transition-colors cursor-pointer"
             >
               Retry
             </button>

@@ -26,19 +26,19 @@ export const WeatherBody: React.FC<WeatherBodyProps> = ({ className = '' }) => {
     return (
       <div
         id="weather-error-container"
-        className={`w-full h-full flex flex-col items-center justify-center p-8 bg-slate-900/40 border border-slate-800/60 rounded-3xl text-center select-none ${className}`}
+        className={`w-full h-full flex flex-col items-center justify-center p-8 bg-ds-surface/40 border border-ds-line-subtle/60 rounded-3xl text-center select-none ${className}`}
       >
         <WeatherIcon condition="cloudy" size="lg" className="opacity-60 mb-4" />
-        <h2 className="text-lg font-bold font-mono text-slate-200 uppercase tracking-wide mb-1">
+        <h2 className="text-lg font-bold font-mono text-ds-content uppercase tracking-wide mb-1">
           Unable to Load Weather Forecast
         </h2>
-        <p className="text-xs font-mono text-slate-400 max-w-md mb-6">
+        <p className="text-xs font-mono text-ds-content-muted max-w-md mb-6">
           Could not retrieve data for &quot;{locationInput}&quot;. Please verify the city or zip code in the Inspector panel or retry.
         </p>
         <button
           id="weather-error-retry-btn"
           onClick={() => fetchWeather()}
-          className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold transition-all cursor-pointer shadow-lg"
+          className="px-5 py-2.5 rounded-xl bg-ds-primary hover:bg-ds-primary-hover text-ds-on-primary font-mono text-xs font-bold transition-all cursor-pointer shadow-lg"
         >
           RETRY CONNECTION
         </button>

@@ -94,12 +94,12 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
             onSubmit={(val) => commitLocation(val)}
             placeholder="City, State, or Zip..."
             wrapperClassName="z-50 relative"
-            className="bg-slate-900 border border-sky-500 rounded-xl px-3 py-2 text-base font-mono text-slate-100 uppercase font-bold focus:outline-none focus:ring-1 focus:ring-sky-400 min-w-[240px]"
+            className="bg-ds-surface border border-ds-primary rounded-xl px-3 py-2 text-base font-mono text-ds-content uppercase font-bold focus:outline-none focus:ring-1 focus:ring-ds-primary min-w-[240px]"
           />
           <button
             id="weather-inline-save-btn"
             type="submit"
-            className="px-3.5 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-mono font-bold transition-all cursor-pointer shadow-md flex items-center justify-center"
+            className="px-3.5 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-ds-primary hover:bg-ds-primary-hover text-ds-on-primary text-xs font-mono font-bold transition-all cursor-pointer shadow-md flex items-center justify-center"
           >
             Save
           </button>
@@ -112,7 +112,7 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
               setIsEditingLocation(false);
               closeKeyboard({ isCancelled: true });
             }}
-            className="px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center"
+            className="px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-ds-surface border border-ds-line-subtle hover:bg-ds-surface-raised text-ds-content-muted hover:text-ds-content text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center"
           >
             Cancel
           </button>
@@ -122,12 +122,12 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
           id="weather-location-heading-btn"
           type="button"
           onClick={handleOpenLocationKeyboard}
-          className="min-h-[44px] min-w-[44px] flex items-center gap-2.5 text-left group cursor-pointer rounded-xl px-2 py-1 -ml-2 hover:bg-slate-900/80 transition-colors"
+          className="min-h-[44px] min-w-[44px] flex items-center gap-2.5 text-left group cursor-pointer rounded-xl px-2 py-1 -ml-2 hover:bg-ds-surface/80 transition-colors"
           title="Click to edit location"
         >
           <h1
             id="weather-location-heading"
-            className={`${headingClassName} font-black font-mono tracking-tight text-slate-100 uppercase group-hover:text-sky-400 transition-colors`}
+            className={`${headingClassName} font-black font-mono tracking-tight text-ds-content uppercase group-hover:text-ds-primary transition-colors`}
           >
             {locationDisplayName}
           </h1>
