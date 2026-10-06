@@ -118,6 +118,17 @@ export const MIGRATED_CANVAS_FILES: readonly string[] = [
   'src/components/weather/WeatherRadarCard.tsx',
   'src/components/weather/WeatherRadarScreen.tsx',
   'src/components/weather/WeatherScreenShell.tsx',
+  'src/components/navigation/AddressGeocodeInput.tsx',
+  'src/components/navigation/ManeuverGlyph.tsx',
+  'src/components/navigation/MiniNav.tsx',
+  'src/components/vehicle/ConnectorLayer.tsx',
+  'src/components/vehicle/CruiseControlWidget.tsx',
+  'src/components/vehicle/DriveModeWidget.tsx',
+  'src/components/vehicle/GearWidget.tsx',
+  'src/components/vehicle/SendToServiceWidget.tsx',
+  'src/components/vehicle/SpeedometerWidget.tsx',
+  'src/components/vehicle/VehicleExplodedViewWidget.tsx',
+  'src/components/vehicle/VehicleStatusCalloutWidget.tsx',
 ];
 
 describe('Design System Foundation Suite (Spec v1)', () => {

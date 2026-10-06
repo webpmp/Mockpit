@@ -78,8 +78,8 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
 }) => {
   const updateComponentConnector = useMockpitStore((s) => s.updateComponentConnector);
   const activePalette = useMockpitStore((s) => s.activePalette);
-  const primaryColor = activePalette?.primary || '#38bdf8';
-  const secondaryColor = activePalette?.secondary || '#0284c7';
+  const primaryColor = activePalette?.primary || 'var(--color-ds-primary)';
+  const secondaryColor = activePalette?.secondary || 'var(--color-ds-primary-hover)';
 
   // State for dragging an existing target endpoint handle
   const [draggingTarget, setDraggingTarget] = useState<{
@@ -267,7 +267,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
                 cy={sourcePt.y}
                 r={isSelected ? 4 : 3}
                 fill={primaryColor}
-                stroke="#0f172a"
+                stroke="var(--color-ds-surface)"
                 strokeWidth={1.5}
               />
 
@@ -357,11 +357,11 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
               <div
                 className={`w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
                   isSelected
-                    ? 'bg-sky-400/30 border-sky-400 shadow-[0_0_12px_#38bdf8] scale-125'
-                    : 'bg-slate-900/80 border-sky-500/80 group-hover/target:border-sky-400 group-hover/target:scale-125'
+                    ? 'bg-ds-primary/30 border-ds-primary shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_60%,transparent)] scale-125'
+                    : 'bg-ds-surface/80 border-ds-primary/80 group-hover/target:border-ds-primary group-hover/target:scale-125'
                 }`}
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                <div className="w-1.5 h-1.5 rounded-full bg-ds-primary" />
               </div>
             </div>
           );

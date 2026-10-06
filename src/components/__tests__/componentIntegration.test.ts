@@ -118,8 +118,8 @@ describe('Component Integration (Parent/Child Visual Relationships) Suite', () =
 
   describe('2. Border Classes Generation', () => {
     it('Returns monolithic default border when borderOverrides is null/undefined', () => {
-      assert.equal(getBorderClasses(undefined), 'border border-slate-800');
-      assert.equal(getBorderClasses(null), 'border border-slate-800');
+      assert.equal(getBorderClasses(undefined), 'border border-ds-line-subtle');
+      assert.equal(getBorderClasses(null), 'border border-ds-line-subtle');
     });
 
     it('Returns empty string when all borders are disabled', () => {
@@ -135,7 +135,7 @@ describe('Component Integration (Parent/Child Visual Relationships) Suite', () =
       assert.match(classes, /border-r/);
       assert.match(classes, /border-l/);
       assert.equal(classes.includes('border-b'), false);
-      assert.match(classes, /border-slate-800/);
+      assert.match(classes, /border-ds-line-subtle/);
     });
 
     it('Supports custom colorClass and widthClass', () => {

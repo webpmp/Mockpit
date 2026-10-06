@@ -22,7 +22,7 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
   component,
   resolved = {} as Record<string, any>,
   isSelected,
-  customColor = '#38bdf8',
+  customColor = 'var(--color-ds-primary)',
   baseOpacity = 'opacity-100',
   styleOpacity = 1,
 }) => {
@@ -120,7 +120,7 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
     <div
       ref={containerRef}
       data-component-type="gear"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between items-stretch shadow-lg backdrop-blur-md transition-all select-none overflow-visible [container-type:size] ${
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between items-stretch shadow-lg backdrop-blur-md transition-all select-none overflow-visible [container-type:size] ${
         isUltraCompact ? 'p-2' : isCompact ? 'p-2.5' : 'p-3.5'
       } ${baseOpacity}`}
       style={{
@@ -154,10 +154,10 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
           }}
           className={`flex items-center justify-between rounded-xl transition-colors duration-150 border shadow-inner select-none cursor-pointer ${
             isUltraCompact
-              ? 'w-auto max-w-[125px] h-5.5 p-0.5 px-1 gap-1 bg-slate-950/70 border-slate-800/80'
+              ? 'w-auto max-w-[125px] h-5.5 p-0.5 px-1 gap-1 bg-ds-background/70 border-ds-line-subtle/80'
               : isCompact
-              ? 'w-auto max-w-[145px] h-6.5 p-1 gap-1 bg-slate-950/75 border-slate-800/85'
-              : 'w-auto max-w-[160px] h-7.5 p-1 gap-1.5 bg-slate-950/80 border-slate-800/90'
+              ? 'w-auto max-w-[145px] h-6.5 p-1 gap-1 bg-ds-background/75 border-ds-line-subtle/85'
+              : 'w-auto max-w-[160px] h-7.5 p-1 gap-1.5 bg-ds-background/80 border-ds-line-subtle/90'
           }`}
           title="Click to open gear selector"
         >
@@ -174,8 +174,8 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
                     : 'h-5 min-w-[22px] px-1.5 text-xs'
                 } ${
                   isActive
-                    ? 'bg-sky-500/25 font-extrabold shadow-sm border border-sky-500/50'
-                    : 'text-slate-500 border border-transparent'
+                    ? 'bg-ds-primary/25 font-extrabold shadow-sm border border-ds-primary/50'
+                    : 'text-ds-content-subtle border border-transparent'
                 }`}
                 style={isActive ? { color: customColor } : undefined}
               >
@@ -198,10 +198,10 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
               onMouseDown={(e) => e.stopPropagation()}
               className={`absolute top-full mt-1.5 z-30 flex items-center justify-between rounded-xl border shadow-2xl backdrop-blur-xl select-none ${
                 isUltraCompact
-                  ? 'w-full max-w-[160px] h-8.5 p-1 gap-1 bg-slate-950/95 border-sky-500/80 ring-2 ring-sky-500/30'
+                  ? 'w-full max-w-[160px] h-8.5 p-1 gap-1 bg-ds-background/95 border-ds-primary/80 ring-2 ring-ds-primary/30'
                   : isCompact
-                  ? 'w-full max-w-[190px] h-10 p-1.5 gap-1.5 bg-slate-950/95 border-sky-500/80 ring-2 ring-sky-500/30'
-                  : 'w-full max-w-[215px] h-11 p-1.5 gap-2 bg-slate-950/95 border-sky-500/80 ring-2 ring-sky-500/30'
+                  ? 'w-full max-w-[190px] h-10 p-1.5 gap-1.5 bg-ds-background/95 border-ds-primary/80 ring-2 ring-ds-primary/30'
+                  : 'w-full max-w-[215px] h-11 p-1.5 gap-2 bg-ds-background/95 border-ds-primary/80 ring-2 ring-ds-primary/30'
               }`}
               style={{
                 borderColor: customColor,
@@ -225,8 +225,8 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
                         : 'h-8 text-base'
                     } ${
                       isActive
-                        ? 'bg-sky-500/25 font-extrabold shadow-sm border border-sky-500/50'
-                        : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent'
+                        ? 'bg-ds-primary/25 font-extrabold shadow-sm border border-ds-primary/50'
+                        : 'text-ds-content-secondary hover:text-ds-content hover:bg-ds-surface-raised/60 border border-transparent'
                     }`}
                     style={isActive ? { color: customColor } : undefined}
                     aria-label={`Select gear ${g}`}
@@ -256,8 +256,8 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
           }}
           className={`flex items-center justify-center rounded-xl transition-all duration-150 select-none cursor-pointer ${
             isSelecting
-              ? 'bg-slate-800 border-sky-500/80 ring-2 ring-sky-500/30'
-              : 'bg-slate-800/70 hover:bg-slate-800 hover:border-slate-600 border-slate-700/60'
+              ? 'bg-ds-surface-raised border-ds-primary/80 ring-2 ring-ds-primary/30'
+              : 'bg-ds-surface-raised/70 hover:bg-ds-surface-raised hover:border-ds-line-strong border-ds-line/60'
           } border shadow-md`}
           style={{
             color: customColor,

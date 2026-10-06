@@ -21,7 +21,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
   resolved = {} as Record<string, any>,
   isSelected,
   isPresentation,
-  customColor = '#38bdf8',
+  customColor = 'var(--color-ds-primary)',
   baseOpacity = 'opacity-100',
   styleOpacity = 1,
 }) => {
@@ -253,7 +253,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
 
     return (
       <div
-        className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-2.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
+        className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-2.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
         style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
       >
         <ComponentHeader
@@ -292,7 +292,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
             <path
               d={bgArcPath}
               fill="none"
-              stroke="rgba(51, 65, 85, 0.4)"
+              stroke="color-mix(in srgb, var(--color-ds-line) 40%, transparent)"
               strokeWidth="11"
               strokeLinecap="round"
             />
@@ -315,14 +315,14 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
                   y1={t.innerPt.y}
                   x2={t.outerPt.x}
                   y2={t.outerPt.y}
-                  stroke={t.tickAngle <= activeAngle ? customColor : 'rgba(100, 116, 139, 0.6)'}
+                  stroke={t.tickAngle <= activeAngle ? customColor : 'color-mix(in srgb, var(--color-ds-content-subtle) 60%, transparent)'}
                   strokeWidth="2.5"
                 />
                 <text
                   x={t.labelPt.x}
                   y={t.labelPt.y + 4}
                   textAnchor="middle"
-                  fill="rgba(148, 163, 184, 0.85)"
+                  fill="color-mix(in srgb, var(--color-ds-content-muted) 85%, transparent)"
                   fontSize="11.5"
                   fontWeight="bold"
                   fontFamily="monospace"
@@ -333,7 +333,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
             ))}
 
             {/* Pivot Center */}
-            <circle cx={cx} cy={cy} r="9" fill="#0f172a" stroke={customColor} strokeWidth="2.5" />
+            <circle cx={cx} cy={cy} r="9" fill="var(--color-ds-surface)" stroke={customColor} strokeWidth="2.5" />
             <circle cx={cx} cy={cy} r="3.5" fill={customColor} />
 
             {/* Rotating Needle */}
@@ -365,7 +365,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
               x={cx}
               y={cy + 50}
               textAnchor="middle"
-              fill="rgba(148, 163, 184, 0.8)"
+              fill="color-mix(in srgb, var(--color-ds-content-muted) 80%, transparent)"
               fontSize="9"
               fontWeight="bold"
               letterSpacing="1"
@@ -388,11 +388,11 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
 
   // 2. Arc Gauge View (Tapered Wedge)
   if (displayStyle === 'arcGauge') {
-    const stop1 = resolved.arcStop1Color || component.staticProps?.arcStop1Color || '#10b981';
-    const stop2 = resolved.arcStop2Color || component.staticProps?.arcStop2Color || '#06b6d4';
+    const stop1 = resolved.arcStop1Color || component.staticProps?.arcStop1Color || 'var(--color-ds-success)';
+    const stop2 = resolved.arcStop2Color || component.staticProps?.arcStop2Color || 'var(--color-ds-primary)';
     const stop3 = resolved.arcStop3Color || component.staticProps?.arcStop3Color || customColor;
-    const stop4 = resolved.arcStop4Color || component.staticProps?.arcStop4Color || '#f59e0b';
-    const stop5 = resolved.arcStop5Color || component.staticProps?.arcStop5Color || '#ef4444';
+    const stop4 = resolved.arcStop4Color || component.staticProps?.arcStop4Color || 'var(--color-ds-warning)';
+    const stop5 = resolved.arcStop5Color || component.staticProps?.arcStop5Color || 'var(--color-ds-error)';
 
     const startAngle = 220;
     const totalSweep = 280;
@@ -454,7 +454,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
 
     return (
       <div
-        className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-2.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
+        className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-2.5 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
         style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
       >
         <ComponentHeader
@@ -509,8 +509,8 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
             {/* Background Tapered Wedge Track */}
             <path
               d={bgWedgePath}
-              fill="rgba(30, 41, 59, 0.45)"
-              stroke="rgba(71, 85, 105, 0.35)"
+              fill="color-mix(in srgb, var(--color-ds-surface-raised) 45%, transparent)"
+              stroke="color-mix(in srgb, var(--color-ds-line-strong) 35%, transparent)"
               strokeWidth="1"
             />
 
@@ -529,7 +529,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
               d={activeWedgePath}
               fill={`url(#${gradientId})`}
               style={{
-                filter: `drop-shadow(0 0 ${Math.max(2, ratio * 8)}px rgba(255, 255, 255, 0.25))`,
+                filter: `drop-shadow(0 0 ${Math.max(2, ratio * 8)}px color-mix(in srgb, var(--color-ds-content) 25%, transparent))`,
               }}
             />
 
@@ -541,14 +541,14 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
                   y1={t.innerPt.y}
                   x2={t.outerPt.x}
                   y2={t.outerPt.y}
-                  stroke={t.tickAngle <= activeAngle ? 'rgba(255, 255, 255, 0.85)' : 'rgba(100, 116, 139, 0.5)'}
+                  stroke={t.tickAngle <= activeAngle ? 'color-mix(in srgb, var(--color-ds-content) 85%, transparent)' : 'color-mix(in srgb, var(--color-ds-content-subtle) 50%, transparent)'}
                   strokeWidth="2"
                 />
                 <text
                   x={t.labelPt.x}
                   y={t.labelPt.y + 4}
                   textAnchor="middle"
-                  fill={t.tickAngle <= activeAngle ? 'rgba(241, 245, 249, 0.95)' : 'rgba(148, 163, 184, 0.85)'}
+                  fill={t.tickAngle <= activeAngle ? 'color-mix(in srgb, var(--color-ds-content) 95%, transparent)' : 'color-mix(in srgb, var(--color-ds-content-muted) 85%, transparent)'}
                   fontSize="11"
                   fontWeight="bold"
                   fontFamily="monospace"
@@ -577,7 +577,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
               x={cx}
               y={cy + 28}
               textAnchor="middle"
-              fill="rgba(148, 163, 184, 0.8)"
+              fill="color-mix(in srgb, var(--color-ds-content-muted) 80%, transparent)"
               fontSize="10"
               fontWeight="bold"
               letterSpacing="1"
@@ -591,9 +591,9 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
         <div
           className="absolute inset-0 pointer-events-none rounded-2xl transition-all duration-150"
           style={{
-            background: `radial-gradient(circle at center, rgba(56, 189, 248, ${
-              (isDragging ? 0.15 : 0.05) + ratio * 0.15
-            }) 0%, transparent 70%)`,
+            background: `radial-gradient(circle at center, color-mix(in srgb, ${customColor} ${Math.round(
+              ((isDragging ? 0.15 : 0.05) + ratio * 0.15) * 100
+            )}%, transparent) 0%, transparent 70%)`,
           }}
         />
       </div>
@@ -603,7 +603,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
   // 3. Default 'numeric' style
   return (
     <div
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} p-3 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3 flex flex-col justify-between items-center text-center shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden [container-type:size] ${baseOpacity}`}
       style={{ containerType: 'size', borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -648,7 +648,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
           {speedVal}
         </div>
         <div
-          className="font-bold tracking-widest text-slate-400 uppercase mt-1"
+          className="font-bold tracking-widest text-ds-content-muted uppercase mt-1"
           style={{ fontSize: 'clamp(9px, 5cqmin, 22px)' }}
         >
           {unitVal}

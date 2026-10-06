@@ -112,10 +112,10 @@ describe('CruiseControlWidget — Spec v1 Suite', () => {
     assert.ok(html.includes('data-component-type="cruiseControl"'));
     assert.ok(html.includes('aria-pressed="false"'));
     assert.ok(html.includes('OFF'));
-    assert.ok(html.includes('border-slate-700/60'));
-    assert.ok(html.includes('text-slate-500'));
-    assert.ok(html.includes('bg-slate-500'));
-    assert.ok(html.includes('text-slate-400'));
+    assert.ok(html.includes('border-ds-line/60'));
+    assert.ok(html.includes('text-ds-content-subtle'));
+    assert.ok(html.includes('bg-ds-content-subtle'));
+    assert.ok(html.includes('text-ds-content-muted'));
   });
 
   it('4. Renders ON state with proper aria-pressed, label, and sky colors', () => {
@@ -125,10 +125,10 @@ describe('CruiseControlWidget — Spec v1 Suite', () => {
     assert.ok(html.includes('data-component-type="cruiseControl"'));
     assert.ok(html.includes('aria-pressed="true"'));
     assert.ok(html.includes('ON'));
-    assert.ok(html.includes('border-sky-400'));
-    assert.ok(html.includes('text-sky-400'));
-    assert.ok(html.includes('bg-sky-400'));
-    assert.ok(html.includes('text-slate-200'));
+    assert.ok(html.includes('border-ds-primary'));
+    assert.ok(html.includes('text-ds-primary'));
+    assert.ok(html.includes('bg-ds-primary'));
+    assert.ok(html.includes('text-ds-content'));
   });
 
   it('5. Tapping in gear D activates cruise and captures cruiseSetSpeed', () => {

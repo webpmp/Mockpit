@@ -43,10 +43,11 @@ export const CruiseControlWidget: React.FC<CruiseControlWidgetProps> = ({
   resolved = {} as Record<string, any>,
   isSelected,
   isPresentation,
-  customColor = '#38bdf8',
+  customColor = 'var(--color-ds-primary)',
   baseOpacity = 'opacity-100',
   styleOpacity = 1,
 }) => {
+  const primaryAccent = customColor || 'var(--color-ds-primary)';
   const vehicleState = useMockpitStore((s) => s.vehicleState);
   const setVehicleState = useMockpitStore((s) => s.setVehicleState);
   const selectComponent = useMockpitStore((s) => s.selectComponent);
@@ -101,13 +102,13 @@ export const CruiseControlWidget: React.FC<CruiseControlWidgetProps> = ({
   const rootBorderColor = isSelected
     ? customColor
     : iconOnly && isActive
-    ? '#38bdf8'
+    ? primaryAccent
     : undefined;
 
   return (
     <div
       data-component-type="cruiseControl"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between shadow-lg backdrop-blur-md relative select-none overflow-visible ${
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between shadow-lg backdrop-blur-md relative select-none overflow-visible ${
         iconOnly ? 'p-0' : isUltraCompact ? 'p-2' : isCompact ? 'p-2.5' : 'p-3.5'
       } ${baseOpacity}`}
       style={{
@@ -129,7 +130,7 @@ export const CruiseControlWidget: React.FC<CruiseControlWidgetProps> = ({
             size={iconPx}
             className={`${
               isCompact || isUltraCompact ? 'w-8 h-8' : 'w-11 h-11'
-            } ${isActive ? 'text-sky-400' : 'text-slate-500'}`}
+            } ${isActive ? 'text-ds-primary' : 'text-ds-content-subtle'}`}
           />
         </button>
       ) : (
@@ -156,25 +157,25 @@ export const CruiseControlWidget: React.FC<CruiseControlWidgetProps> = ({
               style={{ minHeight: btnMinH }}
               className={`w-full flex items-center justify-center gap-3 rounded-xl border cursor-pointer overflow-hidden min-w-0 ${
                 isActive
-                  ? 'bg-slate-800/80 border-sky-400'
-                  : 'bg-slate-800/80 border-slate-700/60'
+                  ? 'bg-ds-surface-raised/80 border-ds-primary'
+                  : 'bg-ds-surface-raised/80 border-ds-line/60'
               }`}
             >
               <CruiseIcon
                 size={iconPx}
                 className={`${
                   isCompact || isUltraCompact ? 'w-8 h-8' : 'w-11 h-11'
-                } ${isActive ? 'text-sky-400' : 'text-slate-500'}`}
+                } ${isActive ? 'text-ds-primary' : 'text-ds-content-subtle'}`}
               />
               <div className="flex items-center gap-2">
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    isActive ? 'bg-sky-400' : 'bg-slate-500'
+                    isActive ? 'bg-ds-primary' : 'bg-ds-content-subtle'
                   }`}
                 />
                 <span
                   className={`text-sm font-bold tracking-wider ${
-                    isActive ? 'text-slate-200' : 'text-slate-400'
+                    isActive ? 'text-ds-content' : 'text-ds-content-muted'
                   }`}
                 >
                   {isActive ? 'ON' : 'OFF'}

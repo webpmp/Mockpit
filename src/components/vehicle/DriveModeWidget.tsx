@@ -24,10 +24,11 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
   component,
   resolved = {} as Record<string, any>,
   isSelected,
-  customColor = '#38bdf8',
+  customColor = 'var(--color-ds-primary)',
   baseOpacity = 'opacity-100',
   styleOpacity = 1,
 }) => {
+  const primaryAccent = customColor || 'var(--color-ds-primary)';
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -62,7 +63,7 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
     <div
       ref={containerRef}
       data-component-type="driveMode"
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between shadow-lg backdrop-blur-md relative select-none overflow-visible ${
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between shadow-lg backdrop-blur-md relative select-none overflow-visible ${
         isUltraCompact ? 'p-2' : isCompact ? 'p-2.5' : 'p-3.5'
       } ${isOpen ? 'z-40' : ''} ${baseOpacity}`}
       style={{
@@ -97,8 +98,8 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
               : 'py-2 px-3 text-sm'
           } ${
             isOpen
-              ? 'bg-slate-800 border-sky-500/70 ring-2 ring-sky-500/20 text-slate-100 shadow-md'
-              : 'bg-slate-800/80 hover:bg-slate-800 hover:border-slate-600 border-slate-700/60 text-slate-200 shadow-sm'
+              ? 'bg-ds-surface-raised border-ds-primary/70 ring-2 ring-ds-primary/20 text-ds-content shadow-md'
+              : 'bg-ds-surface-raised/80 hover:bg-ds-surface-raised hover:border-ds-line-strong border-ds-line/60 text-ds-content shadow-sm'
           }`}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
@@ -120,7 +121,7 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
               transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
-              className="absolute top-full mt-1.5 left-0 right-0 z-50 bg-slate-950/95 border border-slate-700/90 rounded-xl p-1.5 shadow-2xl backdrop-blur-xl flex flex-col gap-1 min-w-[120px] max-h-56 overflow-y-auto"
+              className="absolute top-full mt-1.5 left-0 right-0 z-50 bg-ds-background/95 border border-ds-line/90 rounded-xl p-1.5 shadow-2xl backdrop-blur-xl flex flex-col gap-1 min-w-[120px] max-h-56 overflow-y-auto"
             >
               {configuredModes.map((mode) => {
                 const isItemActive = mode.toUpperCase() === activeMode.toUpperCase();
@@ -136,13 +137,13 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
                     }}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer text-xs font-semibold ${
                       isItemActive
-                        ? 'bg-sky-500/20 text-sky-300 border border-sky-500/50 font-bold shadow-sm'
-                        : 'text-slate-300 hover:bg-slate-800/80 hover:text-slate-100 border border-transparent'
+                        ? 'bg-ds-primary/20 text-ds-primary border border-ds-primary/50 font-bold shadow-sm'
+                        : 'text-ds-content-secondary hover:bg-ds-surface-raised/80 hover:text-ds-content border border-transparent'
                     }`}
                   >
                     <span className="uppercase tracking-wider whitespace-nowrap">{mode}</span>
                     {isItemActive && (
-                      <Check className="w-3.5 h-3.5 text-sky-400 shrink-0 ml-2" />
+                      <Check className="w-3.5 h-3.5 text-ds-primary shrink-0 ml-2" />
                     )}
                   </button>
                 );

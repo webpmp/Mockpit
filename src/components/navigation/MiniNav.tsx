@@ -27,6 +27,7 @@ export interface MiniNavColors {
   backgroundColor?: string;
 }
 
+// ds-raw-start: default navigation color hex values for color inputs
 export const DEFAULT_MINI_NAV_COLORS = {
   groundColor: '#020617', // slate-950
   skyColor: '#020617',    // slate-950
@@ -46,6 +47,7 @@ export const DEFAULT_MINI_NAV_COLORS = {
   distanceTextColor: '#f8fafc', // slate-100
   headerArrowColor: '#f8fafc',
 };
+// ds-raw-end
 
 export const DEFAULT_MINI_NAV_APPEARANCE = DEFAULT_MINI_NAV_COLORS;
 
@@ -155,7 +157,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   }, []);
 
   // Derived colors with backwards compatibility
-  const primaryPaletteColor = activePalette?.primary || '#38bdf8';
+  const primaryPaletteColor = activePalette?.primary || 'var(--color-ds-primary)';
 
   // Backward compatibility: if no groundColor or skyColor provided, fall back to legacy backgroundColor
   const resolvedGroundColor = propGroundColor || (!propGroundColor && propBackgroundColor ? propBackgroundColor : undefined);
@@ -171,6 +173,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   const roadColor = propRoadColor || DEFAULT_MINI_NAV_COLORS.roadColor;
 
   // 4. Arrow Color
+  // ds-raw-start: legacy midnight default color fallback check
   const arrowColor = propArrowColor && propArrowColor !== '#f59e0b' && propArrowColor !== '#38bdf8' && propArrowColor !== 'var(--color-primary)'
     ? propArrowColor
     : primaryPaletteColor;
@@ -179,6 +182,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   const guideLaneColor = propGuideLaneColor && propGuideLaneColor !== '#f59e0b' && propGuideLaneColor !== '#38bdf8' && propGuideLaneColor !== 'var(--color-primary)'
     ? propGuideLaneColor
     : arrowColor;
+  // ds-raw-end
 
   // 6. Highway Badge Color (border & background tint)
   const highwayBadgeColor = propHighwayBadgeColor || primaryPaletteColor;
@@ -436,7 +440,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
   return (
     <div
       id="mini-nav-container"
-      className={`relative w-full h-full flex flex-col items-center justify-between select-none overflow-hidden rounded-2xl ${getBorderClasses(borderOverrides, 'border-slate-800/80')} shadow-2xl backdrop-blur-md`}
+      className={`relative w-full h-full flex flex-col items-center justify-between select-none overflow-hidden rounded-2xl ${getBorderClasses(borderOverrides, 'border-ds-line-subtle/80')} shadow-2xl backdrop-blur-md`}
       style={{
         backgroundColor: skyColor,
         width: width ? `${width}px` : undefined,
@@ -457,7 +461,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
         {/* Row 1: highway badge, full width */}
         <div
           id="mini-nav-highway-badge"
-          className="w-full box-border px-3.5 py-2 rounded text-base font-mono font-bold tracking-wider uppercase border border-sky-500/40 bg-sky-500/15 text-sky-400"
+          className="w-full box-border px-3.5 py-2 rounded text-base font-mono font-bold tracking-wider uppercase border border-ds-primary/40 bg-ds-primary/15 text-ds-primary"
           style={{
             borderColor: `color-mix(in srgb, ${highwayBadgeColor} 40%, transparent)`,
             backgroundColor: `color-mix(in srgb, ${highwayBadgeColor} 15%, transparent)`,
@@ -548,7 +552,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
 
             {/* Road Shoulder Border Shadows */}
             <filter id="roadGlow" x="-10%" y="-10%" width="120%" height="120%">
-              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor={activePalette?.primary || '#38bdf8'} floodOpacity="0.2" />
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor={activePalette?.primary || 'var(--color-ds-primary)'} floodOpacity="0.2" />
             </filter>
           </defs>
 
@@ -607,7 +611,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             id="mini-nav-road-shading"
             points={`${roadTopLeft.x},${roadTopLeft.y} ${roadTopRight.x},${roadTopRight.y} ${roadBottomRight.x},${roadBottomRight.y} ${roadBottomLeft.x},${roadBottomLeft.y}`}
             fill="url(#roadGrad)"
-            stroke="#475569"
+            stroke="var(--color-ds-line-strong)"
             strokeWidth="1.5"
           />
 
@@ -618,7 +622,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             y1={roadTopLeft.y}
             x2={roadBottomLeft.x}
             y2={roadBottomLeft.y}
-            stroke="#94a3b8"
+            stroke="var(--color-ds-content-muted)"
             strokeWidth="2.5"
             strokeOpacity="0.7"
           />
@@ -628,7 +632,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             y1={roadTopRight.y}
             x2={roadBottomRight.x}
             y2={roadBottomRight.y}
-            stroke="#94a3b8"
+            stroke="var(--color-ds-content-muted)"
             strokeWidth="2.5"
             strokeOpacity="0.7"
           />
@@ -651,7 +655,7 @@ export const MiniNav: React.FC<MiniNavProps> = ({
                 y1={roadTopLeft.y}
                 x2={botX}
                 y2={roadBottomLeft.y}
-                stroke="#64748b"
+                stroke="var(--color-ds-content-subtle)"
                 strokeWidth="2.5"
                 strokeDasharray="28 28"
                 strokeDashoffset={scaledOffset}

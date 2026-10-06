@@ -57,7 +57,7 @@ export const getBorderRadiusClasses = getCornerRadiusClasses;
  */
 export function getBorderClasses(
   borderOverrides?: BorderOverrides | null,
-  colorClass = 'border-slate-800',
+  colorClass = 'border-ds-line-subtle',
   widthClass = 'border',
   includeCorners = true
 ): string {

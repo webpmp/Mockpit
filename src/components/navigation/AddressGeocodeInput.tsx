@@ -119,18 +119,18 @@ export const AddressGeocodeInput: React.FC<AddressGeocodeInputProps> = ({
       {showStatus && status !== 'idle' && (
         <div className="text-[0.625rem] font-mono px-1 flex items-center gap-1.5 transition-all">
           {status === 'resolving' && (
-            <span className="text-sky-400 flex items-center gap-1">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+            <span className="text-ds-primary flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-ds-primary animate-ping" />
               Resolving…
             </span>
           )}
           {status === 'success' && (
-            <span className="text-emerald-400 truncate" title={resolvedDisplay || 'Location set'}>
+            <span className="text-ds-success truncate" title={resolvedDisplay || 'Location set'}>
               ✓ Location set
             </span>
           )}
           {status === 'failed' && (
-            <span className="text-amber-400">
+            <span className="text-ds-warning">
               ⚠ Couldn't find that address — using last known location
             </span>
           )}

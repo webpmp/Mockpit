@@ -46,7 +46,7 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
   resolved,
   isSelected,
   isPresentation,
-  customColor = '#10b981',
+  customColor = 'var(--color-ds-success)',
   baseOpacity = 'opacity-100',
   styleOpacity = 1,
   onSelectAnchor,
@@ -110,29 +110,29 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
     switch (healthValue.toLowerCase()) {
       case 'red':
         return {
-          bg: 'bg-rose-500/20',
-          border: 'border-rose-500/60',
-          dot: 'bg-rose-500',
-          text: 'text-rose-400',
+          bg: 'bg-ds-error/20',
+          border: 'border-ds-error/60',
+          dot: 'bg-ds-error',
+          text: 'text-ds-error',
           label: 'CRITICAL',
           icon: AlertCircle,
         };
       case 'yellow':
         return {
-          bg: 'bg-amber-500/20',
-          border: 'border-amber-500/60',
-          dot: 'bg-amber-500',
-          text: 'text-amber-400',
+          bg: 'bg-ds-warning/20',
+          border: 'border-ds-warning/60',
+          dot: 'bg-ds-warning',
+          text: 'text-ds-warning',
           label: 'WARNING',
           icon: AlertTriangle,
         };
       case 'green':
       default:
         return {
-          bg: 'bg-emerald-500/20',
-          border: 'border-emerald-500/60',
-          dot: 'bg-emerald-500',
-          text: 'text-emerald-400',
+          bg: 'bg-ds-success/20',
+          border: 'border-ds-success/60',
+          dot: 'bg-ds-success',
+          text: 'text-ds-success',
           label: 'NORMAL',
           icon: ShieldCheck,
         };
@@ -143,13 +143,13 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
 
   return (
     <div
-      className={`w-full h-full rounded-2xl bg-slate-900/90 ${getBorderClasses(component.borderOverrides, 'border-slate-800/90')} backdrop-blur-md p-3.5 flex flex-col justify-between select-none relative transition-shadow ${baseOpacity} ${
-        isSelected ? 'ring-1 ring-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.2)]' : 'shadow-lg'
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides, 'border-ds-line-subtle/90')} backdrop-blur-md p-3.5 flex flex-col justify-between select-none relative transition-shadow ${baseOpacity} ${
+        isSelected ? 'ring-1 ring-ds-primary/50 shadow-[0_0_20px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]' : 'shadow-lg'
       }`}
       style={{ opacity: styleOpacity }}
     >
       {/* Top Header Row */}
-      <div className="flex items-center h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-slate-400 uppercase z-10 shrink-0 select-none pb-1 border-b border-slate-800/60">
+      <div className="flex items-center h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-ds-content-muted uppercase z-10 shrink-0 select-none pb-1 border-b border-ds-line-subtle/60">
         <span className="flex items-center gap-2 min-w-0 truncate">
           <span
             className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -160,7 +160,7 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
       </div>
 
       {/* Status Detail & Message Block */}
-      <div className="my-1.5 p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 flex flex-col gap-1.5">
+      <div className="my-1.5 p-2 rounded-xl bg-ds-background/70 border border-ds-line-subtle/80 flex flex-col gap-1.5">
         {/* Variant 1: RGY Badge + CODE chip */}
         {healthType === 'rgy' && (
           <div className="flex items-center gap-1.5">
@@ -170,17 +170,17 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
               {rgyConfig.label}
             </span>
             {Boolean(statusCode) && (
-              <span className="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[10px] font-bold border border-slate-700">
+              <span className="px-1.5 py-0.5 rounded bg-ds-surface-raised text-ds-primary font-mono text-[10px] font-bold border border-ds-line">
                 {statusCode}
               </span>
             )}
           </div>
         )}
 
-        {/* Variant 2: Bare Percentage Value (Fixed sky blue) */}
+        {/* Variant 2: Bare Percentage Value */}
         {healthType === 'percent' && (
           <div className="flex items-center">
-            <span className="text-xs font-black font-mono text-sky-400">
+            <span className="text-xs font-black font-mono text-ds-primary">
               {percentVal}%
             </span>
           </div>
@@ -189,14 +189,14 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
         {/* Code chip fallback if healthType is 'none' but code exists */}
         {healthType === 'none' && Boolean(statusCode) && (
           <div className="flex items-center">
-            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[10px] font-bold border border-slate-700">
+            <span className="px-1.5 py-0.5 rounded bg-ds-surface-raised text-ds-primary font-mono text-[10px] font-bold border border-ds-line">
               {statusCode}
             </span>
           </div>
         )}
 
         {Boolean(statusMessage) && (
-          <p className="text-[10px] text-slate-300/90 font-mono leading-relaxed line-clamp-2">
+          <p className="text-[10px] text-ds-content-secondary/90 font-mono leading-relaxed line-clamp-2">
             {statusMessage}
           </p>
         )}
@@ -232,8 +232,8 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
                 <div
                   className={`w-3 h-3 rounded-full border-2 transition-all duration-150 flex items-center justify-center ${
                     isCurrent
-                      ? 'bg-sky-400 border-white shadow-[0_0_8px_#38bdf8] scale-125'
-                      : 'bg-slate-900 border-sky-400/80 group-hover/anchor:bg-sky-500 group-hover/anchor:border-white group-hover/anchor:scale-125 shadow-xs'
+                      ? 'bg-ds-primary border-white shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_80%,transparent)] scale-125'
+                      : 'bg-ds-surface border-ds-primary/80 group-hover/anchor:bg-ds-primary-hover group-hover/anchor:border-white group-hover/anchor:scale-125 shadow-xs'
                   }`}
                 >
                   <div className="w-1 h-1 rounded-full bg-white opacity-80" />
