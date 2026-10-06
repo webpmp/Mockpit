@@ -84,6 +84,7 @@ export interface SceneObject {
  * High-Fidelity SVG Vehicle Vector Graphic Renderer
  * Renders distinct top-down automotive silhouettes for all vehicle classes & ego vehicle silhouettes.
  */
+// ds-raw-start: vehicle illustration palette is fixed
 const VehicleGraphic: React.FC<{
   type: VehicleType;
   w: number;
@@ -101,7 +102,7 @@ const VehicleGraphic: React.FC<{
   color,
   isEgo = false,
   egoType = 'midsizeSedan',
-  accentColor = '#38bdf8',
+  accentColor = 'var(--color-ds-primary)',
   headlightsOn = false,
   colors: passedColors,
 }) => {
@@ -1277,6 +1278,7 @@ const VehicleGraphic: React.FC<{
       return null;
   }
 };
+// ds-raw-end
 
 export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualizationProps> = ({
   component,
@@ -1312,12 +1314,14 @@ export const OverheadDrivingVisualization: React.FC<OverheadDrivingVisualization
 
   // Component configuration props
   const activePalette = useMockpitStore((s) => s.activePalette);
-  const primaryPaletteColor = activePalette?.primary || '#38bdf8';
+  const primaryPaletteColor = activePalette?.primary || 'var(--color-ds-primary)';
   const props = component.staticProps || {};
+  // ds-raw-start: legacy midnight default color fallback check
   const customAccentColor =
     props.color && props.color !== '#38bdf8' && props.color !== 'var(--color-primary)'
       ? props.color
       : primaryPaletteColor;
+  // ds-raw-end
   const isGrayscale = props.grayscaleTraffic !== 'false';
 
   // Speed Limit settings & Non-pulsating Edge-Triggered Flash State
@@ -1398,9 +1402,11 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
   const isProximityEnabled =
     props.sensorWarning !== 'false' && (vehicleState?.proximityWarning ?? true);
 
+  // ds-raw-start: editable prop defaults must stay hex for the Inspector color pickers
   const blindSpotColor = props.blindSpotColor || '#ef4444';
   const blindSpotOpacity = parseFloat(props.blindSpotOpacity || '0.10');
   const sensorColor = props.sensorColor || '#ef4444';
+  // ds-raw-end
   const sensorOpacity = parseFloat(props.sensorOpacity || '0.65');
 
   // DECISION 1 (resolved): both default ON, following the existing `!== 'false'` convention
@@ -1534,6 +1540,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
   };
 
   // Automotive Color Palette & Vehicle Randomizer
+  // ds-raw-start: vehicle paint colors are fixed
   const AUTOMOTIVE_PALETTE = useMemo(
     () => [
       '#f8fafc', // White
@@ -1611,6 +1618,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
       { lane: -1, y: viewH * 0.10, speed: 52, type: 'boxTruck' as VehicleType, color: '#064e3b' },
       { lane: -2, y: -viewH * 0.15, speed: 60, type: 'pickup' as VehicleType, color: '#78350f' },
     ];
+    // ds-raw-end
 
     for (let i = 0; i < Math.min(targetOpposingCount, opposingConfigs.length); i++) {
       const cfg = opposingConfigs[i];
@@ -2411,7 +2419,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
   return (
     <div
       ref={containerRef}
-      className="w-full h-full relative bg-slate-950 overflow-hidden flex flex-col select-none font-sans"
+      className="w-full h-full relative bg-ds-background overflow-hidden flex flex-col select-none font-sans"
     >
       {/* SVG Canvas for Overhead Vector Driving Environment */}
       <svg
@@ -2419,6 +2427,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
         viewBox={`${svgViewX} 0 ${svgViewW} ${viewH}`}
         preserveAspectRatio="xMaxYMid slice"
       >
+        {/* ds-raw-start: road and terrain scene colors are fixed */}
         <defs>
           {/* Asphalt Surface Pattern */}
           <pattern id="asphalt-pattern" width="24" height="24" patternUnits="userSpaceOnUse">
@@ -2500,6 +2509,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
             />
           </filter>
         </defs>
+        {/* ds-raw-end */}
 
         {/* Full-bleed Asphalt Road Surface */}
         <rect
@@ -2511,6 +2521,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
         />
 
         {/* Outer Grass Shoulder Zones & Markings */}
+        {/* ds-raw-start: lane markings are fixed */}
         {/* Left Grass Shoulder (0 - 60) */}
         <rect
           id="grass-shoulder-left"
@@ -2642,7 +2653,9 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           stroke="#eab308"
           strokeWidth="3.5"
         />
+        {/* ds-raw-end */}
 
+        {/* ds-raw-start: roadside object colors are fixed */}
         {/* HIGH-MAST MEDIAN STREET LIGHT FIXTURE (Centered at x=603.0 in median, scrolling smoothly) */}
         {isStreetLightEnabled && (
           <g id="median-light-fixture" transform={`translate(603, ${medianLightY})`}>
@@ -2729,6 +2742,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           }
           return null;
         })}
+        {/* ds-raw-end */}
 
         {/* Highway Traffic Vehicles */}
         {traffic.map((v) => {
@@ -2809,6 +2823,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           )}
 
           {/* Primary Ego Vehicle Graphic */}
+          {/* ds-raw-start: vehicle paint colors are fixed */}
           <VehicleGraphic
             type="sedan"
             w={egoW}
@@ -2820,9 +2835,11 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
             headlightsOn={isHeadlightsOn}
             colors={activeColors}
           />
+          {/* ds-raw-end */}
         </g>
 
         {/* HIGHWAY GANTRY OVERHEAD ELEMENT (top layer, above traffic and ego vehicle) */}
+        {/* ds-raw-start: overhead sign colors are fixed */}
         {isGantryEnabled && gantryY !== null && (
           <g id="highway-gantry" transform={`translate(0, ${gantryY})`}>
             {/* Gantry Shadow */}
@@ -2860,6 +2877,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
             <line x1="50" y1="23" x2="1156" y2="23" stroke="#1e293b" strokeWidth="1.5" strokeDasharray="3, 2" opacity="0.7" />
           </g>
         )}
+        {/* ds-raw-end */}
       </svg>
 
       {/* Speed Limit Sign Overlay - Non-pulsating Edge-Triggered Flash */}
@@ -2873,21 +2891,24 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
             <div
               className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white border-[4px] flex flex-col items-center justify-center shadow-2xl font-mono transition-all duration-300 ${
                 isSpeedingFlash
-                  ? 'border-rose-600 ring-4 ring-rose-500/80 shadow-[0_0_22px_rgba(244,63,94,0.85)]'
+                  ? 'border-ds-error ring-4 ring-ds-error/80 shadow-[0_0_22px_color-mix(in_srgb,var(--color-ds-error)_85%,transparent)]'
+                  // ds-raw-start: regulatory sign colors are fixed
                   : 'border-rose-600'
               }`}
             >
               <span className="text-xs sm:text-sm font-black text-slate-950 leading-none">
                 {speedLimitVal}
               </span>
+              {/* ds-raw-end */}
             </div>
           ) : (
             /* US Standard Rectangular Sign */
             <div
-              className={`w-12 sm:w-14 py-1.5 rounded-lg bg-white border-2 text-slate-950 font-sans flex flex-col items-center justify-center shadow-2xl transition-all duration-300 ${
+              className={`w-12 sm:w-14 py-1.5 rounded-lg bg-white border-2 font-sans flex flex-col items-center justify-center shadow-2xl transition-all duration-300 ${
                 isSpeedingFlash
-                  ? 'border-rose-600 ring-4 ring-rose-500/80 shadow-[0_0_22px_rgba(244,63,94,0.85)]'
-                  : 'border-slate-900'
+                  ? 'border-ds-error ring-4 ring-ds-error/80 shadow-[0_0_22px_color-mix(in_srgb,var(--color-ds-error)_85%,transparent)]'
+                  // ds-raw-start: regulatory sign colors are fixed
+                  : 'border-slate-900 text-slate-950'
               }`}
             >
               <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-tight leading-tight text-slate-800">
@@ -2899,6 +2920,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
               <span className="text-xs sm:text-sm font-black font-mono leading-none mt-0.5 text-slate-950">
                 {speedLimitVal}
               </span>
+              {/* ds-raw-end */}
             </div>
           )}
         </div>

@@ -129,6 +129,8 @@ export const MIGRATED_CANVAS_FILES: readonly string[] = [
   'src/components/vehicle/SpeedometerWidget.tsx',
   'src/components/vehicle/VehicleExplodedViewWidget.tsx',
   'src/components/vehicle/VehicleStatusCalloutWidget.tsx',
+  'src/components/MockpitInput.tsx',
+  'src/components/OverheadDrivingVisualization.tsx',
 ];
 
 describe('Design System Foundation Suite (Spec v1)', () => {

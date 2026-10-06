@@ -100,14 +100,14 @@ export const MockpitInput = React.forwardRef<HTMLInputElement, MockpitInputProps
   return (
     <div
       style={isActive ? {
-        boxShadow: '0 0 12px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
+        boxShadow: '0 0 12px color-mix(in srgb, var(--color-ds-primary) 40%, transparent)',
       } : undefined}
       className={`relative flex items-center transition-all rounded-xl ${INPUT_FIELD_HEIGHT_CLASS} ${
-        isActive ? 'z-50 relative ring-2 ring-[var(--color-primary,#38bdf8)]' : ''
+        isActive ? 'z-50 relative ring-2 ring-[var(--color-ds-primary)]' : ''
       } ${wrapperClassName}`}
     >
       {icon && (
-        <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center justify-center z-10">
+        <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ds-content-muted pointer-events-none flex items-center justify-center z-10">
           {icon}
         </div>
       )}
@@ -120,8 +120,8 @@ export const MockpitInput = React.forwardRef<HTMLInputElement, MockpitInputProps
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        style={isActive ? { borderColor: 'var(--color-primary, #38bdf8)' } : undefined}
-        className={`w-full h-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--color-primary,#38bdf8)] font-sans antialiased transition-colors ${
+        style={isActive ? { borderColor: 'var(--color-ds-primary)' } : undefined}
+        className={`w-full h-full bg-ds-background border border-ds-line-subtle rounded-xl px-2.5 text-xs text-ds-content placeholder-ds-content-subtle focus:outline-none focus:border-[var(--color-ds-primary)] font-sans antialiased transition-colors ${
           icon ? 'pl-8' : ''
         } ${rightElement ? 'pr-9' : 'pr-2.5'} ${className}`}
         {...props}
