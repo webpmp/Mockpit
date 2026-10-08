@@ -585,9 +585,7 @@ const NavFavoritesWidget: React.FC<{
                 className="group p-2 rounded-xl bg-ds-background/60 hover:bg-ds-surface-raised/80 border border-ds-line-subtle/80 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
               >
                 <div className="min-w-0 pr-2 flex items-center gap-2">
-                  {/* ds-raw-start: favorites gold is a fixed iconographic color */}
-                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />
-                  {/* ds-raw-end */}
+                  <Star className="w-3.5 h-3.5 text-ds-warning fill-ds-warning/20 shrink-0" />
                   <div className="min-w-0">
                     <div className="text-[0.75rem] font-bold text-ds-content truncate">{fav.label}</div>
                     <div className="text-[0.625rem] text-ds-content-muted truncate">{fav.address}</div>
@@ -648,15 +646,13 @@ const NavFavoritesWidget: React.FC<{
               >
                 Cancel
               </button>
-              {/* ds-raw-start: favorites gold is a fixed iconographic color */}
               <button
                 onClick={handleSaveFavorite}
                 disabled={!newAddress.trim() || newLat === null}
-                className="flex-1 py-1.5 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
+                className="flex-1 py-1.5 px-2 rounded-lg bg-ds-warning/20 hover:bg-ds-warning/30 text-ds-warning border border-ds-warning/40 text-xs font-mono font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
               >
                 Save Favorite
               </button>
-              {/* ds-raw-end */}
             </div>
           </div>
         ) : (

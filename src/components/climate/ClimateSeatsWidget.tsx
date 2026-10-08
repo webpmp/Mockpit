@@ -172,11 +172,11 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
     const rawLastCool = seat === 'driver' ? driverLastCool : passengerLastCool;
     const currentStoredLvl = targetMode === 'heat' ? (isHeating ? heat : rawLastHeat) : (isCooling ? cool : rawLastCool);
 
-    // ds-raw-start: thermal color code is fixed (heat/cool)
     const seatColorClass = isHeating
       ? heat === 1
-        ? 'text-amber-400'
+        ? 'text-ds-warning'
         : heat === 2
+        // ds-raw-start: thermal color code is fixed (heat/cool)
         ? 'text-orange-500'
         : 'text-orange-600'
       : isCooling
@@ -299,7 +299,7 @@ export const ClimateSeatsWidget: React.FC<ClimateSeatsWidgetProps> = ({
               const modeWord = isHeating ? 'Heat' : isCooling ? 'Cool' : targetMode === 'heat' ? 'Heat' : 'Cool';
 
               let buttonStyle = 'bg-ds-background/50 text-ds-content-subtle border border-ds-line-subtle/60';
-              // ds-raw-start: thermal color code is fixed (heat/cool)
+              {/* ds-raw-start: thermal intensity fill and dark text are fixed (not theme-remapped) */}
               if (isIntensityActive) {
                 if (isHeating) {
                   buttonStyle = 'bg-orange-500 text-slate-950 font-black shadow-[0_0_14px_rgba(249,115,22,0.5)] border border-orange-400';

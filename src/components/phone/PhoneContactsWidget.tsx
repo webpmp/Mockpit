@@ -129,7 +129,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
               className="w-20 h-20 shadow-xl border-2 border-ds-line/80"
               fontSizeClassName="text-2xl"
             />
-            {/* ds-raw-start: favorites gold is a fixed iconographic color */}
+            {/* ds-raw-start: favorites gold fill and dark text are fixed (not theme-remapped) */}
             {selectedContact.favorite && (
               <div className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 p-1.5 rounded-full shadow">
                 <Star className="w-3.5 h-3.5 fill-current" />
@@ -169,7 +169,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
               onClick={() => toggleFavorite(selectedContact.id)}
               className="flex flex-col items-center gap-1.5 group cursor-pointer"
             >
-              {/* ds-raw-start: favorites gold is a fixed iconographic color */}
+              {/* ds-raw-start: favorites gold fill and dark text are fixed (not theme-remapped) */}
               <div
                 className={`w-12 h-12 rounded-full border flex items-center justify-center shadow-lg transition-transform group-active:scale-90 ${
                   selectedContact.favorite
@@ -229,7 +229,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                         className="w-10 h-10 border border-ds-line/80 shadow transition-transform group-hover:scale-105"
                         fontSizeClassName="text-xs"
                       />
-                      {/* ds-raw-start: favorites gold is a fixed iconographic color */}
+                      {/* ds-raw-start: favorites gold fill and dark text are fixed (not theme-remapped) */}
                       <div className="absolute -bottom-0.5 -right-0.5 bg-amber-400 text-slate-950 p-0.5 rounded-full">
                         <Star className="w-2.5 h-2.5 fill-current" />
                       </div>
@@ -275,7 +275,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                                 className="w-8 h-8"
                                 fontSizeClassName="text-xs"
                               />
-                              {/* ds-raw-start: favorites gold is a fixed iconographic color */}
+                              {/* ds-raw-start: favorites gold fill and dark text are fixed (not theme-remapped) */}
                               {contact.favorite && (
                                 <div className="absolute -bottom-0.5 -right-0.5 bg-amber-400 text-slate-950 p-0.5 rounded-full">
                                   <Star className="w-2 h-2 fill-current" />
@@ -296,18 +296,16 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                             </div>
                           </div>
 
-                          {/* ds-raw-start: favorites gold is a fixed iconographic color */}
                           <button
                             onClick={(e) => toggleFavorite(contact.id, e)}
-                            className="p-1 text-slate-600 hover:text-amber-400 transition-colors"
+                            className="p-1 text-ds-content-subtle hover:text-ds-warning transition-colors"
                           >
                             <Star
                               className={`w-3.5 h-3.5 ${
-                                contact.favorite ? 'fill-amber-400 text-amber-400' : ''
+                                contact.favorite ? 'fill-ds-warning text-ds-warning' : ''
                               }`}
                             />
                           </button>
-                          {/* ds-raw-end */}
                         </div>
                       ))}
                     </div>

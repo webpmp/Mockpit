@@ -72,20 +72,18 @@ export const ForecastDayCard: React.FC<ForecastDayCardProps> = ({
         id={`forecast-day-high-low-${dayLabel.toLowerCase()}`}
         className="mb-1 flex items-center justify-center gap-2 w-full font-mono font-bold"
       >
-        {/* ds-raw-start: high/low temperature colors are fixed (thermal domain) */}
         <span
-          className="px-2.5 py-1 rounded-lg bg-ds-background/80 border border-ds-line-subtle text-amber-400 text-[max(1.15rem,calc(1.25rem*var(--weather-font-scale,1)))] font-bold leading-none"
+          className="px-2.5 py-1 rounded-lg bg-ds-background/80 border border-ds-line-subtle text-ds-warning text-[max(1.15rem,calc(1.25rem*var(--weather-font-scale,1)))] font-bold leading-none"
           aria-label="High temperature"
         >
           {Math.round(high)}°
         </span>
         <span
-          className="px-2.5 py-1 rounded-lg bg-ds-background/80 border border-ds-line-subtle text-sky-400 text-[max(1.15rem,calc(1.25rem*var(--weather-font-scale,1)))] font-bold leading-none"
+          className="px-2.5 py-1 rounded-lg bg-ds-background/80 border border-ds-line-subtle text-ds-primary text-[max(1.15rem,calc(1.25rem*var(--weather-font-scale,1)))] font-bold leading-none"
           aria-label="Low temperature"
         >
           {Math.round(low)}°
         </span>
-        {/* ds-raw-end */}
       </div>
     </div>
   );

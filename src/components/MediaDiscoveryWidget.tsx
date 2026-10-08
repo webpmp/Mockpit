@@ -95,7 +95,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
           className={`w-[120px] h-[120px] mx-auto rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0 group-hover:scale-[1.02] transition-transform`}
         >
           {/* Trending Static Rank Badge - strictly no animate-pulse */}
-          {/* ds-raw-start: rank/trending gold is fixed */}
+          {/* ds-raw-start: rank/trending gold fill and dark text are fixed (not theme-remapped) */}
           {mode === 'trending' && track.rank && (
             <div
               className="absolute top-1.5 left-1.5 bg-amber-500 text-slate-950 font-mono font-bold text-[11px] px-1.5 py-0.5 rounded shadow-md z-10 select-none"
@@ -206,9 +206,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                         : 'text-ds-content-secondary hover:bg-ds-surface-raised'
                     }`}
                   >
-                    {/* ds-raw-start: rank/trending gold is fixed */}
-                    <TrendingUp className="w-4 h-4 text-amber-400 shrink-0" />
-                    {/* ds-raw-end */}
+                    <TrendingUp className="w-4 h-4 text-ds-warning shrink-0" />
                     <span>Trending</span>
                   </button>
 
@@ -280,7 +278,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                   className={`w-16 h-16 rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0 group-hover:scale-[1.02] transition-transform`}
                 >
                   {/* Trending Static Rank Badge */}
-                  {/* ds-raw-start: rank/trending gold is fixed */}
+                  {/* ds-raw-start: rank/trending gold fill and dark text are fixed (not theme-remapped) */}
                   {mode === 'trending' && track.rank && (
                     <div
                       className="absolute top-1 left-1 bg-amber-500 text-slate-950 font-mono font-bold text-[10px] px-1 py-0.2 rounded shadow-sm z-10 select-none"

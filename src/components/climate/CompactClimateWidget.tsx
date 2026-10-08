@@ -409,10 +409,10 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
 
   // Helper for seat button styling levels
   const getSeatButtonClasses = (heat: number, cool: number, isOpen: boolean): string => {
-    // ds-raw-start: thermal color code is fixed (heat/cool)
     if (heat === 1) {
-      return 'bg-amber-400/15 border-amber-400/40 text-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.25)]';
+      return 'bg-ds-warning/15 border-ds-warning/40 text-ds-warning shadow-[0_0_8px_rgba(251,191,36,0.25)]';
     }
+    // ds-raw-start: thermal color code is fixed (heat/cool)
     if (heat === 2) {
       return 'bg-orange-500/25 border-orange-500/60 text-orange-300 shadow-[0_0_12px_rgba(249,115,22,0.4)] ring-1 ring-orange-500/30';
     }
@@ -468,7 +468,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
     const intensityClass = (lvl: Level) => {
       const isActive = !isOff && ((isHeating && heat === lvl) || (isCooling && cool === lvl));
       if (isActive) {
-        // ds-raw-start: thermal color code is fixed (heat/cool)
+        {/* ds-raw-start: thermal intensity fill and dark text are fixed (not theme-remapped) */}
         if (isHeating) {
           if (lvl === 1) return 'bg-amber-400 text-slate-950 font-black shadow-[0_0_14px_rgba(251,191,36,0.5)] border border-amber-300';
           if (lvl === 2) return 'bg-orange-500 text-slate-950 font-black shadow-[0_0_14px_rgba(249,115,22,0.5)] border border-orange-400';
@@ -477,7 +477,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
         if (lvl === 1) return 'bg-sky-300 text-slate-950 font-black shadow-[0_0_14px_rgba(125,211,252,0.5)] border border-sky-200';
         if (lvl === 2) return 'bg-blue-400 text-slate-950 font-black shadow-[0_0_14px_rgba(96,165,250,0.5)] border border-blue-300';
         return 'bg-blue-500 text-slate-950 font-black shadow-[0_0_14px_rgba(59,130,246,0.5)] border border-blue-400';
-        // ds-raw-end
+        {/* ds-raw-end */}
       }
       return isOff
         ? 'bg-ds-background/50 text-ds-content-subtle border border-ds-line-subtle/60'
@@ -545,7 +545,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
               <span
                 aria-hidden="true"
                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  isCooling ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-ds-surface-hover'
+                  isCooling ? 'bg-ds-primary shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-ds-surface-hover'
                 }`}
               />
               COOL

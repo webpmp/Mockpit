@@ -317,7 +317,7 @@ export const QuickAccessOverlay: React.FC = () => {
             />
           )}
 
-          {/* ds-raw-start: editor control with own fill */}
+          {/* ds-raw-start: editor controls fill, border, and text are fixed (not theme-remapped) */}
           {/* Resize Handle - visible and interactive ONLY in editor mode */}
           <div
             id="quick-access-resize-handle"

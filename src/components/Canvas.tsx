@@ -1056,7 +1056,7 @@ export const Canvas: React.FC = () => {
                           boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
                         }}
                       >
-                        {/* ds-raw-start: editor control with own fill */}
+                        {/* ds-raw-start: editor delete quick handle fill and text are fixed (not theme-remapped) */}
                         {/* Delete Quick Handle */}
                         <button
                           className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
@@ -1070,7 +1070,7 @@ export const Canvas: React.FC = () => {
                         </button>
                         {/* ds-raw-end */}
 
-                        {/* ds-raw-start: editor control with own fill */}
+                        {/* ds-raw-start: editor resize handle border and text are fixed (not theme-remapped) */}
                         {/* Bottom-Right Resize Handle */}
                         <div
                           className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
@@ -1196,8 +1196,8 @@ export const Canvas: React.FC = () => {
                         boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
                       }}
                     >
-                      {/* ds-raw-start: editor control with own fill */}
                       {/* Delete Quick Handle / Confirmation */}
+                      {/* ds-raw-start: editor delete notification confirm dialog fill and text are fixed (not theme-remapped) */}
                       {confirmDeleteNotificationId === selectedNotification.id ? (
                         <div
                           data-testid="editor-notification-delete-confirm"
@@ -1243,7 +1243,7 @@ export const Canvas: React.FC = () => {
                       )}
                       {/* ds-raw-end */}
 
-                      {/* ds-raw-start: editor control with own fill */}
+                      {/* ds-raw-start: editor resize handle border and text are fixed (not theme-remapped) */}
                       {/* Bottom-Right Resize Handle */}
                       <div
                         className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"

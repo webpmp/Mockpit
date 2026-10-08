@@ -425,16 +425,17 @@ describe('Design System Foundation Suite (Spec v1)', () => {
       assert.ok(css.includes('--color-tertiary: #10b981;'));
     });
 
-    it('buildThemeCss output contains --color-ds-on-primary and emits no fallback lines because of on-primary alone', () => {
+    it('buildThemeCss output contains --color-ds-on-primary and emits no fallback declarations', () => {
       const modifiedColors = {
         ...FACTORY_PRESETS.midnight.colors,
         'on-primary': '#ffffff',
       };
       const css = buildThemeCss({ colors: modifiedColors });
       assert.ok(css.includes('--color-ds-on-primary: #ffffff;'));
-      // Style tag differs from Midnight only in that variable line; no fallback lines added
       assert.equal(css.includes('--color-slate-'), false);
       assert.equal(css.includes('--color-sky-'), false);
+      assert.equal(css.includes('--color-emerald-'), false);
+      assert.equal(css.includes('--color-amber-'), false);
       assert.equal(css.includes('--color-rose-'), false);
       assert.equal(css.includes('--color-red-'), false);
     });
@@ -443,11 +444,13 @@ describe('Design System Foundation Suite (Spec v1)', () => {
       const css = buildThemeCss(FACTORY_PRESETS.midnight);
       assert.equal(css.includes('--color-slate-'), false, 'Midnight should emit no slate fallback');
       assert.equal(css.includes('--color-sky-'), false, 'Midnight should emit no sky fallback');
+      assert.equal(css.includes('--color-emerald-'), false, 'Midnight should emit no emerald fallback');
+      assert.equal(css.includes('--color-amber-'), false, 'Midnight should emit no amber fallback');
       assert.equal(css.includes('--color-rose-'), false, 'Midnight should emit no rose fallback');
       assert.equal(css.includes('--color-red-'), false, 'Midnight should emit no red fallback');
     });
 
-    it('emits fallback lines exactly for the roles that differ from Midnight', () => {
+    it('emits NO fallback lines even when roles differ from Midnight', () => {
       // Only change background from Midnight
       const modifiedColors = {
         ...FACTORY_PRESETS.midnight.colors,
@@ -455,21 +458,29 @@ describe('Design System Foundation Suite (Spec v1)', () => {
       };
       const css = buildThemeCss({ colors: modifiedColors });
 
-      // Should emit background fallback (--color-slate-950)
-      assert.ok(css.includes('--color-slate-950: var(--color-ds-background);'));
-
-      // Should NOT emit surface, primary, or error fallbacks
+      assert.ok(css.includes('--color-ds-background: #ffffff;'));
+      // Fallback bridge is removed: no --color-slate-950 alias emitted
+      assert.equal(css.includes('--color-slate-950:'), false);
       assert.equal(css.includes('--color-slate-900:'), false);
       assert.equal(css.includes('--color-sky-400:'), false);
       assert.equal(css.includes('--color-rose-'), false);
+      assert.equal(css.includes('--color-red-'), false);
     });
 
-    it('emits fallbacks for Arctic theme', () => {
+    it('emits all 20 role variables and NO fallback declarations for Arctic theme', () => {
       const css = buildThemeCss(FACTORY_PRESETS.arctic);
-      assert.ok(css.includes('--color-slate-950: var(--color-ds-background);'));
-      assert.ok(css.includes('--color-slate-900: var(--color-ds-surface);'));
-      assert.ok(css.includes('--color-sky-400: var(--color-ds-primary);'));
-      assert.ok(css.includes('--color-rose-400: var(--color-ds-error);'));
+      for (const role of COLOR_ROLES) {
+        assert.ok(
+          css.includes(`${role.cssVar}: ${FACTORY_PRESETS.arctic.colors[role.id]};`),
+          `Arctic CSS must include ${role.cssVar}`
+        );
+      }
+      assert.equal(css.includes('--color-slate-'), false);
+      assert.equal(css.includes('--color-sky-'), false);
+      assert.equal(css.includes('--color-emerald-'), false);
+      assert.equal(css.includes('--color-amber-'), false);
+      assert.equal(css.includes('--color-rose-'), false);
+      assert.equal(css.includes('--color-red-'), false);
     });
   });
 

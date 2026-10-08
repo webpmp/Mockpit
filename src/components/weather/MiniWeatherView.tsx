@@ -56,7 +56,7 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
       ? `Air quality index ${airQuality.aqi}, category ${aqiInfo?.categoryPhrase || 'Good'}`
       : 'Air quality data unavailable';
   // ds-raw-start: AQI scale colors are fixed
-  const aqiTextColor = aqiInfo?.textColor || 'text-emerald-400';
+  const aqiTextColor = aqiInfo?.textColor || 'text-ds-success';
   // ds-raw-end
 
   const sunriseDisplay = sunTime?.sunriseFormatted || '—';
@@ -138,22 +138,20 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
             className="flex items-center font-mono font-bold"
             style={{ marginTop: '12px', gap: '12px' }}
           >
-            {/* ds-raw-start: high/low temperature colors are fixed (thermal domain) */}
             <span
-              className="rounded-lg bg-ds-background/80 border border-ds-line-subtle text-amber-400 font-bold leading-none"
+              className="rounded-lg bg-ds-background/80 border border-ds-line-subtle text-ds-warning font-bold leading-none"
               style={{ padding: '12px 24px', fontSize: '34px' }}
               aria-label="High temperature"
             >
               {Math.round(high)}°
             </span>
             <span
-              className="rounded-lg bg-ds-background/80 border border-ds-line-subtle text-sky-400 font-bold leading-none"
+              className="rounded-lg bg-ds-background/80 border border-ds-line-subtle text-ds-primary font-bold leading-none"
               style={{ padding: '12px 24px', fontSize: '34px' }}
               aria-label="Low temperature"
             >
               {Math.round(low)}°
             </span>
-            {/* ds-raw-end */}
           </div>
         </div>
       </div>
@@ -181,15 +179,13 @@ export const MiniWeatherView: React.FC<MiniWeatherViewProps> = ({
           <span className="text-ds-content-muted font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
             Sunrise
           </span>
-          {/* ds-raw-start: sunrise/sunset colors are fixed */}
           <span
             id="sunrise-stat-value"
-            className="font-bold text-amber-400 whitespace-nowrap"
+            className="font-bold text-ds-warning whitespace-nowrap"
             style={{ fontSize: '26px' }}
           >
             {sunriseDisplay}
           </span>
-          {/* ds-raw-end */}
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-ds-content-muted font-bold uppercase whitespace-nowrap" style={{ fontSize: '14px' }}>
