@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMockpitStore } from './store/useMockpitStore';
 import { useUserTestingStore } from './testing/useUserTestingStore';
 import { HeaderNav } from './components/HeaderNav';
@@ -13,8 +13,10 @@ import { AboutModal } from './components/AboutModal';
 import { UserTestingSuite } from './testing/components/UserTestingSuite';
 import { ParticipantHUD } from './testing/components/ParticipantHUD';
 import { ParticipantSessionComplete } from './testing/components/ParticipantSessionComplete';
+import { StartupVideo } from './components/StartupVideo';
 
 export default function App() {
+  const [showStartupVideo, setShowStartupVideo] = useState<boolean>(true);
   const screenMode = useMockpitStore((s) => s.screenMode);
   const isDesignSystemOpen = useMockpitStore((s) => s.isDesignSystemOpen);
   const isParticipantMode = useUserTestingStore((s) => s.isParticipantMode);
@@ -96,6 +98,9 @@ export default function App() {
   if (isParticipantMode) {
     return (
       <div className="w-full h-full min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans">
+        {showStartupVideo && (
+          <StartupVideo onComplete={() => setShowStartupVideo(false)} />
+        )}
         {/* Participant HUD (Sticky Top Banner with Task Instruction, Timer, Progress, Exit) */}
         <ParticipantHUD />
 
@@ -115,6 +120,11 @@ export default function App() {
   // Researcher Workspace Modes (Editor, Presenter, Auditor, User Testing)
   return (
     <div className="w-full h-full min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans">
+      {/* Full-viewport startup video sequence overlay */}
+      {showStartupVideo && (
+        <StartupVideo onComplete={() => setShowStartupVideo(false)} />
+      )}
+
       {/* Header Bar */}
       <HeaderNav />
 
@@ -124,8 +134,7 @@ export default function App() {
           <UserTestingSuite />
         ) : screenMode === 'audit' ? (
           <AuditPanel />
-        ) : (
-          <>
+        ) : (          <>
             {/* Left Component Library Sidebar (Editor Mode) */}
             {screenMode === 'editor' && <Sidebar />}
 
