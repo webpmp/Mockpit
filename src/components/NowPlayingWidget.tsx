@@ -505,8 +505,12 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
   const primaryAccent = customColor || 'var(--color-ds-primary)';
   const titleFontSizeProp = component.staticProps?.titleFontSize || 'default';
   const artistFontSizeProp = component.staticProps?.artistFontSize || 'default';
-  const titleColorProp = component.staticProps?.titleColor;
-  const artistColorProp = component.staticProps?.artistColor;
+  // ds-raw-start: legacy now playing default colors are treated as unset
+  const isLegacyTitleColor = component.staticProps?.titleColor?.toLowerCase() === '#f8fafc';
+  const isLegacyArtistColor = component.staticProps?.artistColor?.toLowerCase() === '#94a3b8';
+  // ds-raw-end
+  const titleColorProp = isLegacyTitleColor ? undefined : component.staticProps?.titleColor;
+  const artistColorProp = isLegacyArtistColor ? undefined : component.staticProps?.artistColor;
 
   const isPresetTitleSize = ['default', 'xs', 'sm', 'md', 'lg', 'xl'].includes(titleFontSizeProp);
   const isPresetArtistSize = ['default', 'xs', 'sm', 'md', 'lg', 'xl'].includes(artistFontSizeProp);

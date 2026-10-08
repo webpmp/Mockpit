@@ -80,58 +80,46 @@ function resetThemeTestState() {
   });
 }
 
-// Completeness guard scaffold: list of canvas files that have been migrated
-// to the design system. Follow-up specs append to this list.
-export const MIGRATED_CANVAS_FILES: readonly string[] = [
-  'src/components/designSystem/ThemePreview.tsx',
-  'src/components/ContactAvatar.tsx',
-  'src/components/VirtualKeyboard.tsx',
-  'src/components/Canvas.tsx',
-  'src/components/BottomDock.tsx',
-  'src/components/QuickAccessOverlay.tsx',
-  'src/components/VehicleBackground.tsx',
-  'src/components/ComponentRenderer.tsx',
-  'src/components/phone/PhoneDialPadWidget.tsx',
-  'src/components/phone/PhoneContactsWidget.tsx',
-  'src/components/phone/PhoneMessagingWidget.tsx',
-  'src/components/climate/CompactClimateWidget.tsx',
-  'src/components/climate/ClimateSeatsWidget.tsx',
-  'src/components/climate/ClimateVentWidget.tsx',
-  'src/components/climate/ClimateTempWidget.tsx',
-  'src/components/NowPlayingWidget.tsx',
-  'src/components/MusicSearchWidget.tsx',
-  'src/components/MusicMediaPlayer.tsx',
-  'src/components/MediaDiscoveryWidget.tsx',
-  'src/components/MediaPlaylistsWidget.tsx',
-  'src/components/weather/ForecastDayCard.tsx',
-  'src/components/weather/MiniWeatherView.tsx',
-  'src/components/weather/RadarBody.tsx',
-  'src/components/weather/WeatherAlertCard.tsx',
-  'src/components/weather/WeatherAlertsSection.tsx',
-  'src/components/weather/WeatherBody.tsx',
-  'src/components/weather/WeatherCarousel.tsx',
-  'src/components/weather/WeatherDetailCard.tsx',
-  'src/components/weather/WeatherDetailRow.tsx',
-  'src/components/weather/WeatherForecastScreen.tsx',
-  'src/components/weather/WeatherIcon.tsx',
-  'src/components/weather/WeatherLocationControl.tsx',
-  'src/components/weather/WeatherRadarCard.tsx',
-  'src/components/weather/WeatherRadarScreen.tsx',
-  'src/components/weather/WeatherScreenShell.tsx',
-  'src/components/navigation/AddressGeocodeInput.tsx',
-  'src/components/navigation/ManeuverGlyph.tsx',
-  'src/components/navigation/MiniNav.tsx',
-  'src/components/vehicle/ConnectorLayer.tsx',
-  'src/components/vehicle/CruiseControlWidget.tsx',
-  'src/components/vehicle/DriveModeWidget.tsx',
-  'src/components/vehicle/GearWidget.tsx',
-  'src/components/vehicle/SendToServiceWidget.tsx',
-  'src/components/vehicle/SpeedometerWidget.tsx',
-  'src/components/vehicle/VehicleExplodedViewWidget.tsx',
-  'src/components/vehicle/VehicleStatusCalloutWidget.tsx',
-  'src/components/MockpitInput.tsx',
-  'src/components/OverheadDrivingVisualization.tsx',
+// Excluded chrome files: editor chrome outside the themed canvas (.vehicle-hmi-canvas)
+export const EXCLUDED_CHROME_FILES: readonly string[] = [
+  'src/components/AboutModal.tsx', // editor chrome, outside the themed canvas
+  'src/components/AppShellBackground.tsx', // editor chrome, outside the themed canvas
+  'src/components/DebugStatePanel.tsx', // editor chrome, outside the themed canvas
+  'src/components/ErrorBoundary.tsx', // editor chrome, outside the themed canvas
+  'src/components/HeaderNav.tsx', // editor chrome, outside the themed canvas
+  'src/components/Inspector.tsx', // editor chrome, outside the themed canvas
+  'src/components/LayersPanel.tsx', // editor chrome, outside the themed canvas
+  'src/components/MockpitLogo.tsx', // editor chrome, outside the themed canvas
+  'src/components/NumericStepper.tsx', // editor chrome, outside the themed canvas
+  'src/components/SettingsModal.tsx', // editor chrome, outside the themed canvas
+  'src/components/Sidebar.tsx', // editor chrome, outside the themed canvas
+  'src/components/designSystem/DesignSystemPanel.tsx', // editor chrome, outside the themed canvas
+  'src/components/hmi/AuditPanel.tsx', // editor chrome, outside the themed canvas
+  'src/components/hmi/RuleInfoAffordance.tsx', // editor chrome, outside the themed canvas
+  'src/components/hmi/RuleRegistryBrowser.tsx', // editor chrome, outside the themed canvas
 ];
+
+export function scanCanvasTsxFiles(dir: string = 'src/components'): string[] {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const results: string[] = [];
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== '__tests__') {
+        results.push(...scanCanvasTsxFiles(full));
+      }
+    } else if (entry.name.endsWith('.tsx')) {
+      results.push(full.replace(/\\/g, '/'));
+    }
+  }
+  return results.sort();
+}
+
+export const ALL_COMPONENT_TSX_FILES: readonly string[] = scanCanvasTsxFiles('src/components');
+export const GUARDED_CANVAS_FILES: readonly string[] = ALL_COMPONENT_TSX_FILES.filter(
+  (f) => !EXCLUDED_CHROME_FILES.includes(f)
+);
+export const MIGRATED_CANVAS_FILES: readonly string[] = GUARDED_CANVAS_FILES;
 
 describe('Design System Foundation Suite (Spec v1)', () => {
   beforeEach(() => {
@@ -743,8 +731,20 @@ describe('Design System Foundation Suite (Spec v1)', () => {
   });
 
   describe('7. Completeness Guard Scaffold', () => {
-    it('asserts none of the listed migrated files contain raw palette classes or hex literals', () => {
-      for (const filePath of MIGRATED_CANVAS_FILES) {
+    it('asserts every excluded chrome file exists on disk and list contains exactly 15 files', () => {
+      assert.equal(EXCLUDED_CHROME_FILES.length, 15, 'EXCLUDED_CHROME_FILES must contain exactly 15 files');
+      for (const filePath of EXCLUDED_CHROME_FILES) {
+        const fullPath = path.resolve(process.cwd(), filePath);
+        assert.ok(fs.existsSync(fullPath), `Excluded chrome file must exist: ${filePath}`);
+      }
+    });
+
+    it('asserts none of the scanned canvas files contain raw palette classes or hex literals', () => {
+      console.log(
+        `Scanned ${ALL_COMPONENT_TSX_FILES.length} component files: ${GUARDED_CANVAS_FILES.length} guarded, ${EXCLUDED_CHROME_FILES.length} excluded.`
+      );
+      assert.ok(GUARDED_CANVAS_FILES.length > 0, 'Must guard at least 1 canvas file');
+      for (const filePath of GUARDED_CANVAS_FILES) {
         const fullPath = path.resolve(process.cwd(), filePath);
         assert.ok(fs.existsSync(fullPath), `Migrated canvas file must exist: ${filePath}`);
 

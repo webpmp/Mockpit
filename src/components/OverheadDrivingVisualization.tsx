@@ -2416,6 +2416,10 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     isGantryEnabled,
   ]);
 
+  const speedingFlashClasses = isSpeedingFlash
+    ? 'border-ds-error ring-4 ring-ds-error/80 shadow-[0_0_22px_color-mix(in_srgb,var(--color-ds-error)_85%,transparent)]'
+    : '';
+
   return (
     <div
       ref={containerRef}
@@ -2888,40 +2892,39 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
           }`}
         >
           {speedLimitStyle === 'eu_circle' ? (
-            <div
-              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white border-[4px] flex flex-col items-center justify-center shadow-2xl font-mono transition-all duration-300 ${
-                isSpeedingFlash
-                  ? 'border-ds-error ring-4 ring-ds-error/80 shadow-[0_0_22px_color-mix(in_srgb,var(--color-ds-error)_85%,transparent)]'
-                  // ds-raw-start: regulatory sign colors are fixed
-                  : 'border-rose-600'
-              }`}
-            >
-              <span className="text-xs sm:text-sm font-black text-slate-950 leading-none">
-                {speedLimitVal}
-              </span>
+            <>
+              {/* ds-raw-start: regulatory sign colors are fixed */}
+              <div
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white border-[4px] flex flex-col items-center justify-center shadow-2xl font-mono transition-all duration-300 ${
+                  speedingFlashClasses || 'border-rose-600'
+                }`}
+              >
+                <span className="text-xs sm:text-sm font-black text-slate-950 leading-none">
+                  {speedLimitVal}
+                </span>
+              </div>
               {/* ds-raw-end */}
-            </div>
+            </>
           ) : (
-            /* US Standard Rectangular Sign */
-            <div
-              className={`w-12 sm:w-14 py-1.5 rounded-lg bg-white border-2 font-sans flex flex-col items-center justify-center shadow-2xl transition-all duration-300 ${
-                isSpeedingFlash
-                  ? 'border-ds-error ring-4 ring-ds-error/80 shadow-[0_0_22px_color-mix(in_srgb,var(--color-ds-error)_85%,transparent)]'
-                  // ds-raw-start: regulatory sign colors are fixed
-                  : 'border-slate-900 text-slate-950'
-              }`}
-            >
-              <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-tight leading-tight text-slate-800">
-                SPEED
-              </span>
-              <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-tight leading-tight text-slate-800">
-                LIMIT
-              </span>
-              <span className="text-xs sm:text-sm font-black font-mono leading-none mt-0.5 text-slate-950">
-                {speedLimitVal}
-              </span>
+            <>
+              {/* ds-raw-start: regulatory sign colors are fixed */}
+              <div
+                className={`w-12 sm:w-14 py-1.5 rounded-lg bg-white border-2 font-sans flex flex-col items-center justify-center shadow-2xl transition-all duration-300 ${
+                  speedingFlashClasses || 'border-slate-900 text-slate-950'
+                }`}
+              >
+                <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-tight leading-tight text-slate-800">
+                  SPEED
+                </span>
+                <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-tight leading-tight text-slate-800">
+                  LIMIT
+                </span>
+                <span className="text-xs sm:text-sm font-black font-mono leading-none mt-0.5 text-slate-950">
+                  {speedLimitVal}
+                </span>
+              </div>
               {/* ds-raw-end */}
-            </div>
+            </>
           )}
         </div>
       )}

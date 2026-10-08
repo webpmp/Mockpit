@@ -3655,8 +3655,6 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
           songInfoDisplayDuration: '2.5',
           titleFontSize: 'default',
           artistFontSize: 'default',
-          titleColor: '#f8fafc',
-          artistColor: '#94a3b8',
         };
         bindings = [];
         break;

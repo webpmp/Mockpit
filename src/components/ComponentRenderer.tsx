@@ -1901,6 +1901,13 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     customColor = resolved.color;
   } else if (component.type === 'warning') {
     customColor = resolved.color || component.staticProps?.color || 'var(--color-ds-warning)';
+  } else if (
+    component.type === 'gear' &&
+    // ds-raw-start: legacy gear default white is treated as unset
+    resolved.color?.toLowerCase() === '#f8fafc'
+    // ds-raw-end
+  ) {
+    customColor = 'var(--color-ds-content)';
   } else {
     const isDefaultOrPresetColor = !resolved.color || 
       resolved.color === 'var(--color-primary)' || 
