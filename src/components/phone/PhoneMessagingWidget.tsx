@@ -195,7 +195,7 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
               onClick={handleMicClick}
               className={`p-2 rounded-full border transition-all cursor-pointer shrink-0 ${
                 isListening
-                  ? 'bg-ds-error text-white border-ds-error animate-ping'
+                  ? 'bg-ds-error text-white border-ds-error'
                   : 'bg-ds-surface-raised text-ds-content-secondary border-ds-line hover:bg-ds-surface-hover'
               }`}
               title="Voice reply"

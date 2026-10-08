@@ -216,11 +216,11 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
               <ContactAvatar
                 name={matchedContact.name}
                 avatarUrl={matchedContact.avatarUrl}
-                className="w-16 h-16 mb-2 shadow-xl border-2 border-ds-line/80 animate-pulse"
+                className="w-16 h-16 mb-2 shadow-xl border-2 border-ds-line/80"
                 fontSizeClassName="text-xl"
               />
             ) : (
-              <div className="w-16 h-16 rounded-full bg-ds-secondary flex items-center justify-center text-ds-content font-bold text-xl mb-2 shadow-xl border-2 border-ds-line/80 animate-pulse">
+              <div className="w-16 h-16 rounded-full bg-ds-secondary flex items-center justify-center text-ds-content font-bold text-xl mb-2 shadow-xl border-2 border-ds-line/80">
                 <Phone className="w-8 h-8" />
               </div>
             )}
@@ -285,12 +285,14 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
               <div />
             )}
 
-            {/* Number Readout with Blinking Cursor */}
+            {/* Number Readout with Cursor */}
             <div className="flex items-center text-right font-mono font-bold text-ds-content tracking-wider ml-auto h-full">
               <span className={`${getFontSizeClass()} truncate max-w-full leading-none`}>
                 {enteredNumber}
               </span>
-              <span className="w-0.5 h-[clamp(16px,5cqw,28px)] bg-ds-primary ml-1 animate-pulse shrink-0" />
+              {enteredNumber.length > 0 && (
+                <span className="w-0.5 h-[clamp(16px,5cqw,28px)] bg-ds-primary ml-1 shrink-0" />
+              )}
             </div>
           </div>
 

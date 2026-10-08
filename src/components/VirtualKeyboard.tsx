@@ -399,7 +399,7 @@ export const VirtualKeyboard: React.FC = () => {
               disabled={!isSpeechSupported}
               className={`px-3 sm:px-4 h-14 sm:h-16 rounded-xl border flex items-center justify-center gap-1.5 font-mono text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 isListening
-                  ? 'bg-ds-error/30 border-ds-error text-ds-error animate-pulse'
+                  ? 'bg-ds-error/30 border-ds-error text-ds-error'
                   : isSpeechSupported
                   ? 'bg-ds-surface hover:bg-ds-surface-raised border-ds-line-subtle text-ds-content-secondary hover:text-ds-content'
                   : 'bg-ds-surface/50 border-ds-line-subtle/50 text-ds-content-disabled opacity-50 cursor-not-allowed'

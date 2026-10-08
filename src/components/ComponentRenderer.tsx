@@ -1394,7 +1394,7 @@ const NavSearchWidget: React.FC<{
         <div ref={resultsPanelRef} className="flex-1 min-h-0 flex flex-col justify-between">
           <div className="flex-1 min-h-0 my-1 space-y-1 overflow-y-auto pr-1 custom-scrollbar max-h-[180px]">
             {loading ? (
-              <div className="text-[0.6875rem] text-ds-content-muted font-mono italic p-2 text-center animate-pulse">
+              <div className="text-[0.6875rem] text-ds-content-muted font-mono italic p-2 text-center">
                 Searching nearby...
               </div>
             ) : displayedPOIs.length === 0 ? (
@@ -1585,7 +1585,7 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
           let valClasses = 'text-xs font-black font-mono';
 
           if (status === 'critical') {
-            containerClasses += ' bg-ds-error/20 border-ds-error/80 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-error)_30%,transparent)] animate-pulse';
+            containerClasses += ' bg-ds-error/20 border-ds-error/80 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-error)_30%,transparent)]';
             labelClasses += ' text-ds-error';
             valClasses += ' text-ds-error';
           } else if (status === 'warning') {
@@ -1609,7 +1609,7 @@ const TirePressureWidget: React.FC<TirePressureWidgetProps> = ({
                 {status !== 'normal' && (
                   <span
                     className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                      status === 'critical' ? 'bg-ds-error animate-ping' : 'bg-ds-warning'
+                      status === 'critical' ? 'bg-ds-error' : 'bg-ds-warning'
                     }`}
                   />
                 )}

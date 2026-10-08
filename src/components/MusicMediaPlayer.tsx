@@ -293,7 +293,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                   </div>
                   <div className="text-xs sm:text-sm font-mono text-ds-content-muted shrink-0 flex items-center gap-2">
                     {isSelectedTrack && isPlaying && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-ds-success animate-pulse" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-ds-success" />
                     )}
                     <span>{track.duration}</span>
                     <button

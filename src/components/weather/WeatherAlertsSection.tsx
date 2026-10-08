@@ -128,7 +128,7 @@ export const WeatherAlertsSection: React.FC<WeatherAlertsSectionProps> = ({
       <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto pr-1">
         {/* Loading Skeleton when no cached data exists */}
         {status === 'loading' && !current && alerts.length === 0 ? (
-          <div className="space-y-3 animate-pulse" id="weather-alerts-skeleton">
+          <div className="space-y-3" id="weather-alerts-skeleton">
             <div className="rounded-2xl border border-ds-line-subtle bg-ds-surface/40 p-3.5 flex flex-col gap-2.5">
               <div className="h-4 w-36 bg-ds-surface-raised rounded mb-2" />
               <div

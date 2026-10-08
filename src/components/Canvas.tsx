@@ -878,7 +878,7 @@ export const Canvas: React.FC = () => {
                     title={batteryDisplayMode === 'percent' ? 'Tap to switch to range' : 'Tap to switch to battery percentage'}
                   >
                     {vehicleState.isCharging ? (
-                      <Zap className="w-3.5 h-3.5 text-ds-success fill-ds-success animate-pulse" />
+                      <Zap className="w-3.5 h-3.5 text-ds-success fill-ds-success" />
                     ) : (
                       <Battery className={`w-4 h-4 ${batteryPercent <= 15 ? 'text-ds-error' : 'text-ds-content-muted'}`} />
                     )}

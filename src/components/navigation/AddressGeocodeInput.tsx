@@ -120,7 +120,7 @@ export const AddressGeocodeInput: React.FC<AddressGeocodeInputProps> = ({
         <div className="text-[0.625rem] font-mono px-1 flex items-center gap-1.5 transition-all">
           {status === 'resolving' && (
             <span className="text-ds-primary flex items-center gap-1">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-ds-primary animate-ping" />
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-ds-primary" />
               Resolving…
             </span>
           )}
