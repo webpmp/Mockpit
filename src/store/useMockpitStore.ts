@@ -1144,6 +1144,7 @@ interface MockpitStore {
   isDesignSystemOpen: boolean;
   setIsDesignSystemOpen: (isOpen: boolean) => void;
   toggleDesignSystem: () => void;
+  getActiveExclusivePanel: () => 'settings' | 'design-system' | null;
   setActiveTheme: (id: string) => void;
   setRoleColor: (roleId: RoleId, hex: string) => void;
   resetActiveTheme: () => void;
@@ -2091,8 +2092,19 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   setAboutModalOpen: (open) => set({ isAboutModalOpen: open }),
 
   isSettingsOpen: false,
-  toggleSettingsModal: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
-  setSettingsModalOpen: (open) => set({ isSettingsOpen: open }),
+  toggleSettingsModal: () =>
+    set((state) => {
+      const nextOpen = !state.isSettingsOpen;
+      return {
+        isSettingsOpen: nextOpen,
+        isDesignSystemOpen: nextOpen ? false : state.isDesignSystemOpen,
+      };
+    }),
+  setSettingsModalOpen: (open) =>
+    set((state) => ({
+      isSettingsOpen: open,
+      isDesignSystemOpen: open ? false : state.isDesignSystemOpen,
+    })),
 
   textScale: loadSavedTextScale(),
   setTextScale: (scale) => {
@@ -2109,8 +2121,25 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   activeThemeId: initialDesignSystem.activeThemeId,
   userThemes: initialDesignSystem.userThemes,
   isDesignSystemOpen: false,
-  setIsDesignSystemOpen: (isOpen) => set({ isDesignSystemOpen: isOpen }),
-  toggleDesignSystem: () => set((state) => ({ isDesignSystemOpen: !state.isDesignSystemOpen })),
+  setIsDesignSystemOpen: (isOpen) =>
+    set((state) => ({
+      isDesignSystemOpen: isOpen,
+      isSettingsOpen: isOpen ? false : state.isSettingsOpen,
+    })),
+  toggleDesignSystem: () =>
+    set((state) => {
+      const nextOpen = !state.isDesignSystemOpen;
+      return {
+        isDesignSystemOpen: nextOpen,
+        isSettingsOpen: nextOpen ? false : state.isSettingsOpen,
+      };
+    }),
+  getActiveExclusivePanel: () => {
+    const { isSettingsOpen, isDesignSystemOpen } = get();
+    if (isSettingsOpen) return 'settings';
+    if (isDesignSystemOpen) return 'design-system';
+    return null;
+  },
   activePalette: initialPalette,
 
   setActiveTheme: (id) => {
@@ -3297,11 +3326,15 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
   setScreenMode: (mode) => {
     get().clearEventNotificationCooldowns();
-    set((state) => ({
-      screenMode: mode,
-      isSettingsOpen: mode === 'presentation' ? false : state.isSettingsOpen,
-      isDesignSystemOpen: mode === 'editor' ? state.isDesignSystemOpen : false,
-    }));
+    set((state) => {
+      const nextSettings = mode === 'presentation' ? false : state.isSettingsOpen;
+      const nextDesignSystem = mode === 'editor' ? state.isDesignSystemOpen : false;
+      return {
+        screenMode: mode,
+        isSettingsOpen: nextSettings,
+        isDesignSystemOpen: nextSettings ? false : nextDesignSystem,
+      };
+    });
   },
 
   setActiveView: (view) =>
