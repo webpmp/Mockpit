@@ -78,7 +78,8 @@ describe('Canvas Shell Color Migration Suite (Spec 2)', () => {
     assert.ok(content.includes('bg-ds-background/90 backdrop-blur border-b border-ds-line-subtle/60 flex items-center justify-between text-sm font-mono text-ds-content-muted'), 'Status bar must use ds roles');
     assert.ok(content.includes('bg-ds-surface border hover:bg-ds-surface-raised text-ds-content'), 'Status bar pill must use ds roles');
     assert.ok(content.includes('bg-ds-error text-white text-[9px] font-mono font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center ring-2 ring-ds-background'), 'Messages unread badge must use ds-error and ring-ds-background');
-    assert.ok(content.includes('text-ds-success fill-ds-success animate-pulse'), 'Charging Zap must use text-ds-success fill-ds-success');
+    assert.ok(content.includes('text-ds-success fill-ds-success'), 'Charging Zap must use text-ds-success fill-ds-success');
+    assert.ok(!content.includes('text-ds-success fill-ds-success animate-pulse'), 'Charging Zap must not use animate-pulse');
     assert.ok(content.includes("batteryPercent <= 15 ? 'text-ds-error' : 'text-ds-content-muted'"), 'Battery icon must use text-ds-error when low');
     assert.ok(content.includes('text-ds-success pr-4 shrink-0'), 'Signal container must use text-ds-success');
     assert.ok(content.includes('bg-ds-success shadow-[0_0_6px_var(--color-ds-success,#10b981)]\' : \'bg-ds-surface-raised\''), 'Signal bars must use bg-ds-success and bg-ds-surface-raised');
