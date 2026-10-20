@@ -1,5 +1,11 @@
 export type KeyboardSlideDirection = 'bottom' | 'top' | 'left' | 'right';
-export type EgoVehicleType = 'compactSedan' | 'midsizeSedan' | 'luxurySedan' | 'truck' | 'coupe';
+export type EgoVehicleType =
+  | 'compactSedan'
+  | 'midsizeSedan'
+  | 'luxurySedan'
+  | 'truck'
+  | 'coupe'
+  | (string & {});
 export type EgoVehicleModel = EgoVehicleType;
 
 export interface EgoVehicleColors {

@@ -318,13 +318,13 @@ const loadSavedTempGradientColors = (): TempGradientColors => {
 const loadSavedEgoVehicleType = (): EgoVehicleType => {
   try {
     const val = localStorage.getItem(LOCAL_STORAGE_EGO_VEHICLE_TYPE_KEY);
-    if (val && ['compactSedan', 'midsizeSedan', 'luxurySedan', 'truck', 'coupe'].includes(val)) {
+    if (val && typeof val === 'string') {
       return val as EgoVehicleType;
     }
   } catch (e) {
     console.error('Failed to load ego vehicle type from localStorage', e);
   }
-  return 'coupe';
+  return 'spyder';
 };
 
 export const getSpeedReadoutMaxSpeed = (state: {

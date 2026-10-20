@@ -112,7 +112,7 @@ export function resolveEgoVehicleType(
   if (vehicleBgAsset) {
     return getEgoVehicleTypeFromAsset(vehicleBgAsset);
   }
-  return storeEgoVehicleType || 'coupe';
+  return storeEgoVehicleType || 'spyder';
 }
 
 export function adjustHexBrightness(hex: string, percent: number): string {

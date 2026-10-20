@@ -6,6 +6,7 @@ import {
   EgoVehicleColors,
 } from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
+import { resolveOdvVehicle } from '../utils/odvVehicleAssets';
 import {
   getEgoVehicleTypeFromAsset,
   adjustHexBrightness,
@@ -106,6 +107,48 @@ const VehicleGraphic: React.FC<{
   colors: passedColors,
 }) => {
   if (isEgo) {
+    const selectedOdv = resolveOdvVehicle(egoType);
+    const targetW = 72;
+    const aspect = (selectedOdv.rawHeight || 667) / (selectedOdv.rawWidth || 340);
+    const targetH = Math.round(targetW * aspect * 10) / 10;
+    const halfW = targetW / 2;
+    const halfH = targetH / 2;
+
+    return (
+      <g
+        id="ego-vehicle-graphic"
+        data-vehicle-id={selectedOdv.id}
+        filter="url(#ego-odv-shadow)"
+      >
+        <defs>
+          <filter id="ego-odv-shadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="3.5" stdDeviation="3" floodColor="#000000" floodOpacity="0.45" />
+          </filter>
+        </defs>
+        {/* Soft ground contact shadow */}
+        <ellipse cx="0" cy="2" rx={halfW * 0.85} ry={halfH * 0.88} fill="#090d14" opacity="0.32" />
+        {/* Active ODV Vehicle Image */}
+        <image
+          href={selectedOdv.url}
+          x={-halfW}
+          y={-halfH}
+          width={targetW}
+          height={targetH}
+          preserveAspectRatio="xMidYMid meet"
+        />
+        {/* Subtle headlight illumination flares when headlights are ON */}
+        {headlightsOn && (
+          <>
+            <circle cx="-24" cy={-halfH + 12} r="4" fill="#fef08a" opacity="0.85" filter="url(#soft-edges)" />
+            <circle cx="24" cy={-halfH + 12} r="4" fill="#fef08a" opacity="0.85" filter="url(#soft-edges)" />
+          </>
+        )}
+      </g>
+    );
+  }
+
+  // Legacy SVG vehicle graphics - preserved for tests/backward-compatibility; not part of active rendering path
+  if (Boolean(false as boolean)) {
     const modelDefault = DEFAULT_VEHICLE_COLORS[egoType] || DEFAULT_VEHICLE_COLORS.midsizeSedan;
     const colors = {
       body: isValidHexColor(passedColors?.body) ? passedColors!.body! : modelDefault.body,
@@ -1434,7 +1477,7 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     if (storeVehicleBg?.vehicle) {
       return getEgoVehicleTypeFromAsset(storeVehicleBg.vehicle);
     }
-    return storeEgoVehicleType || 'coupe';
+    return storeEgoVehicleType || 'spyder';
   }, [props.egoVehicleType, storeVehicleBg?.vehicle, storeEgoVehicleType]);
 
   const activeColors: EgoVehicleColors = useMemo(() => {

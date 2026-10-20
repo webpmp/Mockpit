@@ -29,6 +29,7 @@ import { DEFAULT_MINI_NAV_COLORS } from './navigation/MiniNav';
 import { WeatherIcon } from './weather/WeatherIcon';
 import { SAMPLE_TRACKS } from '../data/mediaData';
 import { DEFAULT_VEHICLE_COLORS, getEgoVehicleTypeFromAsset, isValidHexColor } from '../utils/vehicleAssets';
+import { EgoVehicleCarousel } from './EgoVehicleCarousel';
 import { getEligibleParentCandidates, formatAttachmentPosition } from '../utils/componentIntegration';
 
 const REFERENCE_ICONS: Array<{ key: WeatherConditionKey; label: string }> = [
@@ -2575,28 +2576,16 @@ export const Inspector: React.FC<InspectorProps> = ({
                         </button>
                       )}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-slate-300 font-mono font-semibold">Silhouette</span>
-                      <select
-                        disabled={!isEditor}
-                        value={selectedSilhouette}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          handleStaticPropChange('egoVehicleType', val);
-                          if (val !== 'auto') {
-                            setEgoVehicleType(val as any);
-                          }
-                        }}
-                        className="bg-slate-900 px-2 py-1 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 font-semibold disabled:opacity-50"
-                      >
-                        <option value="auto">Auto</option>
-                        <option value="compactSedan">Compact Sedan</option>
-                        <option value="midsizeSedan">Mid-size Sedan</option>
-                        <option value="luxurySedan">Luxury Sedan</option>
-                        <option value="truck">Truck</option>
-                        <option value="coupe">Coupe</option>
-                      </select>
-                    </div>
+                    <EgoVehicleCarousel
+                      disabled={!isEditor}
+                      selectedVehicleId={selectedSilhouette}
+                      onSelectVehicle={(v) => {
+                        handleStaticPropChange('egoVehicleType', v.id);
+                        if (v.id) {
+                          setEgoVehicleType(v.id as any);
+                        }
+                      }}
+                    />
 
                     {/* Vehicle Silhouette Color Controls */}
                     <div className="space-y-2 pt-2 border-t border-slate-700/40">
