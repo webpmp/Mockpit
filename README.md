@@ -4,15 +4,15 @@
 
 Mockpit is a vehicle infotainment HMI prototyping environment for designing, connecting, and testing interactive interface components. It supports component-based UI composition, behavior-driven bindings, system notifications, configurable interaction rules, and user testing workflows to prototype how vehicle interfaces respond to user actions and system states.
 
-![Mockpit Editor](/public/mockpit-editor-v2.png)
+![Mockpit Editor](/public/mockpit-editor-v3.png)
 
 <p align="center"><strong>Editor Mode</strong></p>
 
-![Mockpit Presentation](/public/mockpit-tester.png)
+![Mockpit Presentation](/public/mockpit-presenter-v3.png)
 
 <p align="center"><strong>Presenter Mode</strong></p>
 
-![Mockpit User Test](/public/user-test.png)
+![Mockpit User Test](/public/user-test-v3.png)
 
 <p align="center"><strong>User Test</strong></p>
 
@@ -20,7 +20,7 @@ Mockpit is a vehicle infotainment HMI prototyping environment for designing, con
 
 ### Driving & Telemetry
 
-<img src="/public/comp-mininav-overhead-viz.png" alt="Mockpit Mini Nav & Overhead Driving Visualization" width="300">
+<img src="/public/comp-mininav-overhead-viz-v3.png" alt="Mockpit Mini Nav & Overhead Driving Visualization" width="300">
 
 Navigation, trip-planning, and vehicle-state components for interactive driving experiences.
 
