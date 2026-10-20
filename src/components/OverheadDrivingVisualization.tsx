@@ -6,12 +6,14 @@ import {
   EgoVehicleColors,
 } from '../types';
 import { useMockpitStore } from '../store/useMockpitStore';
-import { resolveOdvVehicle } from '../utils/odvVehicleAssets';
+import { resolveOdvVehicle, getVehicleHeadlightContour } from '../utils/odvVehicleAssets';
+import { useRecoloredVehicleImage } from '../utils/vehicleImageRecoloring';
 import {
   getEgoVehicleTypeFromAsset,
   adjustHexBrightness,
   isValidHexColor,
   DEFAULT_VEHICLE_COLORS,
+  getVehicleOriginalColors,
 } from '../utils/vehicleAssets';
 
 // ---- Street light / highway gantry ----
@@ -106,13 +108,27 @@ const VehicleGraphic: React.FC<{
   headlightsOn = false,
   colors: passedColors,
 }) => {
-  if (isEgo) {
-    const selectedOdv = resolveOdvVehicle(egoType);
+  const selectedOdv = isEgo ? resolveOdvVehicle(egoType) : null;
+  const origColors = selectedOdv ? getVehicleOriginalColors(selectedOdv.id) : undefined;
+  const recoloredUrl = useRecoloredVehicleImage(selectedOdv ? selectedOdv.url : '', passedColors, origColors);
+
+  if (isEgo && selectedOdv) {
     const targetW = 72;
     const aspect = (selectedOdv.rawHeight || 667) / (selectedOdv.rawWidth || 340);
     const targetH = Math.round(targetW * aspect * 10) / 10;
     const halfW = targetW / 2;
     const halfH = targetH / 2;
+
+    const effectiveLightColor = isValidHexColor(passedColors?.lights)
+      ? passedColors!.lights!
+      : (origColors?.lights || '#fef08a');
+
+    // Standardized headlight positions at top-left and top-right corners of each vehicle
+    const leftHeadlightX = -halfW + 10; // -26
+    const rightHeadlightX = halfW - 10; // +26
+    const headlightY = -halfH + 8;
+
+    const contour = getVehicleHeadlightContour(selectedOdv.id, halfW, halfH);
 
     return (
       <g
@@ -127,22 +143,90 @@ const VehicleGraphic: React.FC<{
         </defs>
         {/* Soft ground contact shadow */}
         <ellipse cx="0" cy="2" rx={halfW * 0.85} ry={halfH * 0.88} fill="#090d14" opacity="0.32" />
-        {/* Active ODV Vehicle Image */}
+        {/* Active ODV Vehicle Image (Dynamically Recolored with Surface Shading) */}
         <image
-          href={selectedOdv.url}
+          href={recoloredUrl || selectedOdv.url}
           x={-halfW}
           y={-halfH}
           width={targetW}
           height={targetH}
           preserveAspectRatio="xMidYMid meet"
         />
-        {/* Subtle headlight illumination flares when headlights are ON */}
-        {headlightsOn && (
-          <>
-            <circle cx="-24" cy={-halfH + 12} r="4" fill="#fef08a" opacity="0.85" filter="url(#soft-edges)" />
-            <circle cx="24" cy={-halfH + 12} r="4" fill="#fef08a" opacity="0.85" filter="url(#soft-edges)" />
-          </>
-        )}
+
+        {/* Standardized Rendered Headlights at Top-Left and Top-Right Corners Following Vehicle Contours */}
+        <g id="ego-standardized-headlights">
+          {/* Top-Left Headlight (Curved along Left Front Corner Contour) */}
+          <path
+            d={contour.left.path}
+            fill={effectiveLightColor}
+            stroke="#0f172a"
+            strokeWidth="0.8"
+            opacity="0.95"
+          />
+          <circle
+            cx={contour.left.bulbX}
+            cy={contour.left.bulbY}
+            r="1.9"
+            fill={headlightsOn ? '#ffffff' : effectiveLightColor}
+            stroke="#0f172a"
+            strokeWidth="0.5"
+          />
+
+          {/* Top-Right Headlight (Curved along Right Front Corner Contour) */}
+          <path
+            d={contour.right.path}
+            fill={effectiveLightColor}
+            stroke="#0f172a"
+            strokeWidth="0.8"
+            opacity="0.95"
+          />
+          <circle
+            cx={contour.right.bulbX}
+            cy={contour.right.bulbY}
+            r="1.9"
+            fill={headlightsOn ? '#ffffff' : effectiveLightColor}
+            stroke="#0f172a"
+            strokeWidth="0.5"
+          />
+
+          {/* Subtle headlight illumination flares when headlights are ON */}
+          {headlightsOn && (
+            <>
+              {/* Top-Left Illumination Flare */}
+              <circle
+                cx={contour.left.bulbX}
+                cy={contour.left.bulbY}
+                r="5.5"
+                fill={effectiveLightColor}
+                opacity="0.75"
+                filter="url(#soft-edges)"
+              />
+              <circle
+                cx={contour.left.bulbX}
+                cy={contour.left.bulbY - 1.5}
+                r="2.6"
+                fill="#ffffff"
+                opacity="0.95"
+              />
+              {/* Top-Right Illumination Flare */}
+              <circle
+                cx={contour.right.bulbX}
+                cy={contour.right.bulbY}
+                r="5.5"
+                fill={effectiveLightColor}
+                opacity="0.75"
+                filter="url(#soft-edges)"
+              />
+              <circle
+                cx={contour.right.bulbX}
+                cy={contour.right.bulbY - 1.5}
+                r="2.6"
+                fill="#ffffff"
+                opacity="0.95"
+              />
+            </>
+          )}
+        </g>
       </g>
     );
   }
@@ -1480,8 +1564,11 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     return storeEgoVehicleType || 'spyder';
   }, [props.egoVehicleType, storeVehicleBg?.vehicle, storeEgoVehicleType]);
 
-  const activeColors: EgoVehicleColors = useMemo(() => {
-    const defaults = DEFAULT_VEHICLE_COLORS[activeEgoType] || DEFAULT_VEHICLE_COLORS.midsizeSedan;
+  const activeOdvAsset = useMemo(() => {
+    return resolveOdvVehicle(activeEgoType);
+  }, [activeEgoType]);
+
+  const activeColors: EgoVehicleColors | undefined = useMemo(() => {
     let customMap = props.egoVehicleColors;
     if (typeof customMap === 'string') {
       try {
@@ -1490,14 +1577,18 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
         customMap = undefined;
       }
     }
-    const modelCustom = customMap && typeof customMap === 'object' ? customMap[activeEgoType] : undefined;
+    const modelCustom = (customMap && typeof customMap === 'object')
+      ? (customMap[activeOdvAsset.id] || (customMap[activeEgoType] && activeEgoType !== 'auto' ? customMap[activeEgoType] : undefined))
+      : undefined;
+    if (!modelCustom) return undefined;
+    const defaults = getVehicleOriginalColors(activeOdvAsset.id);
     return {
-      body: isValidHexColor(modelCustom?.body) ? modelCustom.body : defaults.body,
-      trim: isValidHexColor(modelCustom?.trim) ? modelCustom.trim : defaults.trim,
-      windows: isValidHexColor(modelCustom?.windows) ? modelCustom.windows : defaults.windows,
-      lights: isValidHexColor(modelCustom?.lights) ? modelCustom.lights : defaults.lights,
+      body: isValidHexColor(modelCustom.body) ? modelCustom.body : defaults.body,
+      trim: isValidHexColor(modelCustom.trim) ? modelCustom.trim : defaults.trim,
+      windows: isValidHexColor(modelCustom.windows) ? modelCustom.windows : defaults.windows,
+      lights: isValidHexColor(modelCustom.lights) ? modelCustom.lights : defaults.lights,
     };
-  }, [props.egoVehicleColors, activeEgoType]);
+  }, [props.egoVehicleColors, activeOdvAsset.id, activeEgoType]);
 
   const getEgoDims = (eType: EgoVehicleType) => {
     switch (eType) {

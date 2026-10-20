@@ -1,3 +1,10 @@
+export interface EgoVehicleColorsConfig {
+  body: string;
+  trim: string;
+  windows: string;
+  lights: string;
+}
+
 export interface OdvVehicleAsset {
   id: string;
   filename: string;
@@ -5,6 +12,141 @@ export interface OdvVehicleAsset {
   label: string;
   rawWidth: number;
   rawHeight: number;
+  defaultColors?: EgoVehicleColorsConfig;
+}
+
+/**
+ * Explicit per-vehicle default color metadata reflecting each vehicle's
+ * authentic visible original colors from source PNG assets.
+ */
+export const ODV_VEHICLE_ORIGINAL_COLORS: Record<string, EgoVehicleColorsConfig> = {
+  spyder: {
+    body: '#94393a', // Ruby Red
+    trim: '#2d3748',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  corvette: {
+    body: '#2563eb', // Electric Blue
+    trim: '#1e293b',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  coupe: {
+    body: '#973d3d', // Crimson Red
+    trim: '#2d3748',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  crossover: {
+    body: '#a2a4a9', // Silver Metallic
+    trim: '#334155',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  'crossover-glass': {
+    body: '#a3a5aa', // Silver Metallic with Glass Roof
+    trim: '#334155',
+    windows: '#38bdf8',
+    lights: '#fef08a',
+  },
+  cybercab: {
+    body: '#c5a059', // Champagne Gold Robotaxi
+    trim: '#1e293b',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  modely: {
+    body: '#8d9094', // Stealth Grey Metallic
+    trim: '#1e293b',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  roadster: {
+    body: '#e2e8f0', // Pearl White
+    trim: '#334155',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  sedan: {
+    body: '#2e5076', // Deep Royal Blue
+    trim: '#1e293b',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  semi: {
+    body: '#f1f5f9', // Clean White
+    trim: '#334155',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  sportswagon: {
+    body: '#3b5846', // Deep Forest Green
+    trim: '#1e293b',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  suv: {
+    body: '#3a5846', // Olive Forest Green
+    trim: '#1e293b',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  'suv-blue': {
+    body: '#2c4f76', // Royal Blue
+    trim: '#1e293b',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+  truck: {
+    body: '#616162', // Dark Graphite
+    trim: '#1e293b',
+    windows: '#1e293b',
+    lights: '#fef08a',
+  },
+};
+
+/**
+ * Resolves the original, authentic color configuration for any vehicle model.
+ * Defaults gracefully to the Spyder (Auto) red configuration.
+ */
+export function getVehicleOriginalColors(typeOrId?: string | null): EgoVehicleColorsConfig {
+  if (!typeOrId || typeOrId === 'auto') {
+    return ODV_VEHICLE_ORIGINAL_COLORS.spyder;
+  }
+  const clean = typeOrId
+    .split('/')
+    .pop()!
+    .replace(/\.png$/i, '')
+    .replace(/^odv-/i, '')
+    .toLowerCase();
+
+  if (ODV_VEHICLE_ORIGINAL_COLORS[clean]) {
+    return ODV_VEHICLE_ORIGINAL_COLORS[clean];
+  }
+  if (clean === 'compactsedan' || clean === 'midsizesedan') {
+    return {
+      body: '#1f2937',
+      trim: '#2d3748',
+      windows: '#0d131a',
+      lights: '#fef08a',
+    };
+  }
+  if (clean === 'luxurysedan') {
+    return {
+      body: '#000008',
+      trim: '#64748b',
+      windows: '#020617',
+      lights: '#fef08a',
+    };
+  }
+  if (clean === 'truck') {
+    return ODV_VEHICLE_ORIGINAL_COLORS.truck;
+  }
+  if (clean === 'coupe') {
+    return ODV_VEHICLE_ORIGINAL_COLORS.coupe;
+  }
+  return ODV_VEHICLE_ORIGINAL_COLORS.spyder;
 }
 
 const SPECIAL_DISPLAY_LABELS: Record<string, string> = {
@@ -30,20 +172,20 @@ const SPECIAL_DISPLAY_LABELS: Record<string, string> = {
 
 /** Known ODV vehicle assets in public/vehicles/ */
 export const KNOWN_ODV_VEHICLES: OdvVehicleAsset[] = [
-  { id: 'spyder', filename: 'odv-spyder.png', url: '/vehicles/odv-spyder.png', label: 'Auto', rawWidth: 340, rawHeight: 667 },
-  { id: 'corvette', filename: 'odv-corvette.png', url: '/vehicles/odv-corvette.png', label: 'Corvette', rawWidth: 349, rawHeight: 672 },
-  { id: 'coupe', filename: 'odv-coupe.png', url: '/vehicles/odv-coupe.png', label: 'Coupe', rawWidth: 339, rawHeight: 667 },
-  { id: 'crossover', filename: 'odv-crossover.png', url: '/vehicles/odv-crossover.png', label: 'Crossover', rawWidth: 341, rawHeight: 671 },
-  { id: 'crossover-glass', filename: 'odv-crossover-glass.png', url: '/vehicles/odv-crossover-glass.png', label: 'Crossover Glass', rawWidth: 343, rawHeight: 669 },
-  { id: 'cybercab', filename: 'odv-cybercab.png', url: '/vehicles/odv-cybercab.png', label: 'Cybercab', rawWidth: 319, rawHeight: 664 },
-  { id: 'modely', filename: 'odv-modely.png', url: '/vehicles/odv-modely.png', label: 'Model Y', rawWidth: 339, rawHeight: 671 },
-  { id: 'roadster', filename: 'odv-roadster.png', url: '/vehicles/odv-roadster.png', label: 'Roadster', rawWidth: 340, rawHeight: 667 },
-  { id: 'sedan', filename: 'odv-sedan.png', url: '/vehicles/odv-sedan.png', label: 'Sedan', rawWidth: 344, rawHeight: 669 },
-  { id: 'semi', filename: 'odv-semi.png', url: '/vehicles/odv-semi.png', label: 'Semi', rawWidth: 366, rawHeight: 672 },
-  { id: 'sportswagon', filename: 'odv-sportswagon.png', url: '/vehicles/odv-sportswagon.png', label: 'Sportswagon', rawWidth: 342, rawHeight: 673 },
-  { id: 'suv', filename: 'odv-suv.png', url: '/vehicles/odv-suv.png', label: 'SUV', rawWidth: 343, rawHeight: 669 },
-  { id: 'suv-blue', filename: 'odv-suv-blue.png', url: '/vehicles/odv-suv-blue.png', label: 'SUV Blue', rawWidth: 345, rawHeight: 668 },
-  { id: 'truck', filename: 'odv-truck.png', url: '/vehicles/odv-truck.png', label: 'Truck', rawWidth: 336, rawHeight: 674 },
+  { id: 'spyder', filename: 'odv-spyder.png', url: '/vehicles/odv-spyder.png', label: 'Auto', rawWidth: 340, rawHeight: 667, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.spyder },
+  { id: 'corvette', filename: 'odv-corvette.png', url: '/vehicles/odv-corvette.png', label: 'Corvette', rawWidth: 349, rawHeight: 672, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.corvette },
+  { id: 'coupe', filename: 'odv-coupe.png', url: '/vehicles/odv-coupe.png', label: 'Coupe', rawWidth: 339, rawHeight: 667, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.coupe },
+  { id: 'crossover', filename: 'odv-crossover.png', url: '/vehicles/odv-crossover.png', label: 'Crossover', rawWidth: 341, rawHeight: 671, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.crossover },
+  { id: 'crossover-glass', filename: 'odv-crossover-glass.png', url: '/vehicles/odv-crossover-glass.png', label: 'Crossover Glass', rawWidth: 343, rawHeight: 669, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS['crossover-glass'] },
+  { id: 'cybercab', filename: 'odv-cybercab.png', url: '/vehicles/odv-cybercab.png', label: 'Cybercab', rawWidth: 319, rawHeight: 664, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.cybercab },
+  { id: 'modely', filename: 'odv-modely.png', url: '/vehicles/odv-modely.png', label: 'Model Y', rawWidth: 339, rawHeight: 671, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.modely },
+  { id: 'roadster', filename: 'odv-roadster.png', url: '/vehicles/odv-roadster.png', label: 'Roadster', rawWidth: 340, rawHeight: 667, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.roadster },
+  { id: 'sedan', filename: 'odv-sedan.png', url: '/vehicles/odv-sedan.png', label: 'Sedan', rawWidth: 344, rawHeight: 669, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.sedan },
+  { id: 'semi', filename: 'odv-semi.png', url: '/vehicles/odv-semi.png', label: 'Semi', rawWidth: 366, rawHeight: 672, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.semi },
+  { id: 'sportswagon', filename: 'odv-sportswagon.png', url: '/vehicles/odv-sportswagon.png', label: 'Sportswagon', rawWidth: 342, rawHeight: 673, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.sportswagon },
+  { id: 'suv', filename: 'odv-suv.png', url: '/vehicles/odv-suv.png', label: 'SUV', rawWidth: 343, rawHeight: 669, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.suv },
+  { id: 'suv-blue', filename: 'odv-suv-blue.png', url: '/vehicles/odv-suv-blue.png', label: 'SUV Blue', rawWidth: 345, rawHeight: 668, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS['suv-blue'] },
+  { id: 'truck', filename: 'odv-truck.png', url: '/vehicles/odv-truck.png', label: 'Truck', rawWidth: 336, rawHeight: 674, defaultColors: ODV_VEHICLE_ORIGINAL_COLORS.truck },
 ];
 
 /**
@@ -153,3 +295,10 @@ export function resolveOdvVehicle(typeOrId?: string | null): OdvVehicleAsset {
 
   return defaultVehicle;
 }
+
+export {
+  getVehicleHeadlightContour,
+  ODV_HEADLIGHT_PRESETS,
+  type HeadlightGeometry,
+  type VehicleHeadlightContour,
+} from './vehicleHeadlightContours';

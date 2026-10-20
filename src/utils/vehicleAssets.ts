@@ -138,7 +138,10 @@ export function isValidHexColor(val?: string | null): boolean {
 
 export type EgoVehicleRole = 'body' | 'trim' | 'windows' | 'lights';
 
-export const DEFAULT_VEHICLE_COLORS: Record<EgoVehicleType, {
+import { ODV_VEHICLE_ORIGINAL_COLORS, getVehicleOriginalColors } from './odvVehicleAssets';
+export { ODV_VEHICLE_ORIGINAL_COLORS, getVehicleOriginalColors };
+
+export const DEFAULT_VEHICLE_COLORS: Record<string, {
   body: string;
   trim: string;
   windows: string;
@@ -174,5 +177,6 @@ export const DEFAULT_VEHICLE_COLORS: Record<EgoVehicleType, {
     windows: '#080c10',
     lights: '#fef08a',
   },
+  ...ODV_VEHICLE_ORIGINAL_COLORS,
 };
 

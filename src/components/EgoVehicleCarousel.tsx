@@ -1,17 +1,47 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getAvailableOdvVehicles, resolveOdvVehicle, OdvVehicleAsset } from '../utils/odvVehicleAssets';
+import { getAvailableOdvVehicles, resolveOdvVehicle, getVehicleOriginalColors, OdvVehicleAsset } from '../utils/odvVehicleAssets';
+import { EgoVehicleColors } from '../types';
+import { useRecoloredVehicleImage } from '../utils/vehicleImageRecoloring';
 
 interface EgoVehicleCarouselProps {
   selectedVehicleId?: string;
   onSelectVehicle: (vehicle: OdvVehicleAsset) => void;
   disabled?: boolean;
+  colors?: EgoVehicleColors;
 }
+
+const CarouselVehicleThumbnail: React.FC<{
+  url: string;
+  vehicleId: string;
+  label: string;
+  isSelected: boolean;
+  colors?: EgoVehicleColors;
+}> = ({ url, vehicleId, label, isSelected, colors }) => {
+  const origColors = getVehicleOriginalColors(vehicleId);
+  const recoloredUrl = useRecoloredVehicleImage(
+    url,
+    isSelected ? colors : undefined,
+    origColors
+  );
+  return (
+    <img
+      src={recoloredUrl || url}
+      alt={label}
+      className="max-h-12 w-auto max-w-full object-contain pointer-events-none drop-shadow-sm bg-transparent"
+      loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLElement).style.display = 'none';
+      }}
+    />
+  );
+};
 
 export const EgoVehicleCarousel: React.FC<EgoVehicleCarouselProps> = ({
   selectedVehicleId,
   onSelectVehicle,
   disabled = false,
+  colors,
 }) => {
   const odvVehicles = getAvailableOdvVehicles();
   const selectedVehicle = resolveOdvVehicle(selectedVehicleId);
@@ -56,6 +86,7 @@ export const EgoVehicleCarousel: React.FC<EgoVehicleCarouselProps> = ({
   };
 
   return (
+    /* ds-raw-start: vehicle inspector carousel controls */
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-slate-300 font-mono font-semibold">Model</span>
@@ -110,14 +141,12 @@ export const EgoVehicleCarousel: React.FC<EgoVehicleCarouselProps> = ({
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <div className="w-full flex-1 flex items-center justify-center overflow-hidden bg-transparent">
-                  <img
-                    src={v.url}
-                    alt={v.label}
-                    className="max-h-12 w-auto max-w-full object-contain pointer-events-none drop-shadow-sm bg-transparent"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
+                  <CarouselVehicleThumbnail
+                    url={v.url}
+                    vehicleId={v.id}
+                    label={v.label}
+                    isSelected={isSelected}
+                    colors={colors}
                   />
                 </div>
                 <span className="text-[9px] font-mono leading-tight truncate w-full text-center mt-1">
@@ -140,5 +169,6 @@ export const EgoVehicleCarousel: React.FC<EgoVehicleCarouselProps> = ({
         </button>
       </div>
     </div>
+    /* ds-raw-end */
   );
 };

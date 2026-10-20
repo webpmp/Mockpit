@@ -28,7 +28,8 @@ import { ManeuverGlyph } from './navigation/ManeuverGlyph';
 import { DEFAULT_MINI_NAV_COLORS } from './navigation/MiniNav';
 import { WeatherIcon } from './weather/WeatherIcon';
 import { SAMPLE_TRACKS } from '../data/mediaData';
-import { DEFAULT_VEHICLE_COLORS, getEgoVehicleTypeFromAsset, isValidHexColor } from '../utils/vehicleAssets';
+import { DEFAULT_VEHICLE_COLORS, getEgoVehicleTypeFromAsset, isValidHexColor, getVehicleOriginalColors } from '../utils/vehicleAssets';
+import { resolveOdvVehicle } from '../utils/odvVehicleAssets';
 import { EgoVehicleCarousel } from './EgoVehicleCarousel';
 import { getEligibleParentCandidates, formatAttachmentPosition } from '../utils/componentIntegration';
 
@@ -2501,14 +2502,8 @@ export const Inspector: React.FC<InspectorProps> = ({
 
             {selectedComp.type === 'overheadVisualization' && (() => {
               const selectedSilhouette = selectedComp.staticProps.egoVehicleType || 'auto';
-              let activeSilhouette: EgoVehicleType = 'midsizeSedan';
-              if (selectedSilhouette !== 'auto') {
-                activeSilhouette = selectedSilhouette as EgoVehicleType;
-              } else if (vehicleBackground?.vehicle) {
-                activeSilhouette = getEgoVehicleTypeFromAsset(vehicleBackground.vehicle);
-              } else if (egoVehicleType) {
-                activeSilhouette = egoVehicleType;
-              }
+              const activeOdv = resolveOdvVehicle(selectedSilhouette);
+              const activeVehicleId = activeOdv.id;
 
               let customColorsMap: Record<string, any> | undefined = undefined;
               if (selectedComp.staticProps.egoVehicleColors) {
@@ -2525,8 +2520,14 @@ export const Inspector: React.FC<InspectorProps> = ({
                   customColorsMap = selectedComp.staticProps.egoVehicleColors;
                 }
               }
-              const modelColors = customColorsMap ? customColorsMap[activeSilhouette] : undefined;
-              const defaults = DEFAULT_VEHICLE_COLORS[activeSilhouette] || DEFAULT_VEHICLE_COLORS.midsizeSedan;
+
+              // Retrieve custom colors specifically for this vehicle model - strictly isolated per model
+              const modelColors = (customColorsMap && typeof customColorsMap === 'object')
+                ? (customColorsMap[activeVehicleId] || (customColorsMap[selectedSilhouette] && selectedSilhouette !== 'auto' ? customColorsMap[selectedSilhouette] : undefined))
+                : undefined;
+
+              // Authentic original colors for the selected vehicle
+              const defaults = getVehicleOriginalColors(activeVehicleId);
 
               const currentColorValues = {
                 body: isValidHexColor(modelColors?.body) ? modelColors.body : defaults.body,
@@ -2538,9 +2539,14 @@ export const Inspector: React.FC<InspectorProps> = ({
               const handleVehicleColorChange = (part: 'body' | 'trim' | 'windows' | 'lights', val: string) => {
                 if (!isEditor) return;
                 const nextMap = { ...(typeof customColorsMap === 'object' && customColorsMap !== null ? customColorsMap : {}) };
-                const currentModelPart = { ...(nextMap[activeSilhouette] || {}) };
+                const currentModelPart = {
+                  ...(nextMap[activeVehicleId] || (nextMap[selectedSilhouette] && selectedSilhouette !== 'auto' ? nextMap[selectedSilhouette] : {}) || {}),
+                };
                 currentModelPart[part] = val;
-                nextMap[activeSilhouette] = currentModelPart;
+                nextMap[activeVehicleId] = currentModelPart;
+                // Delete shared keys to prevent cross-vehicle contamination
+                delete nextMap['_shared'];
+                delete nextMap['current'];
                 handleStaticPropChange('egoVehicleColors', nextMap);
               };
 
@@ -2551,7 +2557,12 @@ export const Inspector: React.FC<InspectorProps> = ({
               const handleResetVehicleColors = () => {
                 if (!isEditor) return;
                 const nextMap = { ...(typeof customColorsMap === 'object' && customColorsMap !== null ? customColorsMap : {}) };
-                delete nextMap[activeSilhouette];
+                delete nextMap[activeVehicleId];
+                if (selectedSilhouette !== 'auto') {
+                  delete nextMap[selectedSilhouette];
+                }
+                delete nextMap['_shared'];
+                delete nextMap['current'];
                 handleStaticPropChange('egoVehicleColors', nextMap);
               };
 
@@ -2579,6 +2590,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                     <EgoVehicleCarousel
                       disabled={!isEditor}
                       selectedVehicleId={selectedSilhouette}
+                      colors={currentColorValues}
                       onSelectVehicle={(v) => {
                         handleStaticPropChange('egoVehicleType', v.id);
                         if (v.id) {
