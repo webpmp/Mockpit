@@ -62,6 +62,7 @@ describe('Overhead Driving Visualization Full-Bleed & Geometry Suite', () => {
       'Graphic must be scaled with transform="scale(1.24)"'
     );
     assert.ok(fileContent.includes('id="ego-vehicle-master"'), 'ego-vehicle-master must be preserved');
+    assert.ok(fileContent.includes('/vehicles/overhead-car-1.png'), 'overhead-car-1.png must be referenced');
   });
 
   it('6. Verifies ego-compact-graphic aerodynamic compact sedan replacement, namespacing, and scale(1.24)', () => {

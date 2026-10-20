@@ -112,7 +112,7 @@ export function resolveEgoVehicleType(
   if (vehicleBgAsset) {
     return getEgoVehicleTypeFromAsset(vehicleBgAsset);
   }
-  return storeEgoVehicleType || 'midsizeSedan';
+  return storeEgoVehicleType || 'coupe';
 }
 
 export function adjustHexBrightness(hex: string, percent: number): string {

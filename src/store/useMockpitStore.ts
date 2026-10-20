@@ -324,7 +324,7 @@ const loadSavedEgoVehicleType = (): EgoVehicleType => {
   } catch (e) {
     console.error('Failed to load ego vehicle type from localStorage', e);
   }
-  return 'midsizeSedan';
+  return 'coupe';
 };
 
 export const getSpeedReadoutMaxSpeed = (state: {
