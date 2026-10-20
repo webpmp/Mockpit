@@ -4168,9 +4168,16 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
       const activeScreen = state.activeView;
       const currentList = state.componentsByScreen[activeScreen] || [];
-      const updatedList = currentList.map((c) =>
-        c.id === id ? { ...c, staticProps: { ...c.staticProps, ...staticProps } } : c
-      );
+      const updatedList = currentList.map((c) => {
+        if (c.id !== id) return c;
+        const nextStaticProps: Record<string, any> = { ...c.staticProps, ...staticProps };
+        for (const k of Object.keys(staticProps)) {
+          if (staticProps[k] === undefined) {
+            delete nextStaticProps[k];
+          }
+        }
+        return { ...c, staticProps: nextStaticProps };
+      });
       const updatedScreens = {
         ...state.componentsByScreen,
         [activeScreen]: updatedList,

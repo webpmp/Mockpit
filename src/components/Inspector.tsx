@@ -872,6 +872,55 @@ const GeometryInput: React.FC<{
   );
 };
 
+const VehicleColorTextInput: React.FC<{
+  value: string;
+  defaultValue: string;
+  disabled?: boolean;
+  onChange: (val: string) => void;
+}> = ({ value, defaultValue, disabled = false, onChange }) => {
+  const authoritativeColor = isValidHexColor(value) ? value : defaultValue;
+  const [localText, setLocalText] = useState(authoritativeColor);
+
+  useEffect(() => {
+    setLocalText(authoritativeColor);
+  }, [authoritativeColor]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = e.target.value;
+    setLocalText(next);
+    const clean = next.trim();
+    if (isValidHexColor(clean)) {
+      onChange(clean);
+    }
+  };
+
+  const handleBlur = () => {
+    const clean = localText.trim();
+    if (isValidHexColor(clean)) {
+      onChange(clean);
+      setLocalText(clean);
+    } else {
+      setLocalText(authoritativeColor);
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      disabled={disabled}
+      value={localText}
+      onChange={handleTextChange}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 disabled:opacity-50"
+    />
+  );
+};
+
 export interface InspectorProps {
   initialTab?: 'component' | 'screen' | 'layers';
   selectedComponentId?: string | null;
@@ -2501,7 +2550,7 @@ export const Inspector: React.FC<InspectorProps> = ({
             )}
 
             {selectedComp.type === 'overheadVisualization' && (() => {
-              const selectedSilhouette = selectedComp.staticProps.egoVehicleType || 'auto';
+              const selectedSilhouette = selectedComp.staticProps.egoVehicleType || (egoVehicleType && egoVehicleType !== 'auto' ? egoVehicleType : 'auto');
               const activeOdv = resolveOdvVehicle(selectedSilhouette);
               const activeVehicleId = activeOdv.id;
 
@@ -2531,18 +2580,19 @@ export const Inspector: React.FC<InspectorProps> = ({
 
               const currentColorValues = {
                 body: isValidHexColor(modelColors?.body) ? modelColors.body : defaults.body,
-                trim: isValidHexColor(modelColors?.trim) ? modelColors.trim : defaults.trim,
-                windows: isValidHexColor(modelColors?.windows) ? modelColors.windows : defaults.windows,
-                lights: isValidHexColor(modelColors?.lights) ? modelColors.lights : defaults.lights,
+                trim: defaults.trim,
+                windows: defaults.windows,
+                lights: isValidHexColor(modelColors?.lights) ? modelColors.lights : (defaults.lights || '#fef08a'),
               };
 
-              const handleVehicleColorChange = (part: 'body' | 'trim' | 'windows' | 'lights', val: string) => {
+              const handleVehicleColorChange = (part: 'body' | 'lights', val: string) => {
                 if (!isEditor) return;
+                if (!isValidHexColor(val)) return;
                 const nextMap = { ...(typeof customColorsMap === 'object' && customColorsMap !== null ? customColorsMap : {}) };
                 const currentModelPart = {
                   ...(nextMap[activeVehicleId] || (nextMap[selectedSilhouette] && selectedSilhouette !== 'auto' ? nextMap[selectedSilhouette] : {}) || {}),
                 };
-                currentModelPart[part] = val;
+                currentModelPart[part] = val.trim();
                 nextMap[activeVehicleId] = currentModelPart;
                 // Delete shared keys to prevent cross-vehicle contamination
                 delete nextMap['_shared'];
@@ -2551,7 +2601,10 @@ export const Inspector: React.FC<InspectorProps> = ({
               };
 
               const hasCustomColors = Boolean(
-                modelColors && (modelColors.body || modelColors.trim || modelColors.windows || modelColors.lights)
+                modelColors && (
+                  (modelColors.body && modelColors.body.toLowerCase() !== defaults.body.toLowerCase()) ||
+                  (modelColors.lights && modelColors.lights.toLowerCase() !== (defaults.lights || '#fef08a').toLowerCase())
+                )
               );
 
               const handleResetVehicleColors = () => {
@@ -2563,7 +2616,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                 }
                 delete nextMap['_shared'];
                 delete nextMap['current'];
-                handleStaticPropChange('egoVehicleColors', nextMap);
+                handleStaticPropChange('egoVehicleColors', Object.keys(nextMap).length > 0 ? nextMap : undefined);
               };
 
               return (
@@ -2592,7 +2645,17 @@ export const Inspector: React.FC<InspectorProps> = ({
                       selectedVehicleId={selectedSilhouette}
                       colors={currentColorValues}
                       onSelectVehicle={(v) => {
-                        handleStaticPropChange('egoVehicleType', v.id);
+                        // Reset vehicle colors so newly selected vehicle starts with its authentic original body color and default headlight color
+                        const nextMap = { ...(typeof customColorsMap === 'object' && customColorsMap !== null ? customColorsMap : {}) };
+                        delete nextMap['_shared'];
+                        delete nextMap['current'];
+                        delete nextMap[v.id];
+                        delete nextMap[selectedSilhouette];
+                        delete nextMap[activeVehicleId];
+                        updateComponentStaticProps(selectedComp.id, {
+                          egoVehicleType: v.id,
+                          egoVehicleColors: undefined as any,
+                        });
                         if (v.id) {
                           setEgoVehicleType(v.id as any);
                         }
@@ -2612,75 +2675,31 @@ export const Inspector: React.FC<InspectorProps> = ({
                             onChange={(e) => handleVehicleColorChange('body', e.target.value)}
                             className="w-6 h-6 rounded bg-transparent border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                           />
-                          <input
-                            type="text"
+                          <VehicleColorTextInput
                             disabled={!isEditor}
                             value={currentColorValues.body}
-                            onChange={(e) => handleVehicleColorChange('body', e.target.value)}
-                            className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 disabled:opacity-50"
+                            defaultValue={defaults.body}
+                            onChange={(val) => handleVehicleColorChange('body', val)}
                           />
                         </div>
                       </div>
 
-                      {/* Trim Color */}
+                      {/* Headlight Color */}
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-slate-300 font-mono">Trim Color</span>
+                        <span className="text-[11px] text-slate-300 font-mono">Headlight Color</span>
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
                             disabled={!isEditor}
-                            value={isValidHexColor(currentColorValues.trim) ? currentColorValues.trim : defaults.trim}
-                            onChange={(e) => handleVehicleColorChange('trim', e.target.value)}
-                            className="w-6 h-6 rounded bg-transparent border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                          />
-                          <input
-                            type="text"
-                            disabled={!isEditor}
-                            value={currentColorValues.trim}
-                            onChange={(e) => handleVehicleColorChange('trim', e.target.value)}
-                            className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 disabled:opacity-50"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Window Color */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-slate-300 font-mono">Window Color</span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            disabled={!isEditor}
-                            value={isValidHexColor(currentColorValues.windows) ? currentColorValues.windows : defaults.windows}
-                            onChange={(e) => handleVehicleColorChange('windows', e.target.value)}
-                            className="w-6 h-6 rounded bg-transparent border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                          />
-                          <input
-                            type="text"
-                            disabled={!isEditor}
-                            value={currentColorValues.windows}
-                            onChange={(e) => handleVehicleColorChange('windows', e.target.value)}
-                            className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 disabled:opacity-50"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Light Color */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-slate-300 font-mono">Light Color</span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            disabled={!isEditor}
-                            value={isValidHexColor(currentColorValues.lights) ? currentColorValues.lights : defaults.lights}
+                            value={isValidHexColor(currentColorValues.lights) ? currentColorValues.lights : (defaults.lights || '#fef08a')}
                             onChange={(e) => handleVehicleColorChange('lights', e.target.value)}
                             className="w-6 h-6 rounded bg-transparent border-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                           />
-                          <input
-                            type="text"
+                          <VehicleColorTextInput
                             disabled={!isEditor}
                             value={currentColorValues.lights}
-                            onChange={(e) => handleVehicleColorChange('lights', e.target.value)}
-                            className="w-20 bg-slate-900 px-2 py-0.5 rounded text-slate-200 font-mono text-xs focus:outline-none border border-slate-700 disabled:opacity-50"
+                            defaultValue={defaults.lights || '#fef08a'}
+                            onChange={(val) => handleVehicleColorChange('lights', val)}
                           />
                         </div>
                       </div>

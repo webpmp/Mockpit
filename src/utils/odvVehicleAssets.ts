@@ -296,9 +296,70 @@ export function resolveOdvVehicle(typeOrId?: string | null): OdvVehicleAsset {
   return defaultVehicle;
 }
 
-export {
-  getVehicleHeadlightContour,
-  ODV_HEADLIGHT_PRESETS,
-  type HeadlightGeometry,
-  type VehicleHeadlightContour,
-} from './vehicleHeadlightContours';
+export interface VehicleHeadlightContour {
+  leftPath: string;
+  rightPath: string;
+  leftCore: string;
+  rightCore: string;
+}
+
+/**
+ * Generates curved, tapered SVG path coordinates for headlights that contour to
+ * each vehicle model's distinct front-left and front-right corner geometry.
+ */
+export function getVehicleHeadlightContour(vehicleId: string, halfW: number, halfH: number): VehicleHeadlightContour {
+  const id = (vehicleId || '').toLowerCase();
+
+  // Normalized corner contour offsets [x, dy] where dy is distance from top edge (-halfH)
+  let leftPts: [number, number][];
+  let rightPts: [number, number][];
+
+  if (id === 'corvette') {
+    // Aggressive swept-back sports coupe contour
+    leftPts = [ [-16, 9.5], [-20, 10.5], [-22.5, 12.5], [-23.5, 14.5], [-21.5, 15.0], [-18.5, 13.0] ];
+    rightPts = [ [16, 9.5], [20, 10.5], [22.5, 12.5], [23.5, 14.5], [21.5, 15.0], [18.5, 13.0] ];
+  } else if (id === 'cybercab') {
+    // Angular futuristic aerodynamic front fascia
+    leftPts = [ [-17, 8.5], [-22, 10.0], [-25, 12.5], [-26, 14.5], [-23.5, 15.0], [-20.0, 12.5] ];
+    rightPts = [ [17, 8.5], [22, 10.0], [25, 12.5], [26, 14.5], [23.5, 15.0], [20.0, 12.5] ];
+  } else if (id === 'semi') {
+    // High-mounted upright cab aerodynamic corner units
+    leftPts = [ [-14.5, 9.0], [-18.5, 10.5], [-21.0, 12.0], [-22.0, 14.5], [-19.5, 15.0], [-16.5, 13.0] ];
+    rightPts = [ [14.5, 9.0], [18.5, 10.5], [21.0, 12.0], [22.0, 14.5], [19.5, 15.0], [16.5, 13.0] ];
+  } else if (id === 'truck') {
+    // Rugged contoured dual-tier truck front corners
+    leftPts = [ [-16, 9.0], [-20, 10.0], [-22.5, 11.8], [-23.5, 14.0], [-21.0, 14.5], [-18.0, 12.5] ];
+    rightPts = [ [16, 9.0], [20, 10.0], [22.5, 11.8], [23.5, 14.0], [21.0, 14.5], [18.0, 12.5] ];
+  } else if (id === 'modely') {
+    // Swept teardrop curved aerodynamic clusters
+    leftPts = [ [-16, 10.5], [-19.5, 11.5], [-22.0, 13.0], [-23.0, 14.8], [-20.5, 15.2], [-17.5, 13.5] ];
+    rightPts = [ [16, 10.5], [19.5, 11.5], [22.0, 13.0], [23.0, 14.8], [20.5, 15.2], [17.5, 13.5] ];
+  } else {
+    // Universal curved contour following front corners
+    leftPts = [ [-15.5, 9.0], [-19.5, 10.5], [-22.0, 12.0], [-23.0, 14.0], [-20.5, 14.5], [-17.5, 12.5] ];
+    rightPts = [ [15.5, 9.0], [19.5, 10.5], [22.0, 12.0], [23.0, 14.0], [20.5, 14.5], [17.5, 12.5] ];
+  }
+
+  const buildPath = (pts: [number, number][]) => {
+    const p = pts.map(([x, dy]) => [x, -halfH + dy]);
+    return `M ${p[0][0]},${p[0][1]} Q ${p[1][0]},${p[1][1]} ${p[2][0]},${p[2][1]} Q ${p[3][0]},${p[3][1]} ${p[4][0]},${p[4][1]} Q ${p[5][0]},${p[5][1]} ${p[0][0]},${p[0][1]} Z`;
+  };
+
+  const buildCore = (pts: [number, number][]) => {
+    const p = pts.map(([x, dy]) => [x, -halfH + dy]);
+    const cx = p.reduce((acc, pt) => acc + pt[0], 0) / p.length;
+    const cy = p.reduce((acc, pt) => acc + pt[1], 0) / p.length;
+    const scaled = p.map(([x, y]) => [
+      (cx + (x - cx) * 0.45).toFixed(2),
+      (cy + (y - cy) * 0.45).toFixed(2)
+    ]);
+    return `M ${scaled[0][0]},${scaled[0][1]} Q ${scaled[1][0]},${scaled[1][1]} ${scaled[2][0]},${scaled[2][1]} Q ${scaled[3][0]},${scaled[3][1]} ${scaled[4][0]},${scaled[4][1]} Q ${scaled[5][0]},${scaled[5][1]} ${scaled[0][0]},${scaled[0][1]} Z`;
+  };
+
+  return {
+    leftPath: buildPath(leftPts),
+    rightPath: buildPath(rightPts),
+    leftCore: buildCore(leftPts),
+    rightCore: buildCore(rightPts),
+  };
+}

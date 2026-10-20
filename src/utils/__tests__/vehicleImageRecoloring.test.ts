@@ -10,8 +10,9 @@ import {
   recolorImageData,
   DEFAULT_EGO_COLORS,
   isVehicleColorsCustomized,
+  isVehicleImageCustomized,
 } from '../vehicleImageRecoloring';
-import { getVehicleOriginalColors } from '../odvVehicleAssets';
+import { getVehicleOriginalColors, getVehicleHeadlightContour, KNOWN_ODV_VEHICLES } from '../odvVehicleAssets';
 
 describe('Vehicle Image Recoloring Engine Suite', () => {
   it('1. Validates hex color strings accurately', () => {
@@ -208,5 +209,135 @@ describe('Vehicle Image Recoloring Engine Suite', () => {
 
     assert.ok(content.includes('getVehicleOriginalColors(activeVehicleId)'), 'Must initialize defaults with vehicle original colors');
     assert.ok(content.includes('delete nextMap[\'_shared\']'), 'Must prevent shared key contamination between models');
+  });
+
+  it('12. Verifies getVehicleHeadlightContour generates curved, tapered contours following front corners for all ODV vehicles', () => {
+    const dir = path.resolve(process.cwd(), 'public/vehicles');
+
+    for (const vehicle of KNOWN_ODV_VEHICLES) {
+      const targetW = 72;
+      const aspect = vehicle.rawHeight / vehicle.rawWidth;
+      const targetH = Math.round(targetW * aspect * 10) / 10;
+      const halfW = targetW / 2;
+      const halfH = targetH / 2;
+
+      const contour = getVehicleHeadlightContour(vehicle.id, halfW, halfH);
+
+      // Must be curved SVG path (contains Q commands)
+      assert.ok(contour.leftPath.includes('Q'), `${vehicle.id} left headlight must contain curved Bezier segments`);
+      assert.ok(contour.rightPath.includes('Q'), `${vehicle.id} right headlight must contain curved Bezier segments`);
+      assert.ok(contour.leftCore.includes('Q'), `${vehicle.id} left core must contain curved Bezier segments`);
+      assert.ok(contour.rightCore.includes('Q'), `${vehicle.id} right core must contain curved Bezier segments`);
+
+      // Read PNG and verify headlight vertices stay within vehicle body silhouette (alpha > 40)
+      const pngPath = path.join(dir, vehicle.filename);
+      if (fs.existsSync(pngPath)) {
+        const png = PNG.sync.read(fs.readFileSync(pngPath));
+        const rawW = png.width;
+        const rawH = png.height;
+
+        const leftCoords = contour.leftPath.match(/([-\d.]+),([-\d.]+)/g) || [];
+        for (const coord of leftCoords) {
+          const [sx, sy] = coord.split(',').map(Number);
+          const px = Math.round(((sx + halfW) / targetW) * rawW);
+          const py = Math.round(((sy + halfH) / targetH) * rawH);
+          if (px >= 0 && px < rawW && py >= 0 && py < rawH) {
+            const alpha = png.data[(py * rawW + px) * 4 + 3];
+            assert.ok(alpha > 40, `${vehicle.id} left headlight vertex (${sx}, ${sy}) must be inside vehicle silhouette (got alpha ${alpha})`);
+          }
+        }
+
+        const rightCoords = contour.rightPath.match(/([-\d.]+),([-\d.]+)/g) || [];
+        for (const coord of rightCoords) {
+          const [sx, sy] = coord.split(',').map(Number);
+          const px = Math.round(((sx + halfW) / targetW) * rawW);
+          const py = Math.round(((sy + halfH) / targetH) * rawH);
+          if (px >= 0 && px < rawW && py >= 0 && py < rawH) {
+            const alpha = png.data[(py * rawW + px) * 4 + 3];
+            assert.ok(alpha > 40, `${vehicle.id} right headlight vertex (${sx}, ${sy}) must be inside vehicle silhouette (got alpha ${alpha})`);
+          }
+        }
+      }
+    }
+  });
+
+  it('13. Verifies Inspector.tsx contains Body Color and Headlight Color controls without Trim or Window Color', () => {
+    const inspectorPath = path.resolve(process.cwd(), 'src/components/Inspector.tsx');
+    const content = fs.readFileSync(inspectorPath, 'utf-8');
+
+    // Body Color and Headlight Color pickers must exist
+    assert.ok(content.includes('Body Color'), 'Inspector must contain Body Color picker');
+    assert.ok(content.includes('Headlight Color'), 'Inspector must contain Headlight Color picker');
+
+    // Trim Color and Window Color pickers must not be present
+    assert.ok(!content.includes('>Trim Color<'), 'Inspector must not contain Trim Color picker');
+    assert.ok(!content.includes('>Window Color<'), 'Inspector must not contain Window Color picker');
+  });
+
+  it('14. Verifies onSelectVehicle in Inspector.tsx resets egoVehicleColors when switching vehicle models', () => {
+    const inspectorPath = path.resolve(process.cwd(), 'src/components/Inspector.tsx');
+    const content = fs.readFileSync(inspectorPath, 'utf-8');
+
+    assert.ok(
+      content.includes('egoVehicleColors: undefined'),
+      'onSelectVehicle must reset egoVehicleColors so new vehicle uses original body color'
+    );
+  });
+
+  it('15. Verifies OverheadDrivingVisualization renders contoured headlights responding to Headlight Color', () => {
+    const odvPath = path.resolve(process.cwd(), 'src/components/OverheadDrivingVisualization.tsx');
+    const content = fs.readFileSync(odvPath, 'utf-8');
+
+    assert.ok(content.includes('id="ego-standardized-headlights"'), 'Must contain standardized headlights group');
+    assert.ok(content.includes('id="ego-headlight-left"'), 'Must contain left contoured headlight');
+    assert.ok(content.includes('id="ego-headlight-right"'), 'Must contain right contoured headlight');
+    assert.ok(content.includes('effectiveLightColor'), 'Headlights must use effectiveLightColor');
+  });
+
+  it('16. Verifies isVehicleImageCustomized ignores headlight changes and only triggers for body or window changes', () => {
+    const orig = { body: '#2563eb', trim: '#1e293b', windows: '#1e293b', lights: '#fef08a' };
+
+    // Headlight color changes must NOT mark the underlying vehicle PNG image as customized
+    assert.equal(isVehicleImageCustomized({ lights: '#ffffff' }, orig), false);
+    assert.equal(isVehicleImageCustomized({ lights: '#ef4444' }, orig), false);
+
+    // Body changes DO mark the vehicle PNG image as customized
+    assert.equal(isVehicleImageCustomized({ body: '#ef4444' }, orig), true);
+    // Window changes DO mark the vehicle PNG image as customized
+    assert.equal(isVehicleImageCustomized({ windows: '#38bdf8' }, orig), true);
+  });
+
+  it('17. Verifies recolorImageData does not alter body pixels when only lights are configured or body is uncustomized', () => {
+    const corvettePath = path.resolve(process.cwd(), 'public/vehicles/odv-corvette.png');
+    const png = PNG.sync.read(fs.readFileSync(corvettePath));
+    const origData = new Uint8ClampedArray(png.data);
+    const testData = new Uint8ClampedArray(png.data);
+
+    const origColors = getVehicleOriginalColors('corvette');
+    // Only headlight color is passed
+    recolorImageData(testData, png.width, png.height, { lights: '#00ff00' }, origColors, 'corvette');
+
+    // Body pixels must remain 100% identical
+    const w = png.width, h = png.height;
+    const hoodIdx = (Math.floor(h * 0.18) * w + Math.floor(w * 0.5)) * 4;
+    assert.equal(testData[hoodIdx], origData[hoodIdx], 'Red channel must not change');
+    assert.equal(testData[hoodIdx + 1], origData[hoodIdx + 1], 'Green channel must not change');
+    assert.equal(testData[hoodIdx + 2], origData[hoodIdx + 2], 'Blue channel must not change');
+    assert.equal(testData[hoodIdx + 3], origData[hoodIdx + 3], 'Alpha channel must not change');
+  });
+
+  it('18. Verifies Inspector.tsx synchronizes active vehicle model and includes VehicleColorTextInput for validated typing', () => {
+    const inspectorPath = path.resolve(process.cwd(), 'src/components/Inspector.tsx');
+    const content = fs.readFileSync(inspectorPath, 'utf-8');
+
+    assert.ok(content.includes('VehicleColorTextInput'), 'Inspector must use VehicleColorTextInput for robust hex editing');
+    assert.ok(content.includes('egoVehicleType !== \'auto\' ? egoVehicleType : \'auto\''), 'Inspector must synchronize silhouette with store fallback');
+  });
+
+  it('19. Verifies OverheadDrivingVisualization leaves uncustomized body as undefined in activeColors', () => {
+    const odvPath = path.resolve(process.cwd(), 'src/components/OverheadDrivingVisualization.tsx');
+    const content = fs.readFileSync(odvPath, 'utf-8');
+
+    assert.ok(content.includes('body: isValidHexColor(modelCustom.body) ? modelCustom.body : undefined'), 'activeColors must not synthesize default body color when uncustomized');
   });
 });

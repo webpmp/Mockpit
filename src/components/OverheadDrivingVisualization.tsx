@@ -118,16 +118,12 @@ const VehicleGraphic: React.FC<{
     const targetH = Math.round(targetW * aspect * 10) / 10;
     const halfW = targetW / 2;
     const halfH = targetH / 2;
-
+    const leftHeadlightX = -halfW + 10;
+    const rightHeadlightX = halfW - 10;
+    const headlightY = -halfH + 8;
     const effectiveLightColor = isValidHexColor(passedColors?.lights)
       ? passedColors!.lights!
       : (origColors?.lights || '#fef08a');
-
-    // Standardized headlight positions at top-left and top-right corners of each vehicle
-    const leftHeadlightX = -halfW + 10; // -26
-    const rightHeadlightX = halfW - 10; // +26
-    const headlightY = -halfH + 8;
-
     const contour = getVehicleHeadlightContour(selectedOdv.id, halfW, halfH);
 
     return (
@@ -139,6 +135,18 @@ const VehicleGraphic: React.FC<{
         <defs>
           <filter id="ego-odv-shadow" x="-30%" y="-30%" width="160%" height="160%">
             <feDropShadow dx="0" dy="3.5" stdDeviation="3" floodColor="#000000" floodOpacity="0.45" />
+          </filter>
+          <linearGradient id={`ego-headlight-grad-${selectedOdv.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+            <stop offset="50%" stopColor={effectiveLightColor} stopOpacity="0.85" />
+            <stop offset="100%" stopColor={effectiveLightColor} stopOpacity="0.6" />
+          </linearGradient>
+          <filter id="ego-headlight-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
           </filter>
         </defs>
         {/* Soft ground contact shadow */}
@@ -152,80 +160,40 @@ const VehicleGraphic: React.FC<{
           height={targetH}
           preserveAspectRatio="xMidYMid meet"
         />
-
-        {/* Standardized Rendered Headlights at Top-Left and Top-Right Corners Following Vehicle Contours */}
+        {/* Standardized Contoured Headlights following front-left and front-right corners */}
         <g id="ego-standardized-headlights">
-          {/* Top-Left Headlight (Curved along Left Front Corner Contour) */}
+          {/* Left Headlight: Curved & Tapered along front-left corner contour */}
           <path
-            d={contour.left.path}
-            fill={effectiveLightColor}
-            stroke="#0f172a"
-            strokeWidth="0.8"
-            opacity="0.95"
-          />
-          <circle
-            cx={contour.left.bulbX}
-            cy={contour.left.bulbY}
-            r="1.9"
-            fill={headlightsOn ? '#ffffff' : effectiveLightColor}
-            stroke="#0f172a"
+            id="ego-headlight-left"
+            d={contour.leftPath}
+            fill={`url(#ego-headlight-grad-${selectedOdv.id})`}
+            stroke={effectiveLightColor}
             strokeWidth="0.5"
+            strokeOpacity="0.85"
+            filter={headlightsOn ? "url(#ego-headlight-glow)" : undefined}
+            opacity={headlightsOn ? 0.95 : 0.85}
           />
-
-          {/* Top-Right Headlight (Curved along Right Front Corner Contour) */}
           <path
-            d={contour.right.path}
-            fill={effectiveLightColor}
-            stroke="#0f172a"
-            strokeWidth="0.8"
-            opacity="0.95"
+            d={contour.leftCore}
+            fill="#ffffff"
+            opacity={headlightsOn ? 0.9 : 0.65}
           />
-          <circle
-            cx={contour.right.bulbX}
-            cy={contour.right.bulbY}
-            r="1.9"
-            fill={headlightsOn ? '#ffffff' : effectiveLightColor}
-            stroke="#0f172a"
+          {/* Right Headlight: Curved & Tapered along front-right corner contour */}
+          <path
+            id="ego-headlight-right"
+            d={contour.rightPath}
+            fill={`url(#ego-headlight-grad-${selectedOdv.id})`}
+            stroke={effectiveLightColor}
             strokeWidth="0.5"
+            strokeOpacity="0.85"
+            filter={headlightsOn ? "url(#ego-headlight-glow)" : undefined}
+            opacity={headlightsOn ? 0.95 : 0.85}
           />
-
-          {/* Subtle headlight illumination flares when headlights are ON */}
-          {headlightsOn && (
-            <>
-              {/* Top-Left Illumination Flare */}
-              <circle
-                cx={contour.left.bulbX}
-                cy={contour.left.bulbY}
-                r="5.5"
-                fill={effectiveLightColor}
-                opacity="0.75"
-                filter="url(#soft-edges)"
-              />
-              <circle
-                cx={contour.left.bulbX}
-                cy={contour.left.bulbY - 1.5}
-                r="2.6"
-                fill="#ffffff"
-                opacity="0.95"
-              />
-              {/* Top-Right Illumination Flare */}
-              <circle
-                cx={contour.right.bulbX}
-                cy={contour.right.bulbY}
-                r="5.5"
-                fill={effectiveLightColor}
-                opacity="0.75"
-                filter="url(#soft-edges)"
-              />
-              <circle
-                cx={contour.right.bulbX}
-                cy={contour.right.bulbY - 1.5}
-                r="2.6"
-                fill="#ffffff"
-                opacity="0.95"
-              />
-            </>
-          )}
+          <path
+            d={contour.rightCore}
+            fill="#ffffff"
+            opacity={headlightsOn ? 0.9 : 0.65}
+          />
         </g>
       </g>
     );
@@ -1558,11 +1526,14 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     if (props.egoVehicleType && props.egoVehicleType !== 'auto') {
       return props.egoVehicleType as EgoVehicleType;
     }
+    if (storeEgoVehicleType && storeEgoVehicleType !== 'auto') {
+      return storeEgoVehicleType;
+    }
     if (storeVehicleBg?.vehicle) {
       return getEgoVehicleTypeFromAsset(storeVehicleBg.vehicle);
     }
-    return storeEgoVehicleType || 'spyder';
-  }, [props.egoVehicleType, storeVehicleBg?.vehicle, storeEgoVehicleType]);
+    return 'spyder';
+  }, [props.egoVehicleType, storeEgoVehicleType, storeVehicleBg?.vehicle]);
 
   const activeOdvAsset = useMemo(() => {
     return resolveOdvVehicle(activeEgoType);
@@ -1581,13 +1552,15 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
       ? (customMap[activeOdvAsset.id] || (customMap[activeEgoType] && activeEgoType !== 'auto' ? customMap[activeEgoType] : undefined))
       : undefined;
     if (!modelCustom) return undefined;
+    // ds-raw-start: vehicle lighting palette
     const defaults = getVehicleOriginalColors(activeOdvAsset.id);
     return {
-      body: isValidHexColor(modelCustom.body) ? modelCustom.body : defaults.body,
-      trim: isValidHexColor(modelCustom.trim) ? modelCustom.trim : defaults.trim,
-      windows: isValidHexColor(modelCustom.windows) ? modelCustom.windows : defaults.windows,
-      lights: isValidHexColor(modelCustom.lights) ? modelCustom.lights : defaults.lights,
+      body: isValidHexColor(modelCustom.body) ? modelCustom.body : undefined,
+      trim: isValidHexColor(modelCustom.trim) ? modelCustom.trim : undefined,
+      windows: isValidHexColor(modelCustom.windows) ? modelCustom.windows : undefined,
+      lights: isValidHexColor(modelCustom.lights) ? modelCustom.lights : (defaults.lights || '#fef08a'),
     };
+    // ds-raw-end
   }, [props.egoVehicleColors, activeOdvAsset.id, activeEgoType]);
 
   const getEgoDims = (eType: EgoVehicleType) => {
