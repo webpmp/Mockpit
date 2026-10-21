@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMockpitStore, isPresetActive } from '../store/useMockpitStore';
 import { DriveModeState, GearState } from '../types';
-import { Zap, AlertTriangle, ChevronDown, ChevronUp, Gauge, ShieldAlert, Eye, Sun, Car, MessageSquare, CircleDot } from 'lucide-react';
+import { Zap, AlertTriangle, ChevronDown, ChevronUp, Gauge, ShieldAlert, Eye, Sun, MessageSquare, CircleDot } from 'lucide-react';
 
 const SteeringWheel: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
@@ -25,6 +25,12 @@ const SteeringWheel: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 
 const GEARS: GearState[] = ['P', 'R', 'N', 'D'];
+const GEAR_NAMES: Record<GearState, string> = {
+  P: 'Park',
+  R: 'Reverse',
+  N: 'Neutral',
+  D: 'Drive',
+};
 const DRIVE_MODES: DriveModeState[] = ['Eco', 'Normal', 'Sport'];
 
 const PRESET_SCENARIOS = [
@@ -88,17 +94,17 @@ export const DebugStatePanel: React.FC = () => {
         }`}
         title={isDebugOpen ? 'Click to collapse Drive Simulator' : 'Click to expand Drive Simulator'}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-2 text-xs font-black tracking-widest text-slate-200 uppercase">
-            <SteeringWheel className="w-4 h-4 text-sky-400" />
+            <SteeringWheel className="w-4 h-4 text-sky-400 shrink-0" />
             Drive Simulator
           </div>
         </div>
 
         {/* Quick Presets & Controls */}
-        <div className="flex items-center gap-2">
-          <div className="hidden md:flex items-center gap-1.5 mr-2">
-            <span className="text-[10px] font-mono text-slate-500 uppercase">Event Presets:</span>
+        <div className="flex items-center gap-2 min-w-0 justify-end">
+          <div className="hidden md:flex items-center gap-1.5 mr-2 flex-wrap justify-end">
+            <span className="text-[10px] font-mono text-slate-500 uppercase shrink-0">Event Presets:</span>
             {PRESET_SCENARIOS.map((p) => {
               const active = isPresetActive(p.id, vehicleState);
               const isChargingPreset = p.id === 'charging_station';
@@ -113,7 +119,7 @@ export const DebugStatePanel: React.FC = () => {
                     applyPresetScenario(p.id);
                   }}
                   title={isChargingDisabled ? 'Park the vehicle to enable charging' : undefined}
-                  className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all shrink-0 ${
                     isChargingDisabled
                       ? 'bg-slate-800/40 text-slate-600 border-slate-800/80 opacity-50 cursor-not-allowed'
                       : active
@@ -139,7 +145,7 @@ export const DebugStatePanel: React.FC = () => {
                 );
               }}
               title="Simulate Inbound Message Toast"
-              className="px-2.5 py-1 rounded-lg border text-[10px] font-bold bg-slate-800/80 text-slate-400 border-slate-700/80 hover:bg-slate-700 hover:text-slate-200 transition-all cursor-pointer flex items-center gap-1 shadow-md"
+              className="px-2.5 py-1 rounded-lg border text-[10px] font-bold bg-slate-800/80 text-slate-400 border-slate-700/80 hover:bg-slate-700 hover:text-slate-200 transition-all cursor-pointer flex items-center gap-1 shadow-md shrink-0"
             >
               <MessageSquare className="w-3 h-3" /> Text Message
             </button>
@@ -151,7 +157,7 @@ export const DebugStatePanel: React.FC = () => {
               e.stopPropagation();
               toggleDebugPanel();
             }}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors text-xs cursor-pointer border border-slate-700/80"
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors text-xs cursor-pointer border border-slate-700/80 shrink-0"
             title={isDebugOpen ? 'Minimize Panel' : 'Expand Panel'}
           >
             {isDebugOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -164,18 +170,22 @@ export const DebugStatePanel: React.FC = () => {
         <div className="p-5 px-6 flex flex-col gap-5 overflow-y-auto max-h-[70vh]">
           {/* DRIVING GROUP */}
           <div className="space-y-2">
-            <div className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Gauge className="w-3.5 h-3.5" />
-              <span>Driving State</span>
+            <div className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-widest">
+              Driving State
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
               {/* Gear Select */}
-              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between">
-                <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Gear Selector
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between min-w-0">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                    Gear Selector
+                  </span>
+                  <span className="text-xs font-black font-mono text-sky-400">
+                    {GEAR_NAMES[vehicleState.gear] || vehicleState.gear}
+                  </span>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-4 gap-1.5 mt-auto">
                   {GEARS.map((g) => {
                     const isActive = vehicleState.gear === g;
                     return (
@@ -199,9 +209,10 @@ export const DebugStatePanel: React.FC = () => {
               {(() => {
                 const isParked = vehicleState.gear === 'P';
                 const isNeutral = vehicleState.gear === 'N';
+                const isCruiseDisabled = vehicleState.gear !== 'D';
                 return (
                   <div
-                    className={`bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between transition-opacity ${
+                    className={`bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between min-w-0 transition-opacity ${
                       isParked ? 'opacity-60' : ''
                     }`}
                     title={isParked ? 'Speed is locked at 0 MPH while in Park (P)' : isNeutral ? 'Vehicle is coasting in Neutral (N)' : undefined}
@@ -214,7 +225,7 @@ export const DebugStatePanel: React.FC = () => {
                         {vehicleState.speed} <span className="text-[10px] text-slate-500">MPH</span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 my-auto">
+                    <div className="flex items-center gap-3 my-auto py-1">
                       <input
                         type="range"
                         min={0}
@@ -231,38 +242,33 @@ export const DebugStatePanel: React.FC = () => {
                     {/* Cruise Control Toggle */}
                     <div className="flex items-center justify-between border-t border-slate-800/80 pt-2 mt-2 shrink-0">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <Gauge className={`w-3.5 h-3.5 shrink-0 ${vehicleState.cruiseControlActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        <Gauge className={`w-3.5 h-3.5 shrink-0 ${vehicleState.cruiseControlActive ? 'text-sky-400' : 'text-slate-500'}`} />
                         <span className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider truncate">
                           Cruise Control
                         </span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className={`text-[10px] font-mono font-bold ${vehicleState.cruiseControlActive ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        <span className={`text-[10px] font-mono font-bold ${vehicleState.cruiseControlActive ? 'text-sky-400' : 'text-slate-500'}`}>
                           {vehicleState.cruiseControlActive ? 'SET' : 'OFF'}
                         </span>
-                        {(() => {
-                          const isCruiseDisabled = vehicleState.gear !== 'D';
-                          return (
-                            <button
-                              disabled={isCruiseDisabled}
-                              onClick={handleToggleCruise}
-                              className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                                isCruiseDisabled
-                                  ? 'bg-slate-800/40 border border-slate-800/80 opacity-40 cursor-not-allowed'
-                                  : vehicleState.cruiseControlActive
-                                  ? 'bg-emerald-500 cursor-pointer'
-                                  : 'bg-slate-800 border border-slate-700 cursor-pointer'
-                              }`}
-                              title={isCruiseDisabled ? 'Cruise Control is only available in Drive (D)' : 'Toggle Cruise Control'}
-                            >
-                              <div
-                                className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
-                                  vehicleState.cruiseControlActive ? 'translate-x-4' : 'translate-x-0'
-                                }`}
-                              />
-                            </button>
-                          );
-                        })()}
+                        <button
+                          disabled={isCruiseDisabled}
+                          onClick={handleToggleCruise}
+                          className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
+                            isCruiseDisabled
+                              ? 'bg-slate-800/40 border border-slate-800/80 opacity-40 cursor-not-allowed'
+                              : vehicleState.cruiseControlActive
+                              ? 'bg-sky-500 cursor-pointer'
+                              : 'bg-slate-800 border border-slate-700 cursor-pointer'
+                          }`}
+                          title={isCruiseDisabled ? 'Cruise Control is only available in Drive (D)' : 'Toggle Cruise Control'}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                              vehicleState.cruiseControlActive ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -270,11 +276,16 @@ export const DebugStatePanel: React.FC = () => {
               })()}
 
               {/* Drive Mode Select */}
-              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between">
-                <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Drive Mode
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between min-w-0">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                    Drive Mode
+                  </span>
+                  <span className="text-xs font-black font-mono text-sky-400">
+                    {vehicleState.driveMode || 'Normal'}
+                  </span>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-3 gap-1.5 mt-auto">
                   {DRIVE_MODES.map((dm) => {
                     const isActive = (vehicleState.driveMode || 'Normal') === dm;
                     return (
@@ -283,7 +294,7 @@ export const DebugStatePanel: React.FC = () => {
                         onClick={() => setVehicleState({ driveMode: dm })}
                         className={`py-2 px-1 rounded-xl font-bold text-[11px] font-mono transition-all cursor-pointer ${
                           isActive
-                            ? 'bg-cyan-400 text-slate-950 shadow-[0_0_12px_rgba(34,211,238,0.5)] scale-105'
+                            ? 'bg-sky-500 text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.5)] scale-105'
                             : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
                         }`}
                       >
@@ -298,43 +309,41 @@ export const DebugStatePanel: React.FC = () => {
 
           {/* VEHICLE GROUP */}
           <div className="space-y-2">
-            <div className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Car className="w-3.5 h-3.5" />
-              <span>Vehicle & ADAS State</span>
+            <div className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-widest">
+              Vehicle & ADAS State
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-stretch">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3 items-stretch">
               {/* Battery Slider */}
-              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex flex-col justify-between min-w-0">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 truncate">
+                    <Zap className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                     Battery
                   </span>
-                  <span
-                    className={`text-xs font-black font-mono ${
-                      vehicleState.batteryPercent < 15 ? 'text-rose-400' : 'text-emerald-400'
-                    }`}
-                  >
+                  <span className="text-xs font-black font-mono shrink-0 text-sky-400">
                     {Math.round(vehicleState.batteryPercent)}%
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={Math.round(vehicleState.batteryPercent)}
-                  onChange={(e) => setVehicleState({ batteryPercent: Number(e.target.value) })}
-                  className="w-full accent-emerald-400 cursor-pointer h-2 bg-slate-800 rounded-lg my-auto"
-                />
+                <div className="flex items-center my-auto py-1">
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(vehicleState.batteryPercent)}
+                    onChange={(e) => setVehicleState({ batteryPercent: Number(e.target.value) })}
+                    className="w-full accent-sky-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
+                  />
+                </div>
               </div>
 
               {/* Is Charging Toggle */}
-              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between min-w-0">
                 <div className="flex items-center gap-2 min-w-0 pr-1">
                   <div
                     className={`p-2 rounded-xl shrink-0 ${
                       vehicleState.isCharging
-                        ? 'bg-blue-500/20 text-blue-400'
+                        ? 'bg-sky-500/20 text-sky-400'
                         : !canCharge
                         ? 'bg-slate-800 text-slate-600'
                         : 'bg-slate-800 text-slate-500'
@@ -364,7 +373,7 @@ export const DebugStatePanel: React.FC = () => {
                     !canCharge && !vehicleState.isCharging
                       ? 'bg-slate-800 opacity-40 cursor-not-allowed'
                       : vehicleState.isCharging
-                      ? 'bg-blue-500 cursor-pointer'
+                      ? 'bg-sky-500 cursor-pointer'
                       : 'bg-slate-800 cursor-pointer'
                   }`}
                 >
@@ -377,11 +386,11 @@ export const DebugStatePanel: React.FC = () => {
               </div>
 
               {/* Door Open Toggle */}
-              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between min-w-0">
                 <div className="flex items-center gap-2 min-w-0 pr-1">
                   <div
                     className={`p-2 rounded-xl shrink-0 ${
-                      vehicleState.doorOpen ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'
+                      vehicleState.doorOpen ? 'bg-sky-500/20 text-sky-400' : 'bg-slate-800 text-slate-500'
                     }`}
                   >
                     <AlertTriangle className="w-4 h-4" />
@@ -399,7 +408,7 @@ export const DebugStatePanel: React.FC = () => {
                 <button
                   onClick={() => setVehicleState({ doorOpen: !vehicleState.doorOpen })}
                   className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
-                    vehicleState.doorOpen ? 'bg-amber-500' : 'bg-slate-800'
+                    vehicleState.doorOpen ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
                 >
                   <div
@@ -411,7 +420,7 @@ export const DebugStatePanel: React.FC = () => {
               </div>
 
               {/* Headlights Control */}
-              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between min-w-0">
                 <div className="flex items-center gap-2 min-w-0 pr-1">
                   <div
                     className={`p-2 rounded-xl shrink-0 ${
@@ -445,11 +454,11 @@ export const DebugStatePanel: React.FC = () => {
               </div>
 
               {/* Blind Spot Warning Toggle */}
-              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between min-w-0">
                 <div className="flex items-center gap-2 min-w-0 pr-1">
                   <div
                     className={`p-2 rounded-xl shrink-0 ${
-                      vehicleState.blindSpotWarning ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-800 text-slate-500'
+                      vehicleState.blindSpotWarning ? 'bg-sky-500/20 text-sky-400' : 'bg-slate-800 text-slate-500'
                     }`}
                   >
                     <Eye className="w-4 h-4" />
@@ -467,7 +476,7 @@ export const DebugStatePanel: React.FC = () => {
                 <button
                   onClick={() => setVehicleState({ blindSpotWarning: !vehicleState.blindSpotWarning })}
                   className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
-                    vehicleState.blindSpotWarning ? 'bg-rose-500' : 'bg-slate-800'
+                    vehicleState.blindSpotWarning ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
                 >
                   <div
@@ -479,11 +488,11 @@ export const DebugStatePanel: React.FC = () => {
               </div>
 
               {/* Proximity Warning Toggle */}
-              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between min-w-0">
                 <div className="flex items-center gap-2 min-w-0 pr-1">
                   <div
                     className={`p-2 rounded-xl shrink-0 ${
-                      vehicleState.proximityWarning ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-800 text-slate-500'
+                      vehicleState.proximityWarning ? 'bg-sky-500/20 text-sky-400' : 'bg-slate-800 text-slate-500'
                     }`}
                   >
                     <ShieldAlert className="w-4 h-4" />
@@ -501,7 +510,7 @@ export const DebugStatePanel: React.FC = () => {
                 <button
                   onClick={() => setVehicleState({ proximityWarning: !vehicleState.proximityWarning })}
                   className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
-                    vehicleState.proximityWarning ? 'bg-rose-500' : 'bg-slate-800'
+                    vehicleState.proximityWarning ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
                 >
                   <div
@@ -513,11 +522,11 @@ export const DebugStatePanel: React.FC = () => {
               </div>
 
               {/* Tire Pressure Warning Toggle */}
-              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+              <div className="bg-slate-900/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between min-w-0">
                 <div className="flex items-center gap-2 min-w-0 pr-1">
                   <div
                     className={`p-2 rounded-xl shrink-0 ${
-                      vehicleState.tirePressureWarning ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'
+                      vehicleState.tirePressureWarning ? 'bg-sky-500/20 text-sky-400' : 'bg-slate-800 text-slate-500'
                     }`}
                   >
                     <CircleDot className="w-4 h-4" />
@@ -535,7 +544,7 @@ export const DebugStatePanel: React.FC = () => {
                 <button
                   onClick={() => setVehicleState({ tirePressureWarning: !vehicleState.tirePressureWarning })}
                   className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
-                    vehicleState.tirePressureWarning ? 'bg-amber-500' : 'bg-slate-800'
+                    vehicleState.tirePressureWarning ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
                 >
                   <div
