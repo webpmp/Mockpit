@@ -53,6 +53,8 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
   onStartConnectDrag,
 }) => {
   const tirePressureWarning = useMockpitStore((s) => s.vehicleState.tirePressureWarning ?? false);
+  const activePresentationCalloutId = useMockpitStore((s) => s.activePresentationCalloutId);
+  const setActivePresentationCalloutId = useMockpitStore((s) => s.setActivePresentationCalloutId);
 
   const rawTitle = resolved.title ?? component.staticProps.title ?? 'Front Powertrain';
   const rawDescription = resolved.description ?? component.staticProps.description ?? 'Primary electric drive unit & inverter';
@@ -141,20 +143,38 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
 
   const percentVal = Math.max(0, Math.min(100, parseInt(healthValue, 10) || 0));
 
+  const isLinked = Boolean(component.connector && component.connector.targetComponentId);
+  const isPresentationActive = Boolean(isPresentation && activePresentationCalloutId === component.id);
+
+  const isDirectlySelected = isPresentation
+    ? Boolean(isPresentationActive)
+    : useMockpitStore((s) => s.selectedComponentId) === component.id;
+
   return (
     <div
-      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides, 'border-ds-line-subtle/90')} backdrop-blur-md p-3.5 flex flex-col justify-between select-none relative transition-shadow ${baseOpacity} ${
-        isSelected ? 'ring-1 ring-ds-primary/50 shadow-[0_0_20px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]' : 'shadow-lg'
-      }`}
+      data-callout-id={component.id}
+      data-linked={isLinked ? 'true' : 'false'}
+      data-presentation-active={isPresentationActive ? 'true' : 'false'}
+      onClick={() => {
+        if (isPresentation && isLinked) {
+          setActivePresentationCalloutId(component.id);
+        }
+      }}
+      className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides, 'border-ds-line-subtle/90')} backdrop-blur-md p-3.5 flex flex-col justify-between select-none relative transition-all duration-200 ${baseOpacity} ${
+        isSelected || isPresentationActive ? 'ring-1 ring-ds-primary/60 shadow-[0_0_20px_color-mix(in_srgb,var(--color-ds-primary)_25%,transparent)]' : 'shadow-lg'
+      } ${isPresentation && isLinked ? 'cursor-pointer hover:border-ds-primary/40' : ''}`}
       style={{ opacity: styleOpacity }}
     >
       {/* Top Header Row */}
       <div className="flex items-center h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-ds-content-muted uppercase z-10 shrink-0 select-none pb-1 border-b border-ds-line-subtle/60">
         <span className="flex items-center gap-2 min-w-0 truncate">
-          <span
-            className="w-1.5 h-1.5 rounded-full shrink-0"
-            style={{ backgroundColor: customColor }}
-          />
+          {isDirectlySelected && (
+            <span
+              data-testid="status-callout-header-dot"
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: 'var(--color-primary, rgb(56, 189, 248))' }}
+            />
+          )}
           <span className="truncate">{title}</span>
         </span>
       </div>

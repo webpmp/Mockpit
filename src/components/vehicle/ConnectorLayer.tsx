@@ -12,6 +12,7 @@ interface ConnectorLayerProps {
   activeView: string;
   onSelectComponent?: (id: string) => void;
   offset?: { x: number; y: number };
+  activePresentationCalloutId?: string | null;
 }
 
 export function resolveComponentBox<T extends { x: number; y: number; width: number; height: number }>(
@@ -75,8 +76,15 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
   activeView,
   onSelectComponent,
   offset = { x: 0, y: 0 },
+  activePresentationCalloutId: activePresentationCalloutIdProp,
 }) => {
   const updateComponentConnector = useMockpitStore((s) => s.updateComponentConnector);
+  const storeActiveCalloutId = useMockpitStore((s) => s.activePresentationCalloutId);
+  const effectiveActiveCalloutId =
+    activePresentationCalloutIdProp !== undefined
+      ? activePresentationCalloutIdProp
+      : storeActiveCalloutId;
+
   const activePalette = useMockpitStore((s) => s.activePalette);
   const primaryColor = activePalette?.primary || 'var(--color-ds-primary)';
   const secondaryColor = activePalette?.secondary || 'var(--color-ds-primary-hover)';
@@ -114,6 +122,18 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
       .filter((c) => c.type === 'vehicleStatusCallout' && c.connector && c.connector.targetComponentId)
       .map((c) => resolveComponentBox(c, offset));
   }, [components, offset]);
+
+  // In Editor Mode: all linked callouts display their connector lines simultaneously.
+  // In Presentation/User Mode: all connector lines are hidden by default; tapping a linked callout reveals and animates its line.
+  const visibleCallouts = React.useMemo(() => {
+    if (!isPresentation) {
+      return callouts;
+    }
+    if (!effectiveActiveCalloutId) {
+      return [];
+    }
+    return callouts.filter((c) => c.id === effectiveActiveCalloutId);
+  }, [isPresentation, callouts, effectiveActiveCalloutId]);
 
   // Handle dragging target endpoint
   const handleTargetMouseDown = (
@@ -229,10 +249,38 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
             <feGaussianBlur stdDeviation="2" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
+          <style>
+            {`
+              @keyframes drawConnectorLine {
+                from {
+                  stroke-dashoffset: var(--line-length, 1000px);
+                }
+                to {
+                  stroke-dashoffset: 0;
+                }
+              }
+              @keyframes popTargetReticle {
+                from {
+                  opacity: 0;
+                }
+                to {
+                  opacity: 1;
+                }
+              }
+              @keyframes fadeInSourceDot {
+                from {
+                  opacity: 0;
+                }
+                to {
+                  opacity: 1;
+                }
+              }
+            `}
+          </style>
         </defs>
 
         {/* Existing Connector Lines */}
-        {callouts.map((callout) => {
+        {visibleCallouts.map((callout) => {
           const connector = callout.connector!;
           const targetComp = componentMap.get(connector.targetComponentId);
 
@@ -247,10 +295,15 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
           const strokeWidth = isSelected ? 2.5 : 1.75;
           const strokeOpacity = isSelected ? 0.95 : 0.75;
 
+          const dx = targetPt.x - sourcePt.x;
+          const dy = targetPt.y - sourcePt.y;
+          const lineLength = Math.hypot(dx, dy);
+
           return (
-            <g key={`conn-${callout.id}`}>
+            <g key={`conn-${callout.id}`} data-testid={`connector-group-${callout.id}`}>
               {/* Minimal Straight Connector Line */}
               <line
+                key={`conn-line-${callout.id}`}
                 x1={sourcePt.x}
                 y1={sourcePt.y}
                 x2={targetPt.x}
@@ -259,6 +312,16 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
                 strokeWidth={strokeWidth}
                 strokeOpacity={strokeOpacity}
                 strokeLinecap="round"
+                strokeDasharray={isPresentation ? lineLength : undefined}
+                style={
+                  isPresentation
+                    ? {
+                        strokeDashoffset: lineLength,
+                        animation: `drawConnectorLine 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+                        ['--line-length' as any]: `${lineLength}px`,
+                      }
+                    : undefined
+                }
               />
 
               {/* Source Anchor Dot */}
@@ -269,24 +332,41 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
                 fill={primaryColor}
                 stroke="var(--color-ds-surface)"
                 strokeWidth={1.5}
+                style={
+                  isPresentation
+                    ? {
+                        animation: `fadeInSourceDot 160ms ease-out both`,
+                      }
+                    : undefined
+                }
               />
 
               {/* Target Hub Reticle Rings */}
-              <circle
-                cx={targetPt.x}
-                cy={targetPt.y}
-                r={isSelected ? 7 : 5}
-                fill="none"
-                stroke={strokeColor}
-                strokeWidth={1.5}
-                strokeOpacity={0.8}
-              />
-              <circle
-                cx={targetPt.x}
-                cy={targetPt.y}
-                r={2.5}
-                fill={primaryColor}
-              />
+              <g
+                style={
+                  isPresentation
+                    ? {
+                        animation: `popTargetReticle 240ms ease-out 220ms both`,
+                      }
+                    : undefined
+                }
+              >
+                <circle
+                  cx={targetPt.x}
+                  cy={targetPt.y}
+                  r={isSelected ? 7 : 5}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth={1.5}
+                  strokeOpacity={0.8}
+                />
+                <circle
+                  cx={targetPt.x}
+                  cy={targetPt.y}
+                  r={2.5}
+                  fill={primaryColor}
+                />
+              </g>
             </g>
           );
         })}

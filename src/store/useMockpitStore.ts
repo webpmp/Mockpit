@@ -1098,6 +1098,7 @@ interface MockpitStore {
   notificationGhostActive: boolean;
   components: ComponentInstance[];
   selectedComponentId: string | null;
+  activePresentationCalloutId: string | null;
   screenMode: ScreenMode;
   activeView: ActiveView;
   isDebugOpen: boolean;
@@ -1307,6 +1308,7 @@ interface MockpitStore {
   setDebugPanelOpen: (open: boolean) => void;
   setDebugPanelHeight: (height: number) => void;
   selectComponent: (id: string | null) => void;
+  setActivePresentationCalloutId: (id: string | null) => void;
   setDockOrder: (newOrder: string[]) => void;
   moveDockItem: (id: string, direction: 'left' | 'right') => void;
   toggleDockMembership: (id: string) => void;
@@ -1491,6 +1493,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   notificationGhostActive: false,
   components: initialScreens.home || [],
   selectedComponentId: null,
+  activePresentationCalloutId: null,
   screenMode: 'editor',
   previousView: 'home',
   activeView: 'home',
@@ -3333,6 +3336,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         screenMode: mode,
         isSettingsOpen: nextSettings,
         isDesignSystemOpen: nextSettings ? false : nextDesignSystem,
+        activePresentationCalloutId: null,
       };
     });
   },
@@ -3344,6 +3348,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       components: state.componentsByScreen[view] || [],
       activeQuickAccess: null,
       quickAccessOriginRect: null,
+      activePresentationCalloutId: null,
     })),
 
   findScreenForComponentType: (type: ComponentType): string | null => {
@@ -3440,6 +3445,11 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   setDebugPanelOpen: (open) => set({ isDebugOpen: open }),
   setDebugPanelHeight: (height) => set({ debugPanelHeight: height }),
   selectComponent: (id) => set({ selectedComponentId: id, notificationGhostActive: false }),
+  setActivePresentationCalloutId: (id) =>
+    set((state) => {
+      if (state.activePresentationCalloutId === id) return state;
+      return { activePresentationCalloutId: id };
+    }),
 
   setDockOrder: (newOrder) => {
     // Ensure home stays pinned first
@@ -4216,6 +4226,10 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       return {
         componentsByScreen: updatedScreens,
         components: updatedList,
+        activePresentationCalloutId:
+          state.activePresentationCalloutId === id && (!connector || !connector.targetComponentId)
+            ? null
+            : state.activePresentationCalloutId,
       };
     });
   },
@@ -4431,6 +4445,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         componentsByScreen: updatedScreens,
         components: updatedList,
         selectedComponentId: state.selectedComponentId === id ? null : state.selectedComponentId,
+        activePresentationCalloutId: state.activePresentationCalloutId === id ? null : state.activePresentationCalloutId,
         notificationGhostActive: false,
       };
     });
@@ -4995,6 +5010,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         climateState: INITIAL_CLIMATE_STATE,
         dockOrder: DEFAULT_DOCK_ORDER,
         selectedComponentId: null,
+        activePresentationCalloutId: null,
         notificationGhostActive: false,
         activeView: 'home',
         vehicleBackground: DEFAULT_VEHICLE_BACKGROUND,

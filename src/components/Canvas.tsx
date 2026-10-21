@@ -112,6 +112,13 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
     );
   }
 
+  const activePresentationCalloutId = useMockpitStore((s) => s.activePresentationCalloutId);
+  const activeCallout = activePresentationCalloutId
+    ? focusedAppComponents.find(
+        (c) => c.id === activePresentationCalloutId && c.type === 'vehicleStatusCallout' && c.connector?.targetComponentId
+      )
+    : null;
+
   return (
     <div
       key={activeView}
@@ -136,25 +143,45 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
               const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
               const offsetX = isHomeScreen ? 0 : FOCUSED_APP_RECT.x;
               const offsetY = isHomeScreen ? 0 : FOCUSED_APP_RECT.y;
+              const isConnectedPresentationTarget = Boolean(
+                activeCallout && activeCallout.connector?.targetComponentId === comp.id
+              );
+
               return (
                 <div
                   key={comp.id}
                   data-integrated-child={comp.parentId && comp.integrationStyle === 'inside' ? 'inside' : undefined}
-                  className="absolute pointer-events-auto"
+                  className={`absolute pointer-events-auto ${
+                    isConnectedPresentationTarget
+                      ? 'rounded-2xl ring-2 ring-sky-400 shadow-[0_0_15px_color-mix(in_srgb,var(--color-primary,#38bdf8)_40%,transparent)]'
+                      : ''
+                  }`}
                   style={{
                     left: comp.x - offsetX,
                     top: comp.y - offsetY,
                     width: comp.width,
                     height: comp.height,
-                    zIndex: baseZ,
+                    zIndex: isConnectedPresentationTarget ? baseZ + 50 : baseZ,
                   }}
                 >
                   <ComponentRenderer
                     component={comp}
                     vehicleState={vehicleState}
-                    isSelected={false}
+                    isSelected={isConnectedPresentationTarget}
                     isPresentation={true}
                   />
+
+                  {/* Connected Target Highlight Overlay in Presentation Mode */}
+                  {isConnectedPresentationTarget && (
+                    <div
+                      data-testid="presentation-connected-selection-box"
+                      className="absolute inset-0 z-30 border-2 rounded-2xl pointer-events-none"
+                      style={{
+                        borderColor: 'var(--color-primary, #38bdf8)',
+                        boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -973,6 +1000,12 @@ export const Canvas: React.FC = () => {
                   if (c.parentId === selectedComponentId) connectedCounterpartIds.add(c.id);
                 });
 
+                // Target component of a selected status callout connector
+                const connectedTargetId =
+                  selectedComp?.type === 'vehicleStatusCallout' && selectedComp.connector?.targetComponentId
+                    ? selectedComp.connector.targetComponentId
+                    : null;
+
                 const draggedOrResizedId = dragInfo?.id ?? resizeInfo?.id ?? null;
                 const draggedOrResizedComp = draggedOrResizedId
                   ? allEditorComponents.find((c) => c.id === draggedOrResizedId)
@@ -988,14 +1021,17 @@ export const Canvas: React.FC = () => {
                     return components.indexOf(a) - components.indexOf(b);
                   })
                   .map((comp) => {
-                    const isSelected = comp.id === selectedComponentId;
+                    const isDirectlySelected = comp.id === selectedComponentId;
+                    const isConnectedCalloutTarget = Boolean(connectedTargetId && comp.id === connectedTargetId);
+                    const isVisuallySelected = isDirectlySelected || isConnectedCalloutTarget;
+
                     const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
                     const parentComp = comp.parentId ? allEditorComponents.find((c) => c.id === comp.parentId) : null;
                     const parentZ = parentComp ? (parentComp.zIndex !== undefined ? parentComp.zIndex : (parentComp.type === 'map' ? 0 : parentComp.type === 'nowPlaying' ? 20 : 10)) : -999;
                     const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
 
                     let effectiveZ = baseZ;
-                    if (isSelected) {
+                    if (isVisuallySelected) {
                       const ownChildrenBaseZs = allEditorComponents
                         .filter((c) => c.parentId === comp.id)
                         .map((c) => {
@@ -1003,7 +1039,8 @@ export const Canvas: React.FC = () => {
                           return Math.max(childRawZ, baseZ + 1);
                         });
 
-                      const boosted = baseZ + 100;
+                      const boostAmount = isDirectlySelected ? 100 : 50;
+                      const boosted = baseZ + boostAmount;
                       effectiveZ = ownChildrenBaseZs.length
                         ? Math.min(boosted, Math.min(...ownChildrenBaseZs) - 1)
                         : boosted;
@@ -1019,6 +1056,10 @@ export const Canvas: React.FC = () => {
                         key={comp.id}
                         data-integrated-child={comp.parentId && comp.integrationStyle === 'inside' ? 'inside' : undefined}
                         className={`absolute group cursor-pointer pointer-events-auto ${
+                          isVisuallySelected
+                            ? 'rounded-2xl ring-2 ring-sky-400 shadow-[0_0_15px_color-mix(in_srgb,var(--color-primary,#38bdf8)_40%,transparent)]'
+                            : ''
+                        } ${
                           dragInfo?.id === comp.id || resizeInfo?.id === comp.id || isCounterpartOfActiveDrag
                             ? 'transition-none'
                             : 'transition-all duration-200 ease-out'
@@ -1043,43 +1084,49 @@ export const Canvas: React.FC = () => {
                     <ComponentRenderer
                       component={comp}
                       vehicleState={vehicleState}
-                      isSelected={isSelected}
+                      isSelected={isVisuallySelected}
                       isPresentation={false}
                     />
 
                     {/* Editor Selection Box Overlay */}
-                    {isSelected && (
+                    {isVisuallySelected && (
                       <div
-                        className="absolute inset-0 border-2 rounded-2xl pointer-events-none"
+                        data-testid={isDirectlySelected ? 'selection-box-primary' : 'selection-box-connected'}
+                        className="absolute inset-0 z-30 border-2 rounded-2xl pointer-events-none"
                         style={{
                           borderColor: 'var(--color-primary, #38bdf8)',
                           boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
                         }}
                       >
-                        {/* ds-raw-start: editor delete quick handle fill and text are fixed (not theme-remapped) */}
-                        {/* Delete Quick Handle */}
-                        <button
-                          className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
-                          title="Delete Component"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteComponent(comp.id);
-                          }}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                        {/* ds-raw-end */}
+                        {/* Only show Delete Quick Handle and Resize Handle on the directly selected component */}
+                        {isDirectlySelected && (
+                          <>
+                            {/* ds-raw-start: editor delete quick handle fill and text are fixed (not theme-remapped) */}
+                            {/* Delete Quick Handle */}
+                            <button
+                              className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
+                              title="Delete Component"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteComponent(comp.id);
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                            {/* ds-raw-end */}
 
-                        {/* ds-raw-start: editor resize handle border and text are fixed (not theme-remapped) */}
-                        {/* Bottom-Right Resize Handle */}
-                        <div
-                          className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
-                          style={{ backgroundColor: 'var(--color-primary, #38bdf8)' }}
-                          onMouseDown={(e) => handleResizeMouseDown(e, comp.id, comp.width, comp.height)}
-                        >
-                          <Maximize2 className="w-3 h-3" />
-                        </div>
-                        {/* ds-raw-end */}
+                            {/* ds-raw-start: editor resize handle border and text are fixed (not theme-remapped) */}
+                            {/* Bottom-Right Resize Handle */}
+                            <div
+                              className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
+                              style={{ backgroundColor: 'var(--color-primary, #38bdf8)' }}
+                              onMouseDown={(e) => handleResizeMouseDown(e, comp.id, comp.width, comp.height)}
+                            >
+                              <Maximize2 className="w-3 h-3" />
+                            </div>
+                            {/* ds-raw-end */}
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
