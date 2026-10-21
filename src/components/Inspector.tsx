@@ -26,6 +26,7 @@ import { LayersPanel } from './LayersPanel';
 import { NumericStepper } from './NumericStepper';
 import { ManeuverGlyph } from './navigation/ManeuverGlyph';
 import { DEFAULT_MINI_NAV_COLORS } from './navigation/MiniNav';
+import { DEFAULT_EXPLODED_VIEW_BG_COLOR } from './vehicle/VehicleExplodedViewWidget';
 import { WeatherIcon } from './weather/WeatherIcon';
 import { SAMPLE_TRACKS } from '../data/mediaData';
 import { DEFAULT_VEHICLE_COLORS, getEgoVehicleTypeFromAsset, isValidHexColor, getVehicleOriginalColors } from '../utils/vehicleAssets';
@@ -3013,6 +3014,10 @@ export const Inspector: React.FC<InspectorProps> = ({
               const removeBg = selectedComp.staticProps.removeBg !== 'false';
               const tolerance = parseInt(selectedComp.staticProps.bgTolerance || '25', 10);
               const edgeSoftness = parseInt(selectedComp.staticProps.bgEdgeSoftness || '0', 10);
+              const rawBgColor = selectedComp.staticProps.backgroundColor || DEFAULT_EXPLODED_VIEW_BG_COLOR;
+              const currentBgColor = (rawBgColor.length === 4 && rawBgColor.startsWith('#')
+                ? `#${rawBgColor[1]}${rawBgColor[1]}${rawBgColor[2]}${rawBgColor[2]}${rawBgColor[3]}${rawBgColor[3]}`
+                : rawBgColor).toUpperCase();
 
               return (
                 <div className="space-y-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
@@ -3074,6 +3079,42 @@ export const Inspector: React.FC<InspectorProps> = ({
                     <p className="text-[9px] font-mono text-slate-500">
                       Supports SVG, PNG, JPG, WebP. When replaced, all attached status callout connectors stay pinned to relative positions.
                     </p>
+                  </div>
+
+                  {/* Background Color Section */}
+                  <div className="pt-3 border-t border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider">
+                        Background Color
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          aria-label="Background Color"
+                          value={currentBgColor.toLowerCase()}
+                          onChange={(e) => handleStaticPropChange('backgroundColor', e.target.value)}
+                          onInput={(e) => handleStaticPropChange('backgroundColor', (e.target as HTMLInputElement).value)}
+                          className="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent shrink-0"
+                          title="Select background color"
+                        />
+                        <span className="text-[10px] font-mono font-bold text-slate-300 tracking-wider">
+                          {currentBgColor}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateComponentStaticProps(selectedComp.id, {
+                              backgroundColor: undefined,
+                            });
+                          }}
+                          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-mono font-medium flex items-center gap-1 transition-colors"
+                          title="Reset background color to default"
+                        >
+                          <RotateCcw className="w-3 h-3 text-sky-400" />
+                          <span>Reset</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Background Removal Section */}

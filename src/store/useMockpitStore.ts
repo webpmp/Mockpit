@@ -1324,7 +1324,7 @@ interface MockpitStore {
   addComponent: (type: ComponentType, x?: number, y?: number) => string;
   updateComponentPosition: (id: string, x: number, y: number) => void;
   updateComponentSize: (id: string, width: number, height: number) => void;
-  updateComponentStaticProps: (id: string, staticProps: Record<string, string>) => void;
+  updateComponentStaticProps: (id: string, staticProps: Record<string, string | undefined>) => void;
   updateComponentConnector: (id: string, connector: VehicleStatusConnector | null) => void;
   updateComponentZIndex: (id: string, zIndex: number) => void;
   bringToFront: (id: string) => void;

@@ -4,6 +4,9 @@ import { DEFAULT_EXPLODED_VEHICLE_IMAGE } from '../../data/defaultExplodedVehicl
 import { processImageBackgroundRemoval } from '../../utils/imageBackgroundRemover';
 import { setCachedNaturalDimensions } from '../../utils/imageContentRect';
 import { getBorderClasses } from '../../utils/borderOverrides';
+import { DEFAULT_SHELL_BACKGROUND } from '../../store/useMockpitStore';
+
+export const DEFAULT_EXPLODED_VIEW_BG_COLOR = DEFAULT_SHELL_BACKGROUND.backgroundColor;
 
 interface VehicleExplodedViewWidgetProps {
   component: ComponentInstance;
@@ -29,6 +32,8 @@ export const VehicleExplodedViewWidget: React.FC<VehicleExplodedViewWidgetProps>
   const removeBg = component.staticProps.removeBg !== 'false';
   const tolerance = parseInt(component.staticProps.bgTolerance || '25', 10);
   const edgeSoftness = parseInt(component.staticProps.bgEdgeSoftness || '0', 10);
+  const customBgColor = resolved.backgroundColor || component.staticProps.backgroundColor;
+  const hasCustomBg = Boolean(customBgColor);
 
   const [displayUrl, setDisplayUrl] = useState<string>(rawImageUrl);
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
@@ -61,19 +66,13 @@ export const VehicleExplodedViewWidget: React.FC<VehicleExplodedViewWidgetProps>
       }`}
       style={{ opacity: styleOpacity }}
     >
-      {/* Header Tag / Minimal Watermark */}
-      <div className="absolute top-2.5 left-3 z-10 flex items-center gap-2 pointer-events-none">
-        <span
-          className="w-1.5 h-1.5 rounded-full"
-          style={{ backgroundColor: customColor }}
-        />
-        <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-ds-content-muted/90 bg-ds-surface/90 px-2 py-0.5 rounded border border-ds-line-subtle/80 shadow-xs">
-          {label}
-        </span>
-      </div>
-
       {/* Exploded View Image Canvas Container */}
-      <div className="relative w-full h-full flex items-center justify-center p-1 bg-gradient-to-b from-ds-background/40 via-ds-surface/20 to-ds-background/60 overflow-hidden">
+      <div
+        className={`relative w-full h-full flex items-center justify-center p-1 overflow-hidden ${
+          hasCustomBg ? '' : 'bg-gradient-to-b from-ds-background/40 via-ds-surface/20 to-ds-background/60'
+        }`}
+        style={hasCustomBg ? { backgroundColor: customBgColor } : undefined}
+      >
         <img
           src={displayUrl}
           alt={label}
