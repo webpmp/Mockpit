@@ -1099,6 +1099,7 @@ interface MockpitStore {
   components: ComponentInstance[];
   selectedComponentId: string | null;
   activePresentationCalloutId: string | null;
+  presentationConnectorAnimNonce: number;
   screenMode: ScreenMode;
   activeView: ActiveView;
   isDebugOpen: boolean;
@@ -1494,6 +1495,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   components: initialScreens.home || [],
   selectedComponentId: null,
   activePresentationCalloutId: null,
+  presentationConnectorAnimNonce: 0,
   screenMode: 'editor',
   previousView: 'home',
   activeView: 'home',
@@ -3444,12 +3446,18 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   toggleDebugPanel: () => set((state) => ({ isDebugOpen: !state.isDebugOpen })),
   setDebugPanelOpen: (open) => set({ isDebugOpen: open }),
   setDebugPanelHeight: (height) => set({ debugPanelHeight: height }),
-  selectComponent: (id) => set({ selectedComponentId: id, notificationGhostActive: false }),
+  selectComponent: (id) =>
+    set((state) => ({
+      selectedComponentId: id,
+      activePresentationCalloutId: id === null ? null : state.activePresentationCalloutId,
+      presentationConnectorAnimNonce: id === null ? 0 : state.presentationConnectorAnimNonce,
+      notificationGhostActive: false,
+    })),
   setActivePresentationCalloutId: (id) =>
-    set((state) => {
-      if (state.activePresentationCalloutId === id) return state;
-      return { activePresentationCalloutId: id };
-    }),
+    set((state) => ({
+      activePresentationCalloutId: id,
+      presentationConnectorAnimNonce: id ? state.presentationConnectorAnimNonce + 1 : 0,
+    })),
 
   setDockOrder: (newOrder) => {
     // Ensure home stays pinned first

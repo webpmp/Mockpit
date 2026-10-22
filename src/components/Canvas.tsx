@@ -17,6 +17,11 @@ import { useWeatherStore } from '../store/useWeatherStore';
 import { useUserTestingStore } from '../testing/useUserTestingStore';
 import { Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare, Battery, Zap } from 'lucide-react';
 import { getNotificationStackPositionClasses } from '../utils/notificationPosition';
+import {
+  getVisualSelectionState,
+  resolveActiveCalloutIdForComponent,
+  getSelectionBoundaryStyles,
+} from '../utils/visualSelection';
 
 export { getNotificationStackPositionClasses };
 
@@ -112,18 +117,25 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
     );
   }
 
+  const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
+  const selectComponent = useMockpitStore((s) => s.selectComponent);
   const activePresentationCalloutId = useMockpitStore((s) => s.activePresentationCalloutId);
-  const activeCallout = activePresentationCalloutId
-    ? focusedAppComponents.find(
-        (c) => c.id === activePresentationCalloutId && c.type === 'vehicleStatusCallout' && c.connector?.targetComponentId
-      )
-    : null;
+  const setActivePresentationCalloutId = useMockpitStore((s) => s.setActivePresentationCalloutId);
+
+  // Derive visual selection using the unified helper
+  // If selectedComponentId is set, use it; otherwise fallback to activePresentationCalloutId for compatibility
+  const effectiveSelectedId = selectedComponentId || activePresentationCalloutId;
+  const visualSelection = getVisualSelectionState(effectiveSelectedId, focusedAppComponents);
 
   return (
     <div
       key={activeView}
       className={`absolute transition-all duration-300 ease-out z-10 overflow-hidden ${transitionClasses}`}
       style={containerStyle}
+      onClick={() => {
+        selectComponent(null);
+        setActivePresentationCalloutId(null);
+      }}
     >
       {focusedAppComponents.length > 0 ? (
         <div className="relative w-full h-full overflow-hidden">
@@ -143,43 +155,55 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
               const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
               const offsetX = isHomeScreen ? 0 : FOCUSED_APP_RECT.x;
               const offsetY = isHomeScreen ? 0 : FOCUSED_APP_RECT.y;
-              const isConnectedPresentationTarget = Boolean(
-                activeCallout && activeCallout.connector?.targetComponentId === comp.id
+
+              const isDirectlySelected = visualSelection.directlySelectedId === comp.id;
+              const isVisuallySelected = visualSelection.visuallySelectedIds.includes(comp.id);
+              const effectiveZ = isDirectlySelected
+                ? baseZ + 100
+                : isVisuallySelected
+                ? baseZ + 50
+                : baseZ;
+
+              const boundary = getSelectionBoundaryStyles(
+                comp,
+                focusedAppComponents,
+                isVisuallySelected,
+                isDirectlySelected
               );
 
               return (
                 <div
                   key={comp.id}
                   data-integrated-child={comp.parentId && comp.integrationStyle === 'inside' ? 'inside' : undefined}
-                  className={`absolute pointer-events-auto ${
-                    isConnectedPresentationTarget
-                      ? 'rounded-2xl ring-2 ring-sky-400 shadow-[0_0_15px_color-mix(in_srgb,var(--color-primary,#38bdf8)_40%,transparent)]'
-                      : ''
-                  }`}
+                  className="absolute pointer-events-auto cursor-pointer"
                   style={{
                     left: comp.x - offsetX,
                     top: comp.y - offsetY,
                     width: comp.width,
                     height: comp.height,
-                    zIndex: isConnectedPresentationTarget ? baseZ + 50 : baseZ,
+                    zIndex: effectiveZ,
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const activeCalloutId = resolveActiveCalloutIdForComponent(comp.id, focusedAppComponents);
+                    selectComponent(comp.id);
+                    setActivePresentationCalloutId(activeCalloutId);
                   }}
                 >
                   <ComponentRenderer
                     component={comp}
                     vehicleState={vehicleState}
-                    isSelected={isConnectedPresentationTarget}
+                    isSelected={isVisuallySelected}
                     isPresentation={true}
                   />
 
-                  {/* Connected Target Highlight Overlay in Presentation Mode */}
-                  {isConnectedPresentationTarget && (
+                  {/* Coordinated Shared Outer Selection Boundary Overlay in Presentation Mode */}
+                  {isVisuallySelected && (
                     <div
-                      data-testid="presentation-connected-selection-box"
-                      className="absolute inset-0 z-30 border-2 rounded-2xl pointer-events-none"
-                      style={{
-                        borderColor: 'var(--color-primary, #38bdf8)',
-                        boxShadow: '0 0 15px color-mix(in srgb, var(--color-primary, #38bdf8) 40%, transparent)',
-                      }}
+                      data-testid={boundary.testId}
+                      data-presentation-connected-box={!isDirectlySelected ? 'true' : undefined}
+                      className={`absolute inset-0 z-30 pointer-events-none transition-all duration-150 ${boundary.borderClasses} ${boundary.cornerClasses}`}
+                      style={boundary.inlineStyle}
                     />
                   )}
                 </div>
@@ -991,6 +1015,7 @@ export const Canvas: React.FC = () => {
             <div className="absolute inset-x-0 top-0 bottom-0 z-10">
               {(() => {
                 const allEditorComponents = [...components, ...notificationComponents];
+                const visualSelection = getVisualSelectionState(selectedComponentId, allEditorComponents);
                 const selectedComp = selectedComponentId
                   ? allEditorComponents.find((c) => c.id === selectedComponentId)
                   : null;
@@ -999,12 +1024,6 @@ export const Canvas: React.FC = () => {
                 allEditorComponents.forEach((c) => {
                   if (c.parentId === selectedComponentId) connectedCounterpartIds.add(c.id);
                 });
-
-                // Target component of a selected status callout connector
-                const connectedTargetId =
-                  selectedComp?.type === 'vehicleStatusCallout' && selectedComp.connector?.targetComponentId
-                    ? selectedComp.connector.targetComponentId
-                    : null;
 
                 const draggedOrResizedId = dragInfo?.id ?? resizeInfo?.id ?? null;
                 const draggedOrResizedComp = draggedOrResizedId
@@ -1021,9 +1040,8 @@ export const Canvas: React.FC = () => {
                     return components.indexOf(a) - components.indexOf(b);
                   })
                   .map((comp) => {
-                    const isDirectlySelected = comp.id === selectedComponentId;
-                    const isConnectedCalloutTarget = Boolean(connectedTargetId && comp.id === connectedTargetId);
-                    const isVisuallySelected = isDirectlySelected || isConnectedCalloutTarget;
+                    const isDirectlySelected = visualSelection.directlySelectedId === comp.id;
+                    const isVisuallySelected = visualSelection.visuallySelectedIds.includes(comp.id);
 
                     const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
                     const parentComp = comp.parentId ? allEditorComponents.find((c) => c.id === comp.parentId) : null;
@@ -1070,7 +1088,7 @@ export const Canvas: React.FC = () => {
                           width: comp.width,
                           height: comp.height,
                           zIndex: effectiveZ,
-                          opacity: connectedCounterpartIds.has(comp.id) ? 0.4 : 1,
+                          opacity: isVisuallySelected ? 1 : (connectedCounterpartIds.has(comp.id) ? 0.4 : 1),
                         }}
                         onMouseDown={(e) => {
                           handleMouseDown(e, comp.id, comp.x, comp.y);
@@ -1160,7 +1178,7 @@ export const Canvas: React.FC = () => {
                 />
                 <ConnectorLayer
                   components={activeView === 'home' ? components : focusedAppComponents}
-                  selectedComponentId={null}
+                  selectedComponentId={selectedComponentId}
                   isPresentation={true}
                   activeView={activeView}
                 />

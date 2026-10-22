@@ -1,6 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { ComponentInstance } from '../../types';
+import {
+  getVisualSelectionState,
+  getSelectionBoundaryStyles,
+  resolveActiveCalloutIdForComponent,
+} from '../../utils/visualSelection';
 
 /**
  * Pure helper mirroring the selection calculation in Canvas.tsx
@@ -14,51 +19,45 @@ export function computeEditorComponentSelection(
   primarySelectedId: string | null;
   connectedTargetId: string | null;
 } {
+  const result = getVisualSelectionState(selectedComponentId, components);
   const selectedComp = selectedComponentId
     ? components.find((c) => c.id === selectedComponentId) ?? null
     : null;
-
   const connectedTargetId =
     selectedComp?.type === 'vehicleStatusCallout' && selectedComp.connector?.targetComponentId
       ? selectedComp.connector.targetComponentId
-      : null;
-
-  const visuallySelectedIds: string[] = [];
-
-  for (const comp of components) {
-    const isDirectlySelected = comp.id === selectedComponentId;
-    const isConnectedCalloutTarget = Boolean(connectedTargetId && comp.id === connectedTargetId);
-    if (isDirectlySelected || isConnectedCalloutTarget) {
-      visuallySelectedIds.push(comp.id);
-    }
-  }
+      : result.connectedPartnerIds[0] || null;
 
   return {
-    selectedIds: visuallySelectedIds,
-    primarySelectedId: selectedComponentId,
+    selectedIds: result.visuallySelectedIds,
+    primarySelectedId: result.directlySelectedId,
     connectedTargetId,
   };
 }
 
 export function computePresentationTargetSelection(
   components: ComponentInstance[],
-  activePresentationCalloutId: string | null
+  activePresentationCalloutId: string | null,
+  selectedComponentId: string | null = null
 ): {
   activeCalloutId: string | null;
   connectedTargetId: string | null;
+  visuallySelectedIds: string[];
 } {
-  const activeCallout = activePresentationCalloutId
-    ? components.find(
-        (c) =>
-          c.id === activePresentationCalloutId &&
-          c.type === 'vehicleStatusCallout' &&
-          c.connector?.targetComponentId
-      ) ?? null
-    : null;
+  const effectiveId = selectedComponentId || activePresentationCalloutId;
+  const result = getVisualSelectionState(effectiveId, components);
+
+  const activeCallout = components.find(
+    (c) =>
+      c.type === 'vehicleStatusCallout' &&
+      c.connector?.targetComponentId &&
+      (c.id === effectiveId || result.visuallySelectedIds.includes(c.id))
+  );
 
   return {
     activeCalloutId: activeCallout?.id ?? null,
     connectedTargetId: activeCallout?.connector?.targetComponentId ?? null,
+    visuallySelectedIds: result.visuallySelectedIds,
   };
 }
 
@@ -431,5 +430,165 @@ describe('Connected Components Selected-State Styling Suite', () => {
     const baseZ = 10;
     const elevatedZ = getEffectiveZ(baseZ, isDirectlySelected, isVisuallySelected);
     assert.equal(elevatedZ, 60, 'Connected target z-index must be boosted by 50 to prevent clipping/obscuring');
+  });
+
+  it('12. Bidirectional selection in Editor Mode: selecting connected target highlights both components', () => {
+    // Select the target component directly
+    const result = computeEditorComponentSelection(vehicleComponents, 'tire-pressure-mon-1');
+
+    assert.equal(result.primarySelectedId, 'tire-pressure-mon-1');
+    assert.deepEqual(
+      result.selectedIds.sort(),
+      ['tire-pressure-mon-1', 'callout-tire-pressure'].sort()
+    );
+    assert.ok(result.selectedIds.includes('tire-pressure-mon-1'));
+    assert.ok(result.selectedIds.includes('callout-tire-pressure'));
+    assert.ok(!result.selectedIds.includes('speedometer-1'));
+    assert.ok(!result.selectedIds.includes('chassis-exploded-view-1'));
+  });
+
+  it('13. Bidirectional selection in Presentation Mode: selecting connected target highlights both components and reveals connector', () => {
+    // In Presentation Mode, clicking target component directly
+    const presResult = computePresentationTargetSelection(
+      vehicleComponents,
+      null,
+      'tire-pressure-mon-1'
+    );
+
+    assert.deepEqual(
+      presResult.visuallySelectedIds.sort(),
+      ['tire-pressure-mon-1', 'callout-tire-pressure'].sort()
+    );
+    assert.equal(presResult.activeCalloutId, 'callout-tire-pressure');
+    assert.equal(presResult.connectedTargetId, 'tire-pressure-mon-1');
+  });
+
+  it('14. Selecting connected target does NOT show the blue header dot on the connected Status Callout', () => {
+    const isCalloutHeaderDotVisible = (
+      calloutId: string,
+      selectedComponentId: string | null
+    ) => {
+      // In VehicleStatusCalloutWidget, isDirectlySelected is:
+      // useMockpitStore((s) => s.selectedComponentId) === component.id
+      return selectedComponentId === calloutId;
+    };
+
+    // When tire-pressure-mon-1 is selected:
+    assert.equal(
+      isCalloutHeaderDotVisible('callout-tire-pressure', 'tire-pressure-mon-1'),
+      false,
+      'Callout must NOT show header dot when its connected target is directly clicked'
+    );
+
+    // When callout is directly clicked:
+    assert.equal(
+      isCalloutHeaderDotVisible('callout-tire-pressure', 'callout-tire-pressure'),
+      true,
+      'Callout MUST show header dot when directly clicked'
+    );
+  });
+
+  it('15. Separate independent selection borders are assigned to both connected components', () => {
+    const getTestId = (compId: string, directlySelectedId: string | null) =>
+      compId === directlySelectedId ? 'selection-box-primary' : 'selection-box-connected';
+
+    // When Callout is directly clicked
+    const stateCalloutClicked = getVisualSelectionState('callout-tire-pressure', vehicleComponents);
+    assert.equal(stateCalloutClicked.directlySelectedId, 'callout-tire-pressure');
+    assert.deepEqual(stateCalloutClicked.connectedPartnerIds, ['tire-pressure-mon-1']);
+    assert.equal(getTestId('callout-tire-pressure', stateCalloutClicked.directlySelectedId), 'selection-box-primary');
+    assert.equal(getTestId('tire-pressure-mon-1', stateCalloutClicked.directlySelectedId), 'selection-box-connected');
+
+    // When Target is directly clicked
+    const stateTargetClicked = getVisualSelectionState('tire-pressure-mon-1', vehicleComponents);
+    assert.equal(stateTargetClicked.directlySelectedId, 'tire-pressure-mon-1');
+    assert.deepEqual(stateTargetClicked.connectedPartnerIds, ['callout-tire-pressure']);
+    assert.equal(getTestId('tire-pressure-mon-1', stateTargetClicked.directlySelectedId), 'selection-box-primary');
+    assert.equal(getTestId('callout-tire-pressure', stateTargetClicked.directlySelectedId), 'selection-box-connected');
+  });
+
+  it('16. Coordinated selection boundary styling for connected pair removes horizontal border between them', () => {
+    // Model the vertically stacked pair:
+    // Callout (top, height 140, y 100) and Tire Pressure Monitor (bottom, y 240)
+    const calloutTop: ComponentInstance = {
+      ...statusCalloutTirePressure,
+      x: 400,
+      y: 100,
+      width: 380,
+      height: 140,
+      borderOverrides: { top: true, right: true, bottom: false, left: true },
+    };
+    const tireBottom: ComponentInstance = {
+      ...tirePressureMonitor,
+      x: 400,
+      y: 240,
+      width: 380,
+      height: 210,
+      borderOverrides: { top: false, right: true, bottom: true, left: true },
+    };
+    const pair = [calloutTop, tireBottom];
+
+    // Top component boundary styling
+    const topStyles = getSelectionBoundaryStyles(calloutTop, pair, true, true);
+    assert.equal(topStyles.isSeamBottom, true, 'Top component must detect bottom seam');
+    assert.equal(topStyles.isSeamTop, false, 'Top edge is outer edge');
+    assert.ok(topStyles.borderClasses.includes('border-t-2'), 'Top edge must have 2px blue border');
+    assert.ok(topStyles.borderClasses.includes('border-l-2'), 'Left edge must have 2px blue border');
+    assert.ok(topStyles.borderClasses.includes('border-r-2'), 'Right edge must have 2px blue border');
+    assert.ok(!topStyles.borderClasses.includes('border-b-2'), 'Shared horizontal seam must NOT have border-b-2');
+    assert.ok(topStyles.cornerClasses.includes('rounded-tl-2xl'), 'Top-left corner must be rounded');
+    assert.ok(topStyles.cornerClasses.includes('rounded-tr-2xl'), 'Top-right corner must be rounded');
+    assert.ok(topStyles.cornerClasses.includes('rounded-bl-none'), 'Bottom-left corner at seam must be square');
+    assert.ok(topStyles.cornerClasses.includes('rounded-br-none'), 'Bottom-right corner at seam must be square');
+    assert.ok(topStyles.inlineStyle.clipPath?.includes('0px'), 'Glow must be clipped at seam');
+
+    // Bottom component boundary styling
+    const bottomStyles = getSelectionBoundaryStyles(tireBottom, pair, true, false);
+    assert.equal(bottomStyles.isSeamTop, true, 'Bottom component must detect top seam');
+    assert.equal(bottomStyles.isSeamBottom, false, 'Bottom edge is outer edge');
+    assert.ok(bottomStyles.borderClasses.includes('border-b-2'), 'Bottom edge must have 2px blue border');
+    assert.ok(bottomStyles.borderClasses.includes('border-l-2'), 'Left edge must have 2px blue border');
+    assert.ok(bottomStyles.borderClasses.includes('border-r-2'), 'Right edge must have 2px blue border');
+    assert.ok(!bottomStyles.borderClasses.includes('border-t-2'), 'Shared horizontal seam must NOT have border-t-2');
+    assert.ok(bottomStyles.cornerClasses.includes('rounded-tl-none'), 'Top-left corner at seam must be square');
+    assert.ok(bottomStyles.cornerClasses.includes('rounded-tr-none'), 'Top-right corner at seam must be square');
+    assert.ok(bottomStyles.cornerClasses.includes('rounded-bl-2xl'), 'Bottom-left corner must be rounded');
+    assert.ok(bottomStyles.cornerClasses.includes('rounded-br-2xl'), 'Bottom-right corner must be rounded');
+    assert.ok(bottomStyles.inlineStyle.clipPath?.includes('0px'), 'Glow must be clipped at seam');
+  });
+
+  it('17. Clicking either component resolves the same active callout ID for connection animation', () => {
+    // Top callout clicked
+    const fromCallout = resolveActiveCalloutIdForComponent('callout-tire-pressure', vehicleComponents);
+    assert.equal(fromCallout, 'callout-tire-pressure');
+
+    // Bottom target clicked
+    const fromTarget = resolveActiveCalloutIdForComponent('tire-pressure-mon-1', vehicleComponents);
+    assert.equal(fromTarget, 'callout-tire-pressure');
+
+    // Both resolve to the exact same connection
+    assert.equal(fromCallout, fromTarget);
+  });
+
+  it('18. Clicking an unrelated component resolves null for active connection', () => {
+    const unrelatedResult = resolveActiveCalloutIdForComponent('speedometer-1', vehicleComponents);
+    assert.equal(unrelatedResult, null);
+  });
+
+  it('19. Standalone components with no shared seams retain complete 4-sided selection outline and 4 rounded corners', () => {
+    const standaloneStyles = getSelectionBoundaryStyles(speedometer, [speedometer], true, true);
+    assert.equal(standaloneStyles.isSeamTop, false);
+    assert.equal(standaloneStyles.isSeamBottom, false);
+    assert.equal(standaloneStyles.isSeamLeft, false);
+    assert.equal(standaloneStyles.isSeamRight, false);
+    assert.ok(standaloneStyles.borderClasses.includes('border-t-2'));
+    assert.ok(standaloneStyles.borderClasses.includes('border-b-2'));
+    assert.ok(standaloneStyles.borderClasses.includes('border-l-2'));
+    assert.ok(standaloneStyles.borderClasses.includes('border-r-2'));
+    assert.ok(standaloneStyles.cornerClasses.includes('rounded-tl-2xl'));
+    assert.ok(standaloneStyles.cornerClasses.includes('rounded-tr-2xl'));
+    assert.ok(standaloneStyles.cornerClasses.includes('rounded-bl-2xl'));
+    assert.ok(standaloneStyles.cornerClasses.includes('rounded-br-2xl'));
+    assert.equal(standaloneStyles.inlineStyle.clipPath, undefined);
   });
 });

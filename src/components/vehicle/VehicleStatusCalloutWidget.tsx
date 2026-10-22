@@ -3,6 +3,7 @@ import { ComponentInstance, ConnectorAnchor } from '../../types';
 import { ShieldCheck, AlertCircle, AlertTriangle } from 'lucide-react';
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { getBorderClasses } from '../../utils/borderOverrides';
+import { resolveActiveCalloutIdForComponent } from '../../utils/visualSelection';
 
 interface VehicleStatusCalloutWidgetProps {
   component: ComponentInstance;
@@ -146,22 +147,34 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
   const isLinked = Boolean(component.connector && component.connector.targetComponentId);
   const isPresentationActive = Boolean(isPresentation && activePresentationCalloutId === component.id);
 
-  const isDirectlySelected = isPresentation
-    ? Boolean(isPresentationActive)
-    : useMockpitStore((s) => s.selectedComponentId) === component.id;
+  const isDirectlySelected = useMockpitStore((s) => s.selectedComponentId) === component.id;
+
+  const isAttachedSeam = Boolean(
+    component.borderOverrides &&
+      (component.borderOverrides.bottom === false ||
+        component.borderOverrides.top === false ||
+        component.borderOverrides.left === false ||
+        component.borderOverrides.right === false)
+  );
+  const showRingHighlight = !isPresentation && !isAttachedSeam && (isSelected || isPresentationActive);
 
   return (
     <div
       data-callout-id={component.id}
       data-linked={isLinked ? 'true' : 'false'}
       data-presentation-active={isPresentationActive ? 'true' : 'false'}
-      onClick={() => {
-        if (isPresentation && isLinked) {
-          setActivePresentationCalloutId(component.id);
+      onClick={(e) => {
+        if (isPresentation) {
+          e.stopPropagation();
+          const store = useMockpitStore.getState();
+          const screenComponents = store.componentsByScreen[store.activeView] || store.components;
+          const activeCalloutId = resolveActiveCalloutIdForComponent(component.id, screenComponents);
+          store.selectComponent(component.id);
+          store.setActivePresentationCalloutId(activeCalloutId);
         }
       }}
       className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides, 'border-ds-line-subtle/90')} backdrop-blur-md p-3.5 flex flex-col justify-between select-none relative transition-all duration-200 ${baseOpacity} ${
-        isSelected || isPresentationActive ? 'ring-1 ring-ds-primary/60 shadow-[0_0_20px_color-mix(in_srgb,var(--color-ds-primary)_25%,transparent)]' : 'shadow-lg'
+        showRingHighlight ? 'ring-1 ring-ds-primary/60 shadow-[0_0_20px_color-mix(in_srgb,var(--color-ds-primary)_25%,transparent)]' : 'shadow-lg'
       } ${isPresentation && isLinked ? 'cursor-pointer hover:border-ds-primary/40' : ''}`}
       style={{ opacity: styleOpacity }}
     >

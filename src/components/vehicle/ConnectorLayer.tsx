@@ -80,6 +80,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
 }) => {
   const updateComponentConnector = useMockpitStore((s) => s.updateComponentConnector);
   const storeActiveCalloutId = useMockpitStore((s) => s.activePresentationCalloutId);
+  const animNonce = useMockpitStore((s) => s.presentationConnectorAnimNonce || 0);
   const effectiveActiveCalloutId =
     activePresentationCalloutIdProp !== undefined
       ? activePresentationCalloutIdProp
@@ -300,10 +301,10 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
           const lineLength = Math.hypot(dx, dy);
 
           return (
-            <g key={`conn-${callout.id}`} data-testid={`connector-group-${callout.id}`}>
+            <g key={`conn-${callout.id}-${animNonce}`} data-testid={`connector-group-${callout.id}`}>
               {/* Minimal Straight Connector Line */}
               <line
-                key={`conn-line-${callout.id}`}
+                key={`conn-line-${callout.id}-${animNonce}`}
                 x1={sourcePt.x}
                 y1={sourcePt.y}
                 x2={targetPt.x}
@@ -326,6 +327,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
 
               {/* Source Anchor Dot */}
               <circle
+                key={`conn-dot-${callout.id}-${animNonce}`}
                 cx={sourcePt.x}
                 cy={sourcePt.y}
                 r={isSelected ? 4 : 3}
@@ -343,6 +345,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
 
               {/* Target Hub Reticle Rings */}
               <g
+                key={`conn-reticle-${callout.id}-${animNonce}`}
                 style={
                   isPresentation
                     ? {
