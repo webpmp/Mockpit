@@ -713,13 +713,6 @@ const ScreenPropertiesPanel: React.FC = () => {
         </>
       )}
 
-      {/* Reorder Dock Note */}
-      <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-[10px] text-slate-400 font-mono space-y-1">
-        <div className="font-bold text-slate-300">Screen Ordering</div>
-        <div>
-          To reorder screens, drag or use the directional arrows in the bottom dock bar below the canvas.
-        </div>
-      </div>
 
       {/* Delete Screen Action */}
       {!isHome && (

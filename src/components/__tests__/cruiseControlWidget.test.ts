@@ -1,7 +1,7 @@
 import { describe, it, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { useMockpitStore } from '../../store/useMockpitStore';
-import { COMPONENT_META } from '../../config/componentMeta';
+import { COMPONENT_META, CruiseControlIcon } from '../../config/componentMeta';
 import { COMPONENT_FLAGS } from '../../config/componentFlags';
 import { COMPONENT_TYPE_TO_CATEGORY } from '../../config/categoryColors';
 import { COMPONENT_DISPLAY_NAMES } from '../../utils/componentDisplayNames';
@@ -86,6 +86,7 @@ describe('CruiseControlWidget — Spec v1 Suite', () => {
     assert.equal(COMPONENT_FLAGS.cruiseControl, true, 'COMPONENT_FLAGS.cruiseControl must be true');
     assert.ok(COMPONENT_META.cruiseControl, 'COMPONENT_META must have cruiseControl entry');
     assert.equal(COMPONENT_META.cruiseControl.type, 'cruiseControl');
+    assert.equal(COMPONENT_META.cruiseControl.icon, CruiseControlIcon, 'Cruise control icon must be CruiseControlIcon SVG');
     assert.equal(COMPONENT_META.cruiseControl.defaultColor, '#38bdf8');
     assert.equal(COMPONENT_TYPE_TO_CATEGORY.cruiseControl, 'home');
     assert.equal(COMPONENT_DISPLAY_NAMES.cruiseControl, 'Cruise Control');
