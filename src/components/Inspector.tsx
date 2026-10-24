@@ -915,6 +915,232 @@ const VehicleColorTextInput: React.FC<{
   );
 };
 
+const DashboardEmptyIllustration: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 800 500"
+    className={className}
+    aria-hidden="true"
+  >
+    {/* Upper Cabin / Windshield Horizon (slate-950) */}
+    <rect x="0" y="0" width="800" height="250" fill="#020617" />
+
+    {/* Windshield Outline & Road Perspective */}
+    <path d="M 40 40 Q 400 25 760 40" fill="none" stroke="#334155" strokeWidth="2" />
+    <path d="M 40 40 L 70 230 M 760 40 L 730 230" stroke="#334155" strokeWidth="2" />
+    <line x1="0" y1="185" x2="800" y2="185" stroke="#1e293b" strokeWidth="1" strokeDasharray="6 6" />
+    <line x1="340" y1="185" x2="260" y2="250" stroke="#1e293b" strokeWidth="1" />
+    <line x1="460" y1="185" x2="540" y2="250" stroke="#1e293b" strokeWidth="1" />
+
+    {/* Rear-view Mirror */}
+    <path d="M 380 40 L 392 65 L 408 65 L 420 40" stroke="#475569" strokeWidth="1.5" fill="none" />
+    <rect x="360" y="65" width="80" height="24" rx="5" fill="#090d16" stroke="#94a3b8" strokeWidth="1.5" />
+    <line x1="365" y1="77" x2="435" y2="77" stroke="#38bdf8" strokeWidth="1" strokeOpacity="0.5" />
+
+    {/* Lower Dashboard Background (adapted from #000000 to theme token #0f172a / slate-900) */}
+    <rect x="0" y="250" width="800" height="250" fill="#0f172a" />
+
+    {/* Sweeping Dashboard Cowl & Upper Fascia Contour */}
+    <path
+      d="M 50 250 C 85 220, 130 175, 260 175 C 360 175, 385 220, 420 220 C 465 220, 670 220, 750 250"
+      fill="none"
+      stroke="#ffffff"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M 90 250 C 105 180, 125 168, 255 168 C 345 168, 368 190, 382 245"
+      fill="none"
+      stroke="#ffffff"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <path
+      d="M 110 250 C 122 192, 140 182, 255 182 C 335 182, 355 200, 368 250"
+      fill="none"
+      stroke="#94a3b8"
+      strokeWidth="1.2"
+    />
+
+    {/* Far Left Driver Vent */}
+    <rect x="65" y="235" width="30" height="22" rx="4" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5" />
+    <line x1="70" y1="242" x2="90" y2="242" stroke="#ffffff" strokeWidth="1" />
+    <line x1="70" y1="249" x2="90" y2="249" stroke="#ffffff" strokeWidth="1" />
+
+    {/* Driver Instrument Cluster: Tachometer (Left) */}
+    <g>
+      <path d="M 145 245 A 38 38 0 1 1 215 245" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
+      <line x1="148" y1="230" x2="155" y2="228" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="155" y1="212" x2="162" y2="214" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="170" y1="200" x2="174" y2="207" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="190" y1="198" x2="190" y2="206" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="208" y1="205" x2="204" y2="212" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="218" y1="220" x2="211" y2="223" stroke="#f43f5e" strokeWidth="1.5" />
+      <circle cx="180" cy="235" r="4" fill="#ffffff" />
+      <line x1="180" y1="235" x2="198" y2="210" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
+    </g>
+
+    {/* Center Digital Cluster Display */}
+    <g>
+      <rect x="230" y="210" width="30" height="35" rx="3" fill="#020617" stroke="#94a3b8" strokeWidth="1.2" />
+      <line x1="235" y1="220" x2="255" y2="220" stroke="#38bdf8" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="238" y1="226" x2="252" y2="226" stroke="#ffffff" strokeWidth="1" strokeLinecap="round" />
+      <line x1="236" y1="236" x2="254" y2="236" stroke="#64748b" strokeWidth="1" strokeDasharray="2 2" />
+    </g>
+
+    {/* Driver Instrument Cluster: Speedometer (Right) */}
+    <g>
+      <path d="M 275 245 A 38 38 0 1 1 345 245" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
+      <line x1="278" y1="230" x2="285" y2="228" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="285" y1="212" x2="292" y2="214" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="300" y1="200" x2="304" y2="207" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="320" y1="198" x2="320" y2="206" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="338" y1="205" x2="334" y2="212" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="344" y1="225" x2="337" y2="225" stroke="#ffffff" strokeWidth="1.5" />
+      <circle cx="310" cy="235" r="4" fill="#ffffff" />
+      <line x1="310" y1="235" x2="328" y2="212" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
+    </g>
+
+    {/* Steering Column & Stalks */}
+    <rect x="235" y="270" width="20" height="40" fill="#090d16" stroke="#475569" strokeWidth="1.5" />
+    <line x1="190" y1="278" x2="235" y2="285" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round" />
+    <circle cx="188" cy="278" r="3" fill="#ffffff" />
+    <line x1="300" y1="278" x2="255" y2="285" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round" />
+    <circle cx="302" cy="278" r="3" fill="#ffffff" />
+
+    {/* Steering Wheel Outer & Inner Rim */}
+    <ellipse cx="245" cy="345" rx="105" ry="98" fill="none" stroke="#ffffff" strokeWidth="4" />
+    <ellipse cx="245" cy="345" rx="92" ry="86" fill="none" stroke="#94a3b8" strokeWidth="1.5" />
+
+    {/* Ergonomic 10 and 2 o'clock Grip Contours */}
+    <path d="M 158 305 Q 153 320 160 335" stroke="#ffffff" strokeWidth="3" fill="none" />
+    <path d="M 332 305 Q 337 320 330 335" stroke="#ffffff" strokeWidth="3" fill="none" />
+
+    {/* Steering Wheel Spokes */}
+    {/* Left Spoke */}
+    <path d="M 153 335 L 205 332 L 205 355 L 155 358" fill="#0f172a" stroke="#ffffff" strokeWidth="1.8" />
+    {/* Right Spoke */}
+    <path d="M 337 335 L 285 332 L 285 355 L 335 358" fill="#0f172a" stroke="#ffffff" strokeWidth="1.8" />
+    {/* Bottom Spoke */}
+    <path d="M 235 372 L 235 432 L 255 432 L 255 372" fill="#0f172a" stroke="#ffffff" strokeWidth="1.8" />
+
+    {/* Steering Wheel Central Hub */}
+    <rect x="205" y="320" width="80" height="52" rx="14" fill="#0f172a" stroke="#ffffff" strokeWidth="2" />
+    <ellipse cx="245" cy="345" rx="15" ry="11" fill="none" stroke="#ffffff" strokeWidth="1.5" />
+    <path d="M 240 345 L 245 338 L 250 345 L 245 352 Z" fill="#ffffff" />
+
+    {/* Integrated Steering Controls: Left Controls Pad */}
+    <rect x="165" y="336" width="30" height="16" rx="3" fill="#1e293b" stroke="#ffffff" strokeWidth="1" />
+    <line x1="172" y1="344" x2="178" y2="344" stroke="#ffffff" strokeWidth="1" />
+    <line x1="175" y1="341" x2="175" y2="347" stroke="#ffffff" strokeWidth="1" />
+    <circle cx="187" cy="344" r="2" fill="#ffffff" />
+
+    {/* Integrated Steering Controls: Right Controls Pad */}
+    <rect x="295" y="336" width="30" height="16" rx="3" fill="#1e293b" stroke="#ffffff" strokeWidth="1" />
+    <line x1="302" y1="344" x2="310" y2="344" stroke="#ffffff" strokeWidth="1" />
+    <circle cx="317" cy="344" r="2" fill="#ffffff" />
+
+    {/* Center Infotainment Display */}
+    <g>
+      <polygon points="415,200 535,200 530,285 415,285" fill="#090d16" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round" />
+      <polygon points="422,207 528,207 524,278 422,278" fill="#1e293b" stroke="#94a3b8" strokeWidth="1" />
+      {/* Screen Line-Art Content */}
+      <rect x="428" y="213" width="50" height="34" rx="2" fill="none" stroke="#38bdf8" strokeWidth="1" />
+      <path d="M 432 233 Q 448 221 468 229" fill="none" stroke="#38bdf8" strokeWidth="1" />
+      <rect x="484" y="213" width="38" height="16" rx="2" fill="none" stroke="#ffffff" strokeWidth="0.8" />
+      <line x1="488" y1="221" x2="516" y2="221" stroke="#ffffff" strokeWidth="0.8" />
+      <rect x="484" y="233" width="38" height="14" rx="2" fill="none" stroke="#cbd5e1" strokeWidth="0.8" />
+      <line x1="428" y1="258" x2="520" y2="258" stroke="#475569" strokeWidth="0.8" />
+      <circle cx="440" cy="268" r="3" fill="none" stroke="#ffffff" strokeWidth="0.8" />
+      <circle cx="458" cy="268" r="3" fill="none" stroke="#ffffff" strokeWidth="0.8" />
+      <circle cx="476" cy="268" r="3" fill="none" stroke="#ffffff" strokeWidth="0.8" />
+      <circle cx="494" cy="268" r="3" fill="none" stroke="#ffffff" strokeWidth="0.8" />
+    </g>
+
+    {/* Center Air Vents & Hazard Switch */}
+    <g>
+      <rect x="420" y="293" width="48" height="16" rx="3" fill="#0f172a" stroke="#ffffff" strokeWidth="1.2" />
+      <line x1="424" y1="298" x2="464" y2="298" stroke="#ffffff" strokeWidth="1" />
+      <line x1="424" y1="304" x2="464" y2="304" stroke="#ffffff" strokeWidth="1" />
+
+      <rect x="475" y="293" width="48" height="16" rx="3" fill="#0f172a" stroke="#ffffff" strokeWidth="1.2" />
+      <line x1="479" y1="298" x2="519" y2="298" stroke="#ffffff" strokeWidth="1" />
+      <line x1="479" y1="304" x2="519" y2="304" stroke="#ffffff" strokeWidth="1" />
+
+      <polygon points="471,298 474,304 468,304" fill="#f43f5e" stroke="#f43f5e" strokeWidth="0.8" />
+    </g>
+
+    {/* Climate Controls Module */}
+    <g>
+      <rect x="415" y="318" width="112" height="38" rx="6" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5" />
+
+      {/* Driver Temp Knob */}
+      <circle cx="435" cy="337" r="11" fill="#1e293b" stroke="#ffffff" strokeWidth="1.5" />
+      <circle cx="435" cy="337" r="6" fill="none" stroke="#38bdf8" strokeWidth="1" />
+      <line x1="435" y1="327" x2="435" y2="331" stroke="#ffffff" strokeWidth="1.5" />
+
+      {/* Central Climate Display & Buttons */}
+      <rect x="454" y="324" width="34" height="12" rx="2" fill="#020617" stroke="#64748b" strokeWidth="0.8" />
+      <line x1="458" y1="330" x2="484" y2="330" stroke="#38bdf8" strokeWidth="1" />
+      <rect x="454" y="340" width="9" height="7" rx="1" fill="none" stroke="#ffffff" strokeWidth="0.8" />
+      <rect x="466" y="340" width="9" height="7" rx="1" fill="none" stroke="#ffffff" strokeWidth="0.8" />
+      <rect x="478" y="340" width="9" height="7" rx="1" fill="none" stroke="#ffffff" strokeWidth="0.8" />
+
+      {/* Passenger Temp Knob */}
+      <circle cx="507" cy="337" r="11" fill="#1e293b" stroke="#ffffff" strokeWidth="1.5" />
+      <circle cx="507" cy="337" r="6" fill="none" stroke="#fb923c" strokeWidth="1" />
+      <line x1="507" y1="327" x2="507" y2="331" stroke="#ffffff" strokeWidth="1.5" />
+    </g>
+
+    {/* Center Console Tunnel */}
+    <g>
+      <path d="M 395 365 L 355 500" stroke="#ffffff" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M 550 365 L 595 500" stroke="#ffffff" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M 402 365 L 370 500" stroke="#475569" strokeWidth="1" fill="none" />
+      <path d="M 542 365 L 580 500" stroke="#475569" strokeWidth="1" fill="none" />
+
+      {/* Shifter Gate Surround */}
+      <rect x="424" y="372" width="92" height="88" rx="8" fill="#1e293b" stroke="#ffffff" strokeWidth="1.5" />
+
+      {/* Gear Shifter & Boot */}
+      <ellipse cx="456" cy="416" rx="16" ry="14" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="456" y1="416" x2="453" y2="389" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+      <ellipse cx="452" cy="386" rx="8" ry="6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+
+      {/* PRND Mode Indicator */}
+      <line x1="492" y1="390" x2="492" y2="436" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="492" cy="395" r="2.5" fill="#38bdf8" />
+      <circle cx="492" cy="408" r="2" fill="#94a3b8" />
+      <circle cx="492" cy="420" r="2" fill="#94a3b8" />
+      <circle cx="492" cy="432" r="2" fill="#94a3b8" />
+
+      {/* Electronic Parking Brake & Console Cupholder */}
+      <rect x="448" y="468" width="44" height="20" rx="4" fill="#0f172a" stroke="#ffffff" strokeWidth="1.2" />
+      <path d="M 462 478 L 478 478" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="530" cy="435" r="16" fill="#0f172a" stroke="#ffffff" strokeWidth="1.2" />
+      <circle cx="530" cy="435" r="12" fill="none" stroke="#475569" strokeWidth="1" />
+    </g>
+
+    {/* Passenger-Side Dashboard & Details */}
+    <g>
+      <path d="M 535 220 C 570 220, 680 225, 750 250" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M 540 240 C 590 240, 690 245, 755 270" fill="none" stroke="#475569" strokeWidth="1.2" strokeLinecap="round" />
+
+      {/* Passenger Air Vent */}
+      <rect x="680" y="238" width="48" height="22" rx="4" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="685" y1="244" x2="723" y2="244" stroke="#ffffff" strokeWidth="1" />
+      <line x1="685" y1="249" x2="723" y2="249" stroke="#ffffff" strokeWidth="1" />
+      <line x1="685" y1="254" x2="723" y2="254" stroke="#ffffff" strokeWidth="1" />
+
+      {/* Glovebox Seam & Release Handle */}
+      <path d="M 565 295 C 620 295, 700 298, 745 310" fill="none" stroke="#64748b" strokeWidth="1.2" strokeDasharray="4 2" />
+      <rect x="635" y="303" width="22" height="5" rx="1.5" fill="none" stroke="#ffffff" strokeWidth="1.2" />
+      <path d="M 565 370 C 620 370, 700 365, 750 355" fill="none" stroke="#334155" strokeWidth="1" />
+    </g>
+  </svg>
+);
+
 export interface InspectorProps {
   initialTab?: 'component' | 'screen' | 'layers';
   selectedComponentId?: string | null;
@@ -1277,7 +1503,7 @@ export const Inspector: React.FC<InspectorProps> = ({
 
       {activeTab === 'component' && !selectedComp && (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
-          <Sliders className="w-10 h-10 mb-3 text-slate-700" />
+          <DashboardEmptyIllustration className="w-full max-w-[240px] h-auto mb-4 rounded-xl border border-slate-800/80 shadow-md overflow-hidden shrink-0" />
           <div className="text-xs font-bold text-slate-400 mb-1">No Component Selected</div>
           <p className="text-[11px] font-mono">
             Click any element on canvas to inspect properties and rules, or switch to the Screen tab.
