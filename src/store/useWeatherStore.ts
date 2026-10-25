@@ -612,6 +612,7 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
       let currentDayData: WeatherDayData | null = null;
       let forecastDays: WeatherDayData[] = [];
       let nwsSucceeded = false;
+      let hasTodayDayPeriod = false;
 
       const isUSLocation = targetCountry === 'united states' || (lat >= 24 && lat <= 50 && lon >= -125 && lon <= -66);
 
@@ -663,8 +664,18 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
                     const firstPeriod = periods[0];
                     const firstHourly = hPeriods[0];
 
-                    let rawTodayHighF = todayEntry.dayPeriod?.temperature ?? firstPeriod.temperature;
-                    let rawTodayLowF = todayEntry.nightPeriod?.temperature ?? (rawTodayHighF - 15);
+                    hasTodayDayPeriod = Boolean(todayEntry.dayPeriod);
+                    let rawTodayLowF =
+                      todayEntry.nightPeriod?.temperature ??
+                      (firstPeriod.isDaytime ? firstPeriod.temperature - 15 : firstPeriod.temperature);
+                    let rawTodayHighF =
+                      todayEntry.dayPeriod?.temperature ??
+                      (firstPeriod.isDaytime
+                        ? firstPeriod.temperature
+                        : (periods.find((p) => p.isDaytime)?.temperature ?? (rawTodayLowF + 15)));
+                    if (rawTodayHighF <= rawTodayLowF) {
+                      rawTodayHighF = rawTodayLowF + 15;
+                    }
                     let rawCurrentTempF = firstHourly?.temperature ?? firstPeriod.temperature;
 
                     const todayHigh = unit === 'C' ? Math.round(((rawTodayHighF - 32) * 5) / 9) : rawTodayHighF;
@@ -811,6 +822,19 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
           omData.daily.daylight_duration,
           omData.timezone
         );
+
+        // If NWS did not have a daytime period for today (query was made during night hours),
+        // enrich the today card with Open-Meteo's true daily maximum for today
+        if (currentDayData && omData.daily.temperature_2m_max?.[0] !== undefined) {
+          const omMax = Math.round(omData.daily.temperature_2m_max[0]);
+          const omMin = Math.round(omData.daily.temperature_2m_min?.[0] ?? currentDayData.low);
+          if (!hasTodayDayPeriod || currentDayData.high <= currentDayData.low) {
+            currentDayData.high = omMax;
+            if (currentDayData.low >= currentDayData.high) {
+              currentDayData.low = omMin;
+            }
+          }
+        }
       }
 
       if (!nwsSucceeded) {
@@ -841,8 +865,11 @@ export const useWeatherStore = create<WeatherState>((set, get) => ({
           hourlyCodes
         );
 
-        const todayMax = Math.round(data.daily.temperature_2m_max?.[0] ?? data.current.temperature_2m);
-        const todayMin = Math.round(data.daily.temperature_2m_min?.[0] ?? data.current.temperature_2m);
+        let todayMax = Math.round(data.daily.temperature_2m_max?.[0] ?? data.current.temperature_2m);
+        let todayMin = Math.round(data.daily.temperature_2m_min?.[0] ?? data.current.temperature_2m);
+        if (todayMax <= todayMin) {
+          todayMax = todayMin + 15;
+        }
         const currentHumidity =
           data.current.relative_humidity_2m !== undefined
             ? Math.round(data.current.relative_humidity_2m)

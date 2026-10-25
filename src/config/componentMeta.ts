@@ -93,6 +93,81 @@ export const CruiseControlIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
     })
   );
 
+export const NowPlayingIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  className = '',
+  style,
+  ...props
+}) => {
+  const finalClass = className ? (className.includes('w-') ? className : `w-5 h-5 ${className}`) : 'w-5 h-5';
+  return React.createElement(
+    'svg',
+    {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: 24,
+      height: 24,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 1.5,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      className: finalClass,
+      'aria-hidden': 'true',
+      style,
+      ...props,
+    },
+    React.createElement('rect', {
+      x: 5,
+      y: 3,
+      width: 14,
+      height: 13,
+      rx: 2.5,
+      fill: '#18181b',
+    }),
+    React.createElement(
+      'g',
+      { className: 'speaker-cone' },
+      React.createElement('circle', {
+        cx: 12,
+        cy: 9.5,
+        r: 4,
+        stroke: '#a1a1aa',
+        strokeWidth: 1,
+      }),
+      React.createElement('circle', {
+        cx: 12,
+        cy: 9.5,
+        r: 1.5,
+        fill: 'currentColor',
+        stroke: 'none',
+      })
+    ),
+    React.createElement('line', {
+      x1: 3,
+      y1: 20,
+      x2: 21,
+      y2: 20,
+      stroke: '#3f3f46',
+      strokeWidth: 2,
+    }),
+    React.createElement('line', {
+      x1: 3,
+      y1: 20,
+      x2: 13,
+      y2: 20,
+      stroke: '#38bdf8',
+      strokeWidth: 2,
+    }),
+    React.createElement('circle', {
+      cx: 13,
+      cy: 20,
+      r: 1.5,
+      fill: '#38bdf8',
+      stroke: 'none',
+    })
+  );
+};
+
 export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
   battery: { type: 'battery', icon: Battery, defaultColor: '#38bdf8' },
   gear: { type: 'gear', icon: ParkingCircle, defaultColor: '#38bdf8' },
@@ -111,7 +186,7 @@ export const COMPONENT_META: Record<ComponentType, ComponentMeta> = {
   overheadVisualization: { type: 'overheadVisualization', icon: Eye, defaultColor: '#34d399' },
   miniNav: { type: 'miniNav', icon: Navigation, defaultColor: '#34d399' },
   media: { type: 'media', icon: Music, defaultColor: '#ec4899' },
-  nowPlaying: { type: 'nowPlaying', icon: Music, defaultColor: '#ec4899' },
+  nowPlaying: { type: 'nowPlaying', icon: NowPlayingIcon, defaultColor: '#ec4899' },
   mediaPlaylists: { type: 'mediaPlaylists', icon: ListMusic, defaultColor: '#ec4899' },
   mediaDiscovery: { type: 'mediaDiscovery', icon: Sparkles, defaultColor: '#ec4899' },
   mediaSearch: { type: 'mediaSearch', icon: Search, defaultColor: '#ec4899' },
