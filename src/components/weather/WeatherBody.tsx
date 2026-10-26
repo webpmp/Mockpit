@@ -38,7 +38,7 @@ export const WeatherBody: React.FC<WeatherBodyProps> = ({ className = '' }) => {
         <button
           id="weather-error-retry-btn"
           onClick={() => fetchWeather()}
-          className="px-5 py-2.5 rounded-xl bg-ds-primary hover:bg-ds-primary-hover text-ds-on-primary font-mono text-xs font-bold transition-all cursor-pointer shadow-lg"
+          className="px-5 py-2.5 rounded-xl bg-ds-primary text-ds-on-primary font-mono text-xs font-bold transition-all cursor-pointer shadow-lg"
         >
           RETRY CONNECTION
         </button>

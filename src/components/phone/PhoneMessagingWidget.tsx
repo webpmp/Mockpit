@@ -109,7 +109,7 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
           selectedThreadId && (
             <button
               onClick={() => setSelectedThreadId(null)}
-              className="text-xs font-mono text-ds-content-muted hover:text-ds-content flex items-center gap-1"
+              className="text-xs font-mono text-ds-content-muted flex items-center gap-1"
             >
               <ArrowLeft className="w-3 h-3" /> Inbox
             </button>
@@ -157,8 +157,8 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
                       </div>
                     )}
                     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                      <div
-                        className={`max-w-[80%] rounded-2xl px-3 py-1.5 text-xs font-medium shadow-md transition-all ${
+ <div
+ className={`max-w-[80%] rounded-2xl px-3 py-1.5 text-xs font-medium shadow-md transition-all ${
                           isUser
                             ? 'text-ds-on-primary font-semibold rounded-br-xs'
                             : 'bg-ds-surface-raised text-ds-content rounded-bl-xs border border-ds-line/60'
@@ -182,7 +182,7 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
               <button
                 key={chip}
                 onClick={() => handleSendMessage(chip)}
-                className="shrink-0 bg-ds-surface-raised/80 hover:bg-ds-surface-hover text-ds-content border border-ds-line/60 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                className="shrink-0 bg-ds-surface-raised/80 text-ds-content border border-ds-line/60 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold transition-all active:scale-95 cursor-pointer whitespace-nowrap"
               >
                 {chip}
               </button>
@@ -196,7 +196,7 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
               className={`p-2 rounded-full border transition-all cursor-pointer shrink-0 ${
                 isListening
                   ? 'bg-ds-error text-white border-ds-error'
-                  : 'bg-ds-surface-raised text-ds-content-secondary border-ds-line hover:bg-ds-surface-hover'
+                  : 'bg-ds-surface-raised text-ds-content-secondary border-ds-line '
               }`}
               title="Voice reply"
             >
@@ -218,12 +218,12 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
               disabled={!inputText.trim()}
               className={`p-2 rounded-full transition-all shrink-0 cursor-pointer ${
                 inputText.trim()
-                  ? 'text-ds-on-primary shadow-md hover:brightness-110'
+                  ? 'text-ds-on-primary shadow-md '
                   : 'bg-ds-surface-raised text-ds-content-disabled border border-ds-line/50 cursor-not-allowed'
               }`}
-              style={{
-                backgroundColor: inputText.trim() ? customColor : undefined,
-                boxShadow: inputText.trim() ? `0 0 10px color-mix(in srgb, ${customColor} 38%, transparent)` : undefined,
+ style={{
+ backgroundColor: inputText.trim() ? customColor : undefined,
+ boxShadow: inputText.trim() ? `0 0 10px color-mix(in srgb, ${customColor} 38%, transparent)` : undefined,
               }}
             >
               <Send className="w-3.5 h-3.5" />
@@ -242,7 +242,7 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
               <div
                 key={conv.id}
                 onClick={() => selectConversation(conv)}
-                className="flex items-center justify-between p-2 rounded-xl bg-ds-background/50 border border-ds-line-subtle/80 hover:bg-ds-surface-raised/40 transition-colors cursor-pointer group"
+                className="flex items-center justify-between p-2 rounded-xl bg-ds-background/50 border border-ds-line-subtle/80 transition-colors cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="relative shrink-0">
@@ -265,12 +265,12 @@ export const PhoneMessagingWidget: React.FC<PhoneMessagingWidgetProps> = ({
                         className={`text-xs font-bold truncate ${
                           conv.unreadCount > 0 ? 'text-ds-content' : 'text-ds-content-secondary'
                         }`}
-                      >
-                        {conv.name}
-                      </span>
-                    </div>
-                    <p
-                      className={`text-[11px] truncate max-w-full ${
+ >
+ {conv.name}
+ </span>
+ </div>
+ <p
+ className={`text-[11px] truncate max-w-full ${
                         conv.unreadCount > 0
                           ? 'font-bold text-ds-content'
                           : 'font-normal text-ds-content-muted font-mono'

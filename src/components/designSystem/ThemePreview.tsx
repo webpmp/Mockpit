@@ -22,7 +22,7 @@ export const ThemePreview: React.FC = () => {
         <button
           type="button"
           data-testid="theme-preview-climate-btn"
-          className="flex-1 py-1 px-2 rounded-lg text-xs font-medium border border-ds-line bg-ds-surface-raised text-ds-content hover:bg-ds-surface-hover transition-colors text-center"
+          className="flex-1 py-1 px-2 rounded-lg text-xs font-medium border border-ds-line bg-ds-surface-raised text-ds-content transition-colors text-center"
         >
           Climate
         </button>

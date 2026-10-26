@@ -221,7 +221,7 @@ export const VirtualKeyboard: React.FC = () => {
     if (active) {
       return 'bg-ds-surface-raised border-ds-primary text-ds-content scale-95 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_40%,transparent)]';
     }
-    return 'bg-ds-surface hover:bg-ds-surface-raised active:bg-ds-surface-hover border-ds-line-subtle/80 text-ds-content shadow-sm active:scale-95';
+    return 'bg-ds-surface active:bg-ds-surface-hover border-ds-line-subtle/80 text-ds-content shadow-sm active:scale-95';
   };
 
   return (
@@ -231,19 +231,19 @@ export const VirtualKeyboard: React.FC = () => {
         className={`absolute inset-0 z-40 bg-black/30 transition-opacity duration-300 ${
           animateIn ? 'opacity-100' : 'opacity-0'
         }`}
-        onClick={closeKeyboard}
-      />
+ onClick={closeKeyboard}
+ />
 
-      {/* Main Keyboard Panel */}
-      <div
-        className={`${basePositionClass} transition-all duration-300 ease-out transform ${transformClass} bg-ds-background/95 border border-ds-line-subtle shadow-2xl backdrop-blur-xl rounded-2xl p-3 sm:p-4 text-ds-content flex flex-col gap-2.5 selection:bg-none select-none`}
+ {/* Main Keyboard Panel */}
+ <div
+ className={`${basePositionClass} transition-all duration-300 ease-out transform ${transformClass} bg-ds-background/95 border border-ds-line-subtle shadow-2xl backdrop-blur-xl rounded-2xl p-3 sm:p-4 text-ds-content flex flex-col gap-2.5 selection:bg-none select-none`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Minimal Header Row with Close (X) Button Only */}
         <div className="flex items-center justify-end">
           <button
             onClick={closeKeyboard}
-            className="p-1.5 rounded-xl bg-ds-surface hover:bg-ds-surface-raised text-ds-content-muted hover:text-ds-content border border-ds-line-subtle transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl bg-ds-surface text-ds-content-muted border border-ds-line-subtle transition-colors cursor-pointer"
             title="Close Keyboard"
           >
             <X className="w-4 h-4" />
@@ -261,8 +261,8 @@ export const VirtualKeyboard: React.FC = () => {
                     key={char}
                     onClick={() => handleKeyClick(char)}
                     className={`flex-1 h-14 sm:h-16 rounded-xl border text-sm sm:text-base font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${getKeyStyle(
-                      char
-                    )}`}
+ char
+ )}`}
                   >
                     {isCaps ? char.toUpperCase() : char.toLowerCase()}
                   </button>
@@ -276,8 +276,8 @@ export const VirtualKeyboard: React.FC = () => {
                     key={char}
                     onClick={() => handleKeyClick(char)}
                     className={`flex-1 h-14 sm:h-16 rounded-xl border text-sm sm:text-base font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${getKeyStyle(
-                      char
-                    )}`}
+ char
+ )}`}
                   >
                     {isCaps ? char.toUpperCase() : char.toLowerCase()}
                   </button>
@@ -291,7 +291,7 @@ export const VirtualKeyboard: React.FC = () => {
                   className={`px-3 sm:px-5 h-14 sm:h-16 rounded-xl border font-mono text-xs sm:text-sm font-bold flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                     isKeyPressed('shift') || isCaps
                       ? 'bg-ds-primary/30 border-ds-primary/60 text-ds-primary'
-                      : 'bg-ds-surface border-ds-line-subtle/80 text-ds-content-muted hover:text-ds-content'
+                      : 'bg-ds-surface border-ds-line-subtle/80 text-ds-content-muted '
                   }`}
                   title="Toggle Caps / Shift"
                 >
@@ -303,8 +303,8 @@ export const VirtualKeyboard: React.FC = () => {
                     key={char}
                     onClick={() => handleKeyClick(char)}
                     className={`flex-1 h-14 sm:h-16 rounded-xl border text-sm sm:text-base font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${getKeyStyle(
-                      char
-                    )}`}
+ char
+ )}`}
                   >
                     {isCaps ? char.toUpperCase() : char.toLowerCase()}
                   </button>
@@ -315,7 +315,7 @@ export const VirtualKeyboard: React.FC = () => {
                   className={`px-3 sm:px-5 h-14 sm:h-16 rounded-xl border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                     isKeyPressed('backspace')
                       ? 'bg-ds-primary/40 border-ds-primary text-ds-content scale-95 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_50%,transparent)]'
-                      : 'bg-ds-surface hover:bg-ds-surface-raised border-ds-line-subtle/80 text-ds-content-secondary hover:text-ds-content'
+                      : 'bg-ds-surface border-ds-line-subtle/80 text-ds-content-secondary '
                   }`}
                   title="Backspace"
                 >
@@ -332,8 +332,8 @@ export const VirtualKeyboard: React.FC = () => {
                     key={char}
                     onClick={() => typeKeyboardKey(char)}
                     className={`flex-1 h-14 sm:h-16 rounded-xl border text-sm sm:text-base font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${getKeyStyle(
-                      char
-                    )}`}
+ char
+ )}`}
                   >
                     {char}
                   </button>
@@ -347,8 +347,8 @@ export const VirtualKeyboard: React.FC = () => {
                     key={char}
                     onClick={() => typeKeyboardKey(char)}
                     className={`flex-1 h-14 sm:h-16 rounded-xl border text-sm sm:text-base font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${getKeyStyle(
-                      char
-                    )}`}
+ char
+ )}`}
                   >
                     {char}
                   </button>
@@ -362,8 +362,8 @@ export const VirtualKeyboard: React.FC = () => {
                     key={char}
                     onClick={() => typeKeyboardKey(char)}
                     className={`flex-1 h-14 sm:h-16 rounded-xl border text-sm sm:text-base font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${getKeyStyle(
-                      char
-                    )}`}
+ char
+ )}`}
                   >
                     {char}
                   </button>
@@ -374,7 +374,7 @@ export const VirtualKeyboard: React.FC = () => {
                   className={`px-3 sm:px-5 h-14 sm:h-16 rounded-xl border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                     isKeyPressed('backspace')
                       ? 'bg-ds-primary/40 border-ds-primary text-ds-content scale-95 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_50%,transparent)]'
-                      : 'bg-ds-surface hover:bg-ds-surface-raised border-ds-line-subtle/80 text-ds-content-secondary hover:text-ds-content'
+                      : 'bg-ds-surface border-ds-line-subtle/80 text-ds-content-secondary '
                   }`}
                   title="Backspace"
                 >
@@ -388,7 +388,7 @@ export const VirtualKeyboard: React.FC = () => {
           <div className="flex justify-between items-center gap-3 pt-2">
             <button
               onClick={() => setMode(mode === 'qwerty' ? 'symbols' : 'qwerty')}
-              className="px-3 sm:px-4 h-14 sm:h-16 rounded-xl bg-ds-surface hover:bg-ds-surface-raised border border-ds-line-subtle text-xs sm:text-sm font-mono font-bold text-ds-content-secondary flex items-center justify-center transition-all cursor-pointer"
+              className="px-3 sm:px-4 h-14 sm:h-16 rounded-xl bg-ds-surface border border-ds-line-subtle text-xs sm:text-sm font-mono font-bold text-ds-content-secondary flex items-center justify-center transition-all cursor-pointer"
             >
               {mode === 'qwerty' ? '?123' : 'ABC'}
             </button>
@@ -401,7 +401,7 @@ export const VirtualKeyboard: React.FC = () => {
                 isListening
                   ? 'bg-ds-error/30 border-ds-error text-ds-error'
                   : isSpeechSupported
-                  ? 'bg-ds-surface hover:bg-ds-surface-raised border-ds-line-subtle text-ds-content-secondary hover:text-ds-content'
+                  ? 'bg-ds-surface border-ds-line-subtle text-ds-content-secondary '
                   : 'bg-ds-surface/50 border-ds-line-subtle/50 text-ds-content-disabled opacity-50 cursor-not-allowed'
               }`}
               title={
@@ -425,14 +425,14 @@ export const VirtualKeyboard: React.FC = () => {
               className={`flex-1 h-14 sm:h-16 rounded-xl border text-xs sm:text-sm font-mono font-bold flex items-center justify-center transition-all cursor-pointer shadow-sm ${
                 isKeyPressed(' ')
                   ? 'bg-ds-primary/40 border-ds-primary text-ds-content scale-98 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_50%,transparent)]'
-                  : 'bg-ds-surface hover:bg-ds-surface-raised active:bg-ds-primary/20 border-ds-line-subtle/80 text-ds-content-secondary'
+                  : 'bg-ds-surface active:bg-ds-primary/20 border-ds-line-subtle/80 text-ds-content-secondary'
               }`}
             >
             </button>
 
             <button
               onClick={clearKeyboardKey}
-              className="px-3 sm:px-4 h-14 sm:h-16 rounded-xl bg-ds-surface hover:bg-ds-surface-raised border border-ds-line-subtle text-xs sm:text-sm font-mono font-bold text-ds-content-secondary hover:text-ds-content flex items-center justify-center transition-all cursor-pointer"
+              className="px-3 sm:px-4 h-14 sm:h-16 rounded-xl bg-ds-surface border border-ds-line-subtle text-xs sm:text-sm font-mono font-bold text-ds-content-secondary flex items-center justify-center transition-all cursor-pointer"
               title="Clear text"
             >
               Clear
@@ -444,7 +444,7 @@ export const VirtualKeyboard: React.FC = () => {
               className={`px-4 sm:px-6 h-14 sm:h-16 rounded-xl font-mono text-xs sm:text-sm font-bold flex items-center justify-center transition-all cursor-pointer shadow-sm border ${
                 isKeyPressed('enter')
                   ? 'bg-ds-primary/40 border-ds-primary text-ds-content'
-                  : 'bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content border-ds-line'
+                  : 'bg-ds-surface-raised text-ds-content border-ds-line'
               }`}
             >
               <span>Enter</span>

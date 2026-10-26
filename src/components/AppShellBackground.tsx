@@ -204,7 +204,7 @@ export const AppShellBackground: React.FC<AppShellBackgroundProps> = ({ canvasSc
           {/* CANCEL BUTTON (formerly "Reset") */}
           <button
             onClick={() => cancelBackgroundAdjustment()}
-            className="px-2 py-1 text-[11px] font-mono text-slate-300 hover:text-slate-100 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-2 py-1 text-[11px] font-mono text-slate-300 bg-slate-800 rounded-lg border border-slate-700 flex items-center gap-1 transition-colors cursor-pointer"
             title="Cancel: revert to position/scale from before this session and exit"
           >
             <X className="w-3 h-3" />
@@ -213,7 +213,7 @@ export const AppShellBackground: React.FC<AppShellBackgroundProps> = ({ canvasSc
 
           <button
             onClick={() => setIsAdjustingBackground(false)}
-            className="px-3 py-1 text-xs font-mono font-bold text-slate-950 bg-sky-400 hover:bg-sky-300 rounded-lg shadow-md flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-3 py-1 text-xs font-mono font-bold text-slate-950 bg-sky-400 rounded-lg shadow-md flex items-center gap-1 transition-colors cursor-pointer"
             title="Done (or press Escape)"
           >
             <Check className="w-3.5 h-3.5 stroke-[3]" />

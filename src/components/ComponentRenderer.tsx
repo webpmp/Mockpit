@@ -265,9 +265,9 @@ const MessageToastCard: React.FC<{
   return (
     <div
       className={`w-full rounded-2xl bg-ds-background/95 ${getBorderClasses(component.borderOverrides, '', 'border-2')} p-3 flex flex-col justify-between shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
-      style={{
-        borderColor: customColor,
-        boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
+ style={{
+ borderColor: customColor,
+ boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
         opacity: styleOpacity,
       }}
     >
@@ -279,7 +279,7 @@ const MessageToastCard: React.FC<{
         rightElement={
           <button
             onClick={handleDismissClick}
-            className="p-1 rounded bg-ds-surface/90 border border-ds-line/80 text-ds-content-secondary hover:text-ds-content hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0"
+            className="p-1 rounded bg-ds-surface/90 border border-ds-line/80 text-ds-content-secondary transition-colors cursor-pointer shrink-0"
             title="Dismiss Alert (X)"
           >
             <X className="w-3.5 h-3.5" />
@@ -289,7 +289,7 @@ const MessageToastCard: React.FC<{
 
       <div
         onClick={handleCardTap}
-        className="flex items-center gap-3 min-w-0 w-full pr-16 my-auto cursor-pointer hover:opacity-90"
+        className="flex items-center gap-3 min-w-0 w-full pr-16 my-auto cursor-pointer "
       >
         {isMessageIcon ? (
           <div
@@ -481,7 +481,7 @@ const NavHomeWidget: React.FC<{
             stops: [],
           });
         }}
-        className="w-full py-1.5 px-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line"
+        className="w-full py-1.5 px-2 rounded-xl bg-ds-surface-raised text-ds-content text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line"
       >
         <Navigation className="w-3.5 h-3.5 text-ds-content-muted" /> Navigate Home
       </button>
@@ -582,7 +582,7 @@ const NavFavoritesWidget: React.FC<{
                     stops: [],
                   });
                 }}
-                className="group p-2 rounded-xl bg-ds-background/60 hover:bg-ds-surface-raised/80 border border-ds-line-subtle/80 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
+                className="group p-2 rounded-xl bg-ds-background/60 border border-ds-line-subtle/80 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
               >
                 <div className="min-w-0 pr-2 flex items-center gap-2">
                   <Star className="w-3.5 h-3.5 text-ds-warning fill-ds-warning/20 shrink-0" />
@@ -597,7 +597,7 @@ const NavFavoritesWidget: React.FC<{
                       e.stopPropagation();
                       removeFavorite(fav.id);
                     }}
-                    className="p-1.5 rounded-lg hover:bg-ds-surface-hover/80 text-ds-content-subtle hover:text-ds-error transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
+                    className="p-1.5 rounded-lg text-ds-content-subtle transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
                     title="Delete Favorite"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -616,24 +616,24 @@ const NavFavoritesWidget: React.FC<{
               value={newLabel}
               onChange={setNewLabel}
               placeholder="Label (e.g. Gym, Mom's House)..."
-              componentId={component.id}
-              keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-              className="min-h-[36px] text-xs"
-            />
-            <AddressGeocodeInput
-              value={newAddress}
-              onChange={setNewAddress}
-              onResolved={(lat, lng, displayName) => {
-                setNewLat(lat);
-                setNewLng(lng);
-                if (displayName) setNewAddress(displayName);
-              }}
-              placeholder="Enter city or landmark..."
-              componentId={component.id}
-              keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
-              icon={<MapPin className="w-3.5 h-3.5 text-ds-content-muted" />}
-            />
-            <div className="flex items-center gap-2 pt-1">
+ componentId={component.id}
+ keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+ className="min-h-[36px] text-xs"
+ />
+ <AddressGeocodeInput
+ value={newAddress}
+ onChange={setNewAddress}
+ onResolved={(lat, lng, displayName) => {
+ setNewLat(lat);
+ setNewLng(lng);
+ if (displayName) setNewAddress(displayName);
+ }}
+ placeholder="Enter city or landmark..."
+ componentId={component.id}
+ keyboardSlideDirection={component.staticProps?.keyboardSlideDirection as any}
+ icon={<MapPin className="w-3.5 h-3.5 text-ds-content-muted" />}
+ />
+ <div className="flex items-center gap-2 pt-1">
               <button
                 onClick={() => {
                   setIsAdding(false);
@@ -642,14 +642,14 @@ const NavFavoritesWidget: React.FC<{
                   setNewLat(null);
                   setNewLng(null);
                 }}
-                className="flex-1 py-1.5 px-2 rounded-lg bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content-muted hover:text-ds-content text-xs font-mono font-bold transition-colors cursor-pointer border border-ds-line min-h-[36px]"
+                className="flex-1 py-1.5 px-2 rounded-lg bg-ds-surface-raised text-ds-content-muted text-xs font-mono font-bold transition-colors cursor-pointer border border-ds-line min-h-[36px]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveFavorite}
                 disabled={!newAddress.trim() || newLat === null}
-                className="flex-1 py-1.5 px-2 rounded-lg bg-ds-warning/20 hover:bg-ds-warning/30 text-ds-warning border border-ds-warning/40 text-xs font-mono font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
+                className="flex-1 py-1.5 px-2 rounded-lg bg-ds-warning/20 text-ds-warning border border-ds-warning/40 text-xs font-mono font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-h-[36px]"
               >
                 Save Favorite
               </button>
@@ -658,7 +658,7 @@ const NavFavoritesWidget: React.FC<{
         ) : (
           <button
             onClick={() => setIsAdding(true)}
-            className="w-full py-2 px-3 rounded-xl bg-ds-surface-raised/80 hover:bg-ds-surface-hover text-ds-content text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line min-h-[44px]"
+            className="w-full py-2 px-3 rounded-xl bg-ds-surface-raised/80 text-ds-content text-xs font-mono font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line min-h-[44px]"
           >
             <Plus className="w-4 h-4 text-ds-content-muted" /> Add Favorite
           </button>
@@ -682,7 +682,7 @@ const NavFavoritesWidget: React.FC<{
                     stops: [],
                   });
                 }}
-                className="group p-2 rounded-xl bg-ds-background/40 hover:bg-ds-surface-raised/60 border border-ds-line-subtle/60 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
+                className="group p-2 rounded-xl bg-ds-background/40 border border-ds-line-subtle/60 flex items-center justify-between cursor-pointer transition-all min-h-[44px]"
               >
                 <div className="min-w-0 pr-2 flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-ds-content-subtle shrink-0" />
@@ -697,7 +697,7 @@ const NavFavoritesWidget: React.FC<{
                     e.stopPropagation();
                     promoteRecentToFavorite(recent.id, recent.label);
                   }}
-                  className="p-1.5 rounded-lg hover:bg-ds-surface-hover/80 text-ds-content-muted hover:text-amber-300 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
+                  className="p-1.5 rounded-lg text-ds-content-muted transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center cursor-pointer"
                   title="Save as Favorite"
                 >
                   <Star className="w-3.5 h-3.5" />
@@ -1123,7 +1123,7 @@ const NavDestinationWidget: React.FC<{
               <button
                 type="button"
                 onClick={handleAddStop}
-                className="min-h-[44px] px-2.5 rounded-lg bg-ds-background/40 hover:bg-ds-surface-raised/80 text-ds-content-secondary hover:text-ds-content text-[0.625rem] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer border border-dashed border-ds-line/80 hover:border-ds-line-strong"
+                className="min-h-[44px] px-2.5 rounded-lg bg-ds-background/40 text-ds-content-secondary text-[0.625rem] font-bold font-mono transition-colors flex items-center gap-1 cursor-pointer border border-dashed border-ds-line/80 "
               >
                 <Plus className="w-3.5 h-3.5 text-ds-content-muted" />
                 <span>Add Stop</span>
@@ -1162,7 +1162,7 @@ const NavDestinationWidget: React.FC<{
                   onClick={() => handleRemoveStop(i)}
                   aria-label={`Remove stop ${i + 1}`}
                   title="Remove Stop"
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ds-content-subtle hover:text-ds-error transition-colors cursor-pointer rounded-lg hover:bg-ds-surface"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-ds-content-subtle transition-colors cursor-pointer rounded-lg "
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -1197,7 +1197,7 @@ const NavDestinationWidget: React.FC<{
               <button
                 type="button"
                 onClick={() => setShowCancelConfirm(false)}
-                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl border border-ds-line-subtle bg-ds-background/80 hover:bg-ds-surface text-ds-content-muted hover:text-ds-content text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
+                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl border border-ds-line-subtle bg-ds-background/80 text-ds-content-muted text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
               >
                 Keep Trip
               </button>
@@ -1207,7 +1207,7 @@ const NavDestinationWidget: React.FC<{
                   setShowCancelConfirm(false);
                   cancelTripGuidance();
                 }}
-                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content border border-ds-line text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
+                className="flex-1 min-h-[44px] py-1.5 px-3 rounded-xl bg-ds-surface-raised text-ds-content border border-ds-line text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
               >
                 Confirm Cancel
               </button>
@@ -1215,7 +1215,7 @@ const NavDestinationWidget: React.FC<{
           ) : (
             <button
               onClick={() => setShowCancelConfirm(true)}
-              className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line"
+              className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-ds-surface-raised text-ds-content text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line"
             >
               <XCircle className="w-3.5 h-3.5 text-ds-content-muted" /> Cancel Guidance
             </button>
@@ -1232,7 +1232,7 @@ const NavDestinationWidget: React.FC<{
                 destGeocoded: destGeocoded,
               })
             }
-            className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line"
+            className="w-full min-h-[44px] py-1.5 px-2 rounded-xl bg-ds-surface-raised text-ds-content text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-ds-line"
           >
             <Navigation className="w-3.5 h-3.5 text-ds-content-muted" /> Start Guidance
           </button>
@@ -1412,7 +1412,7 @@ const NavSearchWidget: React.FC<{
                       stops: [],
                     });
                   }}
-                  className="p-1.5 rounded-lg bg-ds-background/50 hover:bg-ds-surface-raised/80 border border-ds-line-subtle/80 flex items-center justify-between cursor-pointer transition-colors"
+                  className="p-1.5 rounded-lg bg-ds-background/50 border border-ds-line-subtle/80 flex items-center justify-between cursor-pointer transition-colors"
                 >
                   <div className="min-w-0 pr-1">
                     <div className="text-[0.6875rem] font-bold text-ds-content truncate">{poi.name}</div>
@@ -1656,7 +1656,7 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
 
   // Fit check: rather than truncating the destination name, switch to a stacked layout
   // (name on its own row, stats below) when the name + stats block can't both fit on one
-  // row. Mirrors TirePressureWidget's hidden-measurement pattern in this same file.
+ // row. Mirrors TirePressureWidget's hidden-measurement pattern in this same file.
   const nameRowRef = React.useRef<HTMLDivElement>(null);
   const nameMeasureRef = React.useRef<HTMLSpanElement>(null);
   const statBlockRef = React.useRef<HTMLDivElement>(null);
@@ -1711,32 +1711,32 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
       const el =
         document.getElementById('component-navDestination') ||
         document.querySelector('[data-component-type="navDestination"]');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 50);
-  }, [activeView, findTripPlannerScreenId, setActiveView]);
+ if (el) {
+ el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ }
+ }, 50);
+ }, [activeView, findTripPlannerScreenId, setActiveView]);
 
-  const handleTripSummaryAddStop = React.useCallback(() => {
-    const targetScreenId = findTripPlannerScreenId();
-    if (!targetScreenId) {
-      // No Trip Planner exists anywhere: fail gracefully without navigating or throwing
-      return;
-    }
+ const handleTripSummaryAddStop = React.useCallback(() => {
+ const targetScreenId = findTripPlannerScreenId();
+ if (!targetScreenId) {
+ // No Trip Planner exists anywhere: fail gracefully without navigating or throwing
+ return;
+ }
 
-    // Trigger the shared Add Stop action on Trip Planner
-    triggerNavDestinationAction('addStop');
+ // Trigger the shared Add Stop action on Trip Planner
+ triggerNavDestinationAction('addStop');
 
-    // If Trip Planner is NOT on current screen, navigate to the target screen
-    if (targetScreenId !== activeView) {
-      setActiveView(targetScreenId);
-    } else {
-      // Already on current screen: scroll Trip Planner into view
-      const el =
-        document.getElementById('component-navDestination') ||
-        document.querySelector('[data-component-type="navDestination"]');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ // If Trip Planner is NOT on current screen, navigate to the target screen
+ if (targetScreenId !== activeView) {
+ setActiveView(targetScreenId);
+ } else {
+ // Already on current screen: scroll Trip Planner into view
+ const el =
+ document.getElementById('component-navDestination') ||
+ document.querySelector('[data-component-type="navDestination"]');
+ if (el) {
+ el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
   }, [activeView, findTripPlannerScreenId, setActiveView, triggerNavDestinationAction]);
@@ -1758,7 +1758,7 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
           <span className="text-xs font-mono text-ds-content-muted">No active trip.</span>
           <button
             onClick={goToTripPlanner}
-            className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-mono font-bold border border-ds-line cursor-pointer transition-colors shadow-sm"
+            className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-ds-surface-raised text-ds-content text-xs font-mono font-bold border border-ds-line cursor-pointer transition-colors shadow-sm"
           >
             Set Destination
           </button>
@@ -1802,13 +1802,13 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
           <span
             ref={statBlockRef as any}
             className={`self-start text-[0.625rem] font-mono text-ds-warning shrink-0 ${stackedLayout ? '' : 'text-right'}`}
-          >
-            {estimate.unresolvedMessage}
-          </span>
-        ) : (
-          <div
-            ref={statBlockRef}
-            className={`self-start shrink-0 leading-tight ${stackedLayout ? 'text-left' : 'text-right'}`}
+ >
+ {estimate.unresolvedMessage}
+ </span>
+ ) : (
+ <div
+ ref={statBlockRef}
+ className={`self-start shrink-0 leading-tight ${stackedLayout ? 'text-left' : 'text-right'}`}
           >
             <div className="text-xs font-bold text-ds-content font-mono">{estimate.formattedDuration}</div>
             <div className="text-[0.625rem] text-ds-content-muted font-mono">{roundedDistance}</div>
@@ -1820,7 +1820,7 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
         <button
           type="button"
           onClick={handleTripSummaryAddStop}
-          className="shrink-0 min-h-[36px] px-2.5 rounded-lg bg-ds-background/40 hover:bg-ds-surface-raised/80 text-ds-content-secondary hover:text-ds-content text-[0.625rem] font-bold font-mono border border-ds-line/60 flex items-center gap-1 transition-colors cursor-pointer"
+          className="shrink-0 min-h-[36px] px-2.5 rounded-lg bg-ds-background/40 text-ds-content-secondary text-[0.625rem] font-bold font-mono border border-ds-line/60 flex items-center gap-1 transition-colors cursor-pointer"
         >
           <Plus className="w-3 h-3 text-ds-content-muted" />
           <span>Add Stop</span>
@@ -1829,7 +1829,7 @@ const TripSummaryWidget: React.FC<TripSummaryWidgetProps> = ({
           <button
             type="button"
             onClick={goToTripPlanner}
-            className="shrink-0 min-h-[36px] px-2 rounded-lg bg-ds-background/40 hover:bg-ds-surface-raised/80 text-ds-content-muted hover:text-ds-content text-[0.625rem] font-bold font-mono border border-ds-line/60 flex items-center gap-1 transition-colors cursor-pointer"
+            className="shrink-0 min-h-[36px] px-2 rounded-lg bg-ds-background/40 text-ds-content-muted text-[0.625rem] font-bold font-mono border border-ds-line/60 flex items-center gap-1 transition-colors cursor-pointer"
           >
             <MapPin className="w-3 h-3 text-ds-content-muted" />
             <span>{stopCount} Stop{stopCount > 1 ? 's' : ''}</span>
@@ -1955,12 +1955,12 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           const remainingHours = remainingKwh / chargeRateKw;
           const remainingMins = Math.max(1, Math.round(remainingHours * 60));
           chargingInfoText = `~${remainingMins} min${remainingMins === 1 ? '' : 's'} to ${targetPercent}%`;
-        }
-      }
+ }
+ }
 
-      return (
-        <div
-          className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
+ return (
+ <div
+ className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 ${baseOpacity}`}
           style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
         >
           <ComponentHeader
@@ -1979,7 +1979,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
                 <button
                   type="button"
                   onClick={handleToggleBatteryUnit}
-                  className="text-[0.625rem] font-mono font-bold text-ds-content-muted hover:text-ds-primary uppercase px-1.5 py-0.5 rounded bg-ds-surface-raised/60 hover:bg-ds-surface-raised border border-ds-line/60 transition-colors cursor-pointer"
+                  className="text-[0.625rem] font-mono font-bold text-ds-content-muted uppercase px-1.5 py-0.5 rounded bg-ds-surface-raised/60 border border-ds-line/60 transition-colors cursor-pointer"
                   title="Click to toggle display unit (% / miles)"
                 >
                   {isMiles ? `${roundedPercent}%` : `${liveRange} MILE RANGE`}
@@ -1993,7 +1993,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             onClick={handleToggleBatteryUnit}
             title="Click to toggle display unit (% / miles)"
           >
-            <div className="text-3xl font-black tracking-tight group-hover/readout:opacity-90 transition-opacity" style={{ color: customColor }}>
+            <div className="text-3xl font-black tracking-tight transition-opacity" style={{ color: customColor }}>
               {primaryDisplay}
             </div>
             {vehicleState.isCharging && (
@@ -2115,9 +2115,9 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       return (
         <div
           className={`w-full h-full rounded-2xl bg-ds-background/95 ${getBorderClasses(component.borderOverrides, '', 'border-2')} p-3.5 flex flex-col justify-center shadow-2xl backdrop-blur-xl transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
-          style={{
-            borderColor: customColor,
-            boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
+ style={{
+ borderColor: customColor,
+ boxShadow: isVisible ? `0 0 25px ${getAlphaColor(customColor, '40', 25)}` : undefined,
             opacity: styleOpacity,
           }}
         >
@@ -2135,7 +2135,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
                     e.stopPropagation();
                     onMinimize();
                   }}
-                  className="p-1 rounded bg-ds-surface/90 border border-ds-line/80 text-ds-content-secondary hover:text-ds-content hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0"
+                  className="p-1 rounded bg-ds-surface/90 border border-ds-line/80 text-ds-content-secondary transition-colors cursor-pointer shrink-0"
                   title="Minimize Alert (X)"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -2505,11 +2505,11 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               <button
                 onClick={() => {
                   const el = document.getElementById('component-navDestination') || document.querySelector('[data-component-type="navDestination"]');
-                  if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ if (el) {
+ el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }
                 }}
-                className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-ds-surface-raised hover:bg-ds-surface-hover text-ds-content text-xs font-mono font-bold border border-ds-line cursor-pointer transition-colors shadow-sm"
+                className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-ds-surface-raised text-ds-content text-xs font-mono font-bold border border-ds-line cursor-pointer transition-colors shadow-sm"
               >
                 Set Destination
               </button>
@@ -2763,23 +2763,23 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               });
             } else {
               // If there's an exploded view on the canvas, connect to the first one by default
-              const screenComponents = useMockpitStore.getState().components;
-              const exploded = screenComponents.find((c) => c.type === 'vehicleExplodedView');
-              if (exploded) {
-                useMockpitStore.getState().updateComponentConnector(component.id, {
-                  sourceAnchor: anchor,
-                  targetComponentId: exploded.id,
-                  targetX: 0.5,
-                  targetY: 0.5,
-                });
-              }
-            }
-          }}
-        />
-      );
-    }
+ const screenComponents = useMockpitStore.getState().components;
+ const exploded = screenComponents.find((c) => c.type === 'vehicleExplodedView');
+ if (exploded) {
+ useMockpitStore.getState().updateComponentConnector(component.id, {
+ sourceAnchor: anchor,
+ targetComponentId: exploded.id,
+ targetX: 0.5,
+ targetY: 0.5,
+ });
+ }
+ }
+ }}
+ />
+ );
+ }
 
-    case 'sendToServiceCenter': {
+ case 'sendToServiceCenter': {
       return (
         <SendToServiceWidget
           component={component}

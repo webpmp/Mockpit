@@ -252,31 +252,31 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
           </filter>
           <style>
             {`
-              @keyframes drawConnectorLine {
-                from {
-                  stroke-dashoffset: var(--line-length, 1000px);
-                }
-                to {
-                  stroke-dashoffset: 0;
-                }
-              }
-              @keyframes popTargetReticle {
-                from {
-                  opacity: 0;
-                }
-                to {
-                  opacity: 1;
-                }
-              }
-              @keyframes fadeInSourceDot {
-                from {
-                  opacity: 0;
-                }
-                to {
-                  opacity: 1;
-                }
-              }
-            `}
+ @keyframes drawConnectorLine {
+ from {
+ stroke-dashoffset: var(--line-length, 1000px);
+ }
+ to {
+ stroke-dashoffset: 0;
+ }
+ }
+ @keyframes popTargetReticle {
+ from {
+ opacity: 0;
+ }
+ to {
+ opacity: 1;
+ }
+ }
+ @keyframes fadeInSourceDot {
+ from {
+ opacity: 0;
+ }
+ to {
+ opacity: 1;
+ }
+ }
+ `}
           </style>
         </defs>
 
@@ -430,18 +430,18 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
                 top: targetPt.y,
               }}
               title={`Target Point for "${callout.staticProps.title || 'Callout'}" (Drag to reposition)`}
-              onMouseDown={(e) => handleTargetMouseDown(e, callout.id, targetComp.id)}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectComponent?.(callout.id);
-              }}
-            >
-              {/* 44x44px Hit Area with 14x14px visual reticle */}
-              <div
-                className={`w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
+ onMouseDown={(e) => handleTargetMouseDown(e, callout.id, targetComp.id)}
+ onClick={(e) => {
+ e.stopPropagation();
+ onSelectComponent?.(callout.id);
+ }}
+ >
+ {/* 44x44px Hit Area with 14x14px visual reticle */}
+ <div
+ className={`w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
                   isSelected
                     ? 'bg-ds-primary/30 border-ds-primary shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_60%,transparent)] scale-125'
-                    : 'bg-ds-surface/80 border-ds-primary/80 group-hover/target:border-ds-primary group-hover/target:scale-125'
+                    : 'bg-ds-surface/80 border-ds-primary/80 '
                 }`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-ds-primary" />

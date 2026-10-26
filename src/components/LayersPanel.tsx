@@ -85,7 +85,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                 className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center justify-between gap-2 ${
                   isSelected
                     ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/30 shadow-md'
-                    : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/70'
+                    : 'bg-slate-800/40 border-slate-700/60 '
                 }`}
               >
                 {/* Left side: Icon, title, metadata */}
@@ -122,7 +122,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                 >
                   <button
                     onClick={() => bringToFront(comp.id)}
-                    className="p-1 rounded bg-slate-900/90 text-slate-400 hover:text-sky-400 hover:bg-slate-800 border border-slate-700/60 transition-colors cursor-pointer"
+                    className="p-1 rounded bg-slate-900/90 text-slate-400 border border-slate-700/60 transition-colors cursor-pointer"
                     title="Bring to Front (top layer)"
                   >
                     <ArrowUp className="w-3 h-3" />
@@ -130,7 +130,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
 
                   <button
                     onClick={() => sendToBack(comp.id)}
-                    className="p-1 rounded bg-slate-900/90 text-slate-400 hover:text-sky-400 hover:bg-slate-800 border border-slate-700/60 transition-colors cursor-pointer"
+                    className="p-1 rounded bg-slate-900/90 text-slate-400 border border-slate-700/60 transition-colors cursor-pointer"
                     title="Send to Back (bottom layer)"
                   >
                     <ArrowDown className="w-3 h-3" />
@@ -138,7 +138,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
 
                   <button
                     onClick={() => deleteComponent(comp.id)}
-                    className="p-1 rounded bg-slate-900/90 text-rose-400 hover:bg-rose-500 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
+                    className="p-1 rounded bg-slate-900/90 text-rose-400 border border-slate-700/60 transition-colors cursor-pointer"
                     title="Delete Component"
                   >
                     <Trash2 className="w-3 h-3" />

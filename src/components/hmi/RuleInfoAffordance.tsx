@@ -17,9 +17,7 @@ export const RuleInfoAffordance: React.FC<RuleInfoAffordanceProps> = ({ rule }) 
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
-        className="w-5 h-5 rounded-md bg-slate-800/90 hover:bg-slate-700 text-slate-400 hover:text-sky-300 flex items-center justify-center text-xs font-mono transition-colors cursor-pointer border border-slate-700/70 shadow-sm"
+        className="w-5 h-5 rounded-md bg-slate-800/90 text-slate-400 flex items-center justify-center text-xs font-mono transition-colors cursor-pointer border border-slate-700/70 shadow-sm"
         title={`View rule standard & details for ${rule.title}`}
         aria-label={`View details for rule ${rule.title}`}
       >

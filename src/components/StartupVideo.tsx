@@ -146,7 +146,7 @@ export const StartupVideo: React.FC<StartupVideoProps> = ({ onComplete }) => {
             e.stopPropagation();
             finishSequence();
           }}
-          className="absolute top-6 right-6 z-10 px-3.5 py-1.5 rounded-full text-xs font-medium text-white/70 bg-black/40 hover:bg-black/70 hover:text-white border border-white/10 backdrop-blur-md transition-all cursor-pointer opacity-75 hover:opacity-100"
+          className="absolute top-6 right-6 z-10 px-3.5 py-1.5 rounded-full text-xs font-medium text-white/70 bg-black/40 border border-white/10 backdrop-blur-md transition-all cursor-pointer opacity-75 "
           title="Press Esc or click to skip intro"
         >
           Skip Intro

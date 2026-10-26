@@ -32,6 +32,8 @@ export const CruiseControlWidget: React.FC<CruiseControlWidgetProps> = ({
   styleOpacity = 1,
 }) => {
   const primaryAccent = customColor || 'var(--color-ds-primary)';
+  const screenMode = useMockpitStore((s) => s.screenMode);
+  const isPresenting = isPresentation || screenMode === 'presentation';
   const vehicleState = useMockpitStore((s) => s.vehicleState);
   const setVehicleState = useMockpitStore((s) => s.setVehicleState);
   const selectComponent = useMockpitStore((s) => s.selectComponent);
@@ -58,7 +60,7 @@ export const CruiseControlWidget: React.FC<CruiseControlWidgetProps> = ({
   const btnMinH = Math.min(isCompact || isUltraCompact ? 44 : 56, innerH);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (isPresentation) {
+    if (isPresenting) {
       e.stopPropagation();
     } else {
       dragPosRef.current = { x: e.clientX, y: e.clientY };
@@ -68,7 +70,7 @@ export const CruiseControlWidget: React.FC<CruiseControlWidgetProps> = ({
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isPresentation) {
+    if (!isPresenting) {
       selectComponent(component.id);
       if (dragPosRef.current) {
         const dist = Math.hypot(e.clientX - dragPosRef.current.x, e.clientY - dragPosRef.current.y);
@@ -92,6 +94,12 @@ export const CruiseControlWidget: React.FC<CruiseControlWidgetProps> = ({
   return (
     <div
       data-component-type="cruiseControl"
+      onClick={(e) => {
+        if (!isPresenting) {
+          e.stopPropagation();
+          selectComponent(component.id);
+        }
+      }}
       className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between shadow-lg backdrop-blur-md relative select-none overflow-visible ${
         iconOnly ? 'p-0' : isUltraCompact ? 'p-2' : isCompact ? 'p-2.5' : 'p-3.5'
       } ${baseOpacity}`}

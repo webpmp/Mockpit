@@ -114,7 +114,7 @@ export const TestingSettingsView: React.FC = () => {
               className="mt-1 rounded bg-slate-950 border-slate-700 text-sky-500 focus:ring-0 focus:ring-offset-0 cursor-pointer w-4 h-4"
             />
             <div>
-              <span className="text-sm font-semibold text-slate-200 group-hover:text-slate-100 block">
+              <span className="text-sm font-semibold text-slate-200 block">
                 Require Master Password to exit Participant Mode
               </span>
               <span className="text-sm text-slate-400 leading-relaxed block mt-1">
@@ -131,7 +131,7 @@ export const TestingSettingsView: React.FC = () => {
               className="mt-1 rounded bg-slate-950 border-slate-700 text-sky-500 focus:ring-0 focus:ring-offset-0 cursor-pointer w-4 h-4"
             />
             <div>
-              <span className="text-sm font-semibold text-slate-200 group-hover:text-slate-100 block">
+              <span className="text-sm font-semibold text-slate-200 block">
                 Require Master Password to edit or delete research tests
               </span>
               <span className="text-sm text-slate-400 leading-relaxed block mt-1">
@@ -213,7 +213,7 @@ export const TestingSettingsView: React.FC = () => {
 
           <button
             type="submit"
-            className="px-5 py-2 rounded-xl text-sm font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="px-5 py-2 rounded-xl text-sm font-semibold bg-sky-500 text-slate-950 transition-colors cursor-pointer whitespace-nowrap shrink-0"
           >
             Update Password
           </button>
@@ -238,7 +238,7 @@ export const TestingSettingsView: React.FC = () => {
             <button
               type="button"
               onClick={handleExportData}
-              className="w-full py-2 px-3.5 rounded-lg text-sm font-medium bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap cursor-pointer mt-2 text-center"
+              className="w-full py-2 px-3.5 rounded-lg text-sm font-medium bg-slate-900 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap cursor-pointer mt-2 text-center"
             >
               Download JSON Backup
             </button>
@@ -252,7 +252,7 @@ export const TestingSettingsView: React.FC = () => {
                 Upload a previously exported JSON backup file to restore tests and results.
               </p>
             </div>
-            <label className="w-full py-2 px-3.5 rounded-lg text-sm font-medium bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap cursor-pointer mt-2 text-center block">
+            <label className="w-full py-2 px-3.5 rounded-lg text-sm font-medium bg-slate-900 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap cursor-pointer mt-2 text-center block">
               <span>Upload Backup File</span>
               <input type="file" accept=".json" onChange={handleImportFile} className="hidden" />
             </label>
@@ -290,7 +290,7 @@ export const TestingSettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmClearSessionsOpen(false)}
-                className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 whitespace-nowrap shrink-0 cursor-pointer"
+                className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-400 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Cancel
               </button>
@@ -300,7 +300,7 @@ export const TestingSettingsView: React.FC = () => {
                   clearAllSessions();
                   setConfirmClearSessionsOpen(false);
                 }}
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-rose-500 text-white hover:bg-rose-400 cursor-pointer shadow-sm whitespace-nowrap shrink-0"
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-rose-500 text-white cursor-pointer shadow-sm whitespace-nowrap shrink-0"
               >
                 Yes, Clear All
               </button>
@@ -309,7 +309,7 @@ export const TestingSettingsView: React.FC = () => {
             <button
               type="button"
               onClick={() => setConfirmClearSessionsOpen(true)}
-              className="px-4 py-2 rounded-xl text-sm font-medium bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/30 transition-all cursor-pointer whitespace-nowrap shrink-0"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-rose-500/10 text-rose-400 border border-rose-500/30 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               Clear Sessions
             </button>

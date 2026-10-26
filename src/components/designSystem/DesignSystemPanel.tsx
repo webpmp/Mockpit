@@ -226,7 +226,7 @@ export const DesignSystemPanel: React.FC = () => {
             onClick={() => setConfirmAction('reset')}
             className={`px-2 py-1 rounded text-xs font-mono font-medium flex items-center gap-1 transition-colors ${
               isUserTheme
-                ? 'text-slate-400 hover:text-sky-300 hover:bg-slate-800 cursor-pointer'
+                ? 'text-slate-400 cursor-pointer'
                 : 'text-slate-600 cursor-not-allowed opacity-50'
             }`}
             title={isUserTheme ? 'Reset theme to base preset' : 'Reset is disabled for factory presets'}
@@ -238,7 +238,7 @@ export const DesignSystemPanel: React.FC = () => {
             type="button"
             data-testid="design-system-close-btn"
             onClick={() => setIsDesignSystemOpen(false)}
-            className="p-1 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1 text-slate-400 rounded transition-colors cursor-pointer"
             title="Close Design System"
           >
             <X className="w-4 h-4" />
@@ -257,13 +257,13 @@ export const DesignSystemPanel: React.FC = () => {
             <p className="text-xs font-mono text-slate-200">
               {confirmAction === 'reset'
                 ? `Reset "${activeTheme.name}" to the original ${FACTORY_PRESETS[activeTheme.baseId]?.name || 'preset'} colors?`
-                : `Delete theme "${activeTheme.name}"?`}
+ : `Delete theme "${activeTheme.name}"?`}
             </p>
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setConfirmAction(null)}
-                className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-950 text-slate-300 hover:text-slate-100 text-xs font-mono cursor-pointer transition-colors"
+                className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-950 text-slate-300 text-xs font-mono cursor-pointer transition-colors"
               >
                 Cancel
               </button>
@@ -273,8 +273,8 @@ export const DesignSystemPanel: React.FC = () => {
                 onClick={confirmAction === 'reset' ? handleConfirmReset : handleConfirmDelete}
                 className={`px-3 py-1 rounded-lg text-white text-xs font-mono font-bold cursor-pointer transition-colors ${
                   confirmAction === 'reset'
-                    ? 'bg-sky-500 hover:bg-sky-400'
-                    : 'bg-rose-500 hover:bg-rose-400'
+                    ? 'bg-sky-500 '
+                    : 'bg-rose-500 '
                 }`}
               >
                 {confirmAction === 'reset' ? 'Reset' : 'Delete'}
@@ -306,7 +306,7 @@ export const DesignSystemPanel: React.FC = () => {
                 />
                 <button
                   type="submit"
-                  className="p-1.5 rounded-lg bg-sky-500 text-slate-950 hover:bg-sky-400 cursor-pointer"
+                  className="p-1.5 rounded-lg bg-sky-500 text-slate-950 cursor-pointer"
                   title="Save name"
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -317,7 +317,7 @@ export const DesignSystemPanel: React.FC = () => {
                     setIsRenaming(false);
                     setRenameError(null);
                   }}
-                  className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  className="p-1.5 rounded-lg bg-slate-800 text-slate-400 cursor-pointer"
                   title="Cancel rename"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -338,7 +338,7 @@ export const DesignSystemPanel: React.FC = () => {
                   data-testid="theme-select-dropdown"
                   value={activeThemeId}
                   onChange={(e) => setActiveTheme(e.target.value)}
-                  className="w-full appearance-none bg-slate-900 border border-slate-700 hover:border-slate-600 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-100 outline-none focus:border-sky-500 cursor-pointer pr-8"
+                  className="w-full appearance-none bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-100 outline-none focus:border-sky-500 cursor-pointer pr-8"
                 >
                   <optgroup label="Presets">
                     {FACTORY_THEME_LIST.map((preset) => (
@@ -367,7 +367,7 @@ export const DesignSystemPanel: React.FC = () => {
                     type="button"
                     data-testid="theme-actions-menu-btn"
                     onClick={() => setIsActionsMenuOpen((prev) => !prev)}
-                    className="p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-100 hover:border-slate-700 transition-colors cursor-pointer"
+                    className="p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 transition-colors cursor-pointer"
                     title="Theme options"
                   >
                     <MoreHorizontal className="w-4 h-4" />
@@ -381,7 +381,7 @@ export const DesignSystemPanel: React.FC = () => {
                           setIsActionsMenuOpen(false);
                           setIsRenaming(true);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-slate-100 hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-slate-300 flex items-center gap-2 cursor-pointer"
                       >
                         <Edit2 className="w-3.5 h-3.5 text-sky-400" />
                         <span>Rename</span>
@@ -389,7 +389,7 @@ export const DesignSystemPanel: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleDuplicate}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-slate-100 hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-slate-300 flex items-center gap-2 cursor-pointer"
                       >
                         <Copy className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Duplicate</span>
@@ -401,7 +401,7 @@ export const DesignSystemPanel: React.FC = () => {
                           setIsActionsMenuOpen(false);
                           setConfirmAction('delete');
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-rose-400 hover:text-white hover:bg-rose-500 flex items-center gap-2 cursor-pointer"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-rose-400 flex items-center gap-2 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Delete</span>
@@ -443,7 +443,7 @@ export const DesignSystemPanel: React.FC = () => {
             onClick={() => setIsPreviewExpanded((prev) => !prev)}
             className="flex items-center justify-between w-full text-left group cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 text-xs font-bold font-mono text-slate-300 group-hover:text-slate-100">
+            <div className="flex items-center gap-1.5 text-xs font-bold font-mono text-slate-300 ">
               {isPreviewExpanded ? (
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               ) : (
@@ -493,7 +493,7 @@ export const DesignSystemPanel: React.FC = () => {
                         <div
                           key={role.id}
                           data-testid={`role-row-${role.id}`}
-                          className="p-2 rounded-xl bg-slate-900/70 border border-slate-800/80 hover:border-slate-700/80 transition-all min-h-[48px] flex flex-col justify-center space-y-1"
+                          className="p-2 rounded-xl bg-slate-900/70 border border-slate-800/80 transition-all min-h-[48px] flex flex-col justify-center space-y-1"
                         >
                           <div className="flex items-center justify-between gap-2">
                             {/* Swatch & Label */}

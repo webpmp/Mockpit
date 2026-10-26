@@ -161,7 +161,7 @@ export const WeatherAlertsSection: React.FC<WeatherAlertsSectionProps> = ({
             </div>
             <button
               onClick={() => refetch()}
-              className="mt-1 px-3 py-1 text-[11px] font-mono font-bold bg-ds-surface-raised hover:bg-ds-line text-ds-content rounded-lg border border-ds-line transition-colors cursor-pointer"
+              className="mt-1 px-3 py-1 text-[11px] font-mono font-bold bg-ds-surface-raised text-ds-content rounded-lg border border-ds-line transition-colors cursor-pointer"
             >
               Retry Connection
             </button>
@@ -215,7 +215,7 @@ export const WeatherAlertsSection: React.FC<WeatherAlertsSectionProps> = ({
           href="https://open-meteo.com/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 hover:text-ds-content-muted transition-colors text-ds-line-strong"
+          className="flex items-center gap-1 transition-colors text-ds-line-strong"
           title="Open-Meteo Weather Forecast API"
         >
           <span>Weather data by Open-Meteo</span>

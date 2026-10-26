@@ -114,10 +114,10 @@ export const ParticipantHUD: React.FC = () => {
                   ? 'text-amber-400'
                   : 'text-slate-400'
               }`}
-            />
-            {timeLimit ? (
-              <span
-                className={`font-semibold ${
+ />
+ {timeLimit ? (
+ <span
+ className={`font-semibold ${
                   isCritical
                     ? 'text-slate-200'
                     : isUrgent
@@ -138,7 +138,7 @@ export const ParticipantHUD: React.FC = () => {
           <button
             type="button"
             onClick={() => completeCurrentTask('skipped')}
-            className="px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-900 rounded-lg border border-slate-800 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
+            className="px-2.5 py-1 text-xs font-medium text-slate-400 rounded-lg border border-slate-800 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
             title="Skip this task and proceed to next"
           >
             <FastForward className="w-3.5 h-3.5" />
@@ -149,7 +149,7 @@ export const ParticipantHUD: React.FC = () => {
           <button
             type="button"
             onClick={handleExitClick}
-            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-900 rounded-lg border border-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 rounded-lg border border-slate-800 transition-colors cursor-pointer"
             title="Exit Participant Session"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -174,7 +174,7 @@ export const ParticipantHUD: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmExitOpen(false)}
-                className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 transition-colors cursor-pointer"
               >
                 Continue Test
               </button>
@@ -184,7 +184,7 @@ export const ParticipantHUD: React.FC = () => {
                   setConfirmExitOpen(false);
                   exitSessionEarly(true);
                 }}
-                className="px-4 py-1.5 rounded-xl text-xs font-medium bg-rose-500 text-white hover:bg-rose-400 transition-colors cursor-pointer shadow-md"
+                className="px-4 py-1.5 rounded-xl text-xs font-medium bg-rose-500 text-white transition-colors cursor-pointer shadow-md"
               >
                 Exit Session
               </button>

@@ -54,20 +54,20 @@ export const MediaPlaylistsWidget: React.FC<MediaPlaylistsWidgetProps> = ({
         className={`w-[148px] shrink-0 flex flex-col items-center text-center p-2 rounded-xl border transition-all cursor-pointer group ${
           isCardSelected
             ? 'bg-ds-surface-raised/90 border-ds-primary ring-1 ring-ds-primary/50 shadow-md'
-            : 'bg-ds-background/40 border-ds-line-subtle/80 hover:border-ds-line hover:bg-ds-surface-raised/40'
+            : 'bg-ds-background/40 border-ds-line-subtle/80 '
         }`}
-        style={
-          isCardSelected
-            ? {
-                borderColor: primaryAccent,
-                boxShadow: `0 0 0 1px color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
-              }
-            : undefined
-        }
-      >
-        {/* 120x120px Brand-Themed Gradient Album/Playlist Cover */}
-        <div
-          className={`w-[120px] h-[120px] rounded-lg bg-gradient-to-br ${playlist.gradientBg} flex items-center justify-center shadow-md shrink-0 group-hover:scale-[1.02] transition-transform`}
+ style={
+ isCardSelected
+ ? {
+ borderColor: primaryAccent,
+ boxShadow: `0 0 0 1px color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
+ }
+ : undefined
+ }
+ >
+ {/* 120x120px Brand-Themed Gradient Album/Playlist Cover */}
+ <div
+ className={`w-[120px] h-[120px] rounded-lg bg-gradient-to-br ${playlist.gradientBg} flex items-center justify-center shadow-md shrink-0  transition-transform`}
         >
           {renderCoverIcon(playlist.iconName || 'ListMusic', 'w-10 h-10 text-white/95 drop-shadow')}
         </div>

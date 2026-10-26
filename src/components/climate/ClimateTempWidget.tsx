@@ -135,7 +135,7 @@ export const ClimateTempWidget: React.FC<ClimateTempWidgetProps> = ({
             {/* Left - Button (Cool) */}
             <button
               {...minusRepeat.bind}
-              className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-ds-surface-raised hover:bg-ds-surface-hover active:scale-90 border border-ds-line flex items-center justify-center text-ds-primary shadow cursor-pointer transition-transform shrink-0 select-none"
+              className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-ds-surface-raised active:scale-90 border border-ds-line flex items-center justify-center text-ds-primary shadow cursor-pointer transition-transform shrink-0 select-none"
             >
               <Minus className="w-4 h-4 pointer-events-none" />
             </button>
@@ -187,7 +187,7 @@ export const ClimateTempWidget: React.FC<ClimateTempWidgetProps> = ({
             {/* ds-raw-start: thermal color code is fixed (heat/cool) */}
             <button
               {...plusRepeat.bind}
-              className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-ds-surface-raised hover:bg-ds-surface-hover active:scale-90 border border-ds-line flex items-center justify-center text-orange-400 shadow cursor-pointer transition-transform shrink-0 select-none"
+              className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-ds-surface-raised active:scale-90 border border-ds-line flex items-center justify-center text-orange-400 shadow cursor-pointer transition-transform shrink-0 select-none"
             >
               <Plus className="w-4 h-4 pointer-events-none" />
             </button>
@@ -201,7 +201,7 @@ export const ClimateTempWidget: React.FC<ClimateTempWidgetProps> = ({
           {/* ds-raw-start: thermal color code is fixed (heat/cool) */}
           <button
             {...plusRepeat.bind}
-            className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-ds-surface-raised hover:bg-ds-surface-hover active:scale-90 border border-ds-line flex items-center justify-center text-orange-400 shadow cursor-pointer transition-transform shrink-0 mb-[clamp(12px,4cqw,19px)] select-none"
+            className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-ds-surface-raised active:scale-90 border border-ds-line flex items-center justify-center text-orange-400 shadow cursor-pointer transition-transform shrink-0 mb-[clamp(12px,4cqw,19px)] select-none"
           >
             <Plus className="w-4 h-4 pointer-events-none" />
           </button>
@@ -264,7 +264,7 @@ export const ClimateTempWidget: React.FC<ClimateTempWidgetProps> = ({
           {/* Bottom - Button (Cool) */}
           <button
             {...minusRepeat.bind}
-            className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-ds-surface-raised hover:bg-ds-surface-hover active:scale-90 border border-ds-line flex items-center justify-center text-ds-primary shadow cursor-pointer transition-transform shrink-0 mt-[clamp(12px,4cqw,19px)] select-none"
+            className="w-[clamp(28px,8cqw,40px)] h-[clamp(28px,8cqw,40px)] rounded-full bg-ds-surface-raised active:scale-90 border border-ds-line flex items-center justify-center text-ds-primary shadow cursor-pointer transition-transform shrink-0 mt-[clamp(12px,4cqw,19px)] select-none"
           >
             <Minus className="w-4 h-4 pointer-events-none" />
           </button>

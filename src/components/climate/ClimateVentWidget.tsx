@@ -184,25 +184,25 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                 className={`h-7 px-2.5 rounded-full text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer select-none inline-flex items-center justify-center gap-1.5 border shrink-0 ${
                   vent.isOpen
                     ? 'bg-ds-primary/20 border-ds-primary/60 text-ds-primary shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_30%,transparent)]'
-                    : 'bg-ds-background/70 border-ds-line-subtle text-ds-content-subtle hover:text-ds-content-secondary hover:bg-ds-surface-raised/60'
+                    : 'bg-ds-background/70 border-ds-line-subtle text-ds-content-subtle '
                 }`}
-                style={{
-                  borderColor: vent.isOpen && customColor ? `color-mix(in srgb, ${customColor} 50%, transparent)` : undefined,
-                  color: vent.isOpen && customColor ? customColor : undefined,
-                  boxShadow: vent.isOpen && customColor ? `0 0 8px color-mix(in srgb, ${customColor} 21%, transparent)` : undefined,
-                }}
-                title={vent.isOpen ? `Turn ${vent.label} vent OFF` : `Turn ${vent.label} vent ON`}
-                aria-label={vent.isOpen ? `Turn ${vent.label} vent OFF` : `Turn ${vent.label} vent ON`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full transition-all shrink-0 ${
+ style={{
+ borderColor: vent.isOpen && customColor ? `color-mix(in srgb, ${customColor} 50%, transparent)` : undefined,
+ color: vent.isOpen && customColor ? customColor : undefined,
+ boxShadow: vent.isOpen && customColor ? `0 0 8px color-mix(in srgb, ${customColor} 21%, transparent)` : undefined,
+ }}
+ title={vent.isOpen ? `Turn ${vent.label} vent OFF` : `Turn ${vent.label} vent ON`}
+ aria-label={vent.isOpen ? `Turn ${vent.label} vent OFF` : `Turn ${vent.label} vent ON`}
+ >
+ <span
+ className={`w-1.5 h-1.5 rounded-full transition-all shrink-0 ${
                     vent.isOpen
                       ? 'bg-ds-primary shadow-[0_0_6px_color-mix(in_srgb,var(--color-ds-primary)_90%,transparent)]'
                       : 'bg-ds-line-strong'
                   }`}
-                  style={{
-                    backgroundColor: vent.isOpen && customColor ? customColor : undefined,
-                    boxShadow: vent.isOpen && customColor ? `0 0 6px ${customColor}` : undefined,
+ style={{
+ backgroundColor: vent.isOpen && customColor ? customColor : undefined,
+ boxShadow: vent.isOpen && customColor ? `0 0 6px ${customColor}` : undefined,
                   }}
                 />
                 <span className="block leading-[1] relative top-px">{vent.isOpen ? 'ON' : 'OFF'}</span>
@@ -221,11 +221,11 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                     ? 'bg-ds-background/90 border-ds-line shadow-inner cursor-not-allowed'
                     : isDragging
                     ? 'bg-ds-background/95 border-ds-line-strong cursor-grabbing shadow-lg'
-                    : 'bg-ds-background/95 border-ds-line hover:border-ds-line-strong cursor-grab'
+                    : 'bg-ds-background/95 border-ds-line cursor-grab'
                 }`}
-                style={{
-                  boxShadow: vent.isOpen
-                    ? `0 0 12px color-mix(in srgb, ${primaryAccent} 15%, transparent), inset 0 2px 4px rgba(0,0,0,0.8)`
+ style={{
+ boxShadow: vent.isOpen
+ ? `0 0 12px color-mix(in srgb, ${primaryAccent} 15%, transparent), inset 0 2px 4px rgba(0,0,0,0.8)`
                     : 'inset 0 2px 5px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3)',
                 }}
               >
@@ -289,12 +289,12 @@ export const ClimateVentWidget: React.FC<ClimateVentWidgetProps> = ({
                 >
                   <div
                     className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-ds-content-muted' : 'bg-ds-content-subtle'}`}
-                  />
-                  <div
-                    className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-ds-content-muted' : 'bg-ds-content-subtle'}`}
-                  />
-                  <div
-                    className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-ds-content-muted' : 'bg-ds-content-subtle'}`}
+ />
+ <div
+ className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-ds-content-muted' : 'bg-ds-content-subtle'}`}
+ />
+ <div
+ className={`w-full h-1 rounded transition-colors shadow-sm ${vent.isOpen ? 'bg-ds-content-muted' : 'bg-ds-content-subtle'}`}
                   />
                 </div>
               </div>

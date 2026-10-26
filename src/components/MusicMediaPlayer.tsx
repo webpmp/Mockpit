@@ -159,7 +159,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                 e.stopPropagation();
                 setIsServiceDropdownOpen((prev) => !prev);
               }}
-              className="text-xs font-mono font-extrabold uppercase px-2.5 py-1 rounded-full border flex items-center gap-1 hover:brightness-110 transition-all cursor-pointer shadow-sm"
+              className="text-xs font-mono font-extrabold uppercase px-2.5 py-1 rounded-full border flex items-center gap-1 transition-all cursor-pointer shadow-sm"
               style={{
                 color: primaryAccent,
                 borderColor: `color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
@@ -198,7 +198,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                         className={`w-full text-left text-xs font-mono font-bold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer block ${
                           isActive
                             ? 'bg-ds-surface-raised text-ds-content'
-                            : 'text-ds-content-secondary hover:text-white hover:bg-ds-surface'
+                            : 'text-ds-content-secondary '
                         }`}
                         style={isActive ? { color: customColor } : undefined}
                       >
@@ -220,7 +220,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
           className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'lastPlayed'
               ? 'bg-ds-surface-raised text-ds-content border border-ds-line/80 shadow-sm'
-              : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
+              : 'text-ds-content-muted '
           }`}
         >
           <Clock className="w-4 h-4 text-ds-content-muted" />
@@ -231,7 +231,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
           className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'library'
               ? 'bg-ds-surface-raised text-ds-content border border-ds-line/80 shadow-sm'
-              : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
+              : 'text-ds-content-muted '
           }`}
         >
           <ListMusic className="w-4 h-4 text-ds-content-muted" />
@@ -259,13 +259,13 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                   className={`p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer group ${
                     isSelectedTrack
                       ? 'bg-ds-surface-raised/90 border-ds-line-strong shadow-sm'
-                      : 'bg-ds-background/40 hover:bg-ds-surface-raised/60 border-ds-line-subtle/60'
+                      : 'bg-ds-background/40 border-ds-line-subtle/60'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
                     {/* Album Art / Placeholder */}
                     <div
-                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${track.coverBg} flex items-center justify-center shrink-0 shadow-sm border border-white/10 group-hover:scale-105 transition-transform overflow-hidden`}
+                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${track.coverBg} flex items-center justify-center shrink-0 shadow-sm border border-white/10 transition-transform overflow-hidden`}
                     >
                       {coverArt?.status === 'found' && coverArt?.coverUrl ? (
                         <img
@@ -281,7 +281,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                     <div className="min-w-0">
                       <div
                         className={`text-sm sm:text-base font-bold truncate ${
-                          isSelectedTrack ? 'text-ds-content' : 'text-ds-content group-hover:text-white'
+                          isSelectedTrack ? 'text-ds-content' : 'text-ds-content '
                         }`}
                       >
                         {track.title}
@@ -304,7 +304,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                       className={`p-1 rounded-lg transition-colors cursor-pointer ${
                         favoritedTrackIds.includes(track.id)
                           ? 'text-white'
-                          : 'text-ds-content-subtle hover:text-ds-content-secondary opacity-0 group-hover:opacity-100'
+                          : 'text-ds-content-subtle '
                       }`}
                       title={favoritedTrackIds.includes(track.id) ? 'Remove from favorites' : 'Add to favorites'}
                       aria-label={favoritedTrackIds.includes(track.id) ? 'Remove from favorites' : 'Add to favorites'}
@@ -334,13 +334,13 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                       const sampleT = SAMPLE_TRACKS.find((t) => t.id === pl.sampleTrackId);
                       if (sampleT) handleSelectTrack(sampleT);
                     }}
-                    className="p-2.5 rounded-xl bg-ds-background/50 hover:bg-ds-surface-raised/80 border border-ds-line-subtle/80 cursor-pointer transition-colors flex items-center gap-2.5 group"
+                    className="p-2.5 rounded-xl bg-ds-background/50 border border-ds-line-subtle/80 cursor-pointer transition-colors flex items-center gap-2.5 group"
                   >
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-ds-surface-raised border border-ds-line flex items-center justify-center shrink-0 text-ds-content-secondary group-hover:scale-105 transition-transform">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-ds-surface-raised border border-ds-line flex items-center justify-center shrink-0 text-ds-content-secondary transition-transform">
                       {renderCoverIcon(pl.iconName)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold text-ds-content truncate group-hover:text-white">
+                      <div className="text-sm font-bold text-ds-content truncate ">
                         {pl.name}
                       </div>
                       <div className="text-xs text-ds-content-muted font-mono">
@@ -365,7 +365,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                       const sampleT = SAMPLE_TRACKS.find((t) => t.id === album.sampleTrackId);
                       if (sampleT) handleSelectTrack(sampleT);
                     }}
-                    className="p-2 rounded-xl bg-ds-background/30 hover:bg-ds-surface-raised/60 border border-ds-line-subtle/40 cursor-pointer transition-colors flex items-center justify-between"
+                    className="p-2 rounded-xl bg-ds-background/30 border border-ds-line-subtle/40 cursor-pointer transition-colors flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <Disc className="w-5 h-5 text-ds-content-muted shrink-0" />
@@ -378,7 +378,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
                         </span>
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-ds-content-muted hover:text-ds-content">
+                    <span className="text-xs font-mono text-ds-content-muted ">
                       Play &rarr;
                     </span>
                   </div>
@@ -433,17 +433,17 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
               className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                 isFavorited
                   ? 'text-white'
-                  : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
+                  : 'text-ds-content-muted '
               }`}
               title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
               aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
             >
               <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
-            </button>
-            <button
-              onClick={() => setIsShuffle((p) => !p)}
-              className={`p-2 rounded-xl transition-colors cursor-pointer ${
-                isShuffle ? 'text-ds-content bg-ds-surface-raised border border-ds-line' : 'text-ds-content-muted hover:text-ds-content'
+ </button>
+ <button
+ onClick={() => setIsShuffle((p) => !p)}
+ className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                isShuffle ? 'text-ds-content bg-ds-surface-raised border border-ds-line' : 'text-ds-content-muted '
               }`}
               title="Shuffle"
             >
@@ -452,7 +452,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
             <button
               onClick={() => setIsRepeat((p) => !p)}
               className={`p-2 rounded-xl transition-colors cursor-pointer ${
-                isRepeat ? 'text-ds-content bg-ds-surface-raised border border-ds-line' : 'text-ds-content-muted hover:text-ds-content'
+                isRepeat ? 'text-ds-content bg-ds-surface-raised border border-ds-line' : 'text-ds-content-muted '
               }`}
               title="Repeat"
             >
@@ -492,7 +492,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
           <div className="flex items-center gap-3.5">
             <button
               onClick={handlePrevTrack}
-              className="p-2 rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-ds-content-secondary transition-colors cursor-pointer"
               title="Previous track"
             >
               <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -500,12 +500,12 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
 
             <button
               onClick={handleTogglePlay}
-              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold ${
-                !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95  font-bold ${
+                !customColor ? 'bg-ds-primary ' : ''
               }`}
-              style={{
-                backgroundColor: customColor || undefined,
-                boxShadow: `0 0 14px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
+ style={{
+ backgroundColor: customColor || undefined,
+ boxShadow: `0 0 14px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
               }}
               title={isPlaying ? 'Pause' : 'Play'}
             >
@@ -518,7 +518,7 @@ export const MusicMediaPlayer: React.FC<MusicMediaPlayerProps> = ({
 
             <button
               onClick={handleNextTrack}
-              className="p-2 rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-ds-content-secondary transition-colors cursor-pointer"
               title="Next track"
             >
               <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />

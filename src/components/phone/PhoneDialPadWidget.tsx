@@ -168,11 +168,11 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
     const mins = Math.floor(secs / 60);
     const remainderSecs = secs % 60;
     return `${mins.toString().padStart(2, '0')}:${remainderSecs.toString().padStart(2, '0')}`;
-  };
+ };
 
-  return (
-    <div
-      className={`@container w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
+ return (
+ <div
+ className={`@container w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} p-3.5 flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative overflow-hidden ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
     >
       <ComponentHeader
@@ -188,7 +188,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
                 className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
                   activeTab === 'keypad'
                     ? 'bg-ds-surface-raised text-ds-content shadow-sm'
-                    : 'text-ds-content-subtle hover:text-ds-content-secondary'
+                    : 'text-ds-content-subtle '
                 }`}
               >
                 Keypad
@@ -198,7 +198,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
                 className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
                   activeTab === 'recents'
                     ? 'bg-ds-surface-raised text-ds-content shadow-sm'
-                    : 'text-ds-content-subtle hover:text-ds-content-secondary'
+                    : 'text-ds-content-subtle '
                 }`}
               >
                 Recents
@@ -238,7 +238,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
               className={`p-3 rounded-full border transition-all cursor-pointer ${
                 isMuted
                   ? 'bg-ds-warning text-ds-background border-ds-warning'
-                  : 'bg-ds-surface-raised text-ds-content border-ds-line hover:bg-ds-surface-hover'
+                  : 'bg-ds-surface-raised text-ds-content border-ds-line '
               }`}
             >
               {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -246,7 +246,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
 
             <button
               onClick={handleEndCall}
-              className="w-14 h-14 rounded-full bg-ds-error hover:bg-ds-error/85 text-white flex items-center justify-center shadow-lg transition-transform active:scale-90 cursor-pointer"
+              className="w-14 h-14 rounded-full bg-ds-error text-white flex items-center justify-center shadow-lg transition-transform active:scale-90 cursor-pointer"
             >
               <PhoneOff className="w-6 h-6 fill-current" />
             </button>
@@ -256,7 +256,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
               className={`p-3 rounded-full border transition-all cursor-pointer ${
                 isSpeaker
                   ? 'bg-ds-primary text-ds-on-primary border-ds-primary'
-                  : 'bg-ds-surface-raised text-ds-content border-ds-line hover:bg-ds-surface-hover'
+                  : 'bg-ds-surface-raised text-ds-content border-ds-line '
               }`}
             >
               <Volume2 className="w-5 h-5" />
@@ -302,7 +302,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
               <button
                 key={k.num}
                 onClick={() => handleKeyPress(k.num)}
-                className="bg-ds-surface-raised/80 hover:bg-ds-surface-hover/90 active:scale-95 border border-ds-line/50 rounded-[clamp(9px,2.25cqw,20px)] py-[clamp(6px,2.25cqh,25px)] px-[clamp(3.5px,1.6cqw,16px)] flex flex-col items-center justify-center transition-all cursor-pointer group select-none"
+                className="bg-ds-surface-raised/80 active:scale-95 border border-ds-line/50 rounded-[clamp(9px,2.25cqw,20px)] py-[clamp(6px,2.25cqh,25px)] px-[clamp(3.5px,1.6cqw,16px)] flex flex-col items-center justify-center transition-all cursor-pointer group select-none"
               >
                 <span className="text-[clamp(16px,6.75cqw,52px)] font-black text-ds-content leading-none group-active:text-ds-primary">
                   {k.num}
@@ -329,7 +329,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
               disabled={!enteredNumber}
               className={`w-[clamp(38px,11cqw,76px)] h-[clamp(38px,11cqw,76px)] rounded-full shrink-0 flex items-center justify-center shadow-lg transition-all active:scale-90 cursor-pointer ${
                 enteredNumber
-                  ? 'bg-ds-success hover:bg-ds-success/85 text-ds-background shadow-ds-success/20'
+                  ? 'bg-ds-success text-ds-background shadow-ds-success/20'
                   : 'bg-ds-surface-raised text-ds-content-disabled border border-ds-line/50 cursor-not-allowed'
               }`}
             >
@@ -345,7 +345,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
                   onMouseLeave={stopHoldClear}
                   onTouchStart={startHoldClear}
                   onTouchEnd={stopHoldClear}
-                  className="p-[clamp(7px,2.2cqw,16px)] rounded-full bg-ds-surface-raised/80 hover:bg-ds-surface-hover text-ds-content-secondary active:scale-90 transition-all cursor-pointer relative overflow-hidden shrink-0 flex items-center justify-center"
+                  className="p-[clamp(7px,2.2cqw,16px)] rounded-full bg-ds-surface-raised/80 text-ds-content-secondary active:scale-90 transition-all cursor-pointer relative overflow-hidden shrink-0 flex items-center justify-center"
                   title="Delete (Hold to clear)"
                 >
                   {/* Hold Progress Bar */}
@@ -371,7 +371,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
                 setEnteredNumber(log.number.replace(/[^\d+*#]/g, ''));
                 setActiveTab('keypad');
               }}
-              className="flex items-center justify-between p-2 rounded-xl bg-ds-background/40 border border-ds-line-subtle/60 hover:bg-ds-surface-raised/40 transition-colors cursor-pointer group"
+              className="flex items-center justify-between p-2 rounded-xl bg-ds-background/40 border border-ds-line-subtle/60 transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <ContactAvatar
@@ -402,7 +402,7 @@ export const PhoneDialPadWidget: React.FC<PhoneDialPadWidgetProps> = ({
 
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-[10px] font-mono text-ds-content-subtle">{log.time}</span>
-                <Phone className="w-3.5 h-3.5 text-ds-content-subtle group-hover:text-ds-success transition-colors" />
+                <Phone className="w-3.5 h-3.5 text-ds-content-subtle transition-colors" />
               </div>
             </div>
           ))}

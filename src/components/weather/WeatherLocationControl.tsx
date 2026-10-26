@@ -99,7 +99,7 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
           <button
             id="weather-inline-save-btn"
             type="submit"
-            className="px-3.5 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-ds-primary hover:bg-ds-primary-hover text-ds-on-primary text-xs font-mono font-bold transition-all cursor-pointer shadow-md flex items-center justify-center"
+            className="px-3.5 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-ds-primary text-ds-on-primary text-xs font-mono font-bold transition-all cursor-pointer shadow-md flex items-center justify-center"
           >
             Save
           </button>
@@ -112,7 +112,7 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
               setIsEditingLocation(false);
               closeKeyboard({ isCancelled: true });
             }}
-            className="px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-ds-surface border border-ds-line-subtle hover:bg-ds-surface-raised text-ds-content-muted hover:text-ds-content text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center"
+            className="px-3 py-2 min-h-[44px] min-w-[44px] rounded-xl bg-ds-surface border border-ds-line-subtle text-ds-content-muted text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center"
           >
             Cancel
           </button>
@@ -122,12 +122,12 @@ export const WeatherLocationControl: React.FC<WeatherLocationControlProps> = ({
           id="weather-location-heading-btn"
           type="button"
           onClick={handleOpenLocationKeyboard}
-          className="min-h-[44px] min-w-[44px] flex items-center gap-2.5 text-left group cursor-pointer rounded-xl px-2 py-1 -ml-2 hover:bg-ds-surface/80 transition-colors"
+          className="min-h-[44px] min-w-[44px] flex items-center gap-2.5 text-left group cursor-pointer rounded-xl px-2 py-1 -ml-2 transition-colors"
           title="Click to edit location"
         >
           <h1
             id="weather-location-heading"
-            className={`${headingClassName} font-black font-mono tracking-tight text-ds-content uppercase group-hover:text-ds-primary transition-colors`}
+            className={`${headingClassName} font-black font-mono tracking-tight text-ds-content uppercase transition-colors`}
           >
             {locationDisplayName}
           </h1>

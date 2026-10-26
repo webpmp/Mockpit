@@ -208,19 +208,19 @@ export const BottomDock: React.FC = () => {
             className={`mockpit-dock-item flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-colors duration-150 relative group cursor-pointer select-none border ${
               isItemActive
                 ? 'bg-ds-surface-raised/90 text-ds-content'
-                : 'border-transparent text-ds-content-muted hover:text-ds-content hover:bg-ds-surface/60'
+                : 'border-transparent text-ds-content-muted '
             } ${isDragging ? 'opacity-40 border-dashed border-ds-primary' : ''}`}
-            title={
-              isEditor && !isHome
-                ? `${item.name} (Short press: Quick Access / Switch, Long press: Full screen, Drag to reorder)`
-                : hasQuickAccess
-                ? `${item.name} (Short press: Quick Access, Long press: Full screen)`
-                : `Switch to ${item.name} screen`
+ title={
+ isEditor && !isHome
+ ? `${item.name} (Short press: Quick Access / Switch, Long press: Full screen, Drag to reorder)`
+ : hasQuickAccess
+ ? `${item.name} (Short press: Quick Access, Long press: Full screen)`
+ : `Switch to ${item.name} screen`
             }
           >
             {/* Editor Reorder Controls for non-Home items */}
             {isEditor && !isHome && (
-              <div className="absolute -top-2 inset-x-0 flex items-center justify-between px-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              <div className="absolute -top-2 inset-x-0 flex items-center justify-between px-0.5 z-20">
                 <button
                   type="button"
                   disabled={!canMoveLeft}
@@ -228,8 +228,8 @@ export const BottomDock: React.FC = () => {
                     e.stopPropagation();
                     handleMove(item.id, 'left');
                   }}
-                  className={`p-0.5 rounded bg-ds-surface border border-ds-line text-ds-primary hover:bg-ds-primary-hover hover:text-ds-on-primary transition-colors cursor-pointer ${
-                    !canMoveLeft ? 'opacity-20 cursor-not-allowed hover:bg-ds-surface hover:text-ds-primary' : ''
+                  className={`p-0.5 rounded bg-ds-surface border border-ds-line text-ds-primary   transition-colors cursor-pointer ${
+                    !canMoveLeft ? 'opacity-20 cursor-not-allowed ' : ''
                   }`}
                   title="Move left"
                 >
@@ -242,8 +242,8 @@ export const BottomDock: React.FC = () => {
                     e.stopPropagation();
                     handleMove(item.id, 'right');
                   }}
-                  className={`p-0.5 rounded bg-ds-surface border border-ds-line text-ds-primary hover:bg-ds-primary-hover hover:text-ds-on-primary transition-colors cursor-pointer ${
-                    !canMoveRight ? 'opacity-20 cursor-not-allowed hover:bg-ds-surface hover:text-ds-primary' : ''
+                  className={`p-0.5 rounded bg-ds-surface border border-ds-line text-ds-primary   transition-colors cursor-pointer ${
+                    !canMoveRight ? 'opacity-20 cursor-not-allowed ' : ''
                   }`}
                   title="Move right"
                 >
@@ -254,7 +254,7 @@ export const BottomDock: React.FC = () => {
 
             {/* Drag Handle hint for non-Home items in Editor */}
             {isEditor && !isHome && (
-              <span className="absolute -top-1.5 left-1 text-ds-content-subtle opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <span className="absolute -top-1.5 left-1 text-ds-content-subtle pointer-events-none">
                 <GripVertical className="w-2.5 h-2.5" />
               </span>
             )}

@@ -26,7 +26,7 @@ describe('Canvas Shell Color Migration Suite (Spec 2)', () => {
 
     // Keys
     assert.ok(content.includes('bg-ds-surface-raised border-ds-primary'), 'Active key must use ds roles');
-    assert.ok(content.includes('bg-ds-surface hover:bg-ds-surface-raised active:bg-ds-surface-hover'), 'Inactive key must use ds roles');
+    assert.ok(content.includes('bg-ds-surface active:bg-ds-surface-hover'), 'Inactive key must use ds roles');
     assert.ok(content.includes('bg-ds-primary/30 border-ds-primary/60 text-ds-primary'), 'Caps/shift active must use ds-primary');
     assert.ok(content.includes('bg-ds-primary/40 border-ds-primary text-ds-content'), 'Backspace active must use ds-primary');
 
@@ -57,7 +57,7 @@ describe('Canvas Shell Color Migration Suite (Spec 2)', () => {
     assert.ok(content.includes('bg-ds-background/85'), 'Dock must use bg-ds-background/85');
     assert.ok(content.includes('border-ds-line-subtle/80'), 'Dock non-editor border must use border-ds-line-subtle/80');
     assert.ok(content.includes('bg-ds-surface-raised/90 text-ds-content'), 'Active item must use ds roles');
-    assert.ok(content.includes('border-transparent text-ds-content-muted hover:text-ds-content hover:bg-ds-surface/60'), 'Inactive item must use ds roles');
+    assert.ok(content.includes('border-transparent text-ds-content-muted'), 'Inactive item must use ds roles');
     assert.ok(!content.includes('bg-slate-950/85'), 'Must not contain bg-slate-950/85');
     assert.ok(!content.includes('border-slate-800/80'), 'Must not contain border-slate-800/80');
   });
@@ -76,7 +76,7 @@ describe('Canvas Shell Color Migration Suite (Spec 2)', () => {
 
     // Status bar
     assert.ok(content.includes('bg-ds-background/90 backdrop-blur border-b border-ds-line-subtle/60 flex items-center justify-between text-sm font-mono text-ds-content-muted'), 'Status bar must use ds roles');
-    assert.ok(content.includes('bg-ds-surface border hover:bg-ds-surface-raised text-ds-content'), 'Status bar pill must use ds roles');
+    assert.ok(content.includes('bg-ds-surface border text-ds-content'), 'Status bar pill must use ds roles');
     assert.ok(content.includes('bg-ds-error text-white text-[9px] font-mono font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center ring-2 ring-ds-background'), 'Messages unread badge must use ds-error and ring-ds-background');
     assert.ok(content.includes('text-ds-success fill-ds-success'), 'Charging Zap must use text-ds-success fill-ds-success');
     assert.ok(!content.includes('text-ds-success fill-ds-success animate-pulse'), 'Charging Zap must not use animate-pulse');

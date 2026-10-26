@@ -8,33 +8,33 @@ import { RefreshCw, AlertTriangle, Layers } from 'lucide-react';
  * and OpenStreetMap standard base map tiles with contrast filtering for high legibility.
  */
 export interface WeatherRadarCardProps {
-  lat: number;
-  lon: number;
-  zoom?: number;
-  label?: string;
-  refreshIntervalMinutes?: number;
-  className?: string;
-  onExpand?: () => void;
-  variant?: 'compact' | 'full';
-  sizeMode?: 'width' | 'height';
+ lat: number;
+ lon: number;
+ zoom?: number;
+ label?: string;
+ refreshIntervalMinutes?: number;
+ className?: string;
+ onExpand?: () => void;
+ variant?: 'compact' | 'full';
+ sizeMode?: 'width' | 'height';
 }
 
 // Convert longitude to Slippy Map tile X
 function lon2tile(lon: number, zoom: number): number {
-  return Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
+ return Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
 }
 
 // Convert latitude to Slippy Map tile Y
 function lat2tile(lat: number, zoom: number): number {
-  return Math.floor(
-    ((1 -
-      Math.log(
-        Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)
-      ) /
-        Math.PI) /
-      2) *
-      Math.pow(2, zoom)
-  );
+ return Math.floor(
+ ((1 -
+ Math.log(
+ Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)
+ ) /
+ Math.PI) /
+ 2) *
+ Math.pow(2, zoom)
+ );
 }
 
 /**
@@ -43,12 +43,12 @@ function lat2tile(lat: number, zoom: number): number {
  * and centered target reticle, supporting an optional scale multiplier for landscape cover crop.
  */
 const RadarTileMosaic: React.FC<{
-  tileOffsets: { x: number; y: number }[];
-  safeZoom: number;
-  radarHost: string;
-  radarPath: string | null;
-  reticleSize?: 'sm' | 'lg';
-  scale?: number;
+ tileOffsets: { x: number; y: number }[];
+ safeZoom: number;
+ radarHost: string;
+ radarPath: string | null;
+ reticleSize?: 'sm' | 'lg';
+ scale?: number;
 }> = ({ tileOffsets, safeZoom, radarHost, radarPath, reticleSize = 'sm', scale = 1 }) => (
   <>
     {/* 3x3 Tile Grid Centered (768x768px native tile mosaic, scaled via transform) */}
@@ -221,7 +221,7 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
             <span className="text-xs font-mono font-bold">RADAR FEED TEMPORARILY UNAVAILABLE</span>
             <button
               onClick={fetchRadarData}
-              className="mt-1 px-3 py-1 text-xs font-mono font-bold bg-ds-surface-raised hover:bg-ds-line rounded-lg text-ds-content border border-ds-line transition-colors cursor-pointer"
+              className="mt-1 px-3 py-1 text-xs font-mono font-bold bg-ds-surface-raised rounded-lg text-ds-content border border-ds-line transition-colors cursor-pointer"
             >
               Retry
             </button>
@@ -253,7 +253,7 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
               id="weather-radar-refresh-btn"
               onClick={fetchRadarData}
               disabled={isLoading}
-              className="absolute top-3 right-3 z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-ds-background/85 backdrop-blur-sm border border-ds-line-subtle text-ds-content-secondary hover:text-ds-content transition-colors disabled:opacity-50 cursor-pointer shadow-md"
+              className="absolute top-3 right-3 z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-ds-background/85 backdrop-blur-sm border border-ds-line-subtle text-ds-content-secondary transition-colors disabled:opacity-50 cursor-pointer shadow-md"
               title="Refresh Radar"
               aria-label="Refresh radar"
             >
@@ -311,7 +311,7 @@ export const WeatherRadarCard: React.FC<WeatherRadarCardProps> = ({
                 e.stopPropagation();
                 fetchRadarData();
               }}
-              className="mt-1 px-2.5 py-0.5 text-[10px] font-mono font-bold bg-ds-surface-raised hover:bg-ds-line rounded-md text-ds-content border border-ds-line transition-colors cursor-pointer"
+              className="mt-1 px-2.5 py-0.5 text-[10px] font-mono font-bold bg-ds-surface-raised rounded-md text-ds-content border border-ds-line transition-colors cursor-pointer"
             >
               Retry
             </button>

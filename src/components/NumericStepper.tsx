@@ -77,7 +77,7 @@ export const NumericStepper: React.FC<NumericStepperProps> = ({
         onClick={handleDecrement}
         disabled={disabled || isAtMin}
         title="Decrease"
-        className="w-7 h-7 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 active:scale-95 disabled:opacity-40 disabled:hover:bg-slate-900 disabled:hover:text-slate-300 disabled:active:scale-100 disabled:cursor-not-allowed flex items-center justify-center transition-all select-none shrink-0"
+        className="w-7 h-7 rounded-md bg-slate-900 text-slate-300 border border-slate-700/80 active:scale-95 disabled:opacity-40 disabled:active:scale-100 disabled:cursor-not-allowed flex items-center justify-center transition-all select-none shrink-0"
       >
         <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
       </button>
@@ -99,7 +99,7 @@ export const NumericStepper: React.FC<NumericStepperProps> = ({
         onClick={handleIncrement}
         disabled={disabled || isAtMax}
         title="Increase"
-        className="w-7 h-7 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 active:scale-95 disabled:opacity-40 disabled:hover:bg-slate-900 disabled:hover:text-slate-300 disabled:active:scale-100 disabled:cursor-not-allowed flex items-center justify-center transition-all select-none shrink-0"
+        className="w-7 h-7 rounded-md bg-slate-900 text-slate-300 border border-slate-700/80 active:scale-95 disabled:opacity-40 disabled:active:scale-100 disabled:cursor-not-allowed flex items-center justify-center transition-all select-none shrink-0"
       >
         <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
       </button>

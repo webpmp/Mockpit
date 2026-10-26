@@ -322,7 +322,7 @@ export const QuickAccessOverlay: React.FC = () => {
           <div
             id="quick-access-resize-handle"
             onPointerDown={handleResizeStart}
-            className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform z-[9996] select-none shadow-md"
+            className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 transition-transform z-[9996] select-none shadow-md"
             style={{ backgroundColor: 'var(--color-primary, #38bdf8)' }}
             title="Drag to resize Quick Access component"
           >

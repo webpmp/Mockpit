@@ -169,23 +169,23 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
           const store = useMockpitStore.getState();
           const screenComponents = store.componentsByScreen[store.activeView] || store.components;
           const activeCalloutId = resolveActiveCalloutIdForComponent(component.id, screenComponents);
-          store.selectComponent(component.id);
-          store.setActivePresentationCalloutId(activeCalloutId);
+          store.setActivePresentationCalloutId(
+            store.activePresentationCalloutId === activeCalloutId ? null : activeCalloutId
+          );
         }
       }}
       className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides, 'border-ds-line-subtle/90')} backdrop-blur-md p-3.5 flex flex-col justify-between select-none relative transition-all duration-200 ${baseOpacity} ${
         showRingHighlight ? 'ring-1 ring-ds-primary/60 shadow-[0_0_20px_color-mix(in_srgb,var(--color-ds-primary)_25%,transparent)]' : 'shadow-lg'
-      } ${isPresentation && isLinked ? 'cursor-pointer hover:border-ds-primary/40' : ''}`}
+      } ${isPresentation && isLinked ? 'cursor-pointer ' : ''}`}
       style={{ opacity: styleOpacity }}
     >
       {/* Top Header Row */}
       <div className="flex items-center h-9 min-h-[36px] max-h-[36px] text-xs font-bold tracking-wider text-ds-content-muted uppercase z-10 shrink-0 select-none pb-1 border-b border-ds-line-subtle/60">
         <span className="flex items-center gap-2 min-w-0 truncate">
-          {isDirectlySelected && (
+          {((isPresentation && isPresentationActive) || (!isPresentation && isDirectlySelected)) && (
             <span
               data-testid="status-callout-header-dot"
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ backgroundColor: 'var(--color-primary, rgb(56, 189, 248))' }}
+              className="w-1.5 h-1.5 rounded-full shrink-0 bg-ds-primary"
             />
           )}
           <span className="truncate">{title}</span>
@@ -266,7 +266,7 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
                   className={`w-3 h-3 rounded-full border-2 transition-all duration-150 flex items-center justify-center ${
                     isCurrent
                       ? 'bg-ds-primary border-white shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_80%,transparent)] scale-125'
-                      : 'bg-ds-surface border-ds-primary/80 group-hover/anchor:bg-ds-primary-hover group-hover/anchor:border-white group-hover/anchor:scale-125 shadow-xs'
+                      : 'bg-ds-surface border-ds-primary/80 shadow-xs'
                   }`}
                 >
                   <div className="w-1 h-1 rounded-full bg-white opacity-80" />

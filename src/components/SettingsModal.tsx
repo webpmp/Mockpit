@@ -84,7 +84,7 @@ export const SettingsModal: React.FC = () => {
         </div>
         <button
           onClick={toggleSettingsModal}
-          className="p-1.5 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+          className="p-1.5 text-slate-400 rounded-lg transition-colors cursor-pointer"
           title="Close Settings"
         >
           <X className="w-4 h-4" />
@@ -200,7 +200,7 @@ export const SettingsModal: React.FC = () => {
                     className={`py-2 px-2 rounded-xl text-center transition-all cursor-pointer border flex flex-col items-center justify-center gap-0.5 group ${
                       isSelected
                         ? 'bg-slate-900 border-sky-500/80 text-slate-100 shadow-[0_0_12px_rgba(56,189,248,0.2)]'
-                        : 'bg-slate-950/80 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                        : 'bg-slate-950/80 border-slate-800/80 text-slate-400 '
                     }`}
                     style={{
                       borderColor: isSelected ? 'var(--color-primary)' : undefined,
@@ -208,7 +208,7 @@ export const SettingsModal: React.FC = () => {
                   >
                     <span
                       className={`font-bold font-mono transition-transform ${
-                        isSelected ? 'scale-105' : 'group-hover:scale-105'
+                        isSelected ? 'scale-105' : ''
                       }`}
                       style={{
                         fontSize: opt.id === 'small' ? '11px' : opt.id === 'medium' ? '12px' : opt.id === 'large' ? '14px' : '15px',
@@ -258,7 +258,7 @@ export const SettingsModal: React.FC = () => {
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer border ${
                   gridConfig.visible
                     ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
-                    : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+                    : 'bg-slate-900 border-slate-800 text-slate-500 '
                 }`}
                 title={gridConfig.visible ? 'Hide Grid Overlay' : 'Show Grid Overlay'}
               >
@@ -271,7 +271,7 @@ export const SettingsModal: React.FC = () => {
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer border ${
                   gridConfig.snapToGrid
                     ? 'bg-sky-500/15 border-sky-500/40 text-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.2)]'
-                    : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+                    : 'bg-slate-900 border-slate-800 text-slate-500 '
                 }`}
                 title={
                   gridConfig.snapToGrid
@@ -312,7 +312,7 @@ export const SettingsModal: React.FC = () => {
                     className={`px-1.5 py-0.5 text-[10px] font-mono rounded border transition-colors cursor-pointer ${
                       gridConfig.size === sz
                         ? 'bg-sky-500/20 border-sky-500/50 text-sky-300 font-bold'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 '
                     }`}
                   >
                     {sz}p
@@ -415,7 +415,7 @@ export const SettingsModal: React.FC = () => {
                 {gridConfig.bgImage && (
                   <button
                     onClick={() => setGridConfig({ bgImage: '' })}
-                    className="text-[10px] font-mono text-rose-400 hover:text-rose-300 flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 cursor-pointer"
+                    className="text-[10px] font-mono text-rose-400 flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 cursor-pointer"
                     title="Clear Background Image"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -426,7 +426,7 @@ export const SettingsModal: React.FC = () => {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <label className="px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 hover:bg-sky-500/25 text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors">
+                  <label className="px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors">
                     <Upload className="w-3.5 h-3.5" />
                     <span>Upload Image</span>
                     <input
@@ -490,7 +490,7 @@ export const SettingsModal: React.FC = () => {
               className={`px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer border ${
                 vehicleBackground.enabled
                   ? 'bg-sky-500/15 border-sky-500/40 text-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.2)]'
-                  : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+                  : 'bg-slate-900 border-slate-800 text-slate-500 '
               }`}
             >
               <span>VEHICLE BG {vehicleBackground.enabled ? 'ON' : 'OFF'}</span>
@@ -517,7 +517,7 @@ export const SettingsModal: React.FC = () => {
                     className={`p-2 rounded-lg border text-left flex flex-col items-center justify-center gap-1 transition-all cursor-pointer min-h-[72px] ${
                       !vehicleBackground.vehicle
                         ? 'bg-sky-500/15 border-sky-500 text-sky-300 shadow-sm'
-                        : 'bg-slate-950 border-slate-800/80 hover:border-slate-700 text-slate-400'
+                        : 'bg-slate-950 border-slate-800/80 text-slate-400'
                     }`}
                   >
                     <div className="w-8 h-8 rounded bg-slate-900/80 border border-slate-800 flex items-center justify-center text-xs font-mono font-bold text-slate-500"></div>
@@ -536,7 +536,7 @@ export const SettingsModal: React.FC = () => {
                         className={`p-1.5 rounded-lg border text-left flex flex-col items-center justify-between gap-1 transition-all cursor-pointer relative group ${
                           isSelected
                             ? 'bg-sky-500/15 border-sky-500 text-sky-300 shadow-sm ring-1 ring-sky-500/40'
-                            : 'bg-slate-950 border-slate-800/80 hover:border-slate-700 text-slate-400'
+                            : 'bg-slate-950 border-slate-800/80 text-slate-400'
                         }`}
                       >
                         <div className="w-full h-10 rounded bg-slate-900/90 border border-slate-800/60 p-1 flex items-center justify-center overflow-hidden">
@@ -547,7 +547,7 @@ export const SettingsModal: React.FC = () => {
                             loading="lazy"
                           />
                         </div>
-                        <span className="text-[10px] font-mono truncate max-w-full text-center font-bold text-slate-300 group-hover:text-slate-100">
+                        <span className="text-[10px] font-mono truncate max-w-full text-center font-bold text-slate-300 ">
                           {v.name}
                         </span>
                       </button>
@@ -638,9 +638,9 @@ export const SettingsModal: React.FC = () => {
                         className={`py-1.5 px-1 text-[9px] font-mono font-bold rounded border transition-all cursor-pointer text-center leading-none ${
                           isPosSelected
                             ? 'bg-sky-500/25 border-sky-500 text-sky-300 shadow-sm'
-                            : 'bg-slate-900 border-slate-800/80 text-slate-500 hover:text-slate-300'
+                            : 'bg-slate-900 border-slate-800/80 text-slate-500 '
                         }`}
-                        title={`Anchor: ${pos.id}`}
+ title={`Anchor: ${pos.id}`}
                       >
                         {pos.label}
                       </button>
@@ -687,7 +687,7 @@ export const SettingsModal: React.FC = () => {
                           className={`py-1 text-[10px] font-mono font-bold capitalize rounded border transition-all cursor-pointer text-center ${
                             isBmSelected
                               ? 'bg-sky-500/25 border-sky-500 text-sky-300'
-                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 '
                           }`}
                         >
                           {bm}
@@ -736,7 +736,7 @@ export const SettingsModal: React.FC = () => {
                     className={`py-1.5 px-2 rounded-lg text-xs font-mono font-bold capitalize transition-all cursor-pointer border text-center ${
                       keyboardSlideDirection === dir
                         ? 'bg-sky-500/20 border-sky-500/60 text-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.2)]'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 '
                     }`}
                   >
                     {dir}
@@ -779,7 +779,7 @@ export const SettingsModal: React.FC = () => {
                         setIsAdjustingBackground(true);
                         setSettingsModalOpen(false);
                       }}
-                      className="p-1.5 rounded-lg transition-all border cursor-pointer bg-slate-900/80 border-slate-800 text-slate-400 hover:text-sky-300 hover:border-sky-500/30"
+                      className="p-1.5 rounded-lg transition-all border cursor-pointer bg-slate-900/80 border-slate-800 text-slate-400 "
                       title="Adjust Dashboard Background Position & Scale"
                     >
                       <Move className="w-4 h-4" />
@@ -794,7 +794,7 @@ export const SettingsModal: React.FC = () => {
                   className={`py-2 px-3 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer border flex items-center justify-center gap-2 ${
                     backgroundMode === 'color'
                       ? 'bg-sky-500/20 border-sky-500 text-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.2)]'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 '
                   }`}
                 >
                   <Palette className="w-3.5 h-3.5" />
@@ -806,7 +806,7 @@ export const SettingsModal: React.FC = () => {
                   className={`py-2 px-3 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer border flex items-center justify-center gap-2 ${
                     backgroundMode === 'dashboard'
                       ? 'bg-sky-500/20 border-sky-500 text-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.2)]'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 '
                   }`}
                 >
                   <Car className="w-3.5 h-3.5" />
@@ -843,7 +843,7 @@ export const SettingsModal: React.FC = () => {
                   />
                   <button
                     onClick={() => setAppShellBackground({ backgroundColor: '#020617' })}
-                    className="px-2 py-1 text-[11px] font-mono text-slate-400 hover:text-slate-200 bg-slate-950 rounded border border-slate-800 ml-auto transition-colors cursor-pointer"
+                    className="px-2 py-1 text-[11px] font-mono text-slate-400 bg-slate-950 rounded border border-slate-800 ml-auto transition-colors cursor-pointer"
                     title="Default Slate-950"
                   >
                     Reset Default
@@ -869,7 +869,7 @@ export const SettingsModal: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => resetAppShellBackgroundAlignment()}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 hover:text-slate-100 text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
                       title="Reset Scale to 100% and Offset to (0, 0)"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -881,7 +881,7 @@ export const SettingsModal: React.FC = () => {
                         setIsAdjustingBackground(true);
                         setSettingsModalOpen(false); // close modal so user can directly manipulate on canvas
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500 text-sky-300 hover:bg-sky-500/30 text-xs font-bold font-mono flex items-center gap-1.5 shadow-[0_0_12px_rgba(56,189,248,0.25)] transition-all cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500 text-sky-300 text-xs font-bold font-mono flex items-center gap-1.5 shadow-[0_0_12px_rgba(56,189,248,0.25)] transition-all cursor-pointer"
                       title="Enable full canvas direct drag & scroll alignment"
                     >
                       <Move className="w-3.5 h-3.5" />
@@ -983,7 +983,7 @@ export const SettingsModal: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <label className="px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 hover:bg-sky-500/25 text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors">
+                    <label className="px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors">
                       <Upload className="w-3.5 h-3.5" />
                       <span>Upload Photo</span>
                       <input
@@ -1016,7 +1016,7 @@ export const SettingsModal: React.FC = () => {
                     {backgroundImage !== '/backgrounds/dashboard-01.png' && (
                       <button
                         onClick={() => setAppShellBackground({ backgroundImage: '/backgrounds/dashboard-01.png' })}
-                        className="px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono transition-colors cursor-pointer"
+                        className="px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 text-xs font-mono transition-colors cursor-pointer"
                         title="Reset to default infotainment asset"
                       >
                         Reset

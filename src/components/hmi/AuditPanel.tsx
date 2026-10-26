@@ -399,240 +399,240 @@ export const AuditPanel: React.FC = () => {
       } else if (f.status === 'pass') {
         group.passes.push(f);
         return; // passes don't populate affectedInstances
-      }
+ }
 
-      if (f.instanceId) {
-        const allInstances = Object.values(componentsByScreen).flat();
-        const comp = allInstances.find((i) => i.id === f.instanceId);
-        const componentType = comp?.type || f.instanceId;
+ if (f.instanceId) {
+ const allInstances = Object.values(componentsByScreen).flat();
+ const comp = allInstances.find((i) => i.id === f.instanceId);
+ const componentType = comp?.type || f.instanceId;
 
-        let screenId = f.screenId;
-        if (!screenId || screenId === 'all') {
-          for (const [sId, sComps] of Object.entries(componentsByScreen)) {
-            if (sComps.some((c) => c.id === f.instanceId)) {
-              screenId = sId;
-              break;
-            }
-          }
-        }
+ let screenId = f.screenId;
+ if (!screenId || screenId === 'all') {
+ for (const [sId, sComps] of Object.entries(componentsByScreen)) {
+ if (sComps.some((c) => c.id === f.instanceId)) {
+ screenId = sId;
+ break;
+ }
+ }
+ }
 
-        group.affectedInstances.push({
-          instanceId: f.instanceId,
-          componentType,
-          screenId,
-          status: f.status as 'fail' | 'warning',
-          measured: f.measured,
-          threshold: f.threshold,
-          message: f.message,
-        });
-      }
-    });
+ group.affectedInstances.push({
+ instanceId: f.instanceId,
+ componentType,
+ screenId,
+ status: f.status as 'fail' | 'warning',
+ measured: f.measured,
+ threshold: f.threshold,
+ message: f.message,
+ });
+ }
+ });
 
-    let list = Array.from(ruleMap.values());
+ let list = Array.from(ruleMap.values());
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (g) =>
-          (g.rule.plainHeadline && g.rule.plainHeadline.toLowerCase().includes(q)) ||
-          (g.rule.categoryTag && g.rule.categoryTag.toLowerCase().includes(q)) ||
-          g.rule.title.toLowerCase().includes(q) ||
-          g.rule.id.toLowerCase().includes(q) ||
-          g.rule.description.toLowerCase().includes(q) ||
-          (g.rule.standardRef && g.rule.standardRef.toLowerCase().includes(q))
-      );
-    }
+ if (searchQuery.trim()) {
+ const q = searchQuery.toLowerCase();
+ list = list.filter(
+ (g) =>
+ (g.rule.plainHeadline && g.rule.plainHeadline.toLowerCase().includes(q)) ||
+ (g.rule.categoryTag && g.rule.categoryTag.toLowerCase().includes(q)) ||
+ g.rule.title.toLowerCase().includes(q) ||
+ g.rule.id.toLowerCase().includes(q) ||
+ g.rule.description.toLowerCase().includes(q) ||
+ (g.rule.standardRef && g.rule.standardRef.toLowerCase().includes(q))
+ );
+ }
 
-    if (selectedStatusFilter === 'issues') {
-      list = list.filter((g) => g.fails.length + g.warnings.length > 0);
-    } else if (selectedStatusFilter === 'pass') {
-      list = list.filter((g) => g.fails.length + g.warnings.length === 0 && g.passes.length > 0);
-    }
+ if (selectedStatusFilter === 'issues') {
+ list = list.filter((g) => g.fails.length + g.warnings.length > 0);
+ } else if (selectedStatusFilter === 'pass') {
+ list = list.filter((g) => g.fails.length + g.warnings.length === 0 && g.passes.length > 0);
+ }
 
-    // Sort rules strictly by severity:
-    // 1. Fails first (by fail count desc, then warn count desc)
-    // 2. Warnings second (by warn count desc)
-    // 3. Not measured third
-    // 4. Passes last (alphabetically by plain headline / title)
-    list.sort((a, b) => {
-      const aHasFails = a.fails.length > 0;
-      const bHasFails = b.fails.length > 0;
-      if (aHasFails && !bHasFails) return -1;
-      if (!aHasFails && bHasFails) return 1;
-      if (aHasFails && bHasFails) {
-        if (b.fails.length !== a.fails.length) return b.fails.length - a.fails.length;
-        return b.warnings.length - a.warnings.length;
-      }
+ // Sort rules strictly by severity:
+ // 1. Fails first (by fail count desc, then warn count desc)
+ // 2. Warnings second (by warn count desc)
+ // 3. Not measured third
+ // 4. Passes last (alphabetically by plain headline / title)
+ list.sort((a, b) => {
+ const aHasFails = a.fails.length > 0;
+ const bHasFails = b.fails.length > 0;
+ if (aHasFails && !bHasFails) return -1;
+ if (!aHasFails && bHasFails) return 1;
+ if (aHasFails && bHasFails) {
+ if (b.fails.length !== a.fails.length) return b.fails.length - a.fails.length;
+ return b.warnings.length - a.warnings.length;
+ }
 
-      const aHasWarn = a.warnings.length > 0;
-      const bHasWarn = b.warnings.length > 0;
-      if (aHasWarn && !bHasWarn) return -1;
-      if (!aHasWarn && bHasWarn) return 1;
-      if (aHasWarn && bHasWarn) {
-        return b.warnings.length - a.warnings.length;
-      }
+ const aHasWarn = a.warnings.length > 0;
+ const bHasWarn = b.warnings.length > 0;
+ if (aHasWarn && !bHasWarn) return -1;
+ if (!aHasWarn && bHasWarn) return 1;
+ if (aHasWarn && bHasWarn) {
+ return b.warnings.length - a.warnings.length;
+ }
 
-      const aHasUnmeasured = a.notMeasured.length > 0;
-      const bHasUnmeasured = b.notMeasured.length > 0;
-      if (aHasUnmeasured && !bHasUnmeasured) return -1;
-      if (!aHasUnmeasured && bHasUnmeasured) return 1;
+ const aHasUnmeasured = a.notMeasured.length > 0;
+ const bHasUnmeasured = b.notMeasured.length > 0;
+ if (aHasUnmeasured && !bHasUnmeasured) return -1;
+ if (!aHasUnmeasured && bHasUnmeasured) return 1;
 
-      const aTitle = a.rule.plainHeadline || a.rule.title;
-      const bTitle = b.rule.plainHeadline || b.rule.title;
-      return aTitle.localeCompare(bTitle);
-    });
-    return list;
-  }, [findings, effectiveRules, selectedTierFilter, selectedStatusFilter, searchQuery, componentsByScreen]);
+ const aTitle = a.rule.plainHeadline || a.rule.title;
+ const bTitle = b.rule.plainHeadline || b.rule.title;
+ return aTitle.localeCompare(bTitle);
+ });
+ return list;
+ }, [findings, effectiveRules, selectedTierFilter, selectedStatusFilter, searchQuery, componentsByScreen]);
 
-  // Current tab rules (filters by active tier tab when selectedTierFilter is 'all')
-  const currentTabRules = useMemo(() => {
-    if (selectedTierFilter !== 'all') {
-      return groupedRulesData;
-    }
-    return groupedRulesData.filter((g) => g.rule.tier === activeTierTab);
-  }, [groupedRulesData, selectedTierFilter, activeTierTab]);
+ // Current tab rules (filters by active tier tab when selectedTierFilter is 'all')
+ const currentTabRules = useMemo(() => {
+ if (selectedTierFilter !== 'all') {
+ return groupedRulesData;
+ }
+ return groupedRulesData.filter((g) => g.rule.tier === activeTierTab);
+ }, [groupedRulesData, selectedTierFilter, activeTierTab]);
 
-  // Available categories for the current tab (Item 7)
-  const availableCategoriesForCurrentTab = useMemo(() => {
-    const cats = new Set<string>();
-    effectiveRules
-      .filter((r) => r.tier === activeTierTab)
-      .forEach((r) => {
-        cats.add(normalizeCategoryName(r.categoryTag || r.category));
-      });
-    return Array.from(cats).sort();
-  }, [activeTierTab, effectiveRules]);
+ // Available categories for the current tab (Item 7)
+ const availableCategoriesForCurrentTab = useMemo(() => {
+ const cats = new Set<string>();
+ effectiveRules
+ .filter((r) => r.tier === activeTierTab)
+ .forEach((r) => {
+ cats.add(normalizeCategoryName(r.categoryTag || r.category));
+ });
+ return Array.from(cats).sort();
+ }, [activeTierTab, effectiveRules]);
 
-  // Category-grouped rules for the current tab with two-level sorting (Item 6 & 7)
-  const categoryGroupedRules = useMemo(() => {
-    let rules = currentTabRules;
-    if (selectedCategoryFilter !== 'all') {
-      rules = rules.filter(
-        (g) => normalizeCategoryName(g.rule.categoryTag || g.rule.category) === selectedCategoryFilter
-      );
-    }
+ // Category-grouped rules for the current tab with two-level sorting (Item 6 & 7)
+ const categoryGroupedRules = useMemo(() => {
+ let rules = currentTabRules;
+ if (selectedCategoryFilter !== 'all') {
+ rules = rules.filter(
+ (g) => normalizeCategoryName(g.rule.categoryTag || g.rule.category) === selectedCategoryFilter
+ );
+ }
 
-    const catMap = new Map<string, typeof currentTabRules>();
-    rules.forEach((ruleGroup) => {
-      const catName = normalizeCategoryName(ruleGroup.rule.categoryTag || ruleGroup.rule.category);
-      const list = catMap.get(catName) || [];
-      list.push(ruleGroup);
-      catMap.set(catName, list);
-    });
+ const catMap = new Map<string, typeof currentTabRules>();
+ rules.forEach((ruleGroup) => {
+ const catName = normalizeCategoryName(ruleGroup.rule.categoryTag || ruleGroup.rule.category);
+ const list = catMap.get(catName) || [];
+ list.push(ruleGroup);
+ catMap.set(catName, list);
+ });
 
-    const categories = Array.from(catMap.entries()).map(([categoryName, catRules]) => {
-      let maxFails = 0;
-      let totalFails = 0;
-      let maxWarnings = 0;
-      let totalWarnings = 0;
-      let hasUnmeasured = false;
+ const categories = Array.from(catMap.entries()).map(([categoryName, catRules]) => {
+ let maxFails = 0;
+ let totalFails = 0;
+ let maxWarnings = 0;
+ let totalWarnings = 0;
+ let hasUnmeasured = false;
 
-      catRules.forEach((rg) => {
-        const failCount = rg.fails.length;
-        const warnCount = rg.warnings.length;
-        if (failCount > maxFails) maxFails = failCount;
-        totalFails += failCount;
-        if (warnCount > maxWarnings) maxWarnings = warnCount;
-        totalWarnings += warnCount;
-        if (rg.notMeasured.length > 0) hasUnmeasured = true;
-      });
+ catRules.forEach((rg) => {
+ const failCount = rg.fails.length;
+ const warnCount = rg.warnings.length;
+ if (failCount > maxFails) maxFails = failCount;
+ totalFails += failCount;
+ if (warnCount > maxWarnings) maxWarnings = warnCount;
+ totalWarnings += warnCount;
+ if (rg.notMeasured.length > 0) hasUnmeasured = true;
+ });
 
-      return {
-        categoryName,
-        rules: catRules,
-        maxFails,
-        totalFails,
-        maxWarnings,
-        totalWarnings,
-        hasUnmeasured,
-      };
-    });
+ return {
+ categoryName,
+ rules: catRules,
+ maxFails,
+ totalFails,
+ maxWarnings,
+ totalWarnings,
+ hasUnmeasured,
+ };
+ });
 
-    // Two-level sort: category order by severity (Item 6)
-    categories.sort((a, b) => {
-      const aHasFails = a.maxFails > 0;
-      const bHasFails = b.maxFails > 0;
-      if (aHasFails && !bHasFails) return -1;
-      if (!aHasFails && bHasFails) return 1;
-      if (aHasFails && bHasFails) {
-        if (b.maxFails !== a.maxFails) return b.maxFails - a.maxFails;
-        if (b.totalFails !== a.totalFails) return b.totalFails - a.totalFails;
-        return b.maxWarnings - a.maxWarnings;
-      }
+ // Two-level sort: category order by severity (Item 6)
+ categories.sort((a, b) => {
+ const aHasFails = a.maxFails > 0;
+ const bHasFails = b.maxFails > 0;
+ if (aHasFails && !bHasFails) return -1;
+ if (!aHasFails && bHasFails) return 1;
+ if (aHasFails && bHasFails) {
+ if (b.maxFails !== a.maxFails) return b.maxFails - a.maxFails;
+ if (b.totalFails !== a.totalFails) return b.totalFails - a.totalFails;
+ return b.maxWarnings - a.maxWarnings;
+ }
 
-      const aHasWarn = a.maxWarnings > 0;
-      const bHasWarn = b.maxWarnings > 0;
-      if (aHasWarn && !bHasWarn) return -1;
-      if (!aHasWarn && bHasWarn) return 1;
-      if (aHasWarn && bHasWarn) {
-        if (b.maxWarnings !== a.maxWarnings) return b.maxWarnings - a.maxWarnings;
-        return b.totalWarnings - a.totalWarnings;
-      }
+ const aHasWarn = a.maxWarnings > 0;
+ const bHasWarn = b.maxWarnings > 0;
+ if (aHasWarn && !bHasWarn) return -1;
+ if (!aHasWarn && bHasWarn) return 1;
+ if (aHasWarn && bHasWarn) {
+ if (b.maxWarnings !== a.maxWarnings) return b.maxWarnings - a.maxWarnings;
+ return b.totalWarnings - a.totalWarnings;
+ }
 
-      if (a.hasUnmeasured && !b.hasUnmeasured) return -1;
-      if (!a.hasUnmeasured && b.hasUnmeasured) return 1;
+ if (a.hasUnmeasured && !b.hasUnmeasured) return -1;
+ if (!a.hasUnmeasured && b.hasUnmeasured) return 1;
 
-      return a.categoryName.localeCompare(b.categoryName);
-    });
+ return a.categoryName.localeCompare(b.categoryName);
+ });
 
-    return categories;
-  }, [currentTabRules, selectedCategoryFilter]);
+ return categories;
+ }, [currentTabRules, selectedCategoryFilter]);
 
-  // Unmeasured runtime rules
-  const unmeasuredRuntimeRules = useMemo(() => {
-    const findingsByRule = new Map<string, RuleFinding[]>();
-    findings.forEach((f) => {
-      const list = findingsByRule.get(f.ruleId) || [];
-      list.push(f);
-      findingsByRule.set(f.ruleId, list);
-    });
+ // Unmeasured runtime rules
+ const unmeasuredRuntimeRules = useMemo(() => {
+ const findingsByRule = new Map<string, RuleFinding[]>();
+ findings.forEach((f) => {
+ const list = findingsByRule.get(f.ruleId) || [];
+ list.push(f);
+ findingsByRule.set(f.ruleId, list);
+ });
 
-    return effectiveRules.filter((rule) => {
-      if (rule.tier !== 'runtime') return false;
-      const rf = findingsByRule.get(rule.id) || [];
-      const notMeasured = rf.filter((f) => f.status === 'not-measured');
-      const fails = rf.filter((f) => f.status === 'fail');
-      const warnings = rf.filter((f) => f.status === 'warning');
-      const passes = rf.filter((f) => f.status === 'pass');
-      return notMeasured.length > 0 && fails.length === 0 && warnings.length === 0 && passes.length === 0;
-    });
-  }, [findings, effectiveRules]);
+ return effectiveRules.filter((rule) => {
+ if (rule.tier !== 'runtime') return false;
+ const rf = findingsByRule.get(rule.id) || [];
+ const notMeasured = rf.filter((f) => f.status === 'not-measured');
+ const fails = rf.filter((f) => f.status === 'fail');
+ const warnings = rf.filter((f) => f.status === 'warning');
+ const passes = rf.filter((f) => f.status === 'pass');
+ return notMeasured.length > 0 && fails.length === 0 && warnings.length === 0 && passes.length === 0;
+ });
+ }, [findings, effectiveRules]);
 
-  // Manual rules data
-  const manualList = useMemo(() => {
-    const findingsByRule = new Map<string, RuleFinding[]>();
-    findings.forEach((f) => {
-      const list = findingsByRule.get(f.ruleId) || [];
-      list.push(f);
-      findingsByRule.set(f.ruleId, list);
-    });
+ // Manual rules data
+ const manualList = useMemo(() => {
+ const findingsByRule = new Map<string, RuleFinding[]>();
+ findings.forEach((f) => {
+ const list = findingsByRule.get(f.ruleId) || [];
+ list.push(f);
+ findingsByRule.set(f.ruleId, list);
+ });
 
-    return effectiveRules
-      .filter((rule) => rule.tier === 'manual')
-      .map((rule) => {
-        const ruleFindings = findingsByRule.get(rule.id) || [];
-        const finding = ruleFindings[0] || {
-          ruleId: rule.id,
-          status: 'needs-review',
-          message: rule.description,
-          standardRef: rule.standardRef,
-        };
-        return {
-          rule,
-          finding,
-        };
-      });
-  }, [findings, effectiveRules]);
+ return effectiveRules
+ .filter((rule) => rule.tier === 'manual')
+ .map((rule) => {
+ const ruleFindings = findingsByRule.get(rule.id) || [];
+ const finding = ruleFindings[0] || {
+ ruleId: rule.id,
+ status: 'needs-review',
+ message: rule.description,
+ standardRef: rule.standardRef,
+ };
+ return {
+ rule,
+ finding,
+ };
+ });
+ }, [findings, effectiveRules]);
 
-  // Filter Manual rules by search & category
-  const filteredManualRules = useMemo(() => {
-    return manualList.filter(({ rule }) => {
-      if (selectedTierFilter !== 'all' && rule.tier !== selectedTierFilter) {
-        return false;
-      }
+ // Filter Manual rules by search & category
+ const filteredManualRules = useMemo(() => {
+ return manualList.filter(({ rule }) => {
+ if (selectedTierFilter !== 'all' && rule.tier !== selectedTierFilter) {
+ return false;
+ }
 
-      // Category filter (Item 7)
-      if (selectedCategoryFilter !== 'all') {
+ // Category filter (Item 7)
+ if (selectedCategoryFilter !== 'all') {
         if (normalizeCategoryName(rule.categoryTag || rule.category) !== selectedCategoryFilter) {
           return false;
         }
@@ -892,10 +892,10 @@ export const AuditPanel: React.FC = () => {
         const q = searchQuery.toLowerCase();
         const displayName = getComponentDisplayName(comp.componentType);
         const compText = `${displayName} ${comp.componentType} ${comp.instanceId} ${comp.screenName || ''}`.toLowerCase();
-        const ruleMatch = [...comp.issues, ...comp.passes].some((f) => {
-          const rule = effectiveRules.find((r) => r.id === f.ruleId);
-          return (
-            (rule && `${rule.title} ${rule.id} ${rule.description}`.toLowerCase().includes(q)) ||
+ const ruleMatch = [...comp.issues, ...comp.passes].some((f) => {
+ const rule = effectiveRules.find((r) => r.id === f.ruleId);
+ return (
+ (rule && `${rule.title} ${rule.id} ${rule.description}`.toLowerCase().includes(q)) ||
             (f.message && f.message.toLowerCase().includes(q)) ||
             (f.measured && String(f.measured).toLowerCase().includes(q))
           );
@@ -966,7 +966,7 @@ export const AuditPanel: React.FC = () => {
 
         <button
           onClick={() => setScreenMode('editor')}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg text-slate-400 transition-colors cursor-pointer"
           title="Close Audit Mode"
           aria-label="Close Audit Mode"
         >
@@ -1023,7 +1023,7 @@ export const AuditPanel: React.FC = () => {
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono transition-colors cursor-pointer border ${
                   isFiltersOpen || activeFiltersCount > 0
                     ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
+                    : 'bg-slate-900 text-slate-300 border-slate-800'
                 }`}
                 title="Filter rules by status and category"
               >
@@ -1056,7 +1056,7 @@ export const AuditPanel: React.FC = () => {
                           setSelectedStatusFilter('all');
                           setSelectedCategoryFilter('all');
                         }}
-                        className="text-[11px] text-sky-400 hover:underline cursor-pointer"
+                        className="text-[11px] text-sky-400 cursor-pointer"
                       >
                         Reset filters
                       </button>
@@ -1075,7 +1075,7 @@ export const AuditPanel: React.FC = () => {
                         className={`py-1 rounded text-center transition-colors cursor-pointer ${
                           selectedStatusFilter === 'all'
                             ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-slate-400 '
                         }`}
                       >
                         All ({findings.length})
@@ -1086,7 +1086,7 @@ export const AuditPanel: React.FC = () => {
                         className={`py-1 rounded text-center transition-colors cursor-pointer ${
                           selectedStatusFilter === 'issues'
                             ? 'bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-slate-400 '
                         }`}
                       >
                         Issues ({totalIssuesCount})
@@ -1097,7 +1097,7 @@ export const AuditPanel: React.FC = () => {
                         className={`py-1 rounded text-center transition-colors cursor-pointer ${
                           selectedStatusFilter === 'pass'
                             ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-slate-400 '
                         }`}
                       >
                         Passed
@@ -1138,7 +1138,7 @@ export const AuditPanel: React.FC = () => {
                 type="button"
                 id="mockpit-audit-btn-registry"
                 onClick={() => setActiveAuditTab('registry')}
-                className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-100 transition-colors cursor-pointer"
+                className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 transition-colors cursor-pointer"
                 title="Rule Registry"
                 aria-label="Rule Registry"
               >
@@ -1165,7 +1165,7 @@ export const AuditPanel: React.FC = () => {
                   setSelectedStatusFilter('all');
                   setSelectedCategoryFilter('all');
                 }}
-                className="text-[11px] text-slate-400 hover:text-slate-200 underline transition-colors cursor-pointer"
+                className="text-[11px] text-slate-400 underline transition-colors cursor-pointer"
               >
                 Clear
               </button>
@@ -1183,7 +1183,7 @@ export const AuditPanel: React.FC = () => {
                       className={`p-1 rounded transition-colors cursor-pointer ${
                         groupBy === 'rule'
                           ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                          : 'text-slate-500 hover:text-slate-300'
+                          : 'text-slate-500 '
                       }`}
                       title="Group findings by rule definition (default)"
                     >
@@ -1194,7 +1194,7 @@ export const AuditPanel: React.FC = () => {
                       className={`p-1 rounded transition-colors cursor-pointer ${
                         groupBy === 'component'
                           ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                          : 'text-slate-500 hover:text-slate-300'
+                          : 'text-slate-500 '
                       }`}
                       title="Group findings by component instance"
                     >
@@ -1208,7 +1208,7 @@ export const AuditPanel: React.FC = () => {
                 {/* Test Simulation Button (Icon-only) */}
                 <button
                   onClick={handleSimulateTestInteraction}
-                  className="p-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 transition-colors cursor-pointer"
                   title="Simulate touch interaction to measure latency"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -1217,14 +1217,14 @@ export const AuditPanel: React.FC = () => {
                 {/* Export Buttons (Icon-only) */}
                 <button
                   onClick={() => handleExportReport('json')}
-                  className="p-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 transition-colors cursor-pointer"
                   title="Export Audit Report as JSON"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleExportReport('html')}
-                  className="p-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 transition-colors cursor-pointer"
                   title="Export Audit Report as HTML"
                 >
                   <FileText className="w-3.5 h-3.5" />
@@ -1248,7 +1248,7 @@ export const AuditPanel: React.FC = () => {
                 className={`flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg border-b-2 transition-all cursor-pointer ${
                   activeTierTab === 'static'
                     ? 'border-sky-400 text-sky-300 bg-slate-800/60'
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                    : 'border-transparent text-slate-400 '
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
@@ -1270,7 +1270,7 @@ export const AuditPanel: React.FC = () => {
                 className={`flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg border-b-2 transition-all cursor-pointer ${
                   activeTierTab === 'runtime'
                     ? 'border-sky-400 text-sky-300 bg-slate-800/60'
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                    : 'border-transparent text-slate-400 '
                 }`}
               >
                 <Clock className="w-3.5 h-3.5" />
@@ -1292,7 +1292,7 @@ export const AuditPanel: React.FC = () => {
                 className={`flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-bold rounded-t-lg border-b-2 transition-all cursor-pointer ${
                   activeTierTab === 'manual'
                     ? 'border-sky-400 text-sky-300 bg-slate-800/60'
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                    : 'border-transparent text-slate-400 '
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
@@ -1331,7 +1331,7 @@ export const AuditPanel: React.FC = () => {
                       {cat.items.map(({ rule, finding }) => (
                         <div
                           key={rule.id}
-                          className="bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-4 transition-all divide-y divide-slate-800/60"
+                          className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 transition-all divide-y divide-slate-800/60"
                         >
                           {/* Header row: Headline (Item 2 & 4: 17px, font-semibold, text-slate-200; Item 5: No Needs Review badge) */}
                           <div className="pb-3">
@@ -1409,7 +1409,7 @@ export const AuditPanel: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleSimulateTestInteraction}
-                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-mono shrink-0 cursor-pointer flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono shrink-0 cursor-pointer flex items-center gap-1"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-slate-400" /> Simulate Touch
                     </button>
@@ -1557,8 +1557,8 @@ export const AuditPanel: React.FC = () => {
                         data-instance-target={comp.instanceId}
                         className={`bg-slate-950/60 border rounded-xl p-3.5 transition-all space-y-2.5 ${
                           hasFails
-                            ? 'border-rose-900/50 hover:border-rose-700/60'
-                            : 'border-slate-800 hover:border-slate-700'
+                            ? 'border-rose-900/50 '
+                            : 'border-slate-800 '
                         }`}
                       >
                         {/* Component Card Header */}
@@ -1578,7 +1578,7 @@ export const AuditPanel: React.FC = () => {
                             {statusBadge}
                             <button
                               onClick={() => handleSelectOnCanvas(comp.instanceId, comp.screenId)}
-                              className="flex items-center gap-1 px-2.5 py-0.5 rounded bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 text-xs font-mono shrink-0 cursor-pointer transition-colors"
+                              className="flex items-center gap-1 px-2.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-mono shrink-0 cursor-pointer transition-colors"
                               title="Highlight and select component on the visual canvas"
                             >
                               <MousePointer className="w-3 h-3" /> Select on canvas
@@ -1641,7 +1641,7 @@ export const AuditPanel: React.FC = () => {
                             <div className="space-y-1 pt-0.5">
                               <button
                                 onClick={() => toggleExpandPass(`comp-${comp.instanceId}`)}
-                                className="w-full flex items-center justify-between py-1 px-2.5 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800/80 text-xs font-mono text-slate-400 transition-colors cursor-pointer"
+                                className="w-full flex items-center justify-between py-1 px-2.5 rounded-lg bg-slate-900/60 border border-slate-800/80 text-xs font-mono text-slate-400 transition-colors cursor-pointer"
                               >
                                 <span className="flex items-center gap-1.5">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" />
@@ -1762,7 +1762,7 @@ export const AuditPanel: React.FC = () => {
                             <div
                               key={rule.id}
                               id={`rule-card-${rule.id}`}
-                              className={`bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-3.5 transition-all ${
+                              className={`bg-slate-950/60 border border-slate-800  rounded-xl p-3.5 transition-all ${
                                 isRuleExpanded ? 'space-y-3' : ''
                               }`}
                             >
@@ -1788,7 +1788,7 @@ export const AuditPanel: React.FC = () => {
                                       e.stopPropagation();
                                       toggleExpandRuleCard(rule.id);
                                     }}
-                                    className="p-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                                    className="p-1 rounded-md text-slate-400 transition-colors cursor-pointer"
                                     title={isRuleExpanded ? 'Collapse rule details' : 'Expand rule details'}
                                   >
                                     {isRuleExpanded ? (
@@ -1829,7 +1829,7 @@ export const AuditPanel: React.FC = () => {
                                           role="button"
                                           aria-label={`Select ${getComponentDisplayName(inst.componentType)} on canvas`}
                                           title="Select on canvas"
-                                          className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 text-slate-500 cursor-pointer hover:border-sky-500/50 transition-colors focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                          className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 text-slate-500 cursor-pointer transition-colors focus:outline-none focus:ring-1 focus:ring-sky-500"
                                         >
                                           <LayoutGrid className="w-5 h-5 text-slate-400" />
                                         </div>
@@ -1854,7 +1854,7 @@ export const AuditPanel: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => toggleExpandPass(`rule-pass-${rule.id}`)}
-                                    className="text-sm font-mono text-slate-400 hover:text-slate-200 flex items-center justify-between w-full py-1 cursor-pointer"
+                                    className="text-sm font-mono text-slate-400 flex items-center justify-between w-full py-1 cursor-pointer"
                                   >
                                     <span className="flex items-center gap-1.5">
                                       <Check className="w-3.5 h-3.5 text-slate-400" />
@@ -1893,7 +1893,7 @@ export const AuditPanel: React.FC = () => {
                                             <button
                                               type="button"
                                               onClick={() => handleSelectOnCanvas(pFinding.instanceId, pFinding.screenId)}
-                                              className="text-sky-400 hover:underline cursor-pointer text-sm"
+                                              className="text-sky-400 cursor-pointer text-sm"
                                             >
                                               view
                                             </button>

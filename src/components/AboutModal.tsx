@@ -50,7 +50,7 @@ export const AboutModal: React.FC = () => {
           <button
             type="button"
             onClick={() => setAboutModalOpen(false)}
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 rounded-lg transition-colors cursor-pointer"
             title="Close About Modal"
             aria-label="Close"
           >
@@ -75,7 +75,7 @@ export const AboutModal: React.FC = () => {
             </div>
             <a
               href="mailto:webpmp@gmail.com"
-              className="font-medium text-sky-400 hover:text-sky-300 hover:underline transition-colors"
+              className="font-medium text-sky-400 transition-colors"
             >
               webpmp@gmail.com
             </a>
@@ -90,7 +90,7 @@ export const AboutModal: React.FC = () => {
               href="https://github.com/webpmp/Mockpit"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 font-medium text-sky-400 hover:text-sky-300 hover:underline transition-colors"
+              className="flex items-center gap-1.5 font-medium text-sky-400 transition-colors"
             >
               <span>webpmp/Mockpit</span>
               <ExternalLink className="w-3.5 h-3.5 shrink-0" />

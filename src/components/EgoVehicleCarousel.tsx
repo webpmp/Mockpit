@@ -100,7 +100,7 @@ export const EgoVehicleCarousel: React.FC<EgoVehicleCarouselProps> = ({
           type="button"
           disabled={disabled || !canScrollLeft}
           onClick={() => handleScroll('left')}
-          className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white border border-slate-700/80 disabled:opacity-20 disabled:cursor-not-allowed transition-colors shrink-0 cursor-pointer"
+          className="p-1 rounded bg-slate-900 text-slate-400 border border-slate-700/80 disabled:opacity-20 disabled:cursor-not-allowed transition-colors shrink-0 cursor-pointer"
           aria-label="Previous vehicle models"
           title="Previous vehicle models"
         >
@@ -137,7 +137,7 @@ export const EgoVehicleCarousel: React.FC<EgoVehicleCarouselProps> = ({
                 className={`relative shrink-0 w-14 h-20 rounded-md p-1 flex flex-col items-center justify-between transition-all cursor-pointer border ${
                   isSelected
                     ? 'bg-sky-950/60 border-sky-400 ring-1 ring-sky-400/50 text-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.25)]'
-                    : 'bg-slate-900/40 border-slate-700/60 text-slate-400 hover:border-slate-500 hover:text-slate-200 hover:bg-slate-900/70'
+                    : 'bg-slate-900/40 border-slate-700/60 text-slate-400 '
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <div className="w-full flex-1 flex items-center justify-center overflow-hidden bg-transparent">
@@ -161,7 +161,7 @@ export const EgoVehicleCarousel: React.FC<EgoVehicleCarouselProps> = ({
           type="button"
           disabled={disabled || !canScrollRight}
           onClick={() => handleScroll('right')}
-          className="p-1 rounded bg-slate-900 text-slate-400 hover:text-white border border-slate-700/80 disabled:opacity-20 disabled:cursor-not-allowed transition-colors shrink-0 cursor-pointer"
+          className="p-1 rounded bg-slate-900 text-slate-400 border border-slate-700/80 disabled:opacity-20 disabled:cursor-not-allowed transition-colors shrink-0 cursor-pointer"
           aria-label="Next vehicle models"
           title="Next vehicle models"
         >

@@ -111,7 +111,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
           selectedContact && (
             <button
               onClick={() => setSelectedContact(null)}
-              className="text-xs font-mono text-ds-content-muted hover:text-ds-content flex items-center gap-1"
+              className="text-xs font-mono text-ds-content-muted flex items-center gap-1"
             >
               <ArrowLeft className="w-3 h-3" /> Back
             </button>
@@ -149,7 +149,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
               onClick={() => handleCall(selectedContact)}
               className="flex flex-col items-center gap-1.5 group cursor-pointer"
             >
-              <div className="w-12 h-12 rounded-full bg-ds-success hover:bg-ds-success/85 text-ds-background flex items-center justify-center shadow-lg transition-transform group-active:scale-90">
+              <div className="w-12 h-12 rounded-full bg-ds-success text-ds-background flex items-center justify-center shadow-lg transition-transform group-active:scale-90">
                 <Phone className="w-5 h-5 fill-current" />
               </div>
               <span className="text-[10px] font-mono font-bold text-ds-content-secondary">Call</span>
@@ -159,7 +159,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
               onClick={() => handleMessage(selectedContact)}
               className="flex flex-col items-center gap-1.5 group cursor-pointer"
             >
-              <div className="w-12 h-12 rounded-full bg-ds-primary hover:bg-ds-primary-hover text-ds-on-primary flex items-center justify-center shadow-lg transition-transform group-active:scale-90">
+              <div className="w-12 h-12 rounded-full bg-ds-primary text-ds-on-primary flex items-center justify-center shadow-lg transition-transform group-active:scale-90">
                 <MessageSquare className="w-5 h-5 fill-current" />
               </div>
               <span className="text-[10px] font-mono font-bold text-ds-content-secondary">Message</span>
@@ -174,10 +174,10 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                 className={`w-12 h-12 rounded-full border flex items-center justify-center shadow-lg transition-transform group-active:scale-90 ${
                   selectedContact.favorite
                     ? 'bg-amber-400 text-slate-950 border-amber-300'
-                    : 'bg-ds-surface-raised text-ds-content-secondary border-ds-line hover:bg-ds-surface-hover'
+                    : 'bg-ds-surface-raised text-ds-content-secondary border-ds-line '
                 }`}
-              >
-                <Star className={`w-5 h-5 ${selectedContact.favorite ? 'fill-current' : ''}`} />
+ >
+ <Star className={`w-5 h-5 ${selectedContact.favorite ? 'fill-current' : ''}`} />
               </div>
               {/* ds-raw-end */}
               <span className="text-[10px] font-mono font-bold text-ds-content-secondary">
@@ -202,7 +202,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ds-content-subtle hover:text-ds-content-secondary z-10"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ds-content-subtle z-10"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -226,7 +226,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                       <ContactAvatar
                         name={fav.name}
                         avatarUrl={fav.avatarUrl}
-                        className="w-10 h-10 border border-ds-line/80 shadow transition-transform group-hover:scale-105"
+                        className="w-10 h-10 border border-ds-line/80 shadow transition-transform "
                         fontSizeClassName="text-xs"
                       />
                       {/* ds-raw-start: favorites gold fill and dark text are fixed (not theme-remapped) */}
@@ -265,7 +265,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                         <div
                           key={contact.id}
                           onClick={() => setSelectedContact(contact)}
-                          className="flex items-center justify-between py-2 px-1 hover:bg-ds-surface-raised/40 rounded-lg cursor-pointer transition-colors group"
+                          className="flex items-center justify-between py-2 px-1 rounded-lg cursor-pointer transition-colors group"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="relative shrink-0">
@@ -287,7 +287,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
                               )}
                             </div>
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-ds-content truncate group-hover:text-ds-content">
+                              <div className="text-xs font-bold text-ds-content truncate ">
                                 {contact.name}
                               </div>
                               <div className="text-[10px] font-mono text-ds-content-muted truncate">
@@ -298,7 +298,7 @@ export const PhoneContactsWidget: React.FC<PhoneContactsWidgetProps> = ({
 
                           <button
                             onClick={(e) => toggleFavorite(contact.id, e)}
-                            className="p-1 text-ds-content-subtle hover:text-ds-warning transition-colors"
+                            className="p-1 text-ds-content-subtle transition-colors"
                           >
                             <Star
                               className={`w-3.5 h-3.5 ${

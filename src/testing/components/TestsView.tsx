@@ -60,7 +60,7 @@ export const TestsView: React.FC = () => {
           <button
             type="button"
             onClick={handleCreateNew}
-            className="px-4 py-2 rounded-xl text-sm font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer shadow-md"
+            className="px-4 py-2 rounded-xl text-sm font-semibold bg-sky-500 text-slate-950 transition-colors whitespace-nowrap shrink-0 cursor-pointer shadow-md"
           >
             Create Test
           </button>
@@ -78,7 +78,7 @@ export const TestsView: React.FC = () => {
           <button
             type="button"
             onClick={handleCreateNew}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 transition-colors cursor-pointer inline-flex items-center justify-center whitespace-nowrap shrink-0 shadow-lg"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-sky-500 text-slate-950 transition-colors cursor-pointer inline-flex items-center justify-center whitespace-nowrap shrink-0 shadow-lg"
           >
             Create New Test
           </button>
@@ -95,7 +95,7 @@ export const TestsView: React.FC = () => {
             return (
               <div
                 key={test.id}
-                className="rounded-2xl bg-slate-900 border border-slate-800 p-6 flex flex-col justify-between hover:border-slate-700 transition-all space-y-5"
+                className="rounded-2xl bg-slate-900 border border-slate-800 p-6 flex flex-col justify-between transition-all space-y-5"
               >
                 <div className="space-y-4">
                   {/* Title & Top Metadata */}
@@ -122,7 +122,7 @@ export const TestsView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleStartSession(test.id)}
-                      className="px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 transition-all flex items-center gap-2 cursor-pointer shrink-0 shadow-sm whitespace-nowrap"
+                      className="px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2 cursor-pointer shrink-0 shadow-sm whitespace-nowrap"
                     >
                       <Play className="w-4 h-4 fill-current shrink-0" />
                       <span>Start Session</span>
@@ -171,7 +171,7 @@ export const TestsView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDuplicateTest(test.id)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="p-2 rounded-lg text-slate-400 transition-colors cursor-pointer"
                       title="Duplicate Test"
                     >
                       <Copy className="w-4 h-4" />
@@ -179,7 +179,7 @@ export const TestsView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleEdit(test)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-sky-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="p-2 rounded-lg text-slate-400 transition-colors cursor-pointer"
                       title="Edit Test Configuration"
                     >
                       <Edit className="w-4 h-4" />
@@ -187,7 +187,7 @@ export const TestsView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => deleteTest(test.id)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="p-2 rounded-lg text-slate-400 transition-colors cursor-pointer"
                       title="Delete Test"
                     >
                       <Trash2 className="w-4 h-4" />

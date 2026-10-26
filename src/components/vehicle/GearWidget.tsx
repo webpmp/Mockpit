@@ -144,15 +144,15 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
         className={`relative flex flex-col items-center justify-center shrink-0 w-full px-1 z-20 ${
           gearBarPosition === 'bottom' ? 'order-2' : 'order-1'
         }`}
-      >
-        {/* Stationary Compact P R N D Anchor Bar (Does NOT move or jump) */}
-        <div
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsSelecting((prev) => !prev);
-          }}
-          className={`flex items-center justify-between rounded-xl transition-colors duration-150 border shadow-inner select-none cursor-pointer ${
+ >
+ {/* Stationary Compact P R N D Anchor Bar (Does NOT move or jump) */}
+ <div
+ onMouseDown={(e) => e.stopPropagation()}
+ onClick={(e) => {
+ e.stopPropagation();
+ setIsSelecting((prev) => !prev);
+ }}
+ className={`flex items-center justify-between rounded-xl transition-colors duration-150 border shadow-inner select-none cursor-pointer ${
             isUltraCompact
               ? 'w-auto max-w-[125px] h-5.5 p-0.5 px-1 gap-1 bg-ds-background/70 border-ds-line-subtle/80'
               : isCompact
@@ -177,35 +177,35 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
                     ? 'bg-ds-primary/25 font-extrabold shadow-sm border border-ds-primary/50'
                     : 'text-ds-content-subtle border border-transparent'
                 }`}
-                style={isActive ? { color: customColor } : undefined}
-              >
-                {g}
-              </span>
-            );
-          })}
-        </div>
+ style={isActive ? { color: customColor } : undefined}
+ >
+ {g}
+ </span>
+ );
+ })}
+ </div>
 
-        {/* Temporary Expanded Selector: Animates DOWN from beneath the stationary anchor, and closes DOWNWARD +8px */}
-        <AnimatePresence>
-          {isSelecting && (
-            <motion.div
-              ref={selectorBarRef}
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              onPointerDown={handleBarPointerDown}
-              onMouseDown={(e) => e.stopPropagation()}
-              className={`absolute top-full mt-1.5 z-30 flex items-center justify-between rounded-xl border shadow-2xl backdrop-blur-xl select-none ${
+ {/* Temporary Expanded Selector: Animates DOWN from beneath the stationary anchor, and closes DOWNWARD +8px */}
+ <AnimatePresence>
+ {isSelecting && (
+ <motion.div
+ ref={selectorBarRef}
+ initial={{ opacity: 0, y: -8 }}
+ animate={{ opacity: 1, y: 0 }}
+ exit={{ opacity: 0, y: 8 }}
+ transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+ onPointerDown={handleBarPointerDown}
+ onMouseDown={(e) => e.stopPropagation()}
+ className={`absolute top-full mt-1.5 z-30 flex items-center justify-between rounded-xl border shadow-2xl backdrop-blur-xl select-none ${
                 isUltraCompact
                   ? 'w-full max-w-[160px] h-8.5 p-1 gap-1 bg-ds-background/95 border-ds-primary/80 ring-2 ring-ds-primary/30'
                   : isCompact
                   ? 'w-full max-w-[190px] h-10 p-1.5 gap-1.5 bg-ds-background/95 border-ds-primary/80 ring-2 ring-ds-primary/30'
                   : 'w-full max-w-[215px] h-11 p-1.5 gap-2 bg-ds-background/95 border-ds-primary/80 ring-2 ring-ds-primary/30'
               }`}
-              style={{
-                borderColor: customColor,
-                boxShadow: `0 0 16px ${getAlphaColor(customColor, '40', 25)}`,
+ style={{
+ borderColor: customColor,
+ boxShadow: `0 0 16px ${getAlphaColor(customColor, '40', 25)}`,
               }}
             >
               {GEARS.map((g) => {
@@ -226,23 +226,23 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
                     } ${
                       isActive
                         ? 'bg-ds-primary/25 font-extrabold shadow-sm border border-ds-primary/50'
-                        : 'text-ds-content-secondary hover:text-ds-content hover:bg-ds-surface-raised/60 border border-transparent'
+                        : 'text-ds-content-secondary border border-transparent'
                     }`}
-                    style={isActive ? { color: customColor } : undefined}
-                    aria-label={`Select gear ${g}`}
-                  >
-                    {g}
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+ style={isActive ? { color: customColor } : undefined}
+ aria-label={`Select gear ${g}`}
+ >
+ {g}
+ </button>
+ );
+ })}
+ </motion.div>
+ )}
+ </AnimatePresence>
+ </div>
 
-      {/* 3. Large Center Gear Letter (Primary Visual Representation & Selector Activator) */}
-      <div
-        className={`flex-1 min-h-0 flex items-center justify-center z-10 ${
+ {/* 3. Large Center Gear Letter (Primary Visual Representation & Selector Activator) */}
+ <div
+ className={`flex-1 min-h-0 flex items-center justify-center z-10 ${
           gearBarPosition === 'bottom' ? 'order-1' : 'order-2'
         }`}
       >
@@ -257,11 +257,11 @@ export const GearWidget: React.FC<GearWidgetProps> = ({
           className={`flex items-center justify-center rounded-xl transition-all duration-150 select-none cursor-pointer ${
             isSelecting
               ? 'bg-ds-surface-raised border-ds-primary/80 ring-2 ring-ds-primary/30'
-              : 'bg-ds-surface-raised/70 hover:bg-ds-surface-raised hover:border-ds-line-strong border-ds-line/60'
+              : 'bg-ds-surface-raised/70 border-ds-line/60'
           } border shadow-md`}
-          style={{
-            color: customColor,
-            boxShadow: `0 0 ${isSelecting ? '24px' : '16px'} ${getAlphaColor(customColor, '50', 30)}`,
+ style={{
+ color: customColor,
+ boxShadow: `0 0 ${isSelecting ? '24px' : '16px'} ${getAlphaColor(customColor, '50', 30)}`,
             fontSize: 'clamp(28px, 42cqmin, 180px)',
             padding: 'clamp(4px, 4cqmin, 28px) clamp(10px, 8cqmin, 40px)',
           }}

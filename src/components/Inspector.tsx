@@ -121,8 +121,8 @@ const WeatherPropertiesSection: React.FC = () => {
             disabled={status === 'loading'}
             className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
               hasUnsavedChanges
-                ? 'bg-sky-500 text-white shadow-md hover:bg-sky-400'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                ? 'bg-sky-500 text-white shadow-md '
+                : 'bg-slate-800 text-slate-300 border border-slate-700'
             }`}
             title="Submit location to fetch weather"
           >
@@ -151,7 +151,7 @@ const WeatherPropertiesSection: React.FC = () => {
             className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               unit === 'F'
                 ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 '
             }`}
           >
             <span>Fahrenheit (°F)</span>
@@ -163,7 +163,7 @@ const WeatherPropertiesSection: React.FC = () => {
             className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               unit === 'C'
                 ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 '
             }`}
           >
             <span>Celsius (°C)</span>
@@ -184,7 +184,7 @@ const WeatherPropertiesSection: React.FC = () => {
             className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
               displayScale === 'sm'
                 ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 '
             }`}
           >
             <span>Small</span>
@@ -196,7 +196,7 @@ const WeatherPropertiesSection: React.FC = () => {
             className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
               displayScale === 'md'
                 ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 '
             }`}
           >
             <span>Medium</span>
@@ -208,7 +208,7 @@ const WeatherPropertiesSection: React.FC = () => {
             className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
               displayScale === 'lg'
                 ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 '
             }`}
           >
             <span>Large</span>
@@ -221,7 +221,7 @@ const WeatherPropertiesSection: React.FC = () => {
         type="button"
         onClick={() => fetchWeather()}
         disabled={status === 'loading'}
-        className="w-full py-2 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white transition-all text-xs font-mono font-bold flex items-center justify-center gap-2 cursor-pointer"
+        className="w-full py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 transition-all text-xs font-mono font-bold flex items-center justify-center gap-2 cursor-pointer"
       >
         <RotateCcw className={`w-3.5 h-3.5 ${status === 'loading' ? 'animate-spin' : ''}`} />
         <span>Refresh Weather Data</span>
@@ -232,7 +232,7 @@ const WeatherPropertiesSection: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsIconCatalogOpen(!isIconCatalogOpen)}
-          className="w-full flex items-center justify-between text-xs font-mono font-bold text-slate-300 hover:text-white cursor-pointer py-1"
+          className="w-full flex items-center justify-between text-xs font-mono font-bold text-slate-300 cursor-pointer py-1"
         >
           <span className="flex items-center gap-2">
             <span>Condition Icon Reference</span>
@@ -340,7 +340,7 @@ const WeatherRadarPropertiesSection: React.FC = () => {
                 className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold cursor-pointer transition-colors ${
                   radarZoom === z
                     ? 'bg-sky-500 text-white'
-                    : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                    : 'bg-slate-900 border border-slate-800 text-slate-400 '
                 }`}
               >
                 {z}x
@@ -368,7 +368,7 @@ const WeatherRadarPropertiesSection: React.FC = () => {
               className={`py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center cursor-pointer ${
                 radarRefreshInterval === mins
                   ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                  : 'bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                  : 'bg-slate-900 border border-slate-800 text-slate-400 '
               }`}
             >
               <span>{mins} min</span>
@@ -426,8 +426,8 @@ const DetailCardsOrderSection: React.FC = () => {
                   onClick={() => setDetailCardVisibility(key, !isVisible)}
                   className={`p-1 rounded-lg transition-colors cursor-pointer ${
                     isVisible
-                      ? 'text-sky-400 hover:bg-sky-500/10'
-                      : 'text-slate-600 hover:text-slate-400 hover:bg-slate-800'
+                      ? 'text-sky-400 '
+                      : 'text-slate-600 '
                   }`}
                 >
                   {isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -447,7 +447,7 @@ const DetailCardsOrderSection: React.FC = () => {
                   className={`p-1 rounded-lg transition-colors cursor-pointer ${
                     isFirst
                       ? 'opacity-20 cursor-not-allowed text-slate-600'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                      : 'text-slate-400 '
                   }`}
                 >
                   <ArrowUp className="w-3.5 h-3.5" />
@@ -461,7 +461,7 @@ const DetailCardsOrderSection: React.FC = () => {
                   className={`p-1 rounded-lg transition-colors cursor-pointer ${
                     isLast
                       ? 'opacity-20 cursor-not-allowed text-slate-600'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                      : 'text-slate-400 '
                   }`}
                 >
                   <ArrowDown className="w-3.5 h-3.5" />
@@ -576,7 +576,7 @@ const ScreenPropertiesPanel: React.FC = () => {
                 className={`w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                   isSelected
                     ? 'bg-sky-500/15 border-sky-500/50 text-slate-100 shadow-md'
-                    : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                    : 'bg-slate-950/60 border-slate-800/80 text-slate-400 '
                 }`}
               >
                 <div>
@@ -719,7 +719,7 @@ const ScreenPropertiesPanel: React.FC = () => {
         <div className="border-t border-slate-800/80 pt-4">
           <button
             onClick={() => setShowDeleteModal(true)}
-            className="w-full p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
           >
             <Trash2 className="w-4 h-4" /> Delete Screen
           </button>
@@ -740,7 +740,7 @@ const ScreenPropertiesPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
-                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 text-slate-400 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -763,7 +763,7 @@ const ScreenPropertiesPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
-                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer"
+                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 text-xs font-mono font-bold transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -773,7 +773,7 @@ const ScreenPropertiesPanel: React.FC = () => {
                   setShowDeleteModal(false);
                   deleteScreen(activeScreen.id);
                 }}
-                className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-rose-500 text-white text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Confirm Delete</span>
@@ -1460,7 +1460,7 @@ export const Inspector: React.FC<InspectorProps> = ({
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             activeTab === 'component'
               ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              : 'text-slate-400 '
           }`}
         >
           <Sliders className="w-3.5 h-3.5" />
@@ -1472,7 +1472,7 @@ export const Inspector: React.FC<InspectorProps> = ({
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             activeTab === 'screen'
               ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              : 'text-slate-400 '
           }`}
         >
           <Layout className="w-3.5 h-3.5" />
@@ -1484,7 +1484,7 @@ export const Inspector: React.FC<InspectorProps> = ({
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             activeTab === 'layers'
               ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              : 'text-slate-400 '
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -1525,7 +1525,7 @@ export const Inspector: React.FC<InspectorProps> = ({
             </div>
             <button
               onClick={() => selectComponent(null)}
-              className="p-1 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+              className="p-1 text-slate-500 transition-colors cursor-pointer"
               title="Deselect"
             >
               <X className="w-4 h-4" />
@@ -1590,7 +1590,7 @@ export const Inspector: React.FC<InspectorProps> = ({
           <button
             type="button"
             onClick={() => toggleSection('appearance')}
-            className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+            className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg transition-colors cursor-pointer text-left select-none group min-h-[44px]"
           >
             <div className="flex items-center gap-2">
               <Palette className="w-4 h-4 text-sky-400" />
@@ -1598,7 +1598,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                 Static Appearance
               </span>
             </div>
-            <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+            <div className="p-1 text-slate-400 transition-transform">
               {collapsedSections.appearance ? (
                 <ChevronRight className="w-4 h-4" />
               ) : (
@@ -1664,7 +1664,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold uppercase transition-all cursor-pointer border text-center ${
                         isEnabled
                           ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-xs'
-                          : 'bg-slate-900/60 text-slate-500 border-slate-800 hover:text-slate-400'
+                          : 'bg-slate-900/60 text-slate-500 border-slate-800 '
                       }`}
                     >
                       {side}
@@ -1698,7 +1698,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                           className={`py-1 px-1 rounded text-[10px] font-bold tracking-tight transition-all cursor-pointer ${
                             isActive
                               ? 'bg-sky-500 text-slate-950 shadow-sm'
-                              : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-700/50'
+                              : 'bg-slate-900 text-slate-400 border border-slate-700/50'
                           }`}
                         >
                           {labels[styleOpt]}
@@ -1816,7 +1816,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         setOriginInputVal('San Francisco, CA');
                         setOriginGeocodeStatus('idle');
                       }}
-                      className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                      className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 transition-colors cursor-pointer flex items-center gap-1"
                       title="Reset origin to San Francisco, CA (37.7749, -122.4194)"
                     >
                       <RotateCcw className="w-2.5 h-2.5" />
@@ -1968,7 +1968,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         ];
                         handleStaticPropChange('tripStops', JSON.stringify(newStops));
                       }}
-                      className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 border border-sky-500/40 cursor-pointer font-bold"
+                      className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 cursor-pointer font-bold"
                     >
                       + Add Stop
                     </button>
@@ -2008,7 +2008,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                                   const updated = stops.filter((_, i) => i !== idx);
                                   handleStaticPropChange('tripStops', JSON.stringify(updated));
                                 }}
-                                className="text-[10px] font-mono text-rose-400 hover:text-rose-300 cursor-pointer"
+                                className="text-[10px] font-mono text-rose-400 cursor-pointer"
                               >
                                 Delete
                               </button>
@@ -2072,7 +2072,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         setOriginInputVal('San Francisco, CA');
                         setOriginGeocodeStatus('idle');
                       }}
-                      className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                      className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 transition-colors cursor-pointer flex items-center gap-1"
                       title="Reset origin to San Francisco, CA (37.7749, -122.4194)"
                     >
                       <RotateCcw className="w-2.5 h-2.5" />
@@ -2260,7 +2260,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
                         (selectedComp.staticProps?.cardLayoutMode || 'grid') === 'grid'
                           ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 '
                       }`}
                     >
                       Grid
@@ -2271,7 +2271,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
                         selectedComp.staticProps?.cardLayoutMode === 'carousel'
                           ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 '
                       }`}
                     >
                       Carousel
@@ -2331,7 +2331,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
                         (selectedComp.staticProps?.mode || 'trending') === 'trending'
                           ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm'
-                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 '
                       }`}
                     >
                       Trending
@@ -2342,7 +2342,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
                         selectedComp.staticProps?.mode === 'foryou'
                           ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-sm'
-                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 '
                       }`}
                     >
                       For You
@@ -2362,7 +2362,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
                         (selectedComp.staticProps?.layout || 'horizontal') === 'horizontal'
                           ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 '
                       }`}
                     >
                       Carousel
@@ -2373,7 +2373,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
                         selectedComp.staticProps?.layout === 'vertical'
                           ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 '
                       }`}
                     >
                       Vertical
@@ -2384,7 +2384,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
                         selectedComp.staticProps?.layout === 'grid'
                           ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
-                          : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-slate-200'
+                          : 'bg-slate-900 text-slate-400 border border-slate-700 '
                       }`}
                     >
                       Grid
@@ -2427,7 +2427,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                           className={`py-1.5 px-2 rounded-lg text-xs font-mono font-bold transition-all border capitalize ${
                             isActive
                               ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-sm'
-                              : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                              : 'bg-slate-900 text-slate-400 border-slate-700 '
                           }`}
                         >
                           {orient}
@@ -2451,9 +2451,9 @@ export const Inspector: React.FC<InspectorProps> = ({
                       <span className={`text-[11px] font-mono font-bold block ${
                         selectedComp.staticProps.autoDismissEnabled === 'true' ? 'text-slate-300' : 'text-slate-600'
                       }`}>
-                        Auto-Dismiss
-                      </span>
-                      <span className={`text-[10px] ${
+ Auto-Dismiss
+ </span>
+ <span className={`text-[10px] ${
                         selectedComp.staticProps.autoDismissEnabled === 'true' ? 'text-slate-400' : 'text-slate-500'
                       }`}>
                         Slide off screen after song start
@@ -2489,9 +2489,9 @@ export const Inspector: React.FC<InspectorProps> = ({
                                 className={`py-1 px-1 rounded-md text-[10px] font-mono font-bold transition-all border flex flex-col items-center gap-0.5 ${
                                   isActive
                                     ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-sm'
-                                    : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                                    : 'bg-slate-900 text-slate-400 border-slate-700 '
                                 }`}
-                                title={`Slide ${label} when dismissed`}
+ title={`Slide ${label} when dismissed`}
                               >
                                 <Icon className="w-3.5 h-3.5" />
                                 <span>{label}</span>
@@ -2853,9 +2853,9 @@ export const Inspector: React.FC<InspectorProps> = ({
                           disabled={!isEditor}
                           onClick={handleResetVehicleColors}
                           title="Reset to vehicle's original default colors"
-                          className="text-[10px] text-slate-400 hover:text-sky-400 font-mono flex items-center gap-1 transition-colors disabled:opacity-50"
-                        >
-                          <RotateCcw className="w-2.5 h-2.5" />
+ className="text-[10px] text-slate-400  font-mono flex items-center gap-1 transition-colors disabled:opacity-50"
+ >
+ <RotateCcw className="w-2.5 h-2.5" />
                           Reset
                         </button>
                       )}
@@ -3256,7 +3256,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       Upload / Replace Image
                     </label>
                     <div className="flex items-center gap-2">
-                      <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-mono font-bold cursor-pointer transition-colors">
+                      <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono font-bold cursor-pointer transition-colors">
                         <Upload className="w-3.5 h-3.5" />
                         <span>{selectedComp.staticProps.imageUrl ? 'Replace Image' : 'Upload Image'}</span>
                         <input
@@ -3287,7 +3287,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                               bgEdgeSoftness: '0',
                             });
                           }}
-                          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-700 text-xs font-mono flex items-center gap-1 transition-colors"
+                          className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono flex items-center gap-1 transition-colors"
                           title="Reset to default blueprint vehicle SVG"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
@@ -3326,7 +3326,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                               backgroundColor: undefined,
                             });
                           }}
-                          className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-mono font-medium flex items-center gap-1 transition-colors"
+                          className="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-mono font-medium flex items-center gap-1 transition-colors"
                           title="Reset background color to default"
                         >
                           <RotateCcw className="w-3 h-3 text-sky-400" />
@@ -3521,7 +3521,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                             className={`py-1 text-[10px] font-mono font-bold rounded capitalize transition-colors ${
                               healthType === mode
                                 ? 'bg-sky-500 text-slate-950 shadow'
-                                : 'text-slate-400 hover:text-slate-200'
+                                : 'text-slate-400 '
                             }`}
                           >
                             {mode === 'rgy' ? 'R/Y/G' : mode}
@@ -3558,12 +3558,12 @@ export const Inspector: React.FC<InspectorProps> = ({
                                   type="button"
                                   onClick={() => handleStaticPropChange('healthValue', item.val)}
                                   className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition-all ${
-                                    isSelected
-                                      ? `${item.border} bg-slate-800 ${item.text} ring-1 ring-offset-1 ring-offset-slate-950 ring-sky-400`
-                                      : 'border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200'
+ isSelected
+ ? `${item.border} bg-slate-800 ${item.text} ring-1 ring-offset-1 ring-offset-slate-950 ring-sky-400`
+                                      : 'border-slate-800 bg-slate-950 text-slate-400 '
                                   }`}
-                                >
-                                  <span className={`w-2 h-2 rounded-full ${item.color}`} />
+ >
+ <span className={`w-2 h-2 rounded-full ${item.color}`} />
                                   <span>{item.label}</span>
                                 </button>
                               );
@@ -3588,7 +3588,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         <button
                           type="button"
                           onClick={() => updateComponentConnector(selectedComp.id, null)}
-                          className="flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded border border-rose-500/30 transition-colors"
+                          className="flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono text-rose-400 bg-rose-500/10 rounded border border-rose-500/30 transition-colors"
                           title="Unlink Connector"
                         >
                           <Unlink className="w-2.5 h-2.5" />
@@ -3650,9 +3650,9 @@ export const Inspector: React.FC<InspectorProps> = ({
                                   className={`py-1 text-[9px] font-mono font-bold rounded border transition-colors ${
                                     isSelected
                                       ? 'bg-sky-500 text-slate-950 border-sky-400 font-extrabold shadow'
-                                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+                                      : 'bg-slate-950 text-slate-400 border-slate-800 '
                                   }`}
-                                  title={`Anchor: ${anc.id}`}
+ title={`Anchor: ${anc.id}`}
                                 >
                                   {anc.id.replace('-', ' ').toUpperCase()}
                                 </button>
@@ -3762,7 +3762,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                             className={`flex flex-col items-center justify-center gap-1.5 py-2.5 px-2 text-[11px] font-mono font-bold rounded capitalize transition-colors ${
                               currentManeuverType === opt.id
                                 ? 'bg-sky-500 text-slate-950 shadow'
-                                : 'text-slate-400 hover:text-slate-200'
+                                : 'text-slate-400 '
                             }`}
                           >
                             <svg
@@ -4227,7 +4227,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                             horizonColor: undefined,
                           });
                         }}
-                        className="w-full mt-2 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono font-semibold text-slate-300 hover:text-white transition-colors flex items-center justify-center gap-2 border border-slate-700/60"
+                        className="w-full mt-2 py-2 px-3 rounded-lg bg-slate-800 text-xs font-mono font-semibold text-slate-300 transition-colors flex items-center justify-center gap-2 border border-slate-700/60"
                         title="Reset all configurable colors to default"
                       >
                         <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
@@ -4379,7 +4379,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                             type="button"
                             disabled={idx === 0}
                             onClick={() => moveMode(idx, 'up')}
-                            className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             title="Move up"
                           >
                             <ArrowUp className="w-3 h-3" />
@@ -4388,7 +4388,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                             type="button"
                             disabled={idx === modes.length - 1}
                             onClick={() => moveMode(idx, 'down')}
-                            className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             title="Move down"
                           >
                             <ArrowDown className="w-3 h-3" />
@@ -4403,7 +4403,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                               const next = modes.filter((_, i) => i !== idx);
                               updateModes(next);
                             }}
-                            className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors cursor-pointer shrink-0"
+                            className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 transition-colors cursor-pointer shrink-0"
                             title="Remove mode"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -4418,7 +4418,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                     onClick={() => {
                       updateModes([...modes, `CUSTOM ${modes.length + 1}`]);
                     }}
-                    className="w-full py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-dashed border-slate-600 hover:border-sky-500/80 text-sky-400 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="w-full py-1.5 px-2.5 rounded-lg bg-slate-900 border border-dashed border-slate-600 text-sky-400 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Mode</span>
@@ -4450,9 +4450,9 @@ export const Inspector: React.FC<InspectorProps> = ({
                         className={`py-1.5 px-2 rounded-md text-[11px] font-mono font-bold transition-all border flex items-center justify-center gap-1.5 ${
                           isActive
                             ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-sm'
-                            : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                            : 'bg-slate-900 text-slate-400 border-slate-700 '
                         }`}
-                        title={`Show gear bar at the ${label.toLowerCase()}`}
+ title={`Show gear bar at the ${label.toLowerCase()}`}
                       >
                         <Icon className="w-3.5 h-3.5" />
                         <span>{label}</span>
@@ -4480,7 +4480,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors cursor-pointer ${
                           (selectedComp.staticProps.seatOrientation || 'vertical') === 'vertical'
                             ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-slate-400 '
                         }`}
                       >
                         Vertical
@@ -4491,7 +4491,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors cursor-pointer ${
                           selectedComp.staticProps.seatOrientation === 'horizontal'
                             ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-slate-400 '
                         }`}
                       >
                         Horizontal
@@ -4508,7 +4508,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors cursor-pointer ${
                           selectedComp.staticProps.fanOrientation === 'vertical'
                             ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-slate-400 '
                         }`}
                       >
                         Vertical
@@ -4519,7 +4519,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded transition-colors cursor-pointer ${
                           (selectedComp.staticProps.fanOrientation || 'horizontal') === 'horizontal'
                             ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-slate-400 '
                         }`}
                       >
                         Horizontal
@@ -4805,7 +4805,7 @@ export const Inspector: React.FC<InspectorProps> = ({
               <button
                 type="button"
                 onClick={() => toggleSection('bindings')}
-                className="flex-1 flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+                className="flex-1 flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg transition-colors cursor-pointer text-left select-none group min-h-[44px]"
               >
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-400" />
@@ -4815,7 +4815,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       : `State Bindings (${selectedComp.bindings?.length || 0})`}
                   </span>
                 </div>
-                <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+                <div className="p-1 text-slate-400 transition-transform">
                   {collapsedSections.bindings ? (
                     <ChevronRight className="w-4 h-4" />
                   ) : (
@@ -4835,7 +4835,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                   }
                 }}
                 data-testid="add-condition-rule-button"
-                className="p-1.5 ml-2 rounded-lg bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-slate-950 transition-colors text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+                className="p-1.5 ml-2 rounded-lg bg-sky-500/20 text-sky-400 transition-colors text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" /> {isNotifComp ? '+ Condition Rule' : '+ Rule'}
               </button>
@@ -4929,7 +4929,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                               className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono transition-colors cursor-pointer ${
                                 group.logic === 'AND'
                                   ? 'bg-sky-500/30 text-sky-300 border border-sky-500/50 shadow-sm'
-                                  : 'text-slate-400 hover:text-slate-200'
+                                  : 'text-slate-400 '
                               }`}
                             >
                               Match ALL (AND)
@@ -4940,7 +4940,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                               className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono transition-colors cursor-pointer ${
                                 group.logic === 'OR'
                                   ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow-sm'
-                                  : 'text-slate-400 hover:text-slate-200'
+                                  : 'text-slate-400 '
                               }`}
                             >
                               Match ANY (OR)
@@ -4952,7 +4952,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                           <button
                             type="button"
                             onClick={handleAddCondition}
-                            className="text-[10px] font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 hover:bg-sky-500/20 cursor-pointer"
+                            className="text-[10px] font-bold text-sky-400 flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 cursor-pointer"
                           >
                             <Plus className="w-3 h-3" /> + Condition
                           </button>
@@ -4960,7 +4960,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                             <button
                               type="button"
                               onClick={handleAddGroup}
-                              className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 cursor-pointer"
+                              className="text-[10px] font-bold text-indigo-400 flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/30 cursor-pointer"
                               title="Add nested condition group"
                             >
                               <Plus className="w-3 h-3" /> + Group
@@ -4970,7 +4970,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                             <button
                               type="button"
                               onClick={onDelete}
-                              className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-slate-800 cursor-pointer"
+                              className="text-slate-500 p-1 rounded cursor-pointer"
                               title="Delete this group"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -5028,7 +5028,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                                       <button
                                         type="button"
                                         onClick={() => handleDeleteChild(idx)}
-                                        className="text-slate-500 hover:text-rose-400 p-0.5 rounded cursor-pointer"
+                                        className="text-slate-500 p-0.5 rounded cursor-pointer"
                                         title="Remove condition"
                                       >
                                         <Trash2 className="w-3 h-3" />
@@ -5205,7 +5205,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                           <button
                             type="button"
                             onClick={() => setShowAdvanced(!showAdvanced)}
-                            className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1.5 cursor-pointer font-bold select-none"
+                            className="text-[11px] text-slate-400 flex items-center gap-1.5 cursor-pointer font-bold select-none"
                           >
                             <ChevronRight
                               className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
@@ -5341,7 +5341,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                       <button
                         type="submit"
                         disabled={!isGroupTreeValid(draftGroup)}
-                        className={`flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold p-1.5 rounded transition-colors text-xs ${
+                        className={`flex-1 bg-sky-500  text-slate-950 font-bold p-1.5 rounded transition-colors text-xs ${
                           !isGroupTreeValid(draftGroup) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                         }`}
                       >
@@ -5353,7 +5353,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                           if (isEditing) setEditingBindingId(null);
                           else setIsAddingBinding(false);
                         }}
-                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 p-1.5 rounded transition-colors cursor-pointer text-xs"
+                        className="bg-slate-700 text-slate-200 p-1.5 rounded transition-colors cursor-pointer text-xs"
                       >
                         Cancel
                       </button>
@@ -5368,7 +5368,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         <div className="p-3 text-center border border-dashed border-slate-800 rounded-xl text-slate-500 text-xs font-mono">
                           {isNotifComp
                             ? 'No display trigger conditions yet. Click "+ Condition Rule" to add one.'
-                            : 'No bindings configured yet. Click "+ Rule" to add one.'}
+ : 'No bindings configured yet. Click "+ Rule" to add one.'}
                         </div>
                       ) : (
                         selectedComp.bindings.map((b) => {
@@ -5381,7 +5381,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                           return (
                             <div
                               key={b.id}
-                              className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono space-y-2 relative group hover:border-slate-700 transition-colors"
+                              className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono space-y-2 relative group transition-colors"
                               data-testid="binding-card"
                             >
                               {/* Plain Language Summary */}
@@ -5434,7 +5434,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleStartEditBinding(b)}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-sky-500/20 text-slate-300 hover:text-sky-400 border border-slate-800 hover:border-sky-500/40 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                                  className="px-2.5 py-1 rounded-lg bg-slate-900 text-slate-300 border border-slate-800 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                                   title="Edit Binding Rule"
                                 >
                                   <Pencil className="w-3 h-3" /> Edit
@@ -5445,7 +5445,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                                     if (editingBindingId === b.id) setEditingBindingId(null);
                                     removeBinding(selectedComp.id, b.id);
                                   }}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-500/40 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                                  className="px-2.5 py-1 rounded-lg bg-slate-900 text-slate-400 border border-slate-800 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                                   title="Delete Binding Rule"
                                 >
                                   <Trash2 className="w-3 h-3" /> Delete
@@ -5470,7 +5470,7 @@ export const Inspector: React.FC<InspectorProps> = ({
           <button
             type="button"
             onClick={() => toggleSection('geometry')}
-            className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+            className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg transition-colors cursor-pointer text-left select-none group min-h-[44px]"
           >
             <div className="flex items-center gap-2">
               <Sliders className="w-4 h-4 text-sky-400" />
@@ -5478,7 +5478,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                 Geometry {isNotifComp ? '(Width & Height)' : '(X, Y, W, H)'}
               </span>
             </div>
-            <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+            <div className="p-1 text-slate-400 transition-transform">
               {collapsedSections.geometry ? (
                 <ChevronRight className="w-4 h-4" />
               ) : (
@@ -5531,7 +5531,7 @@ export const Inspector: React.FC<InspectorProps> = ({
             <button
               type="button"
               onClick={() => toggleSection('stacking')}
-              className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+              className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg transition-colors cursor-pointer text-left select-none group min-h-[44px]"
             >
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-sky-400" />
@@ -5539,7 +5539,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                   Stacking Layer
                 </span>
               </div>
-              <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+              <div className="p-1 text-slate-400 transition-transform">
                 {collapsedSections.stacking ? (
                   <ChevronRight className="w-4 h-4" />
                 ) : (
@@ -5558,7 +5558,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                   <button
                     type="button"
                     onClick={() => bringToFront(selectedComp.id)}
-                    className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                    className="py-1.5 px-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700/80 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     title="Bring component to the front layer"
                   >
                     <ArrowUp className="w-3.5 h-3.5 text-sky-400" />
@@ -5567,7 +5567,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                   <button
                     type="button"
                     onClick={() => sendToBack(selectedComp.id)}
-                    className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                    className="py-1.5 px-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700/80 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     title="Send component to the back layer"
                   >
                     <ArrowDown className="w-3.5 h-3.5 text-sky-400" />
@@ -5592,7 +5592,7 @@ export const Inspector: React.FC<InspectorProps> = ({
             <button
               type="button"
               onClick={() => toggleSection('integration')}
-              className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer text-left select-none group min-h-[44px]"
+              className="w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-lg transition-colors cursor-pointer text-left select-none group min-h-[44px]"
             >
               <div className="flex items-center gap-2">
                 <Link2 className="w-4 h-4 text-sky-400" />
@@ -5600,7 +5600,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                   Component Integration
                 </span>
               </div>
-              <div className="p-1 text-slate-400 group-hover:text-slate-200 transition-transform">
+              <div className="p-1 text-slate-400 transition-transform">
                 {collapsedSections.integration ? (
                   <ChevronRight className="w-4 h-4" />
                 ) : (
@@ -5652,7 +5652,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                         <button
                           type="button"
                           onClick={() => disconnectComponent(selectedComp.id)}
-                          className="w-full py-2 px-3 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className="w-full py-2 px-3 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/30 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <Unlink className="w-3.5 h-3.5" />
                           Disconnect from Parent
@@ -5709,7 +5709,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                                 connectComponent(selectedComp.id, effectiveTargetParentId);
                               }
                             }}
-                            className="w-full py-2 px-3 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/50 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            className="w-full py-2 px-3 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/50 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                           >
                             <Link2 className="w-3.5 h-3.5" />
                             Connect to Parent
@@ -5758,7 +5758,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                               <button
                                 type="button"
                                 onClick={() => disconnectComponent(child.id)}
-                                className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                                className="p-1 text-slate-400 transition-colors cursor-pointer"
                                 title="Disconnect child"
                               >
                                 <Unlink className="w-3.5 h-3.5" />
@@ -5789,7 +5789,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                 <button
                   type="button"
                   onClick={() => setConfirmDeleteNotificationId(null)}
-                  className="flex-1 py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer transition-colors"
+                  className="flex-1 py-1.5 px-3 rounded-lg bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
@@ -5799,7 +5799,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                     setConfirmDeleteNotificationId(null);
                     deleteComponent(selectedComp.id);
                   }}
-                  className="flex-1 py-1.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold cursor-pointer transition-colors shadow-sm"
+                  className="flex-1 py-1.5 px-3 rounded-lg bg-rose-600 text-white text-xs font-bold cursor-pointer transition-colors shadow-sm"
                 >
                   Delete
                 </button>
@@ -5814,7 +5814,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                   deleteComponent(selectedComp.id);
                 }
               }}
-              className="w-full p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" /> Delete Component
             </button>

@@ -24,6 +24,7 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
   component,
   resolved = {} as Record<string, any>,
   isSelected,
+  isPresentation = false,
   customColor = 'var(--color-ds-primary)',
   baseOpacity = 'opacity-100',
   styleOpacity = 1,
@@ -33,8 +34,12 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const screenMode = useMockpitStore((s) => s.screenMode);
+  const isPresenting = isPresentation || screenMode === 'presentation';
   const vehicleState = useMockpitStore((s) => s.vehicleState);
   const setVehicleState = useMockpitStore((s) => s.setVehicleState);
+  const selectComponent = useMockpitStore((s) => s.selectComponent);
+  const dragPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const configuredModes = parseDriveModes(component.staticProps?.modes);
   const currentModeRaw = (vehicleState.driveMode as string) || 'NORMAL';
@@ -59,10 +64,41 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
     resetOnActivity: true,
   });
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isPresenting) {
+      e.stopPropagation();
+    } else {
+      dragPosRef.current = { x: e.clientX, y: e.clientY };
+      // Allow event to bubble to Canvas wrapper so drag/selection activates
+    }
+  };
+
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isPresenting) {
+      selectComponent(component.id);
+      if (dragPosRef.current) {
+        const dist = Math.hypot(e.clientX - dragPosRef.current.x, e.clientY - dragPosRef.current.y);
+        dragPosRef.current = null;
+        if (dist > 5) {
+          // Dragged to move component; do not toggle
+          return;
+        }
+      }
+    }
+    setIsOpen((prev) => !prev);
+  };
+
   return (
     <div
       ref={containerRef}
       data-component-type="driveMode"
+      onClick={(e) => {
+        if (!isPresenting) {
+          e.stopPropagation();
+          selectComponent(component.id);
+        }
+      }}
       className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} flex flex-col justify-between shadow-lg backdrop-blur-md relative select-none overflow-visible ${
         isUltraCompact ? 'p-2' : isCompact ? 'p-2.5' : 'p-3.5'
       } ${isOpen ? 'z-40' : ''} ${baseOpacity}`}
@@ -85,11 +121,8 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
       <div className="relative my-auto w-full flex flex-col items-center">
         <button
           type="button"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen((prev) => !prev);
-          }}
+          onMouseDown={handleMouseDown}
+          onClick={handleTriggerClick}
           className={`group relative flex items-center justify-center w-full rounded-xl border transition-colors cursor-pointer ${
             isUltraCompact
               ? 'py-1 px-2 text-xs'
@@ -99,7 +132,7 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
           } ${
             isOpen
               ? 'bg-ds-surface-raised border-ds-primary/70 ring-2 ring-ds-primary/20 text-ds-content shadow-md'
-              : 'bg-ds-surface-raised/80 hover:bg-ds-surface-raised hover:border-ds-line-strong border-ds-line/60 text-ds-content shadow-sm'
+              : 'bg-ds-surface-raised/80 border-ds-line/60 text-ds-content shadow-sm'
           }`}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
@@ -132,13 +165,16 @@ export const DriveModeWidget: React.FC<DriveModeWidgetProps> = ({
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (!isPresenting) {
+                        selectComponent(component.id);
+                      }
                       setVehicleState({ driveMode: mode as DriveModeState });
                       setIsOpen(false);
                     }}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer text-xs font-semibold ${
                       isItemActive
                         ? 'bg-ds-primary/20 text-ds-primary border border-ds-primary/50 font-bold shadow-sm'
-                        : 'text-ds-content-secondary hover:bg-ds-surface-raised/80 hover:text-ds-content border border-transparent'
+                        : 'text-ds-content-secondary border border-transparent'
                     }`}
                   >
                     <span className="uppercase tracking-wider whitespace-nowrap">{mode}</span>

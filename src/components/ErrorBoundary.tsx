@@ -61,14 +61,14 @@ export class ErrorBoundary extends (React.Component as any) {
               <button
                 type="button"
                 onClick={this.handleReload}
-                className="flex-1 py-2.5 px-4 bg-sky-500 hover:bg-sky-400 text-slate-950 font-medium text-sm rounded-lg transition-colors"
+                className="flex-1 py-2.5 px-4 bg-sky-500 text-slate-950 font-medium text-sm rounded-lg transition-colors"
               >
                 Reload App
               </button>
               <button
                 type="button"
                 onClick={this.handleResetAndReload}
-                className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-sm rounded-lg border border-slate-700 transition-colors"
+                className="flex-1 py-2.5 px-4 bg-slate-800 text-slate-300 font-medium text-sm rounded-lg border border-slate-700 transition-colors"
               >
                 Reset State
               </button>

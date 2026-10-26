@@ -290,158 +290,158 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       } catch (_) {
         // Fallback for environments where setPointerCapture isn't supported
-      }
-      dragStartY.current = e.clientY;
-      dragStartTemp.current = activeTemp;
-      setIsDraggingTemp(true);
-    },
-    [activeTemp]
-  );
+ }
+ dragStartY.current = e.clientY;
+ dragStartTemp.current = activeTemp;
+ setIsDraggingTemp(true);
+ },
+ [activeTemp]
+ );
 
-  const handlePointerMoveTemp = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!isDraggingTemp) return;
-      e.stopPropagation();
-      e.preventDefault();
+ const handlePointerMoveTemp = useCallback(
+ (e: React.PointerEvent<HTMLDivElement>) => {
+ if (!isDraggingTemp) return;
+ e.stopPropagation();
+ e.preventDefault();
 
-      const deltaY = dragStartY.current - e.clientY; // Upward drag increases temp
-      const stepPx = 12; // 12px movement per 1°F change
-      const tempDiff = Math.round(deltaY / stepPx);
-      const newTemp = Math.min(85, Math.max(60, dragStartTemp.current + tempDiff));
+ const deltaY = dragStartY.current - e.clientY; // Upward drag increases temp
+ const stepPx = 12; // 12px movement per 1°F change
+ const tempDiff = Math.round(deltaY / stepPx);
+ const newTemp = Math.min(85, Math.max(60, dragStartTemp.current + tempDiff));
 
-      if (isSynced) {
-        setClimateState({ driverTemp: newTemp, passengerTemp: newTemp });
-      } else if (selectedSeat === 'driver') {
-        setClimateState({ driverTemp: newTemp });
-      } else {
-        setClimateState({ passengerTemp: newTemp });
-      }
-    },
-    [isDraggingTemp, isSynced, selectedSeat, setClimateState]
-  );
+ if (isSynced) {
+ setClimateState({ driverTemp: newTemp, passengerTemp: newTemp });
+ } else if (selectedSeat === 'driver') {
+ setClimateState({ driverTemp: newTemp });
+ } else {
+ setClimateState({ passengerTemp: newTemp });
+ }
+ },
+ [isDraggingTemp, isSynced, selectedSeat, setClimateState]
+ );
 
-  const handlePointerUpTemp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (isDraggingTemp) {
-      try {
-        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch (_) {}
-      setIsDraggingTemp(false);
-    }
-  }, [isDraggingTemp]);
+ const handlePointerUpTemp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+ if (isDraggingTemp) {
+ try {
+ (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+ } catch (_) {}
+ setIsDraggingTemp(false);
+ }
+ }, [isDraggingTemp]);
 
-  // SYNC toggle handler (exclusively cabin temperature sync - keeps activeZone decoupled)
-  const handleToggleSync = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isSynced) {
-      // Turning SYNC OFF defaults the active zone to DRIVER
-      setClimateState({ isSynced: false, selectedSeat: 'driver' });
-    } else {
-      // Turning SYNC ON links temps, SYNC is the only active control (DRIVER & PASSENGER inactive)
-      setClimateState({ isSynced: true, passengerTemp: driverTemp });
-    }
-  };
+ // SYNC toggle handler (exclusively cabin temperature sync - keeps activeZone decoupled)
+ const handleToggleSync = (e: React.MouseEvent) => {
+ e.stopPropagation();
+ if (isSynced) {
+ // Turning SYNC OFF defaults the active zone to DRIVER
+ setClimateState({ isSynced: false, selectedSeat: 'driver' });
+ } else {
+ // Turning SYNC ON links temps, SYNC is the only active control (DRIVER & PASSENGER inactive)
+ setClimateState({ isSynced: true, passengerTemp: driverTemp });
+ }
+ };
 
-  const handleSelectDriver = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Explicitly tapping DRIVER turns off SYNC and makes DRIVER active
-    setClimateState({ isSynced: false, selectedSeat: 'driver' });
-  };
+ const handleSelectDriver = (e: React.MouseEvent) => {
+ e.stopPropagation();
+ // Explicitly tapping DRIVER turns off SYNC and makes DRIVER active
+ setClimateState({ isSynced: false, selectedSeat: 'driver' });
+ };
 
-  const handleSelectPassenger = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Explicitly tapping PASSENGER turns off SYNC and makes PASSENGER active
-    setClimateState({ isSynced: false, selectedSeat: 'passenger' });
-  };
+ const handleSelectPassenger = (e: React.MouseEvent) => {
+ e.stopPropagation();
+ // Explicitly tapping PASSENGER turns off SYNC and makes PASSENGER active
+ setClimateState({ isSynced: false, selectedSeat: 'passenger' });
+ };
 
-  // Direct seat climate setter with immediate mode switching, level setting, and auto-dismiss
-  const handleSetSeatClimate = (seat: 'driver' | 'passenger', mode: 'heat' | 'cool', level: Level) => {
-    const targetLevel = level === 0 ? 1 : level;
-    if (seat === 'driver') {
-      if (mode === 'heat') {
-        setClimateState({ driverSeatHeat: targetLevel, driverSeatCool: 0, driverLastHeat: targetLevel, driverTargetMode: 'heat' });
-      } else {
-        setClimateState({ driverSeatCool: targetLevel, driverSeatHeat: 0, driverLastCool: targetLevel, driverTargetMode: 'cool' });
-      }
-    } else {
-      if (mode === 'heat') {
-        setClimateState({ passengerSeatHeat: targetLevel, passengerSeatCool: 0, passengerLastHeat: targetLevel, passengerTargetMode: 'heat' });
-      } else {
-        setClimateState({ passengerSeatCool: targetLevel, passengerSeatHeat: 0, passengerLastCool: targetLevel, passengerTargetMode: 'cool' });
-      }
-    }
-    scheduleSeatPopoverDismiss(2000);
-  };
+ // Direct seat climate setter with immediate mode switching, level setting, and auto-dismiss
+ const handleSetSeatClimate = (seat: 'driver' | 'passenger', mode: 'heat' | 'cool', level: Level) => {
+ const targetLevel = level === 0 ? 1 : level;
+ if (seat === 'driver') {
+ if (mode === 'heat') {
+ setClimateState({ driverSeatHeat: targetLevel, driverSeatCool: 0, driverLastHeat: targetLevel, driverTargetMode: 'heat' });
+ } else {
+ setClimateState({ driverSeatCool: targetLevel, driverSeatHeat: 0, driverLastCool: targetLevel, driverTargetMode: 'cool' });
+ }
+ } else {
+ if (mode === 'heat') {
+ setClimateState({ passengerSeatHeat: targetLevel, passengerSeatCool: 0, passengerLastHeat: targetLevel, passengerTargetMode: 'heat' });
+ } else {
+ setClimateState({ passengerSeatCool: targetLevel, passengerSeatHeat: 0, passengerLastCool: targetLevel, passengerTargetMode: 'cool' });
+ }
+ }
+ scheduleSeatPopoverDismiss(2000);
+ };
 
-  const handleTurnSeatOff = (seat: 'driver' | 'passenger') => {
-    if (seat === 'driver') {
-      setClimateState({ driverSeatHeat: 0, driverSeatCool: 0 });
-    } else {
-      setClimateState({ passengerSeatHeat: 0, passengerSeatCool: 0 });
-    }
-    scheduleSeatPopoverDismiss(2000);
-  };
+ const handleTurnSeatOff = (seat: 'driver' | 'passenger') => {
+ if (seat === 'driver') {
+ setClimateState({ driverSeatHeat: 0, driverSeatCool: 0 });
+ } else {
+ setClimateState({ passengerSeatHeat: 0, passengerSeatCool: 0 });
+ }
+ scheduleSeatPopoverDismiss(2000);
+ };
 
-  const handleModeToggle = (seat: 'driver' | 'passenger', mode: 'heat' | 'cool') => {
-    const heat = seat === 'driver' ? driverHeat : passengerHeat;
-    const cool = seat === 'driver' ? driverCool : passengerCool;
-    const isHeatingNow = heat > 0;
-    const isCoolingNow = cool > 0;
+ const handleModeToggle = (seat: 'driver' | 'passenger', mode: 'heat' | 'cool') => {
+ const heat = seat === 'driver' ? driverHeat : passengerHeat;
+ const cool = seat === 'driver' ? driverCool : passengerCool;
+ const isHeatingNow = heat > 0;
+ const isCoolingNow = cool > 0;
 
-    const rawLastHeat = seat === 'driver' ? driverLastHeat : passengerLastHeat;
-    const rawLastCool = seat === 'driver' ? driverLastCool : passengerLastCool;
-    const effectiveLastHeat = (rawLastHeat && rawLastHeat >= 1 && rawLastHeat <= 3 ? rawLastHeat : 2) as Level;
-    const effectiveLastCool = (rawLastCool && rawLastCool >= 1 && rawLastCool <= 3 ? rawLastCool : 2) as Level;
+ const rawLastHeat = seat === 'driver' ? driverLastHeat : passengerLastHeat;
+ const rawLastCool = seat === 'driver' ? driverLastCool : passengerLastCool;
+ const effectiveLastHeat = (rawLastHeat && rawLastHeat >= 1 && rawLastHeat <= 3 ? rawLastHeat : 2) as Level;
+ const effectiveLastCool = (rawLastCool && rawLastCool >= 1 && rawLastCool <= 3 ? rawLastCool : 2) as Level;
 
-    if (mode === 'heat') {
-      if (isHeatingNow) {
-        handleTurnSeatOff(seat);
-      } else {
-        handleSetSeatClimate(seat, 'heat', effectiveLastHeat);
-      }
-    } else {
-      if (isCoolingNow) {
-        handleTurnSeatOff(seat);
-      } else {
-        handleSetSeatClimate(seat, 'cool', effectiveLastCool);
-      }
-    }
-  };
+ if (mode === 'heat') {
+ if (isHeatingNow) {
+ handleTurnSeatOff(seat);
+ } else {
+ handleSetSeatClimate(seat, 'heat', effectiveLastHeat);
+ }
+ } else {
+ if (isCoolingNow) {
+ handleTurnSeatOff(seat);
+ } else {
+ handleSetSeatClimate(seat, 'cool', effectiveLastCool);
+ }
+ }
+ };
 
-  // Helper for seat button styling levels
-  const getSeatButtonClasses = (heat: number, cool: number, isOpen: boolean): string => {
-    if (heat === 1) {
-      return 'bg-ds-warning/15 border-ds-warning/40 text-ds-warning shadow-[0_0_8px_rgba(251,191,36,0.25)]';
-    }
-    // ds-raw-start: thermal color code is fixed (heat/cool)
-    if (heat === 2) {
-      return 'bg-orange-500/25 border-orange-500/60 text-orange-300 shadow-[0_0_12px_rgba(249,115,22,0.4)] ring-1 ring-orange-500/30';
-    }
-    if (heat === 3) {
-      return 'bg-orange-600/35 border-orange-500 text-orange-200 shadow-[0_0_18px_rgba(234,88,12,0.55)] ring-1 ring-orange-500/50';
-    }
-    if (cool === 1) {
-      return 'bg-sky-300/15 border-sky-300/40 text-sky-300 shadow-[0_0_8px_rgba(125,211,252,0.25)]';
-    }
-    if (cool === 2) {
-      return 'bg-blue-400/25 border-blue-400/60 text-blue-300 shadow-[0_0_12px_rgba(96,165,250,0.4)] ring-1 ring-blue-400/30';
-    }
-    if (cool === 3) {
-      return 'bg-blue-500/35 border-blue-400 text-blue-200 shadow-[0_0_18px_rgba(59,130,246,0.55)] ring-1 ring-blue-400/50';
-    }
-    // ds-raw-end
-    if (isOpen) {
-      return 'bg-ds-background border-ds-primary text-ds-primary ring-2 ring-ds-primary/30 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_30%,transparent)]';
-    }
-    return 'bg-ds-background/50 border-ds-line-subtle/80 text-ds-content-subtle hover:text-ds-content-secondary hover:border-ds-line';
-  };
+ // Helper for seat button styling levels
+ const getSeatButtonClasses = (heat: number, cool: number, isOpen: boolean): string => {
+ if (heat === 1) {
+ return 'bg-ds-warning/15 border-ds-warning/40 text-ds-warning shadow-[0_0_8px_rgba(251,191,36,0.25)]';
+ }
+ // ds-raw-start: thermal color code is fixed (heat/cool)
+ if (heat === 2) {
+ return 'bg-orange-500/25 border-orange-500/60 text-orange-300 shadow-[0_0_12px_rgba(249,115,22,0.4)] ring-1 ring-orange-500/30';
+ }
+ if (heat === 3) {
+ return 'bg-orange-600/35 border-orange-500 text-orange-200 shadow-[0_0_18px_rgba(234,88,12,0.55)] ring-1 ring-orange-500/50';
+ }
+ if (cool === 1) {
+ return 'bg-sky-300/15 border-sky-300/40 text-sky-300 shadow-[0_0_8px_rgba(125,211,252,0.25)]';
+ }
+ if (cool === 2) {
+ return 'bg-blue-400/25 border-blue-400/60 text-blue-300 shadow-[0_0_12px_rgba(96,165,250,0.4)] ring-1 ring-blue-400/30';
+ }
+ if (cool === 3) {
+ return 'bg-blue-500/35 border-blue-400 text-blue-200 shadow-[0_0_18px_rgba(59,130,246,0.55)] ring-1 ring-blue-400/50';
+ }
+ // ds-raw-end
+ if (isOpen) {
+ return 'bg-ds-background border-ds-primary text-ds-primary ring-2 ring-ds-primary/30 shadow-[0_0_12px_color-mix(in_srgb,var(--color-ds-primary)_30%,transparent)]';
+ }
+ return 'bg-ds-background/50 border-ds-line-subtle/80 text-ds-content-subtle  ';
+ };
 
-  const renderSeatIcon = () => {
-    const iconClass = isComfortable ? 'w-5 h-5 sm:w-5.5 sm:h-5.5 shrink-0 transition-transform' : 'w-4.5 h-4.5 shrink-0 transition-transform';
-    return <SeatIcon className={iconClass} />;
-  };
+ const renderSeatIcon = () => {
+ const iconClass = isComfortable ? 'w-5 h-5 sm:w-5.5 sm:h-5.5 shrink-0 transition-transform' : 'w-4.5 h-4.5 shrink-0 transition-transform';
+ return <SeatIcon className={iconClass} />;
+ };
 
-  const getSeatButtonTitle = (seatLabel: string, heat: number, cool: number) => {
-    const levelLabel = (lvl: number) => (lvl === 1 ? 'Low' : lvl === 2 ? 'Medium' : 'High');
+ const getSeatButtonTitle = (seatLabel: string, heat: number, cool: number) => {
+ const levelLabel = (lvl: number) => (lvl === 1 ? 'Low' : lvl === 2 ? 'Medium' : 'High');
     if (heat > 0) return `${seatLabel} seat climate: HEAT ${levelLabel(heat)}`;
     if (cool > 0) return `${seatLabel} seat climate: COOL ${levelLabel(cool)}`;
     return `${seatLabel} seat climate: OFF`;
@@ -518,8 +518,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   ? 'bg-ds-background text-orange-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
                   : 'bg-ds-surface-raised text-ds-content-muted'
               }`}
-              title={isHeating ? `${seatLabel} seat: Turn HEAT OFF` : `${seatLabel} seat: Select HEAT`}
-              aria-label={isHeating ? `${seatLabel} seat: Turn HEAT OFF` : `${seatLabel} seat: Select HEAT`}
+ title={isHeating ? `${seatLabel} seat: Turn HEAT OFF` : `${seatLabel} seat: Select HEAT`}
+ aria-label={isHeating ? `${seatLabel} seat: Turn HEAT OFF` : `${seatLabel} seat: Select HEAT`}
             >
               <span
                 aria-hidden="true"
@@ -539,25 +539,25 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   ? 'bg-ds-background text-sky-300 shadow-[inset_0_3px_6px_rgba(0,0,0,0.8)]'
                   : 'bg-ds-surface-raised text-ds-content-muted'
               }`}
-              title={isCooling ? `${seatLabel} seat: Turn COOL OFF` : `${seatLabel} seat: Select COOL`}
-              aria-label={isCooling ? `${seatLabel} seat: Turn COOL OFF` : `${seatLabel} seat: Select COOL`}
+ title={isCooling ? `${seatLabel} seat: Turn COOL OFF` : `${seatLabel} seat: Select COOL`}
+ aria-label={isCooling ? `${seatLabel} seat: Turn COOL OFF` : `${seatLabel} seat: Select COOL`}
             >
               <span
                 aria-hidden="true"
                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                   isCooling ? 'bg-ds-primary shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-ds-surface-hover'
                 }`}
-              />
-              COOL
-            </button>
-            {/* ds-raw-end */}
-          </div>
+ />
+ COOL
+ </button>
+ {/* ds-raw-end */}
+ </div>
 
-          {/* Single shared LOW / MED / HIGH intensity row */}
-          <div className={`flex items-stretch gap-1.5 ${isOff ? 'opacity-40 pointer-events-none' : ''}`}>
-            {([1, 2, 3] as Level[]).map((lvl) => (
-              <button
-                key={`${seat}-lvl-${lvl}`}
+ {/* Single shared LOW / MED / HIGH intensity row */}
+ <div className={`flex items-stretch gap-1.5 ${isOff ? 'opacity-40 pointer-events-none' : ''}`}>
+ {([1, 2, 3] as Level[]).map((lvl) => (
+ <button
+ key={`${seat}-lvl-${lvl}`}
                 type="button"
                 onClick={() => handleSetSeatClimate(seat, isHeating ? 'heat' : 'cool', lvl)}
                 className={`w-12 h-full rounded-xl font-mono text-xs font-bold tracking-wide cursor-pointer select-none active:scale-95 ${intensityClass(lvl)}`}
@@ -604,27 +604,27 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 } rounded-lg font-mono text-xs sm:text-[12.5px] font-bold tracking-wider transition-all select-none cursor-pointer whitespace-nowrap text-center ${
                   isCurrent
                     ? 'bg-ds-primary/25 border border-ds-primary/60 text-ds-primary shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_25%,transparent)]'
-                    : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/80 border border-transparent'
+                    : 'text-ds-content-muted border border-transparent'
                 }`}
-                style={{
-                  color: isCurrent ? customColor : undefined,
-                  borderColor: isCurrent ? `color-mix(in srgb, ${customColor} 50%, transparent)` : undefined,
-                  backgroundColor: isCurrent ? `color-mix(in srgb, ${customColor} 15%, transparent)` : undefined,
-                }}
-              >
-                {option}
-              </button>
-            );
-          })}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+ style={{
+ color: isCurrent ? customColor : undefined,
+ borderColor: isCurrent ? `color-mix(in srgb, ${customColor} 50%, transparent)` : undefined,
+ backgroundColor: isCurrent ? `color-mix(in srgb, ${customColor} 15%, transparent)` : undefined,
+ }}
+ >
+ {option}
+ </button>
+ );
+ })}
+ </motion.div>
+ )}
+ </AnimatePresence>
+ );
 
-  return (
-    <div
-      ref={containerRef}
-      className={`@container w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} ${
+ return (
+ <div
+ ref={containerRef}
+ className={`@container w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides)} ${
         isComfortable ? 'p-3.5 sm:p-4' : isVeryNarrow ? 'p-2.5' : 'p-3'
       } flex flex-col justify-between shadow-lg backdrop-blur-md transition-all duration-300 relative select-none ${baseOpacity}`}
       style={{ borderColor: isSelected ? customColor : undefined, opacity: styleOpacity }}
@@ -650,10 +650,10 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 onPointerMove={handlePointerMoveTemp}
                 onPointerUp={handlePointerUpTemp}
                 onPointerCancel={handlePointerUpTemp}
-                className="group flex items-center gap-1 cursor-ns-resize touch-none select-none py-0.5 px-0.5 rounded-lg hover:bg-ds-surface-raised/40 min-w-0"
+                className="group flex items-center gap-1 cursor-ns-resize touch-none select-none py-0.5 px-0.5 rounded-lg min-w-0"
                 title="Drag vertically to adjust temperature"
               >
-                <ArrowUpDown className="w-3.5 h-3.5 shrink-0 text-ds-content-muted group-hover:text-ds-content" />
+                <ArrowUpDown className="w-3.5 h-3.5 shrink-0 text-ds-content-muted " />
                 <div className="flex items-baseline gap-0.5">
                   <span className="text-2xl font-black text-ds-content font-mono leading-none">
                     {activeTemp}°
@@ -708,7 +708,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
               className={`font-mono text-xs font-bold uppercase py-0.5 px-2 rounded-lg transition-all ${
                 isDriverActive
                   ? 'text-ds-primary bg-ds-primary/15 border border-ds-primary/35'
-                  : 'text-ds-content-muted hover:text-ds-content border border-transparent'
+                  : 'text-ds-content-muted border border-transparent'
               }`}
             >
               DRIVER
@@ -740,7 +740,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
               className={`font-mono text-xs font-bold uppercase py-0.5 px-2 rounded-lg transition-all ${
                 isPassengerActive
                   ? 'text-ds-primary bg-ds-primary/15 border border-ds-primary/35'
-                  : 'text-ds-content-muted hover:text-ds-content border border-transparent'
+                  : 'text-ds-content-muted border border-transparent'
               }`}
             >
               PASSENGER
@@ -783,13 +783,13 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 className={`group flex items-center gap-1.5 sm:gap-2 cursor-ns-resize touch-none select-none py-0.5 px-1 -ml-1 rounded-xl transition-all duration-150 relative min-w-0 ${
                   isDraggingTemp
                     ? 'scale-[1.02] bg-ds-primary/10 ring-1 ring-ds-primary/40'
-                    : 'hover:bg-ds-surface-raised/40'
+                    : ''
                 }`}
                 title="Drag vertically to adjust temperature"
               >
                 <ArrowUpDown
                   className={`w-4.5 h-4.5 shrink-0 transition-all duration-150 ${
-                    isDraggingTemp ? 'text-ds-primary scale-110' : 'text-ds-content-muted group-hover:text-ds-content'
+                    isDraggingTemp ? 'text-ds-primary scale-110' : 'text-ds-content-muted '
                   }`}
                 />
                 <div className="flex items-baseline gap-0.5">
@@ -816,8 +816,8 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   isComfortable ? 'px-3 py-1.5' : 'px-2.5 py-1'
                 } rounded-xl border transition-all select-none cursor-pointer active:scale-95 whitespace-nowrap ${
                   isSynced
-                    ? 'text-ds-primary bg-ds-primary/15 border-ds-primary/35 shadow-[0_0_10px_color-mix(in_srgb,var(--color-ds-primary)_25%,transparent)] hover:bg-ds-primary/25'
-                    : 'text-ds-content-muted bg-ds-surface-raised/70 border-ds-line/60 hover:text-ds-content hover:bg-ds-surface-raised'
+                    ? 'text-ds-primary bg-ds-primary/15 border-ds-primary/35 shadow-[0_0_10px_color-mix(in_srgb,var(--color-ds-primary)_25%,transparent)] '
+                    : 'text-ds-content-muted bg-ds-surface-raised/70 border-ds-line/60 '
                 }`}
                 title={isSynced ? 'Unsync cabin temperatures' : 'Sync cabin temperatures'}
                 aria-label={isSynced ? 'Unsync dual-zone cabin temperature' : 'Sync dual-zone cabin temperature'}
@@ -840,7 +840,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                   } rounded-xl border transition-all duration-150 cursor-pointer select-none active:scale-95 ${
                     isFanOpen
                       ? 'bg-ds-background border-ds-primary/60 text-ds-primary shadow-[0_0_10px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]'
-                      : 'bg-ds-background/70 border-ds-line-subtle text-ds-content-secondary hover:border-ds-line hover:text-ds-content'
+                      : 'bg-ds-background/70 border-ds-line-subtle text-ds-content-secondary '
                   }`}
                   title="Fan speed selection"
                 >
@@ -864,7 +864,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 className={`font-mono text-xs sm:text-[13px] font-bold tracking-wider uppercase transition-all py-1 px-1.5 sm:px-2 rounded-lg cursor-pointer select-none whitespace-nowrap ${
                   isDriverActive
                     ? 'text-ds-primary bg-ds-primary/15 border border-ds-primary/35 shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]'
-                    : 'text-ds-content-muted hover:text-ds-content border border-transparent hover:bg-ds-surface-raised/40'
+                    : 'text-ds-content-muted border border-transparent '
                 }`}
                 title="Select Driver cabin zone"
               >
@@ -927,7 +927,7 @@ export const CompactClimateWidget: React.FC<CompactClimateWidgetProps> = ({
                 className={`font-mono text-xs sm:text-[13px] font-bold tracking-wider uppercase transition-all py-1 px-1.5 sm:px-2 rounded-lg cursor-pointer select-none whitespace-nowrap ${
                   isPassengerActive
                     ? 'text-ds-primary bg-ds-primary/15 border border-ds-primary/35 shadow-[0_0_8px_color-mix(in_srgb,var(--color-ds-primary)_20%,transparent)]'
-                    : 'text-ds-content-muted hover:text-ds-content border border-transparent hover:bg-ds-surface-raised/40'
+                    : 'text-ds-content-muted border border-transparent '
                 }`}
                 title="Select Passenger cabin zone"
               >

@@ -269,11 +269,11 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
           {/* Scoped Drag-to-Adjust Hit Region */}
           <div
             className={`absolute z-20 touch-none select-none cursor-ns-resize pointer-events-auto ${
-              isDragging ? 'scale-110 brightness-110' : 'hover:brightness-105'
+              isDragging ? 'scale-110 brightness-110' : ''
             } transition-transform duration-100 rounded-full`}
-            style={{
-              left: `${(cx / 200) * 100}%`,
-              top: `${(cy / 200) * 100}%`,
+ style={{
+ left: `${(cx / 200) * 100}%`,
+ top: `${(cy / 200) * 100}%`,
               width: 30,
               height: 30,
               transform: 'translate(-50%, -50%)',
@@ -470,11 +470,11 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
           {/* Scoped Drag-to-Adjust Hit Region */}
           <div
             className={`absolute z-20 touch-none select-none cursor-ns-resize pointer-events-auto ${
-              isDragging ? 'scale-110 brightness-110' : 'hover:brightness-105'
+              isDragging ? 'scale-110 brightness-110' : ''
             } transition-transform duration-100 rounded-full`}
-            style={{
-              left: `${(cx / 200) * 100}%`,
-              top: `${(cy / 200) * 100}%`,
+ style={{
+ left: `${(cx / 200) * 100}%`,
+ top: `${(cy / 200) * 100}%`,
               width: 30,
               height: 30,
               transform: 'translate(-50%, -50%)',
@@ -592,8 +592,8 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
           className="absolute inset-0 pointer-events-none rounded-2xl transition-all duration-150"
           style={{
             background: `radial-gradient(circle at center, color-mix(in srgb, ${customColor} ${Math.round(
-              ((isDragging ? 0.15 : 0.05) + ratio * 0.15) * 100
-            )}%, transparent) 0%, transparent 70%)`,
+ ((isDragging ? 0.15 : 0.05) + ratio * 0.15) * 100
+ )}%, transparent) 0%, transparent 70%)`,
           }}
         />
       </div>
@@ -619,7 +619,7 @@ export const SpeedometerWidget: React.FC<SpeedometerWidgetProps> = ({
         {/* Scoped Drag-to-Adjust Hit Region */}
         <div
           className={`absolute z-20 touch-none select-none cursor-ns-resize pointer-events-auto ${
-            isDragging ? 'scale-110 brightness-110' : 'hover:brightness-105'
+            isDragging ? 'scale-110 brightness-110' : ''
           } transition-transform duration-100 rounded-full`}
           style={{
             left: '50%',

@@ -79,20 +79,20 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
         className={`w-[148px] shrink-0 flex flex-col items-start p-2 rounded-xl border transition-all cursor-pointer group text-left ${
           isCardSelected
             ? 'bg-ds-surface-raised/90 border-ds-primary ring-1 ring-ds-primary/50 shadow-md'
-            : 'bg-ds-background/40 border-ds-line-subtle/80 hover:border-ds-line hover:bg-ds-surface-raised/40'
+            : 'bg-ds-background/40 border-ds-line-subtle/80 '
         }`}
-        style={
-          isCardSelected
-            ? {
-                borderColor: primaryAccent,
-                boxShadow: `0 0 0 1px color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
-              }
-            : undefined
-        }
-      >
-        {/* 120x120px Album Art Block */}
-        <div
-          className={`w-[120px] h-[120px] mx-auto rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0 group-hover:scale-[1.02] transition-transform`}
+ style={
+ isCardSelected
+ ? {
+ borderColor: primaryAccent,
+ boxShadow: `0 0 0 1px color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
+ }
+ : undefined
+ }
+ >
+ {/* 120x120px Album Art Block */}
+ <div
+ className={`w-[120px] h-[120px] mx-auto rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0  transition-transform`}
         >
           {/* Trending Static Rank Badge - strictly no animate-pulse */}
           {/* ds-raw-start: rank/trending gold fill and dark text are fixed (not theme-remapped) */}
@@ -163,7 +163,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                 e.stopPropagation();
                 setIsModeDropdownOpen((prev) => !prev);
               }}
-              className="text-xs font-mono font-extrabold uppercase px-3 py-1.5 min-h-[36px] rounded-full border flex items-center gap-1.5 hover:brightness-110 transition-all cursor-pointer shadow-sm active:scale-95"
+              className="text-xs font-mono font-extrabold uppercase px-3 py-1.5 min-h-[36px] rounded-full border flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
               style={{
                 color: primaryAccent,
                 borderColor: `color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
@@ -203,7 +203,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                     className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer text-left min-h-[44px] ${
                       mode === 'trending'
                         ? 'bg-ds-primary/20 text-ds-primary border border-ds-primary/30'
-                        : 'text-ds-content-secondary hover:bg-ds-surface-raised'
+                        : 'text-ds-content-secondary '
                     }`}
                   >
                     <TrendingUp className="w-4 h-4 text-ds-warning shrink-0" />
@@ -219,7 +219,7 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                     className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer text-left min-h-[44px] ${
                       mode === 'foryou'
                         ? 'bg-ds-primary/20 text-ds-primary border border-ds-primary/30'
-                        : 'text-ds-content-secondary hover:bg-ds-surface-raised'
+                        : 'text-ds-content-secondary '
                     }`}
                   >
                     {/* ds-raw-start: section icon identity color is fixed */}
@@ -262,20 +262,20 @@ export const MediaDiscoveryWidget: React.FC<MediaDiscoveryWidgetProps> = ({
                 className={`flex items-center gap-3 p-2 rounded-xl border transition-all cursor-pointer group text-left min-h-[76px] w-full ${
                   isCardSelected
                     ? 'bg-ds-surface-raised/90 border-ds-primary ring-1 ring-ds-primary/50 shadow-md'
-                    : 'bg-ds-background/40 border-ds-line-subtle/80 hover:border-ds-line hover:bg-ds-surface-raised/40'
+                    : 'bg-ds-background/40 border-ds-line-subtle/80 '
                 }`}
-                style={
-                  isCardSelected
-                    ? {
-                        borderColor: primaryAccent,
-                        boxShadow: `0 0 0 1px color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
-                      }
-                    : undefined
-                }
-              >
-                {/* 64x64px Album Art Block */}
-                <div
-                  className={`w-16 h-16 rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0 group-hover:scale-[1.02] transition-transform`}
+ style={
+ isCardSelected
+ ? {
+ borderColor: primaryAccent,
+ boxShadow: `0 0 0 1px color-mix(in srgb, ${primaryAccent} 31%, transparent)`,
+ }
+ : undefined
+ }
+ >
+ {/* 64x64px Album Art Block */}
+ <div
+ className={`w-16 h-16 rounded-lg relative overflow-hidden bg-gradient-to-br ${track.gradientFrom} ${track.gradientTo} flex items-center justify-center shadow-md shrink-0  transition-transform`}
                 >
                   {/* Trending Static Rank Badge */}
                   {/* ds-raw-start: rank/trending gold fill and dark text are fixed (not theme-remapped) */}

@@ -89,7 +89,7 @@ export const DebugStatePanel: React.FC = () => {
       {/* Header Bar (Whole header clickable to expand/collapse) */}
       <div
         onClick={toggleDebugPanel}
-        className={`px-6 py-2.5 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-900/90 transition-colors select-none ${
+        className={`px-6 py-2.5 bg-slate-900/80 flex items-center justify-between cursor-pointer  transition-colors select-none ${
           isDebugOpen ? 'border-b border-slate-800' : ''
         }`}
         title={isDebugOpen ? 'Click to collapse Drive Simulator' : 'Click to expand Drive Simulator'}
@@ -124,7 +124,7 @@ export const DebugStatePanel: React.FC = () => {
                       ? 'bg-slate-800/40 text-slate-600 border-slate-800/80 opacity-50 cursor-not-allowed'
                       : active
                       ? 'bg-sky-500 text-slate-950 border-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.4)] cursor-pointer'
-                      : 'bg-slate-800/80 text-slate-400 border-slate-700/80 hover:bg-slate-700 hover:text-slate-200 cursor-pointer'
+                      : 'bg-slate-800/80 text-slate-400 border-slate-700/80 cursor-pointer'
                   }`}
                 >
                   {p.label}
@@ -145,7 +145,7 @@ export const DebugStatePanel: React.FC = () => {
                 );
               }}
               title="Simulate Inbound Message Toast"
-              className="px-2.5 py-1 rounded-lg border text-[10px] font-bold bg-slate-800/80 text-slate-400 border-slate-700/80 hover:bg-slate-700 hover:text-slate-200 transition-all cursor-pointer flex items-center gap-1 shadow-md shrink-0"
+              className="px-2.5 py-1 rounded-lg border text-[10px] font-bold bg-slate-800/80 text-slate-400 border-slate-700/80 transition-all cursor-pointer flex items-center gap-1 shadow-md shrink-0"
             >
               <MessageSquare className="w-3 h-3" /> Text Message
             </button>
@@ -157,7 +157,7 @@ export const DebugStatePanel: React.FC = () => {
               e.stopPropagation();
               toggleDebugPanel();
             }}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors text-xs cursor-pointer border border-slate-700/80 shrink-0"
+            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 transition-colors text-xs cursor-pointer border border-slate-700/80 shrink-0"
             title={isDebugOpen ? 'Minimize Panel' : 'Expand Panel'}
           >
             {isDebugOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -195,7 +195,7 @@ export const DebugStatePanel: React.FC = () => {
                         className={`py-2 rounded-xl font-black text-xs transition-all cursor-pointer ${
                           isActive
                             ? 'bg-sky-500 text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.5)] scale-105'
-                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                            : 'bg-slate-800/80 text-slate-400 '
                         }`}
                       >
                         {g}
@@ -295,7 +295,7 @@ export const DebugStatePanel: React.FC = () => {
                         className={`py-2 px-1 rounded-xl font-bold text-[11px] font-mono transition-all cursor-pointer ${
                           isActive
                             ? 'bg-sky-500 text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.5)] scale-105'
-                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                            : 'bg-slate-800/80 text-slate-400 '
                         }`}
                       >
                         {dm}
@@ -376,9 +376,9 @@ export const DebugStatePanel: React.FC = () => {
                       ? 'bg-sky-500 cursor-pointer'
                       : 'bg-slate-800 cursor-pointer'
                   }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+ >
+ <div
+ className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
                       vehicleState.isCharging ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
@@ -410,9 +410,9 @@ export const DebugStatePanel: React.FC = () => {
                   className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
                     vehicleState.doorOpen ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+ >
+ <div
+ className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
                       vehicleState.doorOpen ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
@@ -444,9 +444,9 @@ export const DebugStatePanel: React.FC = () => {
                   className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
                     isHeadlightsOn ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+ >
+ <div
+ className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
                       isHeadlightsOn ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
@@ -478,9 +478,9 @@ export const DebugStatePanel: React.FC = () => {
                   className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
                     vehicleState.blindSpotWarning ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+ >
+ <div
+ className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
                       vehicleState.blindSpotWarning ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
@@ -512,9 +512,9 @@ export const DebugStatePanel: React.FC = () => {
                   className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
                     vehicleState.proximityWarning ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+ >
+ <div
+ className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
                       vehicleState.proximityWarning ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
@@ -546,9 +546,9 @@ export const DebugStatePanel: React.FC = () => {
                   className={`w-11 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${
                     vehicleState.tirePressureWarning ? 'bg-sky-500' : 'bg-slate-800'
                   }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+ >
+ <div
+ className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
                       vehicleState.tirePressureWarning ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />

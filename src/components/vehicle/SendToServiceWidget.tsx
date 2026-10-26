@@ -112,8 +112,8 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
       // Trigger file download
       try {
         const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-          JSON.stringify(reportData, null, 2)
-        )}`;
+ JSON.stringify(reportData, null, 2)
+ )}`;
         const downloadAnchor = document.createElement('a');
         const cleanSlug = reportTitle && reportTitle.trim()
           ? reportTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -159,14 +159,14 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
           <button
             type="button"
             onClick={handleCancelConfirm}
-            className="flex-1 min-h-[36px] px-2.5 py-1.5 rounded-lg font-mono text-[11px] font-semibold text-ds-content-secondary hover:text-ds-content bg-ds-line/60 hover:bg-ds-line transition-colors cursor-pointer"
+            className="flex-1 min-h-[36px] px-2.5 py-1.5 rounded-lg font-mono text-[11px] font-semibold text-ds-content-secondary bg-ds-line/60 transition-colors cursor-pointer"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={handleExecuteSend}
-            className="flex-1 min-h-[36px] px-2.5 py-1.5 rounded-lg font-mono text-[11px] font-bold text-ds-on-primary hover:brightness-110 shadow-md transition-all cursor-pointer"
+            className="flex-1 min-h-[36px] px-2.5 py-1.5 rounded-lg font-mono text-[11px] font-bold text-ds-on-primary shadow-md transition-all cursor-pointer"
             style={{
               backgroundColor: customColor || 'var(--color-ds-primary)',
               boxShadow: `0 0 12px color-mix(in srgb, ${customColor || 'var(--color-ds-primary)'} 40%, transparent)`,
@@ -185,7 +185,7 @@ export const SendToServiceWidget: React.FC<SendToServiceWidgetProps> = ({
               ? 'bg-ds-success/20 text-ds-success border border-ds-success/50 shadow-[0_0_15px_color-mix(in_srgb,var(--color-ds-success)_25%,transparent)]'
               : status === 'sending'
               ? 'bg-ds-surface-raised text-ds-primary border border-ds-primary/40 cursor-wait'
-              : 'text-ds-on-primary shadow-md hover:shadow-lg active:scale-[0.98] hover:brightness-105'
+              : 'text-ds-on-primary shadow-md active:scale-[0.98] '
           }`}
           style={
             status === 'idle'

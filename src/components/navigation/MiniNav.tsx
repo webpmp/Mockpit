@@ -51,6 +51,83 @@ export const DEFAULT_MINI_NAV_COLORS = {
 
 export const DEFAULT_MINI_NAV_APPEARANCE = DEFAULT_MINI_NAV_COLORS;
 
+export interface PerspectiveDash {
+  y1: number;
+  y2: number;
+  strokeWidth: number;
+  opacity: number;
+}
+
+export const BASE_PERSPECTIVE_DASHES = [
+  { y1: 549.0, y2: 375.1, strokeWidth: 8.0 }, // Dash 0 (Closest / Bottom)
+  { y1: 307.5, y2: 259.8, strokeWidth: 3.9 }, // Dash 1
+  { y1: 233.8, y2: 211.8, strokeWidth: 2.6 }, // Dash 2
+  { y1: 198.2, y2: 185.5, strokeWidth: 2.0 }, // Dash 3
+  { y1: 177.1, y2: 168.9, strokeWidth: 1.5 }, // Dash 4 (Farthest / Top)
+];
+
+export function computePerspectiveCenterDashes(roadOffset: number): {
+  dashes: PerspectiveDash[];
+  enteringDash: PerspectiveDash | null;
+} {
+  const DASH_CYCLE = 40;
+  const rawPhase = -roadOffset / DASH_CYCLE;
+  const phase = ((rawPhase % 1) + 1) % 1;
+
+  if (phase === 0) {
+    return {
+      dashes: BASE_PERSPECTIVE_DASHES.map((d) => ({ ...d, opacity: 1 })),
+      enteringDash: null,
+    };
+  }
+
+  // Dash 1 -> Dash 0
+  const d1_y1 = 307.5 + (549.0 - 307.5) * phase;
+  const d1_y2 = 259.8 + (375.1 - 259.8) * phase;
+  const d1_w = 3.9 + (8.0 - 3.9) * phase;
+
+  // Dash 0 moving off bottom edge ahead of Dash 1.
+  // Gap between Dash 1 bottom and Dash 0 top maintains perspective progression (>= 67.6px).
+  const gap10 = 67.6 + (120.0 - 67.6) * phase;
+  const d0_y2 = d1_y1 + gap10;
+  const d0_y1 = 549.0;
+  const d0_w = 8.0 + (12.0 - 8.0) * phase;
+  const d0_opacity = d0_y2 >= 549.0 ? 0 : 1;
+
+  // Dash 2 -> Dash 1
+  const d2_y1 = 233.8 + (307.5 - 233.8) * phase;
+  const d2_y2 = 211.8 + (259.8 - 211.8) * phase;
+  const d2_w = 2.6 + (3.9 - 2.6) * phase;
+
+  // Dash 3 -> Dash 2
+  const d3_y1 = 198.2 + (233.8 - 198.2) * phase;
+  const d3_y2 = 185.5 + (211.8 - 185.5) * phase;
+  const d3_w = 2.0 + (2.6 - 2.0) * phase;
+
+  // Dash 4 -> Dash 3
+  const d4_y1 = 177.1 + (198.2 - 177.1) * phase;
+  const d4_y2 = 168.9 + (185.5 - 168.9) * phase;
+  const d4_w = 1.5 + (2.0 - 1.5) * phase;
+
+  // Entering Dash from horizon (168.9): appears once Dash 4 clears the 8.4px horizon gap
+  let enteringDash: PerspectiveDash | null = null;
+  const de_y1 = d4_y2 - 8.4;
+  if (de_y1 > 168.9) {
+    enteringDash = { y1: de_y1, y2: 168.9, strokeWidth: 1.5, opacity: 1 };
+  }
+
+  return {
+    dashes: [
+      { y1: d0_y1, y2: d0_y2, strokeWidth: d0_w, opacity: d0_opacity },
+      { y1: d1_y1, y2: d1_y2, strokeWidth: d1_w, opacity: 1 },
+      { y1: d2_y1, y2: d2_y2, strokeWidth: d2_w, opacity: 1 },
+      { y1: d3_y1, y2: d3_y2, strokeWidth: d3_w, opacity: 1 },
+      { y1: d4_y1, y2: d4_y2, strokeWidth: d4_w, opacity: 1 },
+    ],
+    enteringDash,
+  };
+}
+
 interface MiniNavProps {
   highwayName?: string;
   nextExit?: string;
@@ -155,6 +232,43 @@ export const MiniNav: React.FC<MiniNavProps> = ({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Synchronize center dashed lane markings with vehicle simulation roadOffset
+  useEffect(() => {
+    const group = document.getElementById('center-lane-dashes');
+    if (!group) return;
+    const lines = group.querySelectorAll('line');
+    if (lines.length < 5) return;
+
+    const roadOffset = journey?.roadOffset ?? 0;
+    const { dashes, enteringDash } = computePerspectiveCenterDashes(roadOffset);
+
+    for (let i = 0; i < 5; i++) {
+      const d = dashes[i];
+      lines[i].setAttribute('y1', d.y1.toFixed(1));
+      lines[i].setAttribute('y2', d.y2.toFixed(1));
+      lines[i].setAttribute('stroke-width', d.strokeWidth.toFixed(1));
+      lines[i].style.opacity = String(d.opacity);
+    }
+
+    let enteringLine = group.querySelector<SVGLineElement>('#center-lane-dash-entering');
+    if (enteringDash) {
+      if (!enteringLine) {
+        enteringLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        enteringLine.setAttribute('id', 'center-lane-dash-entering');
+        enteringLine.setAttribute('x1', '230');
+        enteringLine.setAttribute('x2', '230');
+        group.appendChild(enteringLine);
+      }
+      enteringLine.style.display = '';
+      enteringLine.setAttribute('y1', enteringDash.y1.toFixed(1));
+      enteringLine.setAttribute('y2', enteringDash.y2.toFixed(1));
+      enteringLine.setAttribute('stroke-width', enteringDash.strokeWidth.toFixed(1));
+      enteringLine.style.opacity = String(enteringDash.opacity);
+    } else if (enteringLine) {
+      enteringLine.style.display = 'none';
+    }
+  }, [journey?.roadOffset]);
 
   // Derived colors with backwards compatibility
   const primaryPaletteColor = activePalette?.primary || 'var(--color-ds-primary)';
@@ -637,32 +751,19 @@ export const MiniNav: React.FC<MiniNavProps> = ({
             strokeOpacity="0.7"
           />
 
-          {/* Perspective Lane Dividers */}
-          {Array.from({ length: numLanes - 1 }).map((_, i) => {
-            const ratio = (i + 1) / numLanes;
-            const topX = roadTopLeft.x + (roadTopRight.x - roadTopLeft.x) * ratio;
-            const botX = roadBottomLeft.x + (roadBottomRight.x - roadBottomLeft.x) * ratio;
-            const dx = botX - topX;
-            const dy = roadBottomLeft.y - roadTopLeft.y;
-            const lineLength = Math.sqrt(dx * dx + dy * dy);
-            // Scale offset proportionally to lane length in MiniNav vs ODV viewport (approx 260px / 400px = 0.65)
-            const scaledOffset = (journey?.roadOffset ?? 0) * (lineLength / 400);
-
-            return (
-              <line
-                key={`lane-div-${i}`}
-                x1={topX}
-                y1={roadTopLeft.y}
-                x2={botX}
-                y2={roadBottomLeft.y}
-                stroke="var(--color-ds-content-subtle)"
-                strokeWidth="2.5"
-                strokeDasharray="28 28"
-                strokeDashoffset={scaledOffset}
-                strokeOpacity="0.6"
-              />
-            );
-          })}
+          {/* Center Dashed Lane Markings with Perspective Effect */}
+          <g id="center-lane-dashes" stroke="var(--color-ds-line-light, #ffffff)" strokeLinecap="round">
+            {/* Dash 0 (Closest / Bottom) */}
+            <line x1="230" y1="549.0" x2="230" y2="375.1" strokeWidth="8.0" />
+            {/* Dash 1 */}
+            <line x1="230" y1="307.5" x2="230" y2="259.8" strokeWidth="3.9" />
+            {/* Dash 2 */}
+            <line x1="230" y1="233.8" x2="230" y2="211.8" strokeWidth="2.6" />
+            {/* Dash 3 */}
+            <line x1="230" y1="198.2" x2="230" y2="185.5" strokeWidth="2.0" />
+            {/* Dash 4 (Farthest / Top) */}
+            <line x1="230" y1="177.1" x2="230" y2="168.9" strokeWidth="1.5" />
+          </g>
 
           {/* Recommended Path Chevrons - follow the road's perspective trapezoid */}
           {activeLane !== null && showGuideLane && (

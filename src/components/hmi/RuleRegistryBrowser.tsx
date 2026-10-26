@@ -197,9 +197,9 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
       `- **Standard Reference**: ${proposal.standardRef}`,
       `- **Created At**: ${proposal.createdAt}`,
       `- **Description**:`,
-      `  ${proposal.description}`,
+      ` ${proposal.description}`,
       `- **Threshold & Pass/Fail Intent**:`,
-      `  ${proposal.thresholdIntent}`,
+      ` ${proposal.thresholdIntent}`,
     ].join('\n');
 
     navigator.clipboard.writeText(markdown).then(() => {
@@ -219,7 +219,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
               type="button"
               id="mockpit-registry-back-btn"
               onClick={onBackToFindings}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition-colors cursor-pointer mr-1"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono bg-slate-800 text-sky-400 border border-slate-700 transition-colors cursor-pointer mr-1"
               title="Back to Audit Findings"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -247,7 +247,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono transition-colors cursor-pointer border ${
               isAddManualOpen
                 ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                : 'bg-slate-800 text-slate-300 border-slate-700'
             }`}
             title="Add a manual review rule to the live registry"
           >
@@ -266,7 +266,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono transition-colors cursor-pointer border ${
               isProposeOpen
                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                : 'bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border-amber-700/50'
+                : 'bg-amber-950/40 text-amber-300 border-amber-700/50'
             }`}
             title="Draft a proposal for a logic-backed rule"
           >
@@ -295,7 +295,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
               className={`px-2.5 py-0.5 rounded-lg text-xs font-mono transition-colors cursor-pointer border ${
                 selectedTierFilter === chip.id
                   ? 'bg-sky-500 text-slate-950 font-bold border-sky-400'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-700/60'
+                  : 'bg-slate-800/80 text-slate-400 border-slate-700/60'
               }`}
             >
               {chip.label}
@@ -315,7 +315,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="text-slate-500 hover:text-slate-300 text-xs font-mono"
+              className="text-slate-500 text-xs font-mono"
             >
               Clear
             </button>
@@ -333,7 +333,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
             </div>
             <button
               onClick={() => setIsAddManualOpen(false)}
-              className="text-slate-500 hover:text-slate-300"
+              className="text-slate-500 "
             >
               <X className="w-4 h-4" />
             </button>
@@ -401,13 +401,13 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
                 <button
                   type="button"
                   onClick={() => setIsAddManualOpen(false)}
-                  className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  className="px-3 py-1 rounded-lg bg-slate-800 text-slate-400 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold cursor-pointer"
+                  className="px-3.5 py-1 rounded-lg bg-sky-500 text-slate-950 font-bold cursor-pointer"
                 >
                   Save Manual Rule
                 </button>
@@ -432,7 +432,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
             </div>
             <button
               onClick={() => setIsProposeOpen(false)}
-              className="text-slate-500 hover:text-slate-300"
+              className="text-slate-500 "
             >
               <X className="w-4 h-4" />
             </button>
@@ -528,13 +528,13 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
                 <button
                   type="button"
                   onClick={() => setIsProposeOpen(false)}
-                  className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  className="px-3 py-1 rounded-lg bg-slate-800 text-slate-400 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold cursor-pointer"
+                  className="px-3.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold cursor-pointer"
                 >
                   Save Proposal Draft
                 </button>
@@ -588,7 +588,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
                         className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-mono transition-colors cursor-pointer border ${
                           copiedProposalId === prop.id
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
                         }`}
                         title="Copy Markdown specification for coding agent"
                       >
@@ -605,7 +605,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
 
                       <button
                         onClick={() => deleteRuleProposal(prop.id)}
-                        className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                        className="p-1 rounded-lg text-slate-500 transition-colors cursor-pointer"
                         title="Delete proposal"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -646,7 +646,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
                 {/* Category Group Header */}
                 <button
                   onClick={() => toggleCategory(cat.id)}
-                  className="w-full px-4 py-2.5 bg-slate-950/80 hover:bg-slate-900 border-b border-slate-800/60 flex items-center justify-between text-left transition-colors cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-slate-950/80 border-b border-slate-800/60 flex items-center justify-between text-left transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
                     <div className="w-6 h-6 rounded-lg bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400">
@@ -691,7 +691,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
                               </span>
                               <button
                                 onClick={() => setEditingRuleId(null)}
-                                className="text-slate-500 hover:text-slate-300"
+                                className="text-slate-500 "
                               >
                                 <X className="w-4 h-4" />
                               </button>
@@ -752,13 +752,13 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
                                 <button
                                   type="button"
                                   onClick={() => setEditingRuleId(null)}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                                  className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 cursor-pointer"
                                 >
                                   Cancel
                                 </button>
                                 <button
                                   type="submit"
-                                  className="px-3 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold cursor-pointer"
+                                  className="px-3 py-1 rounded-lg bg-sky-500 text-slate-950 font-bold cursor-pointer"
                                 >
                                   Save Changes
                                 </button>
@@ -771,7 +771,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
                       return (
                         <div
                           key={rule.id}
-                          className="p-3.5 hover:bg-slate-900/40 transition-colors flex items-start justify-between gap-3 text-xs"
+                          className="p-3.5 transition-colors flex items-start justify-between gap-3 text-xs"
                         >
                           <div className="space-y-1.5 flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -825,7 +825,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
                               <button
                                 type="button"
                                 onClick={() => handleStartEdit(rule)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-sky-300 hover:bg-slate-800 transition-colors cursor-pointer border border-transparent hover:border-slate-700"
+                                className="p-1.5 rounded-lg text-slate-400 transition-colors cursor-pointer border border-transparent "
                                 title={`Edit manual rule: ${rule.title}`}
                                 aria-label={`Edit ${rule.title}`}
                               >
@@ -837,7 +837,7 @@ export const RuleRegistryBrowser: React.FC<RuleRegistryBrowserProps> = ({ onBack
                               <button
                                 type="button"
                                 onClick={() => deleteUserDefinedManualRule(rule.id)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer border border-transparent hover:border-slate-700"
+                                className="p-1.5 rounded-lg text-slate-400 transition-colors cursor-pointer border border-transparent "
                                 title={`Delete user manual rule: ${rule.title}`}
                                 aria-label={`Delete ${rule.title}`}
                               >

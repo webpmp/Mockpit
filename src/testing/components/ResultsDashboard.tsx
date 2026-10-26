@@ -139,12 +139,12 @@ export const ResultsDashboard: React.FC = () => {
 
     const rows = filteredSessions.map((s) => [
       `"${s.id}"`,
-      `"${s.participantId}"`,
-      `"${s.testId}"`,
-      `"${s.testName}"`,
-      `"${new Date(s.startedAt).toISOString()}"`,
-      `"${s.endedAt ? new Date(s.endedAt).toISOString() : ''}"`,
-      `"${s.status}"`,
+ `"${s.participantId}"`,
+ `"${s.testId}"`,
+ `"${s.testName}"`,
+ `"${new Date(s.startedAt).toISOString()}"`,
+ `"${s.endedAt ? new Date(s.endedAt).toISOString() : ''}"`,
+ `"${s.status}"`,
       s.totalPoints,
       s.maxPoints,
       s.totalDurationSeconds,
@@ -192,7 +192,7 @@ export const ResultsDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setSaveError(false)}
-            className="p-1 rounded-lg hover:bg-amber-500/20 text-amber-400 hover:text-amber-200 transition-colors cursor-pointer shrink-0"
+            className="p-1 rounded-lg text-amber-400 transition-colors cursor-pointer shrink-0"
             title="Dismiss warning"
             aria-label="Dismiss warning"
           >
@@ -217,7 +217,7 @@ export const ResultsDashboard: React.FC = () => {
             type="button"
             onClick={handleExportCsv}
             disabled={filteredSessions.length === 0}
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Export CSV
           </button>
@@ -225,7 +225,7 @@ export const ResultsDashboard: React.FC = () => {
             type="button"
             onClick={handleExportJson}
             disabled={filteredSessions.length === 0}
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Export JSON
           </button>
@@ -291,7 +291,7 @@ export const ResultsDashboard: React.FC = () => {
             className={`px-3.5 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeSubTab === 'sessions'
                 ? 'bg-slate-800 text-slate-100 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-400 '
             }`}
           >
             Individual Sessions ({filteredSessions.length})
@@ -301,7 +301,7 @@ export const ResultsDashboard: React.FC = () => {
             className={`px-3.5 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeSubTab === 'aggregate'
                 ? 'bg-slate-800 text-slate-100 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-400 '
             }`}
           >
             Aggregate Task Performance ({taskAggregateStats.length})
@@ -369,7 +369,7 @@ export const ResultsDashboard: React.FC = () => {
                     return (
                       <tr
                         key={session.id}
-                        className="hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                        className=" transition-colors group cursor-pointer"
                         onClick={() => setSelectedSessionForModal(session)}
                       >
                         <td className="py-3.5 px-4 font-mono font-bold text-sky-400 text-sm">
@@ -415,7 +415,7 @@ export const ResultsDashboard: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setSelectedSessionForModal(session)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-sky-300 hover:bg-slate-800 transition-colors"
+                              className="p-1.5 rounded-lg text-slate-400 transition-colors"
                               title="View Session Details"
                             >
                               <Eye className="w-4 h-4" />
@@ -423,7 +423,7 @@ export const ResultsDashboard: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => deleteSession(session.id)}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                              className="p-1.5 rounded-lg text-slate-500 transition-colors"
                               title="Delete Record"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -468,7 +468,7 @@ export const ResultsDashboard: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-800/80">
                   {taskAggregateStats.map((stat) => (
-                    <tr key={stat.taskId} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={stat.taskId} className=" transition-colors">
                       <td className="py-3.5 px-4 font-medium text-slate-200 text-sm">
                         {stat.taskName}
                       </td>

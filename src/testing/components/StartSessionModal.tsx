@@ -53,7 +53,7 @@ export const StartSessionModal: React.FC<StartSessionModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -123,13 +123,13 @@ export const StartSessionModal: React.FC<StartSessionModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl text-sm font-semibold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition-colors flex items-center gap-2 cursor-pointer shadow-md whitespace-nowrap shrink-0"
+              className="px-5 py-2 rounded-xl text-sm font-semibold bg-emerald-500 text-slate-950 transition-colors flex items-center gap-2 cursor-pointer shadow-md whitespace-nowrap shrink-0"
             >
               <Play className="w-4 h-4 fill-current shrink-0" />
               <span>Begin Session</span>

@@ -3338,6 +3338,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         screenMode: mode,
         isSettingsOpen: nextSettings,
         isDesignSystemOpen: nextSettings ? false : nextDesignSystem,
+        selectedComponentId: mode === 'presentation' ? null : state.selectedComponentId,
         activePresentationCalloutId: null,
       };
     });
@@ -3447,12 +3448,17 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   setDebugPanelOpen: (open) => set({ isDebugOpen: open }),
   setDebugPanelHeight: (height) => set({ debugPanelHeight: height }),
   selectComponent: (id) =>
-    set((state) => ({
-      selectedComponentId: id,
-      activePresentationCalloutId: id === null ? null : state.activePresentationCalloutId,
-      presentationConnectorAnimNonce: id === null ? 0 : state.presentationConnectorAnimNonce,
-      notificationGhostActive: false,
-    })),
+    set((state) => {
+      if (state.screenMode === 'presentation' && id !== null) {
+        return state;
+      }
+      return {
+        selectedComponentId: id,
+        activePresentationCalloutId: id === null ? null : state.activePresentationCalloutId,
+        presentationConnectorAnimNonce: id === null ? 0 : state.presentationConnectorAnimNonce,
+        notificationGhostActive: false,
+      };
+    }),
   setActivePresentationCalloutId: (id) =>
     set((state) => ({
       activePresentationCalloutId: id,

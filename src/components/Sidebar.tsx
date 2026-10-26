@@ -421,41 +421,41 @@ export const Sidebar: React.FC = () => {
       target.closest('[data-add-button]') ||
       target.closest('[data-drag-source]') ||
       target.closest('[draggable="true"]')
-    ) {
-      return;
-    }
-    const isNotificationSelected = Boolean(
-      selectedComponentId && notificationComponents.some((c) => c.id === selectedComponentId)
-    );
-    if (isNotificationSelected || notificationGhostActive) {
-      selectComponent(null);
-      setNotificationGhostActive(false);
-    }
-  };
+ ) {
+ return;
+ }
+ const isNotificationSelected = Boolean(
+ selectedComponentId && notificationComponents.some((c) => c.id === selectedComponentId)
+ );
+ if (isNotificationSelected || notificationGhostActive) {
+ selectComponent(null);
+ setNotificationGhostActive(false);
+ }
+ };
 
-  const toggleCategory = (catKey: string) => {
-    setActiveCategory((prev) => {
-      const next = prev === catKey ? null : catKey;
-      if (next) {
-        setTimeout(() => {
-          categoryHeaderRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 0);
-      }
-      return next;
-    });
-  };
+ const toggleCategory = (catKey: string) => {
+ setActiveCategory((prev) => {
+ const next = prev === catKey ? null : catKey;
+ if (next) {
+ setTimeout(() => {
+ categoryHeaderRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+ }, 0);
+ }
+ return next;
+ });
+ };
 
-  const handleDragStart = (e: React.DragEvent, type: ComponentType) => {
-    e.dataTransfer.setData('application/mockpit-component-type', type);
-    e.dataTransfer.effectAllowed = 'copy';
-  };
+ const handleDragStart = (e: React.DragEvent, type: ComponentType) => {
+ e.dataTransfer.setData('application/mockpit-component-type', type);
+ e.dataTransfer.effectAllowed = 'copy';
+ };
 
-  const handleAddNotification = () => {
-    const id = addComponent('warning');
-    selectComponent(id);
-    setActiveCategory('notifications');
-    setTimeout(() => {
-      categoryHeaderRefs.current['notifications']?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+ const handleAddNotification = () => {
+ const id = addComponent('warning');
+ selectComponent(id);
+ setActiveCategory('notifications');
+ setTimeout(() => {
+ categoryHeaderRefs.current['notifications']?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
   };
 
@@ -490,7 +490,7 @@ export const Sidebar: React.FC = () => {
       >
         <div
           onClick={() => toggleCategory('notifications')}
-          className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors select-none bg-slate-900/90"
+          className="px-4 py-3 flex items-center justify-between cursor-pointer transition-colors select-none bg-slate-900/90"
         >
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-lg bg-slate-800 border border-slate-700/80 text-amber-400">
@@ -501,7 +501,7 @@ export const Sidebar: React.FC = () => {
             </h2>
           </div>
 
-          <div className="text-slate-400 hover:text-slate-200 transition-colors">
+          <div className="text-slate-400 transition-colors">
             {activeCategory === 'notifications' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
         </div>
@@ -534,7 +534,7 @@ export const Sidebar: React.FC = () => {
                     className={`py-1 px-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer truncate ${
                       notificationStackPosition === pos.id
                         ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                        : 'bg-slate-800/80 text-slate-400 '
                     }`}
                   >
                     {pos.label}
@@ -559,7 +559,7 @@ export const Sidebar: React.FC = () => {
                     className={`py-1 px-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer text-center ${
                       notificationDurationSec === sec
                         ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                        : 'bg-slate-800/80 text-slate-400 '
                     }`}
                   >
                     {sec}s
@@ -577,17 +577,17 @@ export const Sidebar: React.FC = () => {
                   draggable
                   data-drag-source="true"
                   onDragStart={(e) => handleDragStart(e, item.type)}
-                  className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 hover:border-amber-500/50 hover:bg-slate-800 transition-all cursor-grab active:cursor-grabbing group shadow-sm"
+                  className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 transition-all cursor-grab active:cursor-grabbing group shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="p-2 rounded-lg bg-slate-900 border border-slate-700/80 group-hover:scale-105 transition-transform text-amber-400"
+                        className="p-2 rounded-lg bg-slate-900 border border-slate-700/80 transition-transform text-amber-400"
                       >
                         <Icon className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-slate-200 group-hover:text-amber-400 transition-colors">
+                        <h3 className="text-sm font-bold text-slate-200 transition-colors">
                           {item.title}
                         </h3>
                         <p className="text-[11px] text-slate-400 leading-tight mt-0.5">
@@ -602,7 +602,7 @@ export const Sidebar: React.FC = () => {
                         e.stopPropagation();
                         handleAddNotification();
                       }}
-                      className="p-1.5 rounded-lg bg-slate-700/60 text-slate-300 hover:bg-amber-500 hover:text-slate-950 transition-colors shrink-0 cursor-pointer"
+                      className="p-1.5 rounded-lg bg-slate-700/60 text-slate-300 transition-colors shrink-0 cursor-pointer"
                       title="Add notification"
                     >
                       <Plus className="w-4 h-4" />
@@ -623,7 +623,7 @@ export const Sidebar: React.FC = () => {
                     className={`flex-1 py-1 px-2 rounded-md transition-colors text-center cursor-pointer ${
                       sortMode === 'az'
                         ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        : 'text-slate-400 '
                     }`}
                   >
                     A–Z
@@ -634,7 +634,7 @@ export const Sidebar: React.FC = () => {
                     className={`flex-1 py-1 px-2 rounded-md transition-colors text-center cursor-pointer ${
                       sortMode === 'stack'
                         ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        : 'text-slate-400 '
                     }`}
                   >
                     Stack order
@@ -654,7 +654,7 @@ export const Sidebar: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setFilterQuery('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs cursor-pointer"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs cursor-pointer"
                       title="Clear filter"
                     >
                       &times;
@@ -707,7 +707,7 @@ export const Sidebar: React.FC = () => {
                             className={`p-2.5 rounded-xl border transition-all cursor-pointer text-xs ${
                               isSelected
                                 ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/30 shadow-md'
-                                : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/70'
+                                : 'bg-slate-800/40 border-slate-700/60 '
                             }`}
                           >
                             {isPendingDelete ? (
@@ -726,7 +726,7 @@ export const Sidebar: React.FC = () => {
                                       e.stopPropagation();
                                       setPendingDeleteId(null);
                                     }}
-                                    className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-mono font-bold cursor-pointer transition-colors"
+                                    className="px-2 py-0.5 rounded bg-slate-700 text-slate-200 text-[10px] font-mono font-bold cursor-pointer transition-colors"
                                   >
                                     Cancel
                                   </button>
@@ -737,14 +737,14 @@ export const Sidebar: React.FC = () => {
                                       setPendingDeleteId(null);
                                       deleteComponent(comp.id);
                                     }}
-                                    className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-mono font-bold cursor-pointer transition-colors shadow-sm"
+                                    className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-mono font-bold cursor-pointer transition-colors shadow-sm"
                                   >
                                     Delete
                                   </button>
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex items-center justify-between gap-1.5">
+                              <div className="flex items-center justify-between gap-1.5 w-full">
                                 <div className="flex items-center gap-2 min-w-0">
                                   {sortMode === 'stack' && (
                                     <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 shrink-0">
@@ -756,7 +756,7 @@ export const Sidebar: React.FC = () => {
                                   </span>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-1.5 shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
                                   {/* Active Toggle Switch */}
                                   <button
                                     type="button"
@@ -769,7 +769,7 @@ export const Sidebar: React.FC = () => {
                                         enabled: 'false',
                                       });
                                     }}
-                                    className="relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-emerald-500"
+                                    className="relative inline-flex items-center h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-emerald-500 self-center"
                                   >
                                     <span className="pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-3" />
                                   </button>
@@ -779,7 +779,7 @@ export const Sidebar: React.FC = () => {
                                       <button
                                         disabled={idx === 0}
                                         onClick={() => reorderNotificationComponent(comp.id, 'up')}
-                                        className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        className="p-1 rounded bg-slate-900 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                                         title="Move Up"
                                       >
                                         <ChevronUp className="w-3 h-3" />
@@ -787,7 +787,7 @@ export const Sidebar: React.FC = () => {
                                       <button
                                         disabled={idx === displayedActiveComponents.length - 1}
                                         onClick={() => reorderNotificationComponent(comp.id, 'down')}
-                                        className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        className="p-1 rounded bg-slate-900 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                                         title="Move Down"
                                       >
                                         <ChevronDown className="w-3 h-3" />
@@ -799,7 +799,7 @@ export const Sidebar: React.FC = () => {
                                       e.stopPropagation();
                                       setPendingDeleteId(comp.id);
                                     }}
-                                    className="p-1 rounded bg-slate-900 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
+                                    className="p-1 rounded bg-slate-900 text-rose-400 transition-colors cursor-pointer"
                                     title="Delete"
                                   >
                                     <Trash2 className="w-3 h-3" />
@@ -859,7 +859,7 @@ export const Sidebar: React.FC = () => {
                             className={`p-2.5 rounded-xl border transition-all cursor-pointer text-xs ${
                               isSelected
                                 ? 'bg-slate-800/90 border-sky-400 ring-1 ring-sky-400/30 shadow-md'
-                                : 'bg-slate-900/60 border-slate-800/60 opacity-65 hover:opacity-90 hover:border-slate-700'
+                                : 'bg-slate-900/60 border-slate-800/60 opacity-65 '
                             }`}
                           >
                             {isPendingDelete ? (
@@ -878,7 +878,7 @@ export const Sidebar: React.FC = () => {
                                       e.stopPropagation();
                                       setPendingDeleteId(null);
                                     }}
-                                    className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-mono font-bold cursor-pointer transition-colors"
+                                    className="px-2 py-0.5 rounded bg-slate-700 text-slate-200 text-[10px] font-mono font-bold cursor-pointer transition-colors"
                                   >
                                     Cancel
                                   </button>
@@ -889,14 +889,14 @@ export const Sidebar: React.FC = () => {
                                       setPendingDeleteId(null);
                                       deleteComponent(comp.id);
                                     }}
-                                    className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-mono font-bold cursor-pointer transition-colors shadow-sm"
+                                    className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-mono font-bold cursor-pointer transition-colors shadow-sm"
                                   >
                                     Delete
                                   </button>
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex items-center justify-between gap-1.5">
+                              <div className="flex items-center justify-between gap-1.5 w-full">
                                 <div className="flex items-center gap-2 min-w-0">
                                   {sortMode === 'stack' && (
                                     <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
@@ -908,7 +908,7 @@ export const Sidebar: React.FC = () => {
                                   </span>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-1.5 shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
                                   {/* Active Toggle Switch */}
                                   <button
                                     type="button"
@@ -921,7 +921,7 @@ export const Sidebar: React.FC = () => {
                                         enabled: 'true',
                                       });
                                     }}
-                                    className="relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-slate-700"
+                                    className="relative inline-flex items-center h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-slate-700 self-center"
                                   >
                                     <span className="pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0.5" />
                                   </button>
@@ -931,7 +931,7 @@ export const Sidebar: React.FC = () => {
                                       <button
                                         disabled={idx === 0}
                                         onClick={() => reorderNotificationComponent(comp.id, 'up')}
-                                        className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        className="p-1 rounded bg-slate-900 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                                         title="Move Up"
                                       >
                                         <ChevronUp className="w-3 h-3" />
@@ -939,7 +939,7 @@ export const Sidebar: React.FC = () => {
                                       <button
                                         disabled={idx === displayedInactiveComponents.length - 1}
                                         onClick={() => reorderNotificationComponent(comp.id, 'down')}
-                                        className="p-1 rounded bg-slate-900 text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        className="p-1 rounded bg-slate-900 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                                         title="Move Down"
                                       >
                                         <ChevronDown className="w-3 h-3" />
@@ -951,7 +951,7 @@ export const Sidebar: React.FC = () => {
                                       e.stopPropagation();
                                       setPendingDeleteId(comp.id);
                                     }}
-                                    className="p-1 rounded bg-slate-900 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
+                                    className="p-1 rounded bg-slate-900 text-rose-400 transition-colors cursor-pointer"
                                     title="Delete"
                                   >
                                     <Trash2 className="w-3 h-3" />
@@ -984,7 +984,7 @@ export const Sidebar: React.FC = () => {
           >
             <div
               onClick={() => toggleCategory(category.key)}
-              className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors select-none bg-slate-900/90"
+              className="px-4 py-3 flex items-center justify-between cursor-pointer transition-colors select-none bg-slate-900/90"
             >
               <div className="flex items-center gap-2.5">
                 <div className={`p-1.5 rounded-lg bg-slate-800 border border-slate-700/80 ${category.iconColorClass}`}>
@@ -995,7 +995,7 @@ export const Sidebar: React.FC = () => {
                 </h2>
               </div>
 
-              <div className="text-slate-400 hover:text-slate-200 transition-colors">
+              <div className="text-slate-400 transition-colors">
                 {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </div>
@@ -1014,17 +1014,17 @@ export const Sidebar: React.FC = () => {
                         draggable
                         data-drag-source="true"
                         onDragStart={(e) => handleDragStart(e, item.type)}
-                        className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 hover:border-sky-500/50 hover:bg-slate-800 transition-all cursor-grab active:cursor-grabbing group shadow-sm"
+                        className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 transition-all cursor-grab active:cursor-grabbing group shadow-sm"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2.5">
                             <div
-                              className={`p-2 rounded-lg bg-slate-900 border border-slate-700/80 group-hover:scale-105 transition-transform ${category.iconColorClass}`}
+                              className={`p-2 rounded-lg bg-slate-900 border border-slate-700/80 transition-transform ${category.iconColorClass}`}
                             >
                               <Icon className="w-5 h-5" />
                             </div>
                             <div>
-                              <h3 className="text-sm font-bold text-slate-200 group-hover:text-sky-400 transition-colors">
+                              <h3 className="text-sm font-bold text-slate-200 transition-colors">
                                 {item.title}
                               </h3>
                               <p className="text-[11px] text-slate-400 leading-tight mt-0.5">
@@ -1039,7 +1039,7 @@ export const Sidebar: React.FC = () => {
                               e.stopPropagation();
                               addComponent(item.type);
                             }}
-                            className="p-1.5 rounded-lg bg-slate-700/60 text-slate-300 hover:bg-sky-500 hover:text-slate-950 transition-colors shrink-0 cursor-pointer"
+                            className="p-1.5 rounded-lg bg-slate-700/60 text-slate-300 transition-colors shrink-0 cursor-pointer"
                             title="Add to canvas"
                           >
                             <Plus className="w-4 h-4" />

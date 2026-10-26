@@ -306,8 +306,6 @@ const PlaybackScrubber: React.FC<PlaybackScrubberProps> = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         onKeyDown={handleKeyDown}
         className="w-full h-5 cursor-pointer touch-none select-none relative flex items-center group outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-full"
         style={{
@@ -319,24 +317,24 @@ const PlaybackScrubber: React.FC<PlaybackScrubberProps> = ({
           {/* Played Portion */}
           <div
             className={`h-full rounded-full ${isDragging ? '' : 'transition-all duration-150 ease-out'}`}
-            style={{
-              width: `${percentage}%`,
-              backgroundColor: primaryAccent,
-              boxShadow: `0 0 10px color-mix(in srgb, ${primaryAccent} 50%, transparent)`,
-            }}
-          />
-        </div>
+ style={{
+ width: `${percentage}%`,
+ backgroundColor: primaryAccent,
+ boxShadow: `0 0 10px color-mix(in srgb, ${primaryAccent} 50%, transparent)`,
+ }}
+ />
+ </div>
 
-        {/* Scrubber Thumb */}
-        {/* ds-raw-start: white over album art is fixed */}
-        <div
-          className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 @[240px]:w-4 @[240px]:h-4 rounded-full bg-white shadow-lg pointer-events-none transition-transform duration-100 ease-out ${
-            isDragging || isHovered ? 'scale-110' : 'scale-100'
+ {/* Scrubber Thumb */}
+ {/* ds-raw-start: white over album art is fixed */}
+ <div
+ className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 @[240px]:w-4 @[240px]:h-4 rounded-full bg-white shadow-lg pointer-events-none transition-transform duration-100 ease-out ${
+            isDragging ? 'scale-110' : 'scale-100'
           }`}
-          style={{
-            left: `${percentage}%`,
-            border: `2px solid ${primaryAccent}`,
-            boxShadow: `0 0 8px color-mix(in srgb, ${primaryAccent} 63%, transparent), 0 2px 4px rgba(0,0,0,0.6)`,
+ style={{
+ left: `${percentage}%`,
+ border: `2px solid ${primaryAccent}`,
+ boxShadow: `0 0 8px color-mix(in srgb, ${primaryAccent} 63%, transparent), 0 2px 4px rgba(0,0,0,0.6)`,
           }}
         />
         {/* ds-raw-end */}
@@ -705,7 +703,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
       {!isPresentation && isActuallyDismissed && !isSelected && (
         <div
           data-testid="nowplaying-editor-ghost"
-          className="absolute inset-0 rounded-2xl border-2 border-dashed border-ds-primary/50 bg-ds-background/35 backdrop-blur-[2px] flex flex-col items-center justify-center p-2 text-center transition-all hover:border-ds-primary hover:bg-ds-surface/60 cursor-pointer pointer-events-auto shadow-md z-10"
+          className="absolute inset-0 rounded-2xl border-2 border-dashed border-ds-primary/50 bg-ds-background/35 backdrop-blur-[2px] flex flex-col items-center justify-center p-2 text-center transition-all cursor-pointer pointer-events-auto shadow-md z-10"
           onClick={(e) => {
             e.stopPropagation();
             resetDismissTimer();
@@ -787,18 +785,18 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
             >
               <div
                 className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-ds-content' : ''}`}
-                style={{
-                  color: titleColorProp || undefined,
-                  ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
-                }}
-              >
-                {currentTrack.title}
-              </div>
-              <div
-                className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
-                style={{
-                  color: artistColorProp || undefined,
-                  ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+ style={{
+ color: titleColorProp || undefined,
+ ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+ }}
+ >
+ {currentTrack.title}
+ </div>
+ <div
+ className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
+ style={{
+ color: artistColorProp || undefined,
+ ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
                 }}
               >
                 {currentTrack.artist}
@@ -829,7 +827,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                   minHeight: `${buttonHeightPx}px`,
                   aspectRatio: '1 / 1',
                 }}
-                className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                 title="Previous track"
                 aria-label="Previous track"
               >
@@ -847,8 +845,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                   backgroundColor: customColor || undefined,
                   boxShadow: `0 0 12px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
                 }}
-                className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
-                  !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+                className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95  font-bold shrink-0 aspect-square ${
+                  !customColor ? 'bg-ds-primary ' : ''
                 }`}
                 title={isPlaying ? 'Pause' : 'Play'}
                 aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -869,7 +867,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                   minHeight: `${buttonHeightPx}px`,
                   aspectRatio: '1 / 1',
                 }}
-                className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                 title="Next track"
                 aria-label="Next track"
               >
@@ -922,18 +920,18 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
                       <div
                         className={`${titleFontSizeClasses.constrained} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-ds-content' : ''}`}
-                        style={{
-                          color: titleColorProp || undefined,
-                          ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
-                        }}
-                      >
-                        {currentTrack.title}
-                      </div>
-                      <div
-                        className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
-                        style={{
-                          color: artistColorProp || undefined,
-                          ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+ style={{
+ color: titleColorProp || undefined,
+ ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+ }}
+ >
+ {currentTrack.title}
+ </div>
+ <div
+ className={`${artistFontSizeClasses.constrained} truncate font-medium leading-tight ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
+ style={{
+ color: artistColorProp || undefined,
+ ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
                         }}
                       >
                         {currentTrack.artist}
@@ -979,7 +977,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                         minHeight: `${buttonHeightPx}px`,
                         aspectRatio: '1 / 1',
                       }}
-                      className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                      className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                       title="Previous track"
                       aria-label="Previous track"
                     >
@@ -997,8 +995,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                         backgroundColor: customColor || undefined,
                         boxShadow: `0 0 12px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
                       }}
-                      className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
-                        !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+                      className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95  font-bold shrink-0 aspect-square ${
+                        !customColor ? 'bg-ds-primary ' : ''
                       }`}
                       title={isPlaying ? 'Pause' : 'Play'}
                       aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -1019,7 +1017,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                         minHeight: `${buttonHeightPx}px`,
                         aspectRatio: '1 / 1',
                       }}
-                      className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                      className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                       title="Next track"
                       aria-label="Next track"
                     >
@@ -1081,18 +1079,18 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
                   <div
                     className={`${titleFontSizeClasses.tall} font-extrabold truncate leading-snug ${!titleColorProp ? 'text-ds-content' : ''}`}
-                    style={{
-                      color: titleColorProp || undefined,
-                      ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
-                    }}
-                  >
-                    {currentTrack.title}
-                  </div>
-                  <div
-                    className={`${artistFontSizeClasses.tall} truncate font-medium leading-snug ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
-                    style={{
-                      color: artistColorProp || undefined,
-                      ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+ style={{
+ color: titleColorProp || undefined,
+ ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+ }}
+ >
+ {currentTrack.title}
+ </div>
+ <div
+ className={`${artistFontSizeClasses.tall} truncate font-medium leading-snug ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
+ style={{
+ color: artistColorProp || undefined,
+ ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
                     }}
                   >
                     {currentTrack.artist}
@@ -1135,7 +1133,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 minHeight: `${buttonHeightPx}px`,
                 aspectRatio: '1 / 1',
               }}
-              className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+              className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
               title="Previous track"
               aria-label="Previous track"
             >
@@ -1153,8 +1151,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 backgroundColor: customColor || undefined,
                 boxShadow: `0 0 14px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
               }}
-              className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
-                !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+              className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95  font-bold shrink-0 aspect-square ${
+                !customColor ? 'bg-ds-primary ' : ''
               }`}
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -1175,7 +1173,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                 minHeight: `${buttonHeightPx}px`,
                 aspectRatio: '1 / 1',
               }}
-              className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+              className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
               title="Next track"
               aria-label="Next track"
             >
@@ -1204,7 +1202,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                       isFavorited
                         ? 'text-white'
-                        : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/60'
+                        : 'text-ds-content-muted '
                     }`}
                     title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
                     aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
@@ -1231,7 +1229,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
                         isShuffle
                           ? 'text-ds-content bg-ds-surface-raised border border-ds-line'
-                          : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
+                          : 'text-ds-content-muted '
                       }`}
                       title="Shuffle"
                       aria-label="Shuffle"
@@ -1254,7 +1252,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
                         isRepeat
                           ? 'text-ds-content bg-ds-surface-raised border border-ds-line'
-                          : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
+                          : 'text-ds-content-muted '
                       }`}
                       title="Repeat"
                       aria-label="Repeat"
@@ -1326,18 +1324,18 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                   <div className="min-w-0 flex-1 flex flex-col justify-center leading-tight gap-1">
                     <div
                       className={`${titleFontSizeClasses.horizontal} font-extrabold truncate leading-tight ${!titleColorProp ? 'text-ds-content' : ''}`}
-                      style={{
-                        color: titleColorProp || undefined,
-                        ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
-                      }}
-                    >
-                      {currentTrack.title}
-                    </div>
-                    <div
-                      className={`${artistFontSizeClasses.horizontal} truncate font-medium leading-tight ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
-                      style={{
-                        color: artistColorProp || undefined,
-                        ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
+ style={{
+ color: titleColorProp || undefined,
+ ...(!isPresetTitleSize ? { fontSize: isNaN(Number(titleFontSizeProp)) ? titleFontSizeProp : `${titleFontSizeProp}px` } : {}),
+ }}
+ >
+ {currentTrack.title}
+ </div>
+ <div
+ className={`${artistFontSizeClasses.horizontal} truncate font-medium leading-tight ${!artistColorProp ? 'text-ds-content-muted' : ''}`}
+ style={{
+ color: artistColorProp || undefined,
+ ...(!isPresetArtistSize ? { fontSize: isNaN(Number(artistFontSizeProp)) ? artistFontSizeProp : `${artistFontSizeProp}px` } : {}),
                       }}
                     >
                       {currentTrack.artist}
@@ -1362,7 +1360,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     className={`p-1.5 rounded-xl transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                       isFavorited
                         ? 'text-white'
-                        : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
+                        : 'text-ds-content-muted '
                     }`}
                     title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
                     aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
@@ -1388,7 +1386,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
                         isShuffle
                           ? 'text-ds-content bg-ds-surface-raised border border-ds-line'
-                          : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
+                          : 'text-ds-content-muted '
                       }`}
                       title="Shuffle"
                       aria-label="Shuffle"
@@ -1411,7 +1409,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       className={`p-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${
                         isRepeat
                           ? 'text-ds-content bg-ds-surface-raised border border-ds-line'
-                          : 'text-ds-content-muted hover:text-ds-content hover:bg-ds-surface-raised/40'
+                          : 'text-ds-content-muted '
                       }`}
                       title="Repeat"
                       aria-label="Repeat"
@@ -1451,7 +1449,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       minHeight: `${buttonHeightPx}px`,
                       aspectRatio: '1 / 1',
                     }}
-                    className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                    className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                     title="Previous track"
                     aria-label="Previous track"
                   >
@@ -1469,8 +1467,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       backgroundColor: customColor || undefined,
                       boxShadow: `0 0 14px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
                     }}
-                    className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
-                      !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+                    className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95  font-bold shrink-0 aspect-square ${
+                      !customColor ? 'bg-ds-primary ' : ''
                     }`}
                     title={isPlaying ? 'Pause' : 'Play'}
                     aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -1491,7 +1489,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                       minHeight: `${buttonHeightPx}px`,
                       aspectRatio: '1 / 1',
                     }}
-                    className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                    className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                     title="Next track"
                     aria-label="Next track"
                   >
@@ -1534,7 +1532,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     minHeight: `${buttonHeightPx}px`,
                     aspectRatio: '1 / 1',
                   }}
-                  className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                  className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                   title="Previous track"
                   aria-label="Previous track"
                 >
@@ -1552,8 +1550,8 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     backgroundColor: customColor || undefined,
                     boxShadow: `0 0 14px color-mix(in srgb, ${primaryAccent} 38%, transparent)`,
                   }}
-                  className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95 hover:brightness-110 font-bold shrink-0 aspect-square ${
-                    !customColor ? 'bg-ds-primary hover:bg-ds-primary-hover' : ''
+                  className={`rounded-full text-ds-on-primary flex items-center justify-center shadow-md transition-all cursor-pointer active:scale-95  font-bold shrink-0 aspect-square ${
+                    !customColor ? 'bg-ds-primary ' : ''
                   }`}
                   title={isPlaying ? 'Pause' : 'Play'}
                   aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -1574,7 +1572,7 @@ export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
                     minHeight: `${buttonHeightPx}px`,
                     aspectRatio: '1 / 1',
                   }}
-                  className="rounded-xl text-ds-content-secondary hover:text-white hover:bg-ds-surface-raised transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
+                  className="rounded-xl text-ds-content-secondary transition-colors cursor-pointer shrink-0 aspect-square flex items-center justify-center active:scale-95"
                   title="Next track"
                   aria-label="Next track"
                 >

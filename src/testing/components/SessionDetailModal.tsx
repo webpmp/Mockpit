@@ -73,14 +73,14 @@ export const SessionDetailModal: React.FC<SessionDetailModalProps> = ({ session,
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleExportJson}
-              className="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               title="Download Session Report JSON"
             >
               Export JSON
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+              className="p-1.5 text-slate-400 rounded-lg transition-colors cursor-pointer shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
@@ -152,7 +152,7 @@ export const SessionDetailModal: React.FC<SessionDetailModalProps> = ({ session,
                   >
                     <div
                       onClick={() => setExpandedTaskIndex(isExpanded ? null : idx)}
-                      className="p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-900/60 transition-colors"
+                      className="p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <span className="w-6 h-6 rounded-md bg-slate-900 border border-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-semibold shrink-0">

@@ -278,7 +278,7 @@ export const HeaderNav: React.FC = () => {
             type="button"
             id="mode-dropdown-button"
             onClick={() => setIsWorkspaceSwitcherExpanded((prev) => !prev)}
-            className="w-[136px] px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center justify-between cursor-pointer bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60 hover:text-slate-100 hover:border-slate-600 select-none whitespace-nowrap"
+            className="w-[136px] px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center justify-between cursor-pointer bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60 select-none whitespace-nowrap"
             aria-expanded={isWorkspaceSwitcherExpanded}
             aria-label="Mode Switcher"
           >
@@ -310,7 +310,7 @@ export const HeaderNav: React.FC = () => {
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                     screenMode === 'editor'
                       ? 'bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      : 'text-slate-400 '
                   }`}
                   title="Editor Mode"
                 >
@@ -327,7 +327,7 @@ export const HeaderNav: React.FC = () => {
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                     screenMode === 'presentation'
                       ? 'bg-slate-800 text-emerald-400 shadow-sm border border-slate-700/60'
-                      : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800/60'
+                      : 'text-slate-400 '
                   }`}
                   title="Presenter Mode"
                 >
@@ -344,7 +344,7 @@ export const HeaderNav: React.FC = () => {
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                     screenMode === 'audit'
                       ? 'bg-slate-800 text-sky-400 shadow-sm border border-slate-700/60'
-                      : 'text-slate-400 hover:text-sky-400 hover:bg-slate-800/60'
+                      : 'text-slate-400 '
                   }`}
                   title="Auditor Mode"
                 >
@@ -361,7 +361,7 @@ export const HeaderNav: React.FC = () => {
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                     screenMode === 'user-testing'
                       ? 'bg-slate-800 text-slate-200 shadow-sm border border-slate-700/60'
-                      : 'text-slate-400 hover:text-amber-400 hover:bg-slate-800/60'
+                      : 'text-slate-400 '
                   }`}
                   title="User Testing Mode"
                 >
@@ -396,7 +396,7 @@ export const HeaderNav: React.FC = () => {
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm cursor-pointer whitespace-nowrap ${
                   isMegaMenuOpen
                     ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
-                    : 'bg-slate-900 text-slate-200 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
+                    : 'bg-slate-900 text-slate-200 border-slate-800 '
                 }`}
               >
             <ActiveIcon className="w-3.5 h-3.5 text-sky-400" />
@@ -430,13 +430,13 @@ export const HeaderNav: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleOpenAddTopLevelModal}
-                    className="px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 hover:bg-sky-500 hover:text-slate-950 transition-all text-[0.6875rem] font-bold flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-300 transition-all text-[0.6875rem] font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Screen
                   </button>
                   <button
                     onClick={() => setIsMegaMenuOpen(false)}
-                    className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                    className="p-1 text-slate-400 rounded-lg transition-colors cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -459,7 +459,7 @@ export const HeaderNav: React.FC = () => {
                       className={`flex flex-col rounded-xl border p-2.5 transition-all ${
                         isParentActive || childScreens.some((c) => c.id === activeView)
                           ? 'bg-slate-900/90 border-sky-500/40 shadow-sm'
-                          : 'bg-slate-900/40 border-slate-800/80 hover:border-slate-700/80'
+                          : 'bg-slate-900/40 border-slate-800/80 '
                       }`}
                     >
                       {/* Parent Column Header */}
@@ -473,7 +473,7 @@ export const HeaderNav: React.FC = () => {
                                 e.stopPropagation();
                                 setIconPickerOpenFor(iconPickerOpenFor === parentScreen.id ? null : parentScreen.id);
                               }}
-                              className="p-1 -m-1 rounded hover:bg-slate-800 text-slate-300 hover:text-sky-400 transition-colors cursor-pointer min-w-[28px] min-h-[28px] flex items-center justify-center"
+                              className="p-1 -m-1 rounded text-slate-300 transition-colors cursor-pointer min-w-[28px] min-h-[28px] flex items-center justify-center"
                               title="Change icon"
                             >
                               <ParentIcon className="w-3.5 h-3.5 shrink-0" />
@@ -494,10 +494,10 @@ export const HeaderNav: React.FC = () => {
                                       updateScreen(parentScreen.id, { icon: opt.key });
                                       setIconPickerOpenFor(null);
                                     }}
-                                    className={`p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center ${
+                                    className={`p-1.5 rounded-lg  transition-colors cursor-pointer flex items-center justify-center ${
                                       parentScreen.icon === opt.key
                                         ? 'bg-sky-500/25 text-sky-300 border border-sky-500/50'
-                                        : 'text-slate-300 hover:text-sky-400'
+                                        : 'text-slate-300 '
                                     }`}
                                     title={opt.label}
                                   >
@@ -515,7 +515,7 @@ export const HeaderNav: React.FC = () => {
                               setIsMegaMenuOpen(false);
                             }}
                             className={`flex items-center gap-1.5 text-xs font-bold font-mono transition-colors text-left cursor-pointer truncate flex-1 min-w-0 ${
-                              isParentActive ? 'text-sky-400' : 'text-slate-200 hover:text-sky-300'
+                              isParentActive ? 'text-sky-400' : 'text-slate-200 '
                             }`}
                           >
                             <span className="truncate">{parentScreen.name}</span>
@@ -528,9 +528,9 @@ export const HeaderNav: React.FC = () => {
                             className={`flex items-center gap-1 text-[10px] font-mono select-none px-1.5 py-1 rounded min-h-[32px] sm:min-h-[44px] ${
                               isRequired
                                 ? 'opacity-60 cursor-not-allowed text-slate-400'
-                                : 'cursor-pointer text-slate-400 hover:text-slate-200'
+                                : 'cursor-pointer text-slate-400 '
                             }`}
-                            title={isRequired ? `${parentScreen.name} is required in the dock` : 'Show in dock'}
+ title={isRequired ? `${parentScreen.name} is required in the dock` : 'Show in dock'}
                           >
                             <input
                               type="checkbox"
@@ -543,13 +543,13 @@ export const HeaderNav: React.FC = () => {
                           </label>
 
                           {!isHome && (
-                            <div className="flex items-center opacity-60 hover:opacity-100 transition-opacity">
+                            <div className="flex items-center opacity-60 transition-opacity">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setDeleteTargetScreen(parentScreen);
                                 }}
-                                className="p-0.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                                className="p-0.5 text-slate-400 rounded transition-colors cursor-pointer"
                                 title="Delete screen"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -609,7 +609,7 @@ export const HeaderNav: React.FC = () => {
                                 className={`group/child flex items-center justify-between p-1.5 rounded-lg text-xs font-medium transition-all ${
                                   isChildActive
                                     ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
+                                    : 'text-slate-400 '
                                 }`}
                               >
                                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -621,7 +621,7 @@ export const HeaderNav: React.FC = () => {
                                         e.stopPropagation();
                                         setIconPickerOpenFor(iconPickerOpenFor === childScreen.id ? null : childScreen.id);
                                       }}
-                                      className="p-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-sky-300 transition-colors cursor-pointer flex items-center justify-center"
+                                      className="p-0.5 rounded text-slate-400 transition-colors cursor-pointer flex items-center justify-center"
                                       title="Change icon"
                                     >
                                       <ChildIcon className="w-3 h-3 shrink-0" />
@@ -642,10 +642,10 @@ export const HeaderNav: React.FC = () => {
                                               updateScreen(childScreen.id, { icon: opt.key });
                                               setIconPickerOpenFor(null);
                                             }}
-                                            className={`p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center ${
+                                            className={`p-1.5 rounded-lg  transition-colors cursor-pointer flex items-center justify-center ${
                                               childScreen.icon === opt.key
                                                 ? 'bg-sky-500/25 text-sky-300 border border-sky-500/50'
-                                                : 'text-slate-300 hover:text-sky-400'
+                                                : 'text-slate-300 '
                                             }`}
                                             title={opt.label}
                                           >
@@ -669,13 +669,13 @@ export const HeaderNav: React.FC = () => {
                                 </div>
 
                                 {/* Child Screen Reorder Up / Down & Delete */}
-                                <div className="flex items-center gap-0.5 opacity-0 group-hover/child:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-0.5 ">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       moveScreen(childScreen.id, 'up');
                                     }}
-                                    className="p-0.5 text-slate-400 hover:text-sky-300 rounded cursor-pointer"
+                                    className="p-0.5 text-slate-400 rounded cursor-pointer"
                                     title="Move child up"
                                   >
                                     <ArrowUp className="w-2.5 h-2.5" />
@@ -685,7 +685,7 @@ export const HeaderNav: React.FC = () => {
                                       e.stopPropagation();
                                       moveScreen(childScreen.id, 'down');
                                     }}
-                                    className="p-0.5 text-slate-400 hover:text-sky-300 rounded cursor-pointer"
+                                    className="p-0.5 text-slate-400 rounded cursor-pointer"
                                     title="Move child down"
                                   >
                                     <ArrowDown className="w-2.5 h-2.5" />
@@ -695,7 +695,7 @@ export const HeaderNav: React.FC = () => {
                                       e.stopPropagation();
                                       setDeleteTargetScreen(childScreen);
                                     }}
-                                    className="p-0.5 text-slate-400 hover:text-rose-400 rounded cursor-pointer ml-0.5"
+                                    className="p-0.5 text-slate-400 rounded cursor-pointer ml-0.5"
                                     title="Delete child screen"
                                   >
                                     <Trash2 className="w-2.5 h-2.5" />
@@ -710,7 +710,7 @@ export const HeaderNav: React.FC = () => {
                       {/* Column Footer: + Add Child */}
                       <button
                         onClick={() => handleOpenAddChildModal(parentScreen.id, parentScreen.name)}
-                        className="mt-2 w-full py-1 px-2 rounded-lg text-[0.625rem] font-bold font-mono text-slate-400 hover:text-sky-300 bg-slate-950/60 border border-dashed border-slate-800 hover:border-sky-500/40 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        className="mt-2 w-full py-1 px-2 rounded-lg text-[0.625rem] font-bold font-mono text-slate-400 bg-slate-950/60 border border-dashed border-slate-800 transition-all flex items-center justify-center gap-1 cursor-pointer"
                       >
                         <Plus className="w-3 h-3" /> Add Child
                       </button>
@@ -731,7 +731,7 @@ export const HeaderNav: React.FC = () => {
           {copiedComponent && (
             <button
               onClick={() => pasteComponent()}
-              className="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/20 hover:border-sky-500/50 shadow-[0_0_10px_rgba(56,189,248,0.2)] transition-all cursor-pointer"
+              className="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.2)] transition-all cursor-pointer"
               title={`Paste: ${DEFAULT_COMPONENT_LABELS[copiedComponent.component.type] || copiedComponent.component.type} (Ctrl/Cmd+V)`}
             >
               <Clipboard className="w-4 h-4" />
@@ -745,7 +745,7 @@ export const HeaderNav: React.FC = () => {
               className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
                 isDesignSystemOpen
                   ? 'bg-slate-900 border'
-                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+                  : 'bg-slate-900/80 border-slate-800 text-slate-400 '
               }`}
               style={
                 isDesignSystemOpen
@@ -767,7 +767,7 @@ export const HeaderNav: React.FC = () => {
             className={`p-1.5 rounded-lg transition-all border cursor-pointer ${
               isSettingsOpen
                 ? 'bg-slate-900 border'
-                : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400 '
             }`}
             style={
               isSettingsOpen
@@ -785,7 +785,7 @@ export const HeaderNav: React.FC = () => {
 
           <button
             onClick={handleReset}
-            className="p-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 transition-all cursor-pointer"
             title="Reset Canvas (Restore Seed State)"
           >
             <RotateCcw className="w-4 h-4" />
@@ -807,7 +807,7 @@ export const HeaderNav: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setAddScreenModal(null)}
-                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 text-slate-400 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -834,13 +834,13 @@ export const HeaderNav: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAddScreenModal(null)}
-                  className="px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 text-xs font-mono font-bold transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+                  className="px-4 py-1.5 rounded-xl bg-sky-500 text-slate-950 text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Create Screen</span>
@@ -865,7 +865,7 @@ export const HeaderNav: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDeleteTargetScreen(null)}
-                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 text-slate-400 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -888,7 +888,7 @@ export const HeaderNav: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDeleteTargetScreen(null)}
-                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer"
+                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 text-xs font-mono font-bold transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -898,7 +898,7 @@ export const HeaderNav: React.FC = () => {
                   deleteScreen(deleteTargetScreen.id);
                   setDeleteTargetScreen(null);
                 }}
-                className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-rose-500 text-white text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Confirm Delete</span>
@@ -922,7 +922,7 @@ export const HeaderNav: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowResetConfirmModal(false)}
-                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 text-slate-400 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -941,7 +941,7 @@ export const HeaderNav: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowResetConfirmModal(false)}
-                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 text-xs font-mono font-bold transition-all cursor-pointer"
+                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 text-xs font-mono font-bold transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -951,7 +951,7 @@ export const HeaderNav: React.FC = () => {
                   setShowResetConfirmModal(false);
                   resetToSeedData();
                 }}
-                className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-sky-500 text-slate-950 text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Confirm Reset</span>

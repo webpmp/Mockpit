@@ -199,7 +199,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -259,7 +259,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowLibraryPicker(true)}
-                    className="px-3.5 py-2 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                    className="px-3.5 py-2 rounded-lg text-sm font-medium bg-slate-800 text-sky-400 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     Add from Library
                   </button>
@@ -269,7 +269,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                       setEditingTaskIndex(null);
                       setCustomTaskModalOpen(true);
                     }}
-                    className="px-3.5 py-2 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                    className="px-3.5 py-2 rounded-lg text-sm font-medium bg-slate-800 text-slate-200 border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     Create Custom Task
                   </button>
@@ -282,7 +282,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowLibraryPicker(true)}
-                    className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 transition-colors cursor-pointer inline-flex items-center justify-center whitespace-nowrap shrink-0"
+                    className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-sky-500 text-slate-950 transition-colors cursor-pointer inline-flex items-center justify-center whitespace-nowrap shrink-0"
                   >
                     Add First Task from Library
                   </button>
@@ -292,7 +292,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                   {tasks.map((task, idx) => (
                     <div
                       key={task.instanceId || `${task.id}-${idx}`}
-                      className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
+                      className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 group transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <span className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-semibold shrink-0">
@@ -325,7 +325,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                           type="button"
                           disabled={idx === 0}
                           onClick={() => handleMoveTask(idx, 'up')}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                          className="p-1.5 rounded-lg text-slate-400 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                           title="Move up"
                         >
                           <ArrowUp className="w-4 h-4" />
@@ -334,7 +334,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                           type="button"
                           disabled={idx === tasks.length - 1}
                           onClick={() => handleMoveTask(idx, 'down')}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                          className="p-1.5 rounded-lg text-slate-400 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                           title="Move down"
                         >
                           <ArrowDown className="w-4 h-4" />
@@ -342,7 +342,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDuplicateTask(idx)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 cursor-pointer"
+                          className="p-1.5 rounded-lg text-slate-400 cursor-pointer"
                           title="Duplicate task"
                         >
                           <Copy className="w-4 h-4" />
@@ -353,7 +353,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                             setEditingTaskIndex(idx);
                             setCustomTaskModalOpen(true);
                           }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-sky-300 hover:bg-slate-800 cursor-pointer"
+                          className="p-1.5 rounded-lg text-slate-400 cursor-pointer"
                           title="Edit task criteria"
                         >
                           <Sliders className="w-4 h-4" />
@@ -361,7 +361,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleRemoveTask(idx)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 cursor-pointer"
+                          className="p-1.5 rounded-lg text-slate-400 cursor-pointer"
                           title="Remove task"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -388,21 +388,21 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleAddQuestion('rating')}
-                    className="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer whitespace-nowrap shrink-0"
+                    className="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 cursor-pointer whitespace-nowrap shrink-0"
                   >
                     + Rating Scale
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddQuestion('choice')}
-                    className="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer whitespace-nowrap shrink-0"
+                    className="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 cursor-pointer whitespace-nowrap shrink-0"
                   >
                     + Choice
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddQuestion('text')}
-                    className="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer whitespace-nowrap shrink-0"
+                    className="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 cursor-pointer whitespace-nowrap shrink-0"
                   >
                     + Open Text
                   </button>
@@ -429,7 +429,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveQuestion(idx)}
-                      className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-900 cursor-pointer"
+                      className="p-1.5 text-slate-500 rounded-lg cursor-pointer"
                       title="Remove question"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -444,13 +444,13 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 transition-colors cursor-pointer whitespace-nowrap shrink-0"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl text-sm font-semibold bg-sky-500 text-slate-950 hover:bg-sky-400 transition-colors cursor-pointer shadow-md whitespace-nowrap shrink-0"
+                className="px-5 py-2 rounded-xl text-sm font-semibold bg-sky-500 text-slate-950 transition-colors cursor-pointer shadow-md whitespace-nowrap shrink-0"
               >
                 Save Test
               </button>
@@ -485,7 +485,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
               </div>
               <button
                 onClick={() => setShowLibraryPicker(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1.5 text-slate-400 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -496,11 +496,11 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                 <div
                   key={task.id}
                   onClick={() => handleAddFromLibrary(task)}
-                  className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-sky-500/50 hover:bg-slate-800/40 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                  className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 transition-all cursor-pointer flex items-center justify-between gap-3 group"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-200 group-hover:text-sky-300">
+                      <span className="text-sm font-bold text-slate-200 ">
                         {task.name}
                       </span>
                       <span className="text-slate-600 text-xs" aria-hidden="true">·</span>
@@ -516,7 +516,7 @@ export const TestEditorModal: React.FC<TestEditorModalProps> = ({
                   </div>
                   <button
                     type="button"
-                    className="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20 group-hover:bg-sky-500 group-hover:text-slate-950 transition-colors whitespace-nowrap shrink-0"
+                    className="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20 transition-colors whitespace-nowrap shrink-0"
                   >
                     Select
                   </button>

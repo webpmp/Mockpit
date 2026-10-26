@@ -55,6 +55,53 @@ const getTransitionClasses = (style: TransitionStyle = 'fade', isActive: boolean
   }
 };
 
+const isChildOrEnclosed = (c: ComponentInstance, parent: ComponentInstance): boolean => {
+  if (c.id === parent.id) return false;
+  if (c.parentId === parent.id) return true;
+  if (c.parentId) return false;
+  if (parent.type === 'map' || c.type === 'map') return false;
+
+  const parentW = parent.width ?? 0;
+  const parentH = parent.height ?? 0;
+  const childW = c.width ?? 0;
+  const childH = c.height ?? 0;
+
+  if (parentW <= 0 || parentH <= 0 || childW <= 0 || childH <= 0) return false;
+
+  const parentArea = parentW * parentH;
+  const childArea = childW * childH;
+  if (childArea >= parentArea) return false;
+
+  const cX = c.x ?? 0;
+  const cY = c.y ?? 0;
+  const pX = parent.x ?? 0;
+  const pY = parent.y ?? 0;
+
+  const xOverlap = Math.max(0, Math.min(cX + childW, pX + parentW) - Math.max(cX, pX));
+  const yOverlap = Math.max(0, Math.min(cY + childH, pY + parentH) - Math.max(cY, pY));
+  const overlapArea = xOverlap * yOverlap;
+
+  return overlapArea / childArea >= 0.5;
+};
+
+const findEnclosingParent = (comp: ComponentInstance, list: ComponentInstance[]): ComponentInstance | null => {
+  if (comp.parentId) {
+    return list.find((c) => c.id === comp.parentId) || null;
+  }
+  let bestCandidate: ComponentInstance | null = null;
+  let smallestArea = Infinity;
+  for (const candidate of list) {
+    if (isChildOrEnclosed(comp, candidate)) {
+      const area = (candidate.width ?? 0) * (candidate.height ?? 0);
+      if (area < smallestArea) {
+        smallestArea = area;
+        bestCandidate = candidate;
+      }
+    }
+  }
+  return bestCandidate;
+};
+
 interface FocusedAppScreenProps {
   activeView: string;
   screens: any[];
@@ -91,21 +138,21 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
   const setActiveView = useMockpitStore((s) => s.setActiveView);
 
   // Preserve Home screen's full canvas footprint vs non-Home focused apps (FOCUSED_APP_RECT)
-  const containerStyle = isHomeScreen
-    ? {
-        left: 0,
-        top: 0,
-        width: CANVAS_WIDTH,
-        height: CANVAS_HEIGHT,
-      }
-    : {
-        left: FOCUSED_APP_RECT.x,
-        top: FOCUSED_APP_RECT.y,
-        width: FOCUSED_APP_RECT.width,
-        height: FOCUSED_APP_RECT.height,
-      };
+ const containerStyle = isHomeScreen
+ ? {
+ left: 0,
+ top: 0,
+ width: CANVAS_WIDTH,
+ height: CANVAS_HEIGHT,
+ }
+ : {
+ left: FOCUSED_APP_RECT.x,
+ top: FOCUSED_APP_RECT.y,
+ width: FOCUSED_APP_RECT.width,
+ height: FOCUSED_APP_RECT.height,
+ };
 
-  if (activeView === 'weather' || activeView === 'weather-radar') {
+ if (activeView === 'weather' || activeView === 'weather-radar') {
     return (
       <div
         key="weather-carousel"
@@ -117,15 +164,7 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
     );
   }
 
-  const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
-  const selectComponent = useMockpitStore((s) => s.selectComponent);
-  const activePresentationCalloutId = useMockpitStore((s) => s.activePresentationCalloutId);
   const setActivePresentationCalloutId = useMockpitStore((s) => s.setActivePresentationCalloutId);
-
-  // Derive visual selection using the unified helper
-  // If selectedComponentId is set, use it; otherwise fallback to activePresentationCalloutId for compatibility
-  const effectiveSelectedId = selectedComponentId || activePresentationCalloutId;
-  const visualSelection = getVisualSelectionState(effectiveSelectedId, focusedAppComponents);
 
   return (
     <div
@@ -133,7 +172,6 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
       className={`absolute transition-all duration-300 ease-out z-10 overflow-hidden ${transitionClasses}`}
       style={containerStyle}
       onClick={() => {
-        selectComponent(null);
         setActivePresentationCalloutId(null);
       }}
     >
@@ -141,8 +179,8 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
         <div className="relative w-full h-full overflow-hidden">
           {[...focusedAppComponents]
             .sort((a, b) => {
-              if (b.parentId === a.id) return -1;
-              if (a.parentId === b.id) return 1;
+              if (b.parentId === a.id || isChildOrEnclosed(b, a)) return -1;
+              if (a.parentId === b.id || isChildOrEnclosed(a, b)) return 1;
               const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
               const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
               if (zA !== zB) return zA - zB;
@@ -150,32 +188,18 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
             })
             .map((comp) => {
               const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
-              const parentComp = comp.parentId ? focusedAppComponents.find((c) => c.id === comp.parentId) : null;
+              const parentComp = findEnclosingParent(comp, focusedAppComponents);
               const parentZ = parentComp ? (parentComp.zIndex !== undefined ? parentComp.zIndex : (parentComp.type === 'map' ? 0 : parentComp.type === 'nowPlaying' ? 20 : 10)) : -999;
               const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
               const offsetX = isHomeScreen ? 0 : FOCUSED_APP_RECT.x;
               const offsetY = isHomeScreen ? 0 : FOCUSED_APP_RECT.y;
-
-              const isDirectlySelected = visualSelection.directlySelectedId === comp.id;
-              const isVisuallySelected = visualSelection.visuallySelectedIds.includes(comp.id);
-              const effectiveZ = isDirectlySelected
-                ? baseZ + 100
-                : isVisuallySelected
-                ? baseZ + 50
-                : baseZ;
-
-              const boundary = getSelectionBoundaryStyles(
-                comp,
-                focusedAppComponents,
-                isVisuallySelected,
-                isDirectlySelected
-              );
+              const effectiveZ = baseZ;
 
               return (
                 <div
                   key={comp.id}
                   data-integrated-child={comp.parentId && comp.integrationStyle === 'inside' ? 'inside' : undefined}
-                  className="absolute pointer-events-auto cursor-pointer"
+                  className="absolute pointer-events-auto"
                   style={{
                     left: comp.x - offsetX,
                     top: comp.y - offsetY,
@@ -183,29 +207,13 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
                     height: comp.height,
                     zIndex: effectiveZ,
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const activeCalloutId = resolveActiveCalloutIdForComponent(comp.id, focusedAppComponents);
-                    selectComponent(comp.id);
-                    setActivePresentationCalloutId(activeCalloutId);
-                  }}
                 >
                   <ComponentRenderer
                     component={comp}
                     vehicleState={vehicleState}
-                    isSelected={isVisuallySelected}
+                    isSelected={false}
                     isPresentation={true}
                   />
-
-                  {/* Coordinated Shared Outer Selection Boundary Overlay in Presentation Mode */}
-                  {isVisuallySelected && (
-                    <div
-                      data-testid={boundary.testId}
-                      data-presentation-connected-box={!isDirectlySelected ? 'true' : undefined}
-                      className={`absolute inset-0 z-30 pointer-events-none transition-all duration-150 ${boundary.borderClasses} ${boundary.cornerClasses}`}
-                      style={boundary.inlineStyle}
-                    />
-                  )}
                 </div>
               );
             })}
@@ -768,14 +776,14 @@ export const Canvas: React.FC = () => {
         className={`relative bg-slate-950 border-8 border-black rounded-[32px] flex-shrink-0 transition-all duration-300 overflow-hidden ${
           backgroundMode === 'color' ? 'shadow-[0_0_50px_rgba(0,0,0,0.8)]' : ''
         }`}
-        /* ds-raw-end */
-        style={{
-          width: `${CANVAS_WIDTH * scale}px`,
-          height: `${CANVAS_HEIGHT * scale}px`,
-          minWidth: `${CANVAS_WIDTH * scale}px`,
-          maxWidth: `${CANVAS_WIDTH * scale}px`,
-          minHeight: `${CANVAS_HEIGHT * scale}px`,
-          maxHeight: `${CANVAS_HEIGHT * scale}px`,
+ /* ds-raw-end */
+ style={{
+ width: `${CANVAS_WIDTH * scale}px`,
+ height: `${CANVAS_HEIGHT * scale}px`,
+ minWidth: `${CANVAS_WIDTH * scale}px`,
+ maxWidth: `${CANVAS_WIDTH * scale}px`,
+ minHeight: `${CANVAS_HEIGHT * scale}px`,
+ maxHeight: `${CANVAS_HEIGHT * scale}px`,
         }}
       >
         {/* Scaled Inner Canvas */}
@@ -823,9 +831,9 @@ export const Canvas: React.FC = () => {
                 className="absolute inset-0 pointer-events-none z-[2]"
                 style={{
                   backgroundImage: `
-                    linear-gradient(to right, ${hexToRgba(gridConfig.color, alphaPercent)} 1px, transparent 1px),
-                    linear-gradient(to bottom, ${hexToRgba(gridConfig.color, alphaPercent)} 1px, transparent 1px)
-                  `,
+ linear-gradient(to right, ${hexToRgba(gridConfig.color, alphaPercent)} 1px, transparent 1px),
+ linear-gradient(to bottom, ${hexToRgba(gridConfig.color, alphaPercent)} 1px, transparent 1px)
+ `,
                   backgroundSize: `${gridConfig.size}px ${gridConfig.size}px`,
                 }}
               />
@@ -875,7 +883,7 @@ export const Canvas: React.FC = () => {
                               handleExpandNotification(comp.id);
                             }
                           }}
-                          className="px-2.5 py-0.5 rounded-full bg-ds-surface border hover:bg-ds-surface-raised text-ds-content transition-all flex items-center gap-1.5 cursor-pointer shadow-md group hover:scale-105 active:scale-95 pointer-events-auto"
+                          className="px-2.5 py-0.5 rounded-full bg-ds-surface border text-ds-content transition-all flex items-center gap-1.5 cursor-pointer shadow-md group active:scale-95 pointer-events-auto"
                           style={{ borderColor: `color-mix(in srgb, ${color} 56%, transparent)` }}
                           title={`Click to view: ${message}`}
                         >
@@ -907,7 +915,7 @@ export const Canvas: React.FC = () => {
               {totalUnread > 0 && (
                 <button
                   onClick={() => setActiveView('phone')}
-                  className="relative flex items-center justify-center p-1.5 rounded-full hover:bg-ds-surface-raised text-ds-content-secondary hover:text-ds-content transition-all cursor-pointer pointer-events-auto"
+                  className="relative flex items-center justify-center p-1.5 rounded-full text-ds-content-secondary transition-all cursor-pointer pointer-events-auto"
                   title={`Messages (${totalUnread} unread)`}
                 >
                   <MessageSquare className="w-5 h-5" />
@@ -925,7 +933,7 @@ export const Canvas: React.FC = () => {
                   <button
                     id="header-battery-btn"
                     onClick={() => setBatteryDisplayMode((prev) => (prev === 'percent' ? 'range' : 'percent'))}
-                    className="flex items-center gap-1.5 font-normal text-ds-content-secondary cursor-pointer pointer-events-auto hover:text-ds-content transition-colors"
+                    className="flex items-center gap-1.5 font-normal text-ds-content-secondary cursor-pointer pointer-events-auto transition-colors"
                     title={batteryDisplayMode === 'percent' ? 'Tap to switch to range' : 'Tap to switch to battery percentage'}
                   >
                     {vehicleState.isCharging ? (
@@ -943,7 +951,7 @@ export const Canvas: React.FC = () => {
               <button
                 id="header-weather-temp-btn"
                 onClick={() => setActiveView('weather')}
-                className="font-normal text-ds-content-secondary cursor-pointer pointer-events-auto hover:text-ds-content transition-colors"
+                className="font-normal text-ds-content-secondary cursor-pointer pointer-events-auto transition-colors"
                 title="Open Weather Forecast"
               >
                 {weatherCurrent?.temperature !== undefined
@@ -966,7 +974,7 @@ export const Canvas: React.FC = () => {
                         className={`w-1 rounded-xs transition-all duration-300 ${
                           isActive ? 'bg-ds-success shadow-[0_0_6px_var(--color-ds-success,#10b981)]' : 'bg-ds-surface-raised'
                         }`}
-                        style={{ height: `${bar * 20}%` }}
+ style={{ height: `${bar * 20}%` }}
                       />
                     );
                   })}
@@ -1032,8 +1040,8 @@ export const Canvas: React.FC = () => {
 
                 return [...components]
                   .sort((a, b) => {
-                    if (b.parentId === a.id) return -1;
-                    if (a.parentId === b.id) return 1;
+                    if (b.parentId === a.id || isChildOrEnclosed(b, a)) return -1;
+                    if (a.parentId === b.id || isChildOrEnclosed(a, b)) return 1;
                     const zA = a.zIndex !== undefined ? a.zIndex : (a.type === 'map' ? 0 : a.type === 'nowPlaying' ? 20 : 10);
                     const zB = b.zIndex !== undefined ? b.zIndex : (b.type === 'map' ? 0 : b.type === 'nowPlaying' ? 20 : 10);
                     if (zA !== zB) return zA - zB;
@@ -1044,14 +1052,14 @@ export const Canvas: React.FC = () => {
                     const isVisuallySelected = visualSelection.visuallySelectedIds.includes(comp.id);
 
                     const rawZ = comp.zIndex !== undefined ? comp.zIndex : (comp.type === 'map' ? 0 : comp.type === 'nowPlaying' ? 20 : 10);
-                    const parentComp = comp.parentId ? allEditorComponents.find((c) => c.id === comp.parentId) : null;
+                    const parentComp = findEnclosingParent(comp, allEditorComponents);
                     const parentZ = parentComp ? (parentComp.zIndex !== undefined ? parentComp.zIndex : (parentComp.type === 'map' ? 0 : parentComp.type === 'nowPlaying' ? 20 : 10)) : -999;
                     const baseZ = parentComp ? Math.max(rawZ, parentZ + 1) : rawZ;
 
                     let effectiveZ = baseZ;
                     if (isVisuallySelected) {
                       const ownChildrenBaseZs = allEditorComponents
-                        .filter((c) => c.parentId === comp.id)
+                        .filter((c) => c.parentId === comp.id || isChildOrEnclosed(c, comp))
                         .map((c) => {
                           const childRawZ = c.zIndex !== undefined ? c.zIndex : (c.type === 'map' ? 0 : c.type === 'nowPlaying' ? 20 : 10);
                           return Math.max(childRawZ, baseZ + 1);
@@ -1075,7 +1083,7 @@ export const Canvas: React.FC = () => {
                         data-integrated-child={comp.parentId && comp.integrationStyle === 'inside' ? 'inside' : undefined}
                         className={`absolute group cursor-pointer pointer-events-auto ${
                           isVisuallySelected
-                            ? 'rounded-2xl ring-2 ring-sky-400 shadow-[0_0_15px_color-mix(in_srgb,var(--color-primary,#38bdf8)_40%,transparent)]'
+                            ? 'rounded-2xl ring-2 ring-ds-primary shadow-[0_0_15px_color-mix(in_srgb,var(--color-primary,#38bdf8)_40%,transparent)]'
                             : ''
                         } ${
                           dragInfo?.id === comp.id || resizeInfo?.id === comp.id || isCounterpartOfActiveDrag
@@ -1122,7 +1130,7 @@ export const Canvas: React.FC = () => {
                             {/* ds-raw-start: editor delete quick handle fill and text are fixed (not theme-remapped) */}
                             {/* Delete Quick Handle */}
                             <button
-                              className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
+                              className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto transition-all"
                               title="Delete Component"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1136,7 +1144,7 @@ export const Canvas: React.FC = () => {
                             {/* ds-raw-start: editor resize handle border and text are fixed (not theme-remapped) */}
                             {/* Bottom-Right Resize Handle */}
                             <div
-                              className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
+                              className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 transition-transform"
                               style={{ backgroundColor: 'var(--color-primary, #38bdf8)' }}
                               onMouseDown={(e) => handleResizeMouseDown(e, comp.id, comp.width, comp.height)}
                             >
@@ -1278,7 +1286,7 @@ export const Canvas: React.FC = () => {
                               e.stopPropagation();
                               setConfirmDeleteNotificationId(null);
                             }}
-                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold cursor-pointer transition-colors"
+                            className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-bold cursor-pointer transition-colors"
                           >
                             Cancel
                           </button>
@@ -1289,14 +1297,14 @@ export const Canvas: React.FC = () => {
                               setConfirmDeleteNotificationId(null);
                               deleteComponent(selectedNotification.id);
                             }}
-                            className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold cursor-pointer transition-colors shadow-sm"
+                            className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-bold cursor-pointer transition-colors shadow-sm"
                           >
                             Delete
                           </button>
                         </div>
                       ) : (
                         <button
-                          className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto hover:bg-rose-400 transition-all"
+                          className="absolute -top-3 right-2 bg-rose-500 text-white p-1 rounded-full text-[10px] shadow-md cursor-pointer pointer-events-auto transition-all"
                           title="Delete Component"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1311,7 +1319,7 @@ export const Canvas: React.FC = () => {
                       {/* ds-raw-start: editor resize handle border and text are fixed (not theme-remapped) */}
                       {/* Bottom-Right Resize Handle */}
                       <div
-                        className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 hover:scale-125 transition-transform"
+                        className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-2 border-slate-900 cursor-nwse-resize pointer-events-auto flex items-center justify-center text-slate-950 transition-transform"
                         style={{ backgroundColor: 'var(--color-primary, #38bdf8)' }}
                         onMouseDown={(e) =>
                           handleResizeMouseDown(
