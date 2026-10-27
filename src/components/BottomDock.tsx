@@ -158,6 +158,10 @@ export const BottomDock: React.FC = () => {
     longPressTriggeredRef.current[itemId] = false;
   };
 
+  if (topLevelScreens.length === 0) {
+    return null;
+  }
+
   return (
     <div
       id="mockpit-bottom-dock"

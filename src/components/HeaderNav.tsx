@@ -21,7 +21,16 @@ import {
   ShieldCheck,
   FlaskConical,
   Palette,
+  FolderArchive,
+  Download,
+  Upload,
+  Sparkles,
 } from 'lucide-react';
+import {
+  SaveConfigModal,
+  LoadConfigModal,
+  ResetWorkspaceModal,
+} from './ConfigManagementModals';
 
 export const HeaderNav: React.FC = () => {
   const screenMode = useMockpitStore((s) => s.screenMode);
@@ -36,7 +45,6 @@ export const HeaderNav: React.FC = () => {
   const isSettingsOpen = useMockpitStore((s) => s.isSettingsOpen);
   const toggleSettingsModal = useMockpitStore((s) => s.toggleSettingsModal);
   const backgroundMode = useMockpitStore((s) => s.backgroundMode);
-  const resetToSeedData = useMockpitStore((s) => s.resetToSeedData);
   const copiedComponent = useMockpitStore((s) => s.copiedComponent);
   const pasteComponent = useMockpitStore((s) => s.pasteComponent);
   const dockOrder = useMockpitStore((s) => s.dockOrder);
@@ -50,6 +58,13 @@ export const HeaderNav: React.FC = () => {
   const iconPickerRef = useRef<HTMLDivElement>(null);
   const [iconPickerOpenFor, setIconPickerOpenFor] = useState<string | null>(null);
 
+  // Configuration Management Dropdown and Modals
+  const [isConfigMenuOpen, setIsConfigMenuOpen] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+  const configMenuRef = useRef<HTMLDivElement>(null);
+
   // Modal State for Adding Screens (replaces blocked window.prompt)
   const [addScreenModal, setAddScreenModal] = useState<{
     isOpen: boolean;
@@ -60,9 +75,8 @@ export const HeaderNav: React.FC = () => {
   const [newScreenNameInput, setNewScreenNameInput] = useState('');
   const modalInputRef = useRef<HTMLInputElement>(null);
 
-  // Modal State for Deleting Screens and Resetting Seed Data
+  // Modal State for Deleting Screens
   const [deleteTargetScreen, setDeleteTargetScreen] = useState<ScreenDefinition | null>(null);
-  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
 
   // Compact Workspace Switcher State (All Modes)
   const [isWorkspaceSwitcherExpanded, setIsWorkspaceSwitcherExpanded] = useState(false);
@@ -177,6 +191,28 @@ export const HeaderNav: React.FC = () => {
     };
   }, [isWorkspaceSwitcherExpanded]);
 
+  // Close configuration menu on outside click or Escape
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (configMenuRef.current && !configMenuRef.current.contains(e.target as Node)) {
+        setIsConfigMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsConfigMenuOpen(false);
+      }
+    };
+    if (isConfigMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isConfigMenuOpen]);
+
   // Collapse workspace switcher whenever screenMode changes
   useEffect(() => {
     if (screenMode !== 'user-testing') {
@@ -213,10 +249,6 @@ export const HeaderNav: React.FC = () => {
     const newId = addScreen(trimmed, 'fade', addScreenModal.parentId);
     setActiveView(newId);
     setAddScreenModal(null);
-  };
-
-  const handleReset = () => {
-    setShowResetConfirmModal(true);
   };
 
   const ActiveIcon = getScreenIcon(activeScreenDef);
@@ -443,9 +475,32 @@ export const HeaderNav: React.FC = () => {
                 </div>
               </div>
 
-              {/* Columns Grid of Parent Screens */}
-              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 max-h-[65vh] overflow-y-auto">
-                {topLevelScreens.map((parentScreen) => {
+              {/* Columns Grid of Parent Screens or Empty State */}
+              {topLevelScreens.length === 0 ? (
+                <div className="p-8 flex flex-col items-center justify-center text-center space-y-3 font-mono">
+                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-sky-400">
+                    <FolderTree className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                      No Screens in Workspace
+                    </p>
+                    <p className="text-[11px] text-slate-400 max-w-xs">
+                      Create your first screen to start designing vehicle infotainment interfaces.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddTopLevelModal}
+                    className="mt-2 px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-sky-500/20 cursor-pointer transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add First Screen</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 max-h-[65vh] overflow-y-auto">
+                  {topLevelScreens.map((parentScreen) => {
                   const ParentIcon = getScreenIcon(parentScreen);
                   const isParentActive = activeView === parentScreen.id;
                   const childScreens = screens.filter((s) => s.parentId === parentScreen.id);
@@ -718,6 +773,7 @@ export const HeaderNav: React.FC = () => {
                   );
                 })}
               </div>
+              )}
             </div>
           )}
         </div>
@@ -783,13 +839,89 @@ export const HeaderNav: React.FC = () => {
             <Settings className="w-4 h-4" />
           </button>
 
-          <button
-            onClick={handleReset}
-            className="p-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 transition-all cursor-pointer"
-            title="Reset Canvas (Restore Seed State)"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+          {/* Configuration Management Dropdown Control */}
+          <div className="relative" ref={configMenuRef}>
+            <button
+              id="workspace-config-button"
+              type="button"
+              onClick={() => setIsConfigMenuOpen((prev) => !prev)}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                isConfigMenuOpen
+                  ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
+                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+              title="Configuration Management (Save, Load, Reset)"
+              aria-label="Configuration Management"
+              aria-expanded={isConfigMenuOpen}
+            >
+              <FolderArchive className="w-4 h-4" />
+            </button>
+
+            {isConfigMenuOpen && (
+              <div
+                id="workspace-config-menu"
+                className="absolute right-0 top-full mt-2 w-56 bg-slate-950/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl py-1.5 z-50 text-slate-200 animate-in fade-in zoom-in-95 duration-100 font-mono text-xs"
+              >
+                <div className="px-3 py-1.5 border-b border-slate-800/80 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Workspace
+                </div>
+
+                <button
+                  id="config-menu-save"
+                  type="button"
+                  onClick={() => {
+                    setIsConfigMenuOpen(false);
+                    setShowSaveModal(true);
+                  }}
+                  className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-900 text-slate-200 hover:text-sky-300 transition-colors cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Save Configuration...</span>
+                </button>
+
+                <button
+                  id="config-menu-load"
+                  type="button"
+                  onClick={() => {
+                    setIsConfigMenuOpen(false);
+                    setShowLoadModal(true);
+                  }}
+                  className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-900 text-slate-200 hover:text-emerald-300 transition-colors cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Load Configuration...</span>
+                </button>
+
+                <button
+                  id="config-menu-example"
+                  type="button"
+                  onClick={() => {
+                    setIsConfigMenuOpen(false);
+                    setShowLoadModal(true);
+                  }}
+                  className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-slate-900 text-slate-200 hover:text-amber-300 transition-colors cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Load Example...</span>
+                </button>
+
+                <div className="my-1 border-t border-slate-800/80" />
+
+                <button
+                  id="config-menu-reset"
+                  type="button"
+                  onClick={() => {
+                    setIsConfigMenuOpen(false);
+                    setShowResetConfirmModal(true);
+                  }}
+                  className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Reset Workspace...</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -908,58 +1040,10 @@ export const HeaderNav: React.FC = () => {
         </div>
       )}
 
-      {/* Custom Modal for Resetting to Seed Data */}
-      {showResetConfirmModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 w-full max-w-sm space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-sky-400">
-                <RotateCcw className="w-4 h-4" />
-                <h3 className="text-xs font-bold uppercase tracking-wide font-mono">
-                  Reset Seed Data
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowResetConfirmModal(false)}
-                className="p-1 text-slate-400 rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-2 text-xs text-slate-300 font-mono">
-              <p>
-                Are you sure you want to reset the canvas to default seed data?
-              </p>
-              <p className="text-slate-400 text-[11px]">
-                Custom screens, child screens, and modified component layouts will be restored to default factory presets.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
-              <button
-                type="button"
-                onClick={() => setShowResetConfirmModal(false)}
-                className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 text-xs font-mono font-bold transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowResetConfirmModal(false);
-                  resetToSeedData();
-                }}
-                className="px-4 py-2 rounded-xl bg-sky-500 text-slate-950 text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Confirm Reset</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Workspace Configuration Modals */}
+      <SaveConfigModal isOpen={showSaveModal} onClose={() => setShowSaveModal(false)} />
+      <LoadConfigModal isOpen={showLoadModal} onClose={() => setShowLoadModal(false)} />
+      <ResetWorkspaceModal isOpen={showResetConfirmModal} onClose={() => setShowResetConfirmModal(false)} />
     </header>
   );
 };

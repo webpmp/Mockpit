@@ -79,6 +79,9 @@ export const DEFAULT_NOTIFICATION_DURATION_SEC = 6;
 export const EVENT_NOTIFICATION_COOLDOWN_MS = 15000;
 export const LOCAL_STORAGE_NOTIFICATION_DURATION_KEY = 'mockpit_notification_duration_sec';
 
+import type { MockpitConfiguration } from '../utils/configManagement';
+import { getBundledExampleConfiguration } from '../utils/configManagement';
+
 import {
   TempGradientColors,
   DEFAULT_TEMP_GRADIENT_COLORS,
@@ -371,7 +374,7 @@ export const DEFAULT_SCREENS: ScreenDefinition[] = [
 export const REQUIRED_DOCK_SCREEN_IDS: string[] = ['home', 'navigation', 'media', 'phone'];
 export const DEFAULT_DOCK_ORDER: string[] = ['home', 'navigation', 'media', 'phone'];
 
-const INITIAL_VEHICLE_STATE: VehicleState = {
+export const INITIAL_VEHICLE_STATE: VehicleState = {
   gear: 'P',
   speed: 0,
   batteryPercent: 80,
@@ -420,9 +423,9 @@ export const INITIAL_JOURNEY_STATE: JourneyState = {
 };
 
 // Remove warning components from home screen seed components since warning is in notificationComponents
-const HOME_SEED_COMPONENTS = SEED_COMPONENTS.filter((c) => c.type !== 'warning');
+export const HOME_SEED_COMPONENTS = SEED_COMPONENTS.filter((c) => c.type !== 'warning');
 
-const DEFAULT_NOTIFICATION_COMPONENTS: ComponentInstance[] = [
+export const DEFAULT_NOTIFICATION_COMPONENTS: ComponentInstance[] = [
   {
     id: 'comp-warning-door-1',
     type: 'warning',
@@ -570,9 +573,9 @@ const DEFAULT_NOTIFICATION_COMPONENTS: ComponentInstance[] = [
   },
 ];
 
-const NAVIGATION_SEED_COMPONENTS: ComponentInstance[] = [];
+export const NAVIGATION_SEED_COMPONENTS: ComponentInstance[] = [];
 
-const MEDIA_SEED_COMPONENTS: ComponentInstance[] = [];
+export const MEDIA_SEED_COMPONENTS: ComponentInstance[] = [];
 
 const INITIAL_COMPONENTS_BY_SCREEN: Record<ActiveView, ComponentInstance[]> = {
   home: HOME_SEED_COMPONENTS,
@@ -630,57 +633,50 @@ function sanitizeComponentList(list: ComponentInstance[]): ComponentInstance[] {
 }
 
 function loadSavedScreens(): ScreenDefinition[] {
+  if (typeof window === 'undefined') {
+    return DEFAULT_SCREENS;
+  }
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_SCREENS_KEY);
-    if (saved) {
+    if (saved !== null) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const hasHome = parsed.some((s: ScreenDefinition) => s.id === 'home');
-        if (hasHome) {
-          const homeItem = parsed.find((s: ScreenDefinition) => s.id === 'home')!;
-          const rest = parsed.filter((s: ScreenDefinition) => s.id !== 'home');
-          const combined = [{ ...homeItem, name: 'Home', order: 0, parentId: null }, ...rest];
-          const existingIds = new Set(combined.map((s) => s.id));
-          const missingDefaults = DEFAULT_SCREENS.filter((def) => !existingIds.has(def.id));
-          return [...combined, ...missingDefaults].map((s, idx) => ({
-            ...s,
-            order: idx,
-            parentId: s.parentId ?? null,
-            quickAccessComponent: s.quickAccessComponent !== undefined
-              ? s.quickAccessComponent
-              : (s.id === 'media' ? 'media' : 'none'),
-            quickAccessWidth: s.quickAccessWidth !== undefined
-              ? s.quickAccessWidth
-              : (s.id === 'media' ? 540 : undefined),
-            quickAccessHeight: s.quickAccessHeight !== undefined
-              ? s.quickAccessHeight
-              : (s.id === 'media' ? 320 : undefined),
-          }));
-        }
+      if (Array.isArray(parsed)) {
+        return parsed.map((s, idx) => ({
+          ...s,
+          order: typeof s.order === 'number' ? s.order : idx,
+          parentId: s.parentId ?? null,
+          quickAccessComponent: s.quickAccessComponent !== undefined
+            ? s.quickAccessComponent
+            : (s.id === 'media' ? 'media' : 'none'),
+          quickAccessWidth: s.quickAccessWidth !== undefined
+            ? s.quickAccessWidth
+            : (s.id === 'media' ? 540 : undefined),
+          quickAccessHeight: s.quickAccessHeight !== undefined
+            ? s.quickAccessHeight
+            : (s.id === 'media' ? 320 : undefined),
+        }));
       }
     }
   } catch (e) {
     console.error('Failed to load screens from localStorage', e);
   }
-  return DEFAULT_SCREENS;
+  // New users in browser start with a clean blank workspace
+  return [];
 }
 
 function loadSavedComponentsByScreen(): Record<string, ComponentInstance[]> {
+  if (typeof window === 'undefined') {
+    return INITIAL_COMPONENTS_BY_SCREEN;
+  }
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY_V2);
-    if (saved) {
+    if (saved !== null) {
       const parsed = JSON.parse(saved);
-      if (parsed && typeof parsed === 'object' && parsed.home) {
+      if (parsed && typeof parsed === 'object') {
         const result: Record<string, ComponentInstance[]> = {};
         Object.keys(parsed).forEach((k) => {
           result[k] = sanitizeComponentList(parsed[k] || []);
         });
-        if (!result.home || result.home.length === 0) {
-          result.home = HOME_SEED_COMPONENTS;
-        }
-        if (!result.navigation || result.navigation.length === 0) {
-          result.navigation = NAVIGATION_SEED_COMPONENTS;
-        }
         return result;
       }
     }
@@ -700,7 +696,7 @@ function loadSavedComponentsByScreen(): Record<string, ComponentInstance[]> {
   } catch (e) {
     console.error('Failed to load components by screen from localStorage', e);
   }
-  return INITIAL_COMPONENTS_BY_SCREEN;
+  return {};
 }
 
 export function evaluateAllTirePressureWarnings(
@@ -753,44 +749,21 @@ export function evaluateAllTirePressureWarnings(
 }
 
 function loadSavedNotificationComponents(): ComponentInstance[] {
+  if (typeof window === 'undefined') {
+    return DEFAULT_NOTIFICATION_COMPONENTS;
+  }
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_NOTIFICATIONS_KEY);
-    if (saved) {
+    if (saved !== null) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const updated = parsed.map((c: ComponentInstance) => {
-          const defaultComp = DEFAULT_NOTIFICATION_COMPONENTS.find((d) => d.id === c.id);
-          if (defaultComp) {
-            return {
-              ...c,
-              staticProps: {
-                ...defaultComp.staticProps,
-                ...c.staticProps,
-                details: c.staticProps?.details !== undefined ? c.staticProps.details : defaultComp.staticProps.details,
-                label: c.staticProps?.label || defaultComp.staticProps.label,
-                icon: c.staticProps?.icon || defaultComp.staticProps.icon,
-                triggerMode: c.id === 'comp-warning-cruise-on' ? defaultComp.staticProps?.triggerMode : (c.staticProps?.triggerMode || defaultComp.staticProps?.triggerMode),
-                triggerEvent: c.staticProps?.triggerEvent || defaultComp.staticProps?.triggerEvent,
-                showBadgeOnMinimize: 'true',
-              },
-              bindings: c.id === 'comp-warning-cruise-on' ? defaultComp.bindings : (c.bindings && c.bindings.length > 0 ? c.bindings : defaultComp.bindings),
-            };
-          }
-          return c;
-        });
-
-        const ids = new Set(updated.map((c: ComponentInstance) => c.id));
-        const missingDefaults = DEFAULT_NOTIFICATION_COMPONENTS.filter((def) => !ids.has(def.id));
-        if (missingDefaults.length > 0) {
-          return [...updated, ...missingDefaults];
-        }
-        return updated;
+      if (Array.isArray(parsed)) {
+        return sanitizeComponentList(parsed);
       }
     }
   } catch (e) {
     console.error('Failed to load notification components from localStorage', e);
   }
-  return DEFAULT_NOTIFICATION_COMPONENTS;
+  return [];
 }
 
 function loadSavedStackPosition(): NotificationStackPosition {
@@ -841,24 +814,22 @@ function loadSavedVehicleState(): VehicleState {
 }
 
 function loadSavedDockOrder(screens: ScreenDefinition[]): string[] {
+  if (typeof window === 'undefined') {
+    return DEFAULT_DOCK_ORDER;
+  }
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_DOCK_ORDER_KEY);
-    if (saved) {
+    if (saved !== null) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         const validTopLevelIds = new Set(screens.filter((s) => s.parentId === null).map((s) => s.id));
-        // Drop any saved ids for screens that no longer exist
-        const cleaned = parsed.filter((id: string) => validTopLevelIds.has(id));
-        // Only force-include required screens if somehow missing; do NOT re-add other optional screens
-        const missingRequired = REQUIRED_DOCK_SCREEN_IDS.filter((id) => validTopLevelIds.has(id) && !cleaned.includes(id));
-        return [...cleaned, ...missingRequired];
+        return parsed.filter((id: string) => validTopLevelIds.has(id));
       }
     }
   } catch (e) {
     console.error('Failed to load dock order from localStorage', e);
   }
-  // First-ever load / no saved data: fall back to required screens only, not all top-level screens
-  return REQUIRED_DOCK_SCREEN_IDS.filter((id) => screens.some((s) => s.id === id));
+  return screens.filter((s) => !s.parentId).map((s) => s.id);
 }
 
 export function applyTextScaleVariables(scalePreset: TextScalePreset) {
@@ -1348,8 +1319,12 @@ interface MockpitStore {
   removeBinding: (componentId: string, bindingId: string) => void;
   removeBindingGroup: (componentId: string, groupId: string) => void;
 
-  // Reset & Persistence
+  // Reset & Workspace Configuration Management
   resetToSeedData: () => void;
+  resetToBlankWorkspace: () => void;
+  loadWorkspaceConfiguration: (config: MockpitConfiguration) => void;
+  loadBundledExampleConfiguration: () => void;
+  exportWorkspaceConfiguration: (customName?: string) => MockpitConfiguration;
 }
 
 export const isPresetActive = (scenario: string, vs: VehicleState): boolean => {
@@ -1492,13 +1467,13 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   eventNotificationCooldowns: {},
   notificationLibraryExpandRequest: 0,
   notificationGhostActive: false,
-  components: initialScreens.home || [],
+  components: initialScreens[initialScreensList[0]?.id || ''] || [],
   selectedComponentId: null,
   activePresentationCalloutId: null,
   presentationConnectorAnimNonce: 0,
   screenMode: 'editor',
-  previousView: 'home',
-  activeView: 'home',
+  previousView: initialScreensList[0]?.id || '',
+  activeView: initialScreensList[0]?.id || '',
   isDebugOpen: false,
   debugPanelHeight: 45,
   dockOrder: loadSavedDockOrder(initialScreensList),
@@ -2806,8 +2781,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
   addScreen: (name, transitionStyle = 'fade', parentId = null) => {
     const state = get();
-    const trimmedName = name.trim() || `Screen ${state.screens.length + 1}`;
-    const newId = `screen_${Date.now()}`;
+    const isFirstScreen = state.screens.length === 0;
+    const trimmedName = name.trim() || (isFirstScreen ? 'Home' : `Screen ${state.screens.length + 1}`);
+    const newId = isFirstScreen ? 'home' : `screen_${Date.now()}`;
     const newScreen: ScreenDefinition = {
       id: newId,
       name: trimmedName,
@@ -2820,10 +2796,16 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       ...state.componentsByScreen,
       [newId]: [],
     };
+    const updatedDockOrder = (!parentId && !state.dockOrder.includes(newId))
+      ? [...state.dockOrder, newId]
+      : state.dockOrder;
 
     try {
-      localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(updatedScreens));
-      localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedComponentsByScreen));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(updatedScreens));
+        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedComponentsByScreen));
+        localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(updatedDockOrder));
+      }
     } catch (e) {
       console.error('Failed to save added screen', e);
     }
@@ -2831,6 +2813,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     set({
       screens: updatedScreens,
       componentsByScreen: updatedComponentsByScreen,
+      dockOrder: updatedDockOrder,
       activeView: newId,
       components: [],
       selectedComponentId: null,
@@ -2852,7 +2835,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
       return s;
     });
     try {
-      localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(updatedScreens));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(updatedScreens));
+      }
     } catch (e) {
       console.error('Failed to update screen', e);
     }
@@ -2875,9 +2860,11 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
 
     const nextActiveView = idsToDelete.includes(state.activeView) ? 'home' : state.activeView;
     try {
-      localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(updatedScreens));
-      localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedComponentsByScreen));
-      localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(updatedDockOrder));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(updatedScreens));
+        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(updatedComponentsByScreen));
+        localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(updatedDockOrder));
+      }
     } catch (e) {
       console.error('Failed to save deleted screen', e);
     }
@@ -2896,7 +2883,9 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     const rest = newScreens.filter((s) => s.id !== 'home');
     const ordered = [home, ...rest].map((s, idx) => ({ ...s, order: idx }));
     try {
-      localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(ordered));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(ordered));
+      }
     } catch (e) {
       console.error('Failed to save reordered screens', e);
     }
@@ -4991,58 +4980,138 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   },
 
   /**
-   * Reset restores the original seed data and notification layer.
+   * Reset restores the application to a completely blank workspace state.
    */
-  resetToSeedData: () => {
-    set(() => {
-      const resetState: Record<string, ComponentInstance[]> = {
-        home: HOME_SEED_COMPONENTS,
-        navigation: NAVIGATION_SEED_COMPONENTS,
-        media: MEDIA_SEED_COMPONENTS,
-        phone: [],
-      };
-      try {
-        localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(DEFAULT_SCREENS));
-        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(resetState));
-        localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(DEFAULT_NOTIFICATION_COMPONENTS));
+  resetToBlankWorkspace: () => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify([]));
+        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify({}));
+        localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify([]));
         localStorage.setItem(LOCAL_STORAGE_STACK_POS_KEY, 'top-center');
-        localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(INITIAL_VEHICLE_STATE));
-        localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(DEFAULT_DOCK_ORDER));
-        localStorage.setItem(LOCAL_STORAGE_VEHICLE_BG_KEY, JSON.stringify(DEFAULT_VEHICLE_BACKGROUND));
-        localStorage.setItem(LOCAL_STORAGE_CLIMATE_STATE_KEY, JSON.stringify(INITIAL_CLIMATE_STATE));
+        localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify([]));
         localStorage.removeItem(LOCAL_STORAGE_ACTIVE_TRIP_KEY);
-      } catch (e) {
-        console.error('Failed to reset store data', e);
       }
-      return {
-        screens: DEFAULT_SCREENS,
-        componentsByScreen: resetState,
-        notificationComponents: DEFAULT_NOTIFICATION_COMPONENTS,
-        notificationStackPosition: 'top-center',
-        components: HOME_SEED_COMPONENTS,
-        vehicleState: INITIAL_VEHICLE_STATE,
-        climateState: INITIAL_CLIMATE_STATE,
-        dockOrder: DEFAULT_DOCK_ORDER,
-        selectedComponentId: null,
-        activePresentationCalloutId: null,
-        notificationGhostActive: false,
-        activeView: 'home',
-        vehicleBackground: DEFAULT_VEHICLE_BACKGROUND,
-        conversations: INITIAL_CONVERSATIONS,
-        selectedMessagingThreadId: null,
-        queuedMessageToasts: [],
-        activeTrip: null,
-        pendingNavDestinationAction: null,
-        currentTrackId: SAMPLE_TRACKS[0].id,
-        isPlaying: false,
-        progressSec: 102,
-        favoritedTrackIds: ['t1', 't7'],
-      };
-    });
+    } catch (e) {
+      console.error('Failed to reset store to blank', e);
+    }
+    set(() => ({
+      screens: [],
+      componentsByScreen: {},
+      notificationComponents: [],
+      notificationStackPosition: 'top-center',
+      components: [],
+      dockOrder: [],
+      selectedComponentId: null,
+      activePresentationCalloutId: null,
+      notificationGhostActive: false,
+      activeView: '',
+      activeTrip: null,
+      pendingNavDestinationAction: null,
+    }));
     if (playbackInterval) {
       clearInterval(playbackInterval);
       playbackInterval = null;
     }
+  },
+
+  /**
+   * Loads a full workspace configuration, completely replacing the current workspace.
+   */
+  loadWorkspaceConfiguration: (config: MockpitConfiguration) => {
+    const ws = config.workspace;
+    const newScreens = ws.screens || [];
+    const newComponentsByScreen = ws.componentsByScreen || {};
+    const newNotifs = ws.notificationComponents || [];
+    const newStackPos = ws.notificationStackPosition || 'top-center';
+    const newDockOrder = ws.dockOrder || newScreens.filter((s) => !s.parentId).map((s) => s.id);
+    const firstScreenId = newScreens[0]?.id || '';
+    const newActiveView = (ws.activeView && newScreens.some((s) => s.id === ws.activeView))
+      ? ws.activeView
+      : firstScreenId;
+    const newComponents = newComponentsByScreen[newActiveView] || [];
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_SCREENS_KEY, JSON.stringify(newScreens));
+        localStorage.setItem(LOCAL_STORAGE_KEY_V2, JSON.stringify(newComponentsByScreen));
+        localStorage.setItem(LOCAL_STORAGE_NOTIFICATIONS_KEY, JSON.stringify(newNotifs));
+        localStorage.setItem(LOCAL_STORAGE_STACK_POS_KEY, newStackPos);
+        localStorage.setItem(LOCAL_STORAGE_DOCK_ORDER_KEY, JSON.stringify(newDockOrder));
+        if (ws.vehicleBackground) {
+          localStorage.setItem(LOCAL_STORAGE_VEHICLE_BG_KEY, JSON.stringify(ws.vehicleBackground));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to save loaded configuration to localStorage', e);
+    }
+
+    set((state) => ({
+      screens: newScreens,
+      componentsByScreen: newComponentsByScreen,
+      components: newComponents,
+      notificationComponents: newNotifs,
+      notificationStackPosition: newStackPos,
+      activeView: newActiveView,
+      dockOrder: newDockOrder,
+      vehicleBackground: ws.vehicleBackground || state.vehicleBackground,
+      vehicleState: ws.vehicleState ? { ...state.vehicleState, ...ws.vehicleState } : state.vehicleState,
+      climateState: ws.climateState ? { ...state.climateState, ...ws.climateState } : state.climateState,
+      selectedComponentId: null,
+      activePresentationCalloutId: null,
+      notificationGhostActive: false,
+      activeTrip: null,
+      pendingNavDestinationAction: null,
+    }));
+    if (playbackInterval) {
+      clearInterval(playbackInterval);
+      playbackInterval = null;
+    }
+  },
+
+  /**
+   * Loads the bundled example configuration through the standard configuration import path.
+   */
+  loadBundledExampleConfiguration: () => {
+    const exampleConfig = getBundledExampleConfiguration();
+    get().loadWorkspaceConfiguration(exampleConfig);
+  },
+
+  /**
+   * Exports the complete current workspace as a versioned MockpitConfiguration object.
+   */
+  exportWorkspaceConfiguration: (customName?: string) => {
+    const state = get();
+    const totalComps = Object.values(state.componentsByScreen).reduce((acc, l) => acc + l.length, 0) + state.notificationComponents.length;
+    return {
+      version: 1,
+      schemaVersion: '1.0.0',
+      type: 'mockpit-configuration',
+      metadata: {
+        name: customName?.trim() || 'Mockpit Workspace',
+        createdAt: new Date().toISOString(),
+        screenCount: state.screens.length,
+        componentCount: totalComps,
+      },
+      workspace: {
+        screens: state.screens,
+        componentsByScreen: state.componentsByScreen,
+        notificationComponents: state.notificationComponents,
+        notificationStackPosition: state.notificationStackPosition,
+        activeView: state.activeView,
+        dockOrder: state.dockOrder,
+        vehicleBackground: state.vehicleBackground,
+        vehicleState: state.vehicleState,
+        climateState: state.climateState,
+      },
+    };
+  },
+
+  /**
+   * Legacy method preserved for compatibility with existing tests; delegates to loadBundledExampleConfiguration.
+   */
+  resetToSeedData: () => {
+    get().loadBundledExampleConfiguration();
   },
 }));
 

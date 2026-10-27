@@ -15,7 +15,7 @@ import { ContactAvatar } from './ContactAvatar';
 import { WeatherScreenShell } from './weather/WeatherScreenShell';
 import { useWeatherStore } from '../store/useWeatherStore';
 import { useUserTestingStore } from '../testing/useUserTestingStore';
-import { Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare, Battery, Zap } from 'lucide-react';
+import { Maximize2, Trash2, LayoutGrid, MapPin, Music, Phone, Layout, MessageSquare, Battery, Zap, Plus, FolderOpen } from 'lucide-react';
 import { getNotificationStackPositionClasses } from '../utils/notificationPosition';
 import {
   getVisualSelectionState,
@@ -321,6 +321,7 @@ export const Canvas: React.FC = () => {
   const updateComponentPosition = useMockpitStore((s) => s.updateComponentPosition);
   const updateComponentSize = useMockpitStore((s) => s.updateComponentSize);
   const addComponent = useMockpitStore((s) => s.addComponent);
+  const addScreen = useMockpitStore((s) => s.addScreen);
   const deleteComponent = useMockpitStore((s) => s.deleteComponent);
   const notificationDurationSec = useMockpitStore((s) => s.notificationDurationSec);
   const eventNotificationCooldowns = useMockpitStore((s) => s.eventNotificationCooldowns);
@@ -999,8 +1000,183 @@ export const Canvas: React.FC = () => {
             </div>
           )}
 
+          {/* Blank Workspace Overlay in Editor Mode */}
+          {!isPresentation && screens.length === 0 && (
+            <div
+              id="blank-workspace-overlay"
+              className="absolute inset-x-16 inset-y-20 z-20 border-2 border-dashed border-sky-500/40 rounded-3xl flex flex-col items-center justify-center text-slate-300 bg-slate-950/70 backdrop-blur-sm p-6 pointer-events-auto shadow-2xl"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 800 500"
+                className="w-full max-w-[240px] h-auto mb-4 rounded-xl border border-slate-800/80 shadow-md overflow-hidden shrink-0"
+                aria-hidden="true"
+              >
+                <rect x="0" y="0" width="800" height="250" fill="#020617"></rect>
+                <path d="M 40 40 Q 400 25 760 40" fill="none" stroke="#334155" strokeWidth="2"></path>
+                <path d="M 40 40 L 70 230 M 760 40 L 730 230" stroke="#334155" strokeWidth="2"></path>
+                <line x1="0" y1="185" x2="800" y2="185" stroke="#1e293b" strokeWidth="1" strokeDasharray="6 6"></line>
+                <line x1="340" y1="185" x2="260" y2="250" stroke="#1e293b" strokeWidth="1"></line>
+                <line x1="460" y1="185" x2="540" y2="250" stroke="#1e293b" strokeWidth="1"></line>
+                <path d="M 380 40 L 392 65 L 408 65 L 420 40" stroke="#475569" strokeWidth="1.5" fill="none"></path>
+                <rect x="360" y="65" width="80" height="24" rx="5" fill="#090d16" stroke="#94a3b8" strokeWidth="1.5"></rect>
+                <line x1="365" y1="77" x2="435" y2="77" stroke="#38bdf8" strokeWidth="1" strokeOpacity="0.5"></line>
+                <rect x="0" y="250" width="800" height="250" fill="#0f172a"></rect>
+                <path d="M 50 250 C 85 220, 130 175, 260 175 C 360 175, 385 220, 420 220 C 465 220, 670 220, 750 250" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                <path d="M 90 250 C 105 180, 125 168, 255 168 C 345 168, 368 190, 382 245" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"></path>
+                <path d="M 110 250 C 122 192, 140 182, 255 182 C 335 182, 355 200, 368 250" fill="none" stroke="#94a3b8" strokeWidth="1.2"></path>
+                <rect x="65" y="235" width="30" height="22" rx="4" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5"></rect>
+                <line x1="70" y1="242" x2="90" y2="242" stroke="#ffffff" strokeWidth="1"></line>
+                <line x1="70" y1="249" x2="90" y2="249" stroke="#ffffff" strokeWidth="1"></line>
+                <g>
+                  <path d="M 145 245 A 38 38 0 1 1 215 245" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"></path>
+                  <line x1="148" y1="230" x2="155" y2="228" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="155" y1="212" x2="162" y2="214" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="170" y1="200" x2="174" y2="207" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="190" y1="198" x2="190" y2="206" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="208" y1="205" x2="204" y2="212" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="218" y1="220" x2="211" y2="223" stroke="#f43f5e" strokeWidth="1.5"></line>
+                  <circle cx="180" cy="235" r="4" fill="#ffffff"></circle>
+                  <line x1="180" y1="235" x2="198" y2="210" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"></line>
+                </g>
+                <g>
+                  <rect x="230" y="210" width="30" height="35" rx="3" fill="#020617" stroke="#94a3b8" strokeWidth="1.2"></rect>
+                  <line x1="235" y1="220" x2="255" y2="220" stroke="#38bdf8" strokeWidth="1.5" strokeLinecap="round"></line>
+                  <line x1="238" y1="226" x2="252" y2="226" stroke="#ffffff" strokeWidth="1" strokeLinecap="round"></line>
+                  <line x1="236" y1="236" x2="254" y2="236" stroke="#64748b" strokeWidth="1" strokeDasharray="2 2"></line>
+                </g>
+                <g>
+                  <path d="M 275 245 A 38 38 0 1 1 345 245" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"></path>
+                  <line x1="278" y1="230" x2="285" y2="228" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="285" y1="212" x2="292" y2="214" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="300" y1="200" x2="304" y2="207" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="320" y1="198" x2="320" y2="206" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="338" y1="205" x2="334" y2="212" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <line x1="344" y1="225" x2="337" y2="225" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <circle cx="310" cy="235" r="4" fill="#ffffff"></circle>
+                  <line x1="310" y1="235" x2="328" y2="212" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"></line>
+                </g>
+                <rect x="235" y="270" width="20" height="40" fill="#090d16" stroke="#475569" strokeWidth="1.5"></rect>
+                <line x1="190" y1="278" x2="235" y2="285" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round"></line>
+                <circle cx="188" cy="278" r="3" fill="#ffffff"></circle>
+                <line x1="300" y1="278" x2="255" y2="285" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round"></line>
+                <circle cx="302" cy="278" r="3" fill="#ffffff"></circle>
+                <ellipse cx="245" cy="345" rx="105" ry="98" fill="none" stroke="#ffffff" strokeWidth="4"></ellipse>
+                <ellipse cx="245" cy="345" rx="92" ry="86" fill="none" stroke="#94a3b8" strokeWidth="1.5"></ellipse>
+                <path d="M 158 305 Q 153 320 160 335" stroke="#ffffff" strokeWidth="3" fill="none"></path>
+                <path d="M 332 305 Q 337 320 330 335" stroke="#ffffff" strokeWidth="3" fill="none"></path>
+                <path d="M 153 335 L 205 332 L 205 355 L 155 358" fill="#0f172a" stroke="#ffffff" strokeWidth="1.8"></path>
+                <path d="M 337 335 L 285 332 L 285 355 L 335 358" fill="#0f172a" stroke="#ffffff" strokeWidth="1.8"></path>
+                <path d="M 235 372 L 235 432 L 255 432 L 255 372" fill="#0f172a" stroke="#ffffff" strokeWidth="1.8"></path>
+                <rect x="205" y="320" width="80" height="52" rx="14" fill="#0f172a" stroke="#ffffff" strokeWidth="2"></rect>
+                <ellipse cx="245" cy="345" rx="15" ry="11" fill="none" stroke="#ffffff" strokeWidth="1.5"></ellipse>
+                <path d="M 240 345 L 245 338 L 250 345 L 245 352 Z" fill="#ffffff"></path>
+                <rect x="165" y="336" width="30" height="16" rx="3" fill="#1e293b" stroke="#ffffff" strokeWidth="1"></rect>
+                <line x1="172" y1="344" x2="178" y2="344" stroke="#ffffff" strokeWidth="1"></line>
+                <line x1="175" y1="341" x2="175" y2="347" stroke="#ffffff" strokeWidth="1"></line>
+                <circle cx="187" cy="344" r="2" fill="#ffffff"></circle>
+                <rect x="295" y="336" width="30" height="16" rx="3" fill="#1e293b" stroke="#ffffff" strokeWidth="1"></rect>
+                <line x1="302" y1="344" x2="310" y2="344" stroke="#ffffff" strokeWidth="1"></line>
+                <circle cx="317" cy="344" r="2" fill="#ffffff"></circle>
+                <g>
+                  <polygon points="415,200 535,200 530,285 415,285" fill="#090d16" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round"></polygon>
+                  <polygon points="422,207 528,207 524,278 422,278" fill="#1e293b" stroke="#94a3b8" strokeWidth="1"></polygon>
+                  <rect x="428" y="213" width="50" height="34" rx="2" fill="none" stroke="#38bdf8" strokeWidth="1"></rect>
+                  <path d="M 432 233 Q 448 221 468 229" fill="none" stroke="#38bdf8" strokeWidth="1"></path>
+                  <rect x="484" y="213" width="38" height="16" rx="2" fill="none" stroke="#ffffff" strokeWidth="0.8"></rect>
+                  <line x1="488" y1="221" x2="516" y2="221" stroke="#ffffff" strokeWidth="0.8"></line>
+                  <rect x="484" y="233" width="38" height="14" rx="2" fill="none" stroke="#cbd5e1" strokeWidth="0.8"></rect>
+                  <line x1="428" y1="258" x2="520" y2="258" stroke="#475569" strokeWidth="0.8"></line>
+                  <circle cx="440" cy="268" r="3" fill="none" stroke="#ffffff" strokeWidth="0.8"></circle>
+                  <circle cx="458" cy="268" r="3" fill="none" stroke="#ffffff" strokeWidth="0.8"></circle>
+                  <circle cx="476" cy="268" r="3" fill="none" stroke="#ffffff" strokeWidth="0.8"></circle>
+                  <circle cx="494" cy="268" r="3" fill="none" stroke="#ffffff" strokeWidth="0.8"></circle>
+                </g>
+                <g>
+                  <rect x="420" y="293" width="48" height="16" rx="3" fill="#0f172a" stroke="#ffffff" strokeWidth="1.2"></rect>
+                  <line x1="424" y1="298" x2="464" y2="298" stroke="#ffffff" strokeWidth="1"></line>
+                  <line x1="424" y1="304" x2="464" y2="304" stroke="#ffffff" strokeWidth="1"></line>
+                  <rect x="475" y="293" width="48" height="16" rx="3" fill="#0f172a" stroke="#ffffff" strokeWidth="1.2"></rect>
+                  <line x1="479" y1="298" x2="519" y2="298" stroke="#ffffff" strokeWidth="1"></line>
+                  <line x1="479" y1="304" x2="519" y2="304" stroke="#ffffff" strokeWidth="1"></line>
+                  <polygon points="471,298 474,304 468,304" fill="#f43f5e" stroke="#f43f5e" strokeWidth="0.8"></polygon>
+                </g>
+                <g>
+                  <rect x="415" y="318" width="112" height="38" rx="6" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5"></rect>
+                  <circle cx="435" cy="337" r="11" fill="#1e293b" stroke="#ffffff" strokeWidth="1.5"></circle>
+                  <circle cx="435" cy="337" r="6" fill="none" stroke="#38bdf8" strokeWidth="1"></circle>
+                  <line x1="435" y1="327" x2="435" y2="331" stroke="#ffffff" strokeWidth="1.5"></line>
+                  <rect x="454" y="324" width="34" height="12" rx="2" fill="#020617" stroke="#64748b" strokeWidth="0.8"></rect>
+                  <line x1="458" y1="330" x2="484" y2="330" stroke="#38bdf8" strokeWidth="1"></line>
+                  <rect x="454" y="340" width="9" height="7" rx="1" fill="none" stroke="#ffffff" strokeWidth="0.8"></rect>
+                  <rect x="466" y="340" width="9" height="7" rx="1" fill="none" stroke="#ffffff" strokeWidth="0.8"></rect>
+                  <rect x="478" y="340" width="9" height="7" rx="1" fill="none" stroke="#ffffff" strokeWidth="0.8"></rect>
+                  <circle cx="507" cy="337" r="11" fill="#1e293b" stroke="#ffffff" strokeWidth="1.5"></circle>
+                  <circle cx="507" cy="337" r="6" fill="none" stroke="#fb923c" strokeWidth="1"></circle>
+                  <line x1="507" y1="327" x2="507" y2="331" stroke="#ffffff" strokeWidth="1.5"></line>
+                </g>
+                <g>
+                  <path d="M 395 365 L 355 500" stroke="#ffffff" strokeWidth="2" fill="none" strokeLinecap="round"></path>
+                  <path d="M 550 365 L 595 500" stroke="#ffffff" strokeWidth="2" fill="none" strokeLinecap="round"></path>
+                  <path d="M 402 365 L 370 500" stroke="#475569" strokeWidth="1" fill="none"></path>
+                  <path d="M 542 365 L 580 500" stroke="#475569" strokeWidth="1" fill="none"></path>
+                  <rect x="424" y="372" width="92" height="88" rx="8" fill="#1e293b" stroke="#ffffff" strokeWidth="1.5"></rect>
+                  <ellipse cx="456" cy="416" rx="16" ry="14" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5"></ellipse>
+                  <line x1="456" y1="416" x2="453" y2="389" stroke="#ffffff" strokeWidth="3" strokeLinecap="round"></line>
+                  <ellipse cx="452" cy="386" rx="8" ry="6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1"></ellipse>
+                  <line x1="492" y1="390" x2="492" y2="436" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round"></line>
+                  <circle cx="492" cy="395" r="2.5" fill="#38bdf8"></circle>
+                  <circle cx="492" cy="408" r="2" fill="#94a3b8"></circle>
+                  <circle cx="492" cy="420" r="2" fill="#94a3b8"></circle>
+                  <circle cx="492" cy="432" r="2" fill="#94a3b8"></circle>
+                  <rect x="448" y="468" width="44" height="20" rx="4" fill="#0f172a" stroke="#ffffff" strokeWidth="1.2"></rect>
+                  <path d="M 462 478 L 478 478" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round"></path>
+                  <circle cx="530" cy="435" r="16" fill="#0f172a" stroke="#ffffff" strokeWidth="1.2"></circle>
+                  <circle cx="530" cy="435" r="12" fill="none" stroke="#475569" strokeWidth="1"></circle>
+                </g>
+                <g>
+                  <path d="M 535 220 C 570 220, 680 225, 750 250" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round"></path>
+                  <path d="M 540 240 C 590 240, 690 245, 755 270" fill="none" stroke="#475569" strokeWidth="1.2" strokeLinecap="round"></path>
+                  <rect x="680" y="238" width="48" height="22" rx="4" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5"></rect>
+                  <line x1="685" y1="244" x2="723" y2="244" stroke="#ffffff" strokeWidth="1"></line>
+                  <line x1="685" y1="249" x2="723" y2="249" stroke="#ffffff" strokeWidth="1"></line>
+                  <line x1="685" y1="254" x2="723" y2="254" stroke="#ffffff" strokeWidth="1"></line>
+                  <path d="M 565 295 C 620 295, 700 298, 745 310" fill="none" stroke="#64748b" strokeWidth="1.2" strokeDasharray="4 2"></path>
+                  <rect x="635" y="303" width="22" height="5" rx="1.5" fill="none" stroke="#ffffff" strokeWidth="1.2"></rect>
+                  <path d="M 565 370 C 620 370, 700 365, 750 355" fill="none" stroke="#334155" strokeWidth="1"></path>
+                </g>
+              </svg>
+              <h2 className="text-base font-bold text-slate-100 uppercase font-mono tracking-wider">
+                Blank Workspace
+              </h2>
+              <p className="text-xs text-slate-400 max-w-md text-center mt-1.5 font-mono leading-relaxed">
+                Start by creating your first screen or load the completed example configuration to explore Mockpit.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-3 mt-5">
+                <button
+                  type="button"
+                  id="canvas-add-first-screen-button"
+                  onClick={() => addScreen('Home', 'fade')}
+                  className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-sky-500/20 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Home Screen</span>
+                </button>
+                <button
+                  type="button"
+                  id="canvas-load-example-button"
+                  onClick={() => useMockpitStore.getState().loadBundledExampleConfiguration()}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <FolderOpen className="w-4 h-4 text-sky-400" />
+                  <span>Load Example Configuration</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Empty Canvas Overlay in Editor Mode for Screen Views */}
-          {!isPresentation && !['weather', 'weather-radar'].includes(activeView) && components.length === 0 && (
+          {!isPresentation && screens.length > 0 && !['weather', 'weather-radar'].includes(activeView) && components.length === 0 && (
             <div className="absolute inset-x-16 inset-y-20 z-10 border-2 border-dashed border-ds-line-subtle/80 rounded-3xl flex flex-col items-center justify-center text-ds-content-subtle bg-ds-surface/20 pointer-events-none">
               <div className="p-3.5 rounded-2xl bg-ds-surface border border-ds-line mb-3 text-ds-primary">
                 {activeView === 'navigation' && <MapPin className="w-8 h-8" />}
@@ -1010,7 +1186,7 @@ export const Canvas: React.FC = () => {
                 {!['navigation', 'media', 'phone', 'home'].includes(activeView) && <Layout className="w-8 h-8" />}
               </div>
               <p className="text-sm font-bold text-ds-content-secondary uppercase font-mono tracking-wider">
-                {activeScreenDisplayName.toUpperCase()} SCREEN CANVAS EMPTY
+                {activeScreenDisplayName ? `${activeScreenDisplayName.toUpperCase()} SCREEN CANVAS EMPTY` : 'SCREEN CANVAS EMPTY'}
               </p>
               <p className="text-xs text-ds-content-subtle max-w-md text-center mt-1 font-mono">
                 Drag components from the library on the left, or click the + icon next to a component to add it to this screen.
@@ -1175,6 +1351,21 @@ export const Canvas: React.FC = () => {
             * Animates every screen transition via the per-screen transitionStyle (slideUp/Down/Left/Right/fade).
           */}
           {isPresentation && (() => {
+            if (screens.length === 0) {
+              return (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-mono text-xs">
+                  <div className="p-4 rounded-2xl bg-ds-background border border-ds-line text-ds-primary mb-3">
+                    <Layout className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-base font-bold text-ds-content tracking-wider uppercase font-mono">
+                    NO SCREENS TO PRESENT
+                  </h3>
+                  <p className="text-xs text-ds-content-subtle max-w-sm text-center mt-1.5 font-mono">
+                    The workspace is currently blank. Switch to Editor Mode to create screens or load a configuration.
+                  </p>
+                </div>
+              );
+            }
             return (
               <>
                 <FocusedAppScreen
