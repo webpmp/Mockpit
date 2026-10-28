@@ -27,6 +27,7 @@ import { NumericStepper } from './NumericStepper';
 import { ManeuverGlyph } from './navigation/ManeuverGlyph';
 import { DEFAULT_MINI_NAV_COLORS } from './navigation/MiniNav';
 import { DEFAULT_EXPLODED_VIEW_BG_COLOR } from './vehicle/VehicleExplodedViewWidget';
+import { getBeforeImageSrc } from '../utils/explodedViewImages';
 import { WeatherIcon } from './weather/WeatherIcon';
 import { SAMPLE_TRACKS } from '../data/mediaData';
 import { DEFAULT_VEHICLE_COLORS, getEgoVehicleTypeFromAsset, isValidHexColor, getVehicleOriginalColors } from '../utils/vehicleAssets';
@@ -1140,6 +1141,108 @@ const DashboardEmptyIllustration: React.FC<{ className?: string }> = ({ classNam
     </g>
   </svg>
 );
+
+interface ExplodedViewBgRemovalControlsProps {
+  labelPrefix?: string;
+  removeBgKey: string;
+  toleranceKey: string;
+  edgeSoftnessKey: string;
+  staticProps: Record<string, string>;
+  onPropChange: (key: string, value: string) => void;
+}
+
+const ExplodedViewBgRemovalControls: React.FC<ExplodedViewBgRemovalControlsProps> = ({
+  labelPrefix,
+  removeBgKey,
+  toleranceKey,
+  edgeSoftnessKey,
+  staticProps,
+  onPropChange,
+}) => {
+  const removeBg = staticProps[removeBgKey] !== 'false';
+  const tolerance = parseInt(staticProps[toleranceKey] || '25', 10);
+  const edgeSoftness = parseInt(staticProps[edgeSoftnessKey] || '0', 10);
+
+  return (
+    <div className="pt-3 border-t border-slate-800 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-[11px] font-mono font-bold text-slate-200 block">
+            {labelPrefix ? `${labelPrefix} Background Removal` : 'Background Removal'}
+          </span>
+          <span className="text-[9px] font-mono text-slate-500 block">
+            Auto-detects corner color &amp; keys to transparent
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onPropChange(removeBgKey, removeBg ? 'false' : 'true')}
+          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            removeBg ? 'bg-sky-500' : 'bg-slate-700'
+          }`}
+          title={removeBg ? 'Disable Background Removal' : 'Enable Background Removal'}
+        >
+          <span
+            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+              removeBg ? 'translate-x-4' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
+
+      {removeBg && (
+        <div className="space-y-1.5 pt-1.5 border-t border-slate-800/60">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-300 font-bold">Tolerance</span>
+            <span className="text-[10px] font-mono text-sky-400 font-bold">{tolerance}%</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={tolerance}
+            onChange={(e) => onPropChange(toleranceKey, e.target.value)}
+            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+          />
+          <div className="flex justify-between text-[8px] font-mono text-slate-500">
+            <span>0% (Exact)</span>
+            <span>25% (Default)</span>
+            <span>100% (Aggressive)</span>
+          </div>
+          <p className="text-[9px] font-mono text-slate-500">
+            Live adjustments key out background variations and subtle gradients.
+          </p>
+        </div>
+      )}
+
+      {removeBg && (
+        <div className="space-y-1.5 pt-1.5 border-t border-slate-800/60">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-300 font-bold">Edge Softness</span>
+            <span className="text-[10px] font-mono text-sky-400 font-bold">{edgeSoftness}%</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={edgeSoftness}
+            onChange={(e) => onPropChange(edgeSoftnessKey, e.target.value)}
+            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+          />
+          <div className="flex justify-between text-[8px] font-mono text-slate-500">
+            <span>0% (Sharp)</span>
+            <span>100% (Soft)</span>
+          </div>
+          <p className="text-[9px] font-mono text-slate-500">
+            Softens the transparency edge to reduce jagged pixels and color halos.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export interface InspectorProps {
   initialTab?: 'component' | 'screen' | 'layers';
@@ -3230,78 +3333,55 @@ export const Inspector: React.FC<InspectorProps> = ({
 
             {/* Vehicle Exploded View Controls */}
             {selectedComp.type === 'vehicleExplodedView' && (() => {
-              const removeBg = selectedComp.staticProps.removeBg !== 'false';
-              const tolerance = parseInt(selectedComp.staticProps.bgTolerance || '25', 10);
-              const edgeSoftness = parseInt(selectedComp.staticProps.bgEdgeSoftness || '0', 10);
               const rawBgColor = selectedComp.staticProps.backgroundColor || DEFAULT_EXPLODED_VIEW_BG_COLOR;
               const currentBgColor = (rawBgColor.length === 4 && rawBgColor.startsWith('#')
                 ? `#${rawBgColor[1]}${rawBgColor[1]}${rawBgColor[2]}${rawBgColor[2]}${rawBgColor[3]}${rawBgColor[3]}`
                 : rawBgColor).toUpperCase();
 
+              const hasBefore = getBeforeImageSrc(selectedComp) !== null;
+
               return (
                 <div className="space-y-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider">
-                      Exploded View Asset
-                    </span>
-                    {selectedComp.staticProps.imageUrl && (
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        Custom Image
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-mono text-slate-400 block font-bold">
-                      Upload / Replace Image
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono font-bold cursor-pointer transition-colors">
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>{selectedComp.staticProps.imageUrl ? 'Replace Image' : 'Upload Image'}</span>
-                        <input
-                          type="file"
-                          accept="image/*,.svg"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                const result = event.target?.result as string;
-                                if (result) {
-                                  handleStaticPropChange('imageUrl', result);
-                                }
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                      </label>
-                      {selectedComp.staticProps.imageUrl && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateComponentStaticProps(selectedComp.id, {
-                              imageUrl: '',
-                              bgEdgeSoftness: '0',
-                            });
-                          }}
-                          className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono flex items-center gap-1 transition-colors"
-                          title="Reset to default blueprint vehicle SVG"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Reset</span>
-                        </button>
-                      )}
+                  {/* 1. Preview State (Editor Only) */}
+                  {hasBefore && (
+                    <div className="space-y-1.5 pb-3 border-b border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider">
+                          Preview State
+                        </span>
+                        <div className="flex rounded-lg bg-slate-800/80 p-0.5 border border-slate-700/80">
+                          <button
+                            type="button"
+                            onClick={() => handleStaticPropChange('editorPreview', 'before')}
+                            className={`px-2.5 py-1 text-[11px] font-mono font-bold rounded-md transition-colors ${
+                              selectedComp.staticProps.editorPreview === 'before'
+                                ? 'bg-sky-500 text-slate-950 shadow-sm'
+                                : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            Before
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleStaticPropChange('editorPreview', 'exploded')}
+                            className={`px-2.5 py-1 text-[11px] font-mono font-bold rounded-md transition-colors ${
+                              selectedComp.staticProps.editorPreview !== 'before'
+                                ? 'bg-sky-500 text-slate-950 shadow-sm'
+                                : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            Exploded
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-[9px] font-mono text-slate-500">
+                        Editor only. Presenter shows Before until a callout is selected.
+                      </p>
                     </div>
-                    <p className="text-[9px] font-mono text-slate-500">
-                      Supports SVG, PNG, JPG, WebP. When replaced, all attached status callout connectors stay pinned to relative positions.
-                    </p>
-                  </div>
+                  )}
 
-                  {/* Background Color Section */}
-                  <div className="pt-3 border-t border-slate-800 space-y-2">
+                  {/* 2. Background Color Section */}
+                  <div className="space-y-2 pb-3 border-b border-slate-800">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider">
                         Background Color
@@ -3336,93 +3416,138 @@ export const Inspector: React.FC<InspectorProps> = ({
                     </div>
                   </div>
 
-                  {/* Background Removal Section */}
-                  <div className="pt-3 border-t border-slate-800 space-y-2.5">
+                  {/* 3. Exploded Image */}
+                  <div className="space-y-2 pb-3 border-b border-slate-800">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-[11px] font-mono font-bold text-slate-200 block">
-                          Background Removal
+                      <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider">
+                        Exploded Image
+                      </span>
+                      {selectedComp.staticProps.imageUrl && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          Custom Image
                         </span>
-                        <span className="text-[9px] font-mono text-slate-500 block">
-                          Auto-detects corner color &amp; keys to transparent
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleStaticPropChange('removeBg', removeBg ? 'false' : 'true')}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          removeBg ? 'bg-sky-500' : 'bg-slate-700'
-                        }`}
-                        title={removeBg ? 'Disable Background Removal' : 'Enable Background Removal'}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            removeBg ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
+                      )}
                     </div>
 
-                    {/* Tolerance Slider (visible only when Background Removal is on) */}
-                    {removeBg && (
-                      <div className="space-y-1.5 pt-1.5 border-t border-slate-800/60">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-mono text-slate-300 font-bold">
-                            Tolerance
-                          </span>
-                          <span className="text-[10px] font-mono text-sky-400 font-bold">
-                            {tolerance}%
-                          </span>
-                        </div>
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono font-bold cursor-pointer transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{selectedComp.staticProps.imageUrl ? 'Replace Image' : 'Upload Image'}</span>
                         <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          step="1"
-                          value={tolerance}
-                          onChange={(e) => handleStaticPropChange('bgTolerance', e.target.value)}
-                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+                          type="file"
+                          accept="image/*,.svg"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const result = event.target?.result as string;
+                                if (result) {
+                                  handleStaticPropChange('imageUrl', result);
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
                         />
-                        <div className="flex justify-between text-[8px] font-mono text-slate-500">
-                          <span>0% (Exact)</span>
-                          <span>25% (Default)</span>
-                          <span>100% (Aggressive)</span>
-                        </div>
-                        <p className="text-[9px] font-mono text-slate-500">
-                          Live adjustments key out background variations and subtle gradients.
-                        </p>
-                      </div>
-                    )}
+                      </label>
+                      {selectedComp.staticProps.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateComponentStaticProps(selectedComp.id, {
+                              imageUrl: '',
+                              bgEdgeSoftness: '0',
+                            });
+                          }}
+                          className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono flex items-center gap-1 transition-colors"
+                          title="Reset to default"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Reset</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[9px] font-mono text-slate-500">
+                      Supports SVG, PNG, JPG, WebP. When replaced, all attached status callout connectors stay pinned to relative positions.
+                    </p>
 
-                    {/* Edge Softness Slider (visible only when Background Removal is on) */}
-                    {removeBg && (
-                      <div className="space-y-1.5 pt-1.5 border-t border-slate-800/60">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-mono text-slate-300 font-bold">
-                            Edge Softness
-                          </span>
-                          <span className="text-[10px] font-mono text-sky-400 font-bold">
-                            {edgeSoftness}%
-                          </span>
-                        </div>
+                    {/* Exploded Image Background Removal */}
+                    <ExplodedViewBgRemovalControls
+                      removeBgKey="removeBg"
+                      toleranceKey="bgTolerance"
+                      edgeSoftnessKey="bgEdgeSoftness"
+                      staticProps={selectedComp.staticProps}
+                      onPropChange={handleStaticPropChange}
+                    />
+                  </div>
+
+                  {/* 4. Before Image */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider">
+                        Before Image
+                      </span>
+                      {selectedComp.staticProps.beforeImageUrl && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          Custom Image
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono font-bold cursor-pointer transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{selectedComp.staticProps.beforeImageUrl ? 'Replace Image' : 'Upload Image'}</span>
                         <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          step="1"
-                          value={edgeSoftness}
-                          onChange={(e) => handleStaticPropChange('bgEdgeSoftness', e.target.value)}
-                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
+                          type="file"
+                          accept="image/*,.svg"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const result = event.target?.result as string;
+                                if (result) {
+                                  handleStaticPropChange('beforeImageUrl', result);
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
                         />
-                        <div className="flex justify-between text-[8px] font-mono text-slate-500">
-                          <span>0% (Sharp)</span>
-                          <span>100% (Soft)</span>
-                        </div>
-                        <p className="text-[9px] font-mono text-slate-500">
-                          Softens the transparency edge to reduce jagged pixels and color halos.
-                        </p>
-                      </div>
-                    )}
+                      </label>
+                      {selectedComp.staticProps.beforeImageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateComponentStaticProps(selectedComp.id, {
+                              beforeImageUrl: '',
+                              beforeBgEdgeSoftness: '0',
+                            });
+                          }}
+                          className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono flex items-center gap-1 transition-colors"
+                          title="Reset to default"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Reset</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[9px] font-mono text-slate-500">
+                      Standard unexploded vehicle image. Fit inside exploded frame to maintain connector target geometry.
+                    </p>
+
+                    {/* Before Image Background Removal */}
+                    <ExplodedViewBgRemovalControls
+                      removeBgKey="beforeRemoveBg"
+                      toleranceKey="beforeBgTolerance"
+                      edgeSoftnessKey="beforeBgEdgeSoftness"
+                      staticProps={selectedComp.staticProps}
+                      onPropChange={handleStaticPropChange}
+                    />
                   </div>
                 </div>
               );
@@ -4606,6 +4731,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                     key !== 'energyRequiredLabel' &&
                     key !== 'arrivalChargeLabel' &&
                     key !== 'imageUrl' &&
+                    key !== 'beforeImageUrl' &&
                     key !== 'title' &&
                     key !== 'description' &&
                     key !== 'statusCode' &&
@@ -4613,8 +4739,12 @@ export const Inspector: React.FC<InspectorProps> = ({
                     key !== 'healthType' &&
                     key !== 'healthValue' &&
                     key !== 'removeBg' &&
+                    key !== 'beforeRemoveBg' &&
                     key !== 'bgTolerance' &&
+                    key !== 'beforeBgTolerance' &&
                     key !== 'bgEdgeSoftness' &&
+                    key !== 'beforeBgEdgeSoftness' &&
+                    key !== 'editorPreview' &&
                     key !== 'highwayName' &&
                     key !== 'nextExit' &&
                     key !== 'distanceToManeuver' &&

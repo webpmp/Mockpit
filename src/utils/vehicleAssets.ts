@@ -103,16 +103,16 @@ export function getAvailableVehicles(): VehicleAsset[] {
 
 export function resolveEgoVehicleType(
   configuredType?: string,
-  vehicleBgAsset?: string | null,
+  _vehicleBgAsset?: string | null,
   storeEgoVehicleType?: EgoVehicleType
 ): EgoVehicleType {
   if (configuredType && configuredType !== 'auto') {
     return configuredType as EgoVehicleType;
   }
-  if (vehicleBgAsset) {
-    return getEgoVehicleTypeFromAsset(vehicleBgAsset);
+  if (storeEgoVehicleType && storeEgoVehicleType !== 'auto') {
+    return storeEgoVehicleType;
   }
-  return storeEgoVehicleType || 'spyder';
+  return 'spyder';
 }
 
 export function adjustHexBrightness(hex: string, percent: number): string {

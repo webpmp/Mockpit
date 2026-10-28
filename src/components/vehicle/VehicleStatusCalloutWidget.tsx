@@ -168,10 +168,7 @@ export const VehicleStatusCalloutWidget: React.FC<VehicleStatusCalloutWidgetProp
           e.stopPropagation();
           const store = useMockpitStore.getState();
           const screenComponents = store.componentsByScreen[store.activeView] || store.components;
-          const activeCalloutId = resolveActiveCalloutIdForComponent(component.id, screenComponents);
-          store.setActivePresentationCalloutId(
-            store.activePresentationCalloutId === activeCalloutId ? null : activeCalloutId
-          );
+          store.toggleCalloutSelection(component.id, screenComponents);
         }
       }}
       className={`w-full h-full rounded-2xl bg-ds-surface/90 ${getBorderClasses(component.borderOverrides, 'border-ds-line-subtle/90')} backdrop-blur-md p-3.5 flex flex-col justify-between select-none relative transition-all duration-200 ${baseOpacity} ${

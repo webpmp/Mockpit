@@ -93,6 +93,10 @@ import { useWeatherStore } from './useWeatherStore';
 import {
   DisplayConfig,
   DEFAULT_DISPLAY_CONFIG,
+} from '../lib/hmiRules/types';
+import { EXPLODE_TRANSITION_MS } from '../utils/explodedViewImages';
+import { resolveActiveCalloutIdForComponent } from '../utils/visualSelection';
+import {
   InteractionLogEntry,
   HMI_RULES,
   HMIRule,
@@ -1071,6 +1075,7 @@ interface MockpitStore {
   selectedComponentId: string | null;
   activePresentationCalloutId: string | null;
   presentationConnectorAnimNonce: number;
+  connectorLeadDelayMs: number;
   screenMode: ScreenMode;
   activeView: ActiveView;
   isDebugOpen: boolean;
@@ -1281,6 +1286,7 @@ interface MockpitStore {
   setDebugPanelHeight: (height: number) => void;
   selectComponent: (id: string | null) => void;
   setActivePresentationCalloutId: (id: string | null) => void;
+  toggleCalloutSelection: (componentId: string, screenComponents: ComponentInstance[]) => void;
   setDockOrder: (newOrder: string[]) => void;
   moveDockItem: (id: string, direction: 'left' | 'right') => void;
   toggleDockMembership: (id: string) => void;
@@ -1471,6 +1477,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
   selectedComponentId: null,
   activePresentationCalloutId: null,
   presentationConnectorAnimNonce: 0,
+  connectorLeadDelayMs: 0,
   screenMode: 'editor',
   previousView: initialScreensList[0]?.id || '',
   activeView: initialScreensList[0]?.id || '',
@@ -3445,6 +3452,7 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         selectedComponentId: id,
         activePresentationCalloutId: id === null ? null : state.activePresentationCalloutId,
         presentationConnectorAnimNonce: id === null ? 0 : state.presentationConnectorAnimNonce,
+        connectorLeadDelayMs: 0,
         notificationGhostActive: false,
       };
     }),
@@ -3452,7 +3460,30 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
     set((state) => ({
       activePresentationCalloutId: id,
       presentationConnectorAnimNonce: id ? state.presentationConnectorAnimNonce + 1 : 0,
+      connectorLeadDelayMs: 0,
     })),
+  toggleCalloutSelection: (componentId, screenComponents) =>
+    set((state) => {
+      const calloutId = resolveActiveCalloutIdForComponent(componentId, screenComponents);
+      if (calloutId && state.activePresentationCalloutId === calloutId) {
+        // deselect
+        return {
+          selectedComponentId: null,
+          activePresentationCalloutId: null,
+          presentationConnectorAnimNonce: 0,
+          connectorLeadDelayMs: 0,
+          notificationGhostActive: false,
+        };
+      }
+      return {
+        selectedComponentId: componentId,
+        activePresentationCalloutId: calloutId,
+        presentationConnectorAnimNonce: calloutId ? state.presentationConnectorAnimNonce + 1 : 0,
+        connectorLeadDelayMs:
+          calloutId && !state.activePresentationCalloutId ? EXPLODE_TRANSITION_MS : 0,
+        notificationGhostActive: false,
+      };
+    }),
 
   setDockOrder: (newOrder) => {
     // Ensure home stays pinned first
@@ -3909,6 +3940,11 @@ export const useMockpitStore = create<MockpitStore>((set, get) => ({
         staticProps = {
           label: 'Vehicle Exploded View',
           imageUrl: '',
+          beforeImageUrl: '',
+          beforeRemoveBg: 'true',
+          beforeBgTolerance: '25',
+          beforeBgEdgeSoftness: '0',
+          editorPreview: 'exploded',
           removeBg: 'true',
           bgTolerance: '25',
           bgEdgeSoftness: '0',

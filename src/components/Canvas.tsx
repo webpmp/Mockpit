@@ -207,6 +207,12 @@ const FocusedAppScreen: React.FC<FocusedAppScreenProps> = ({
                     height: comp.height,
                     zIndex: effectiveZ,
                   }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const store = useMockpitStore.getState();
+                    const screenComponents = isHomeScreen ? store.components : focusedAppComponents;
+                    store.toggleCalloutSelection(comp.id, screenComponents);
+                  }}
                 >
                   <ComponentRenderer
                     component={comp}

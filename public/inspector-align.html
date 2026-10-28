@@ -1,0 +1,52 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { background: #0f172a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+    .container { position: relative; width: 1114px; height: 608px; border: 1px solid #334155; background: #cccccc; overflow: hidden; }
+    .layer { position: absolute; }
+    #after { inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    #before { position: absolute; }
+    .controls { margin-top: 20px; display: flex; gap: 20px; align-items: center; }
+  </style>
+</head>
+<body>
+  <h2>Before vs Exploded Visual Alignment Inspector</h2>
+  <div class="container" id="box">
+    <img id="after" src="/vehicles/exploded-after.png" />
+    <img id="before" src="/vehicles/exploded-before.png" />
+  </div>
+  <div class="controls">
+    <label>Before Opacity: <input type="range" id="opac" min="0" max="1" step="0.01" value="0.5" /></label>
+    <label>Scale: <input type="range" id="scale" min="0.5" max="1.5" step="0.005" value="0.791" /></label>
+    <label>Left: <input type="range" id="left" min="-200" max="400" step="1" value="152" /></label>
+    <label>Top: <input type="range" id="top" min="-200" max="200" step="1" value="-101" /></label>
+    <span id="readout"></span>
+  </div>
+  <script>
+    const before = document.getElementById('before');
+    const opac = document.getElementById('opac');
+    const scale = document.getElementById('scale');
+    const left = document.getElementById('left');
+    const top = document.getElementById('top');
+    const readout = document.getElementById('readout');
+
+    function update() {
+      const s = parseFloat(scale.value);
+      const l = parseFloat(left.value);
+      const t = parseFloat(top.value);
+      const w = 1024 * s;
+      const h = 1024 * s;
+      before.style.width = w + 'px';
+      before.style.height = h + 'px';
+      before.style.left = l + 'px';
+      before.style.top = t + 'px';
+      before.style.opacity = opac.value;
+      readout.textContent = 'Scale: ' + s.toFixed(3) + ' | Left: ' + l + 'px | Top: ' + t + 'px | Size: ' + w.toFixed(1) + 'x' + h.toFixed(1);
+    }
+    opac.oninput = scale.oninput = left.oninput = top.oninput = update;
+    update();
+  </script>
+</body>
+</html>

@@ -9,7 +9,6 @@ import { useMockpitStore } from '../store/useMockpitStore';
 import { resolveOdvVehicle, getVehicleHeadlightContour } from '../utils/odvVehicleAssets';
 import { useRecoloredVehicleImage } from '../utils/vehicleImageRecoloring';
 import {
-  getEgoVehicleTypeFromAsset,
   adjustHexBrightness,
   isValidHexColor,
   DEFAULT_VEHICLE_COLORS,
@@ -1519,7 +1518,6 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     }
   };
 
-  const storeVehicleBg = useMockpitStore((s) => s.vehicleBackground);
   const storeEgoVehicleType = useMockpitStore((s) => s.egoVehicleType);
 
   const activeEgoType = useMemo(() => {
@@ -1529,11 +1527,8 @@ function isVehicleInPolygon(relX: number, relY: number, length: number, polygon:
     if (storeEgoVehicleType && storeEgoVehicleType !== 'auto') {
       return storeEgoVehicleType;
     }
-    if (storeVehicleBg?.vehicle) {
-      return getEgoVehicleTypeFromAsset(storeVehicleBg.vehicle);
-    }
     return 'spyder';
-  }, [props.egoVehicleType, storeEgoVehicleType, storeVehicleBg?.vehicle]);
+  }, [props.egoVehicleType, storeEgoVehicleType]);
 
   const activeOdvAsset = useMemo(() => {
     return resolveOdvVehicle(activeEgoType);

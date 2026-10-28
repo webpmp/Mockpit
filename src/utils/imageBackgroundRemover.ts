@@ -8,6 +8,8 @@
  * 4. Applies tolerance threshold with smooth edge anti-aliasing to key out the background.
  */
 
+import { setCachedArtworkBounds, setCachedNaturalDimensions } from './imageContentRect';
+
 interface ColorRGBA {
   r: number;
   g: number;
@@ -133,6 +135,16 @@ export function detectBackgroundColor(data: Uint8ClampedArray, width: number, he
   };
 }
 
+export function computeStringHash(str: string): string {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+export const computeImageHash = computeStringHash;
+
 /**
  * Processes an image using an offscreen canvas and applies color-key background removal
  * with optional alpha-edge softness / feathering.
@@ -142,8 +154,9 @@ export async function processImageBackgroundRemoval(
   tolerance: number, // 0 - 100
   edgeSoftness: number = 0 // 0 - 100
 ): Promise<string> {
-  // Generate cache key including edgeSoftness
-  const cacheKey = `${imageUrl.length}_${imageUrl.slice(0, 80)}_${tolerance}_${edgeSoftness}`;
+  // Generate robust cache key from full URL / full string hash plus settings
+  const imageId = imageUrl.length < 256 ? imageUrl : `${imageUrl.length}_${computeImageHash(imageUrl)}`;
+  const cacheKey = `${imageId}_${tolerance}_${edgeSoftness}`;
   if (processedImageCache.has(cacheKey)) {
     return processedImageCache.get(cacheKey)!;
   }
@@ -163,7 +176,7 @@ export async function processImageBackgroundRemoval(
         let targetW = img.naturalWidth || img.width || 800;
         let targetH = img.naturalHeight || img.height || 600;
 
-        const maxDim = 1200;
+        const maxDim = 2048;
         if (targetW > maxDim || targetH > maxDim) {
           const ratio = Math.min(maxDim / targetW, maxDim / targetH);
           targetW = Math.round(targetW * ratio);
@@ -313,8 +326,65 @@ export async function processImageBackgroundRemoval(
           }
         }
 
+        // Measure visible artwork bounding box of non-transparent pixels
+        let minX = targetW, maxX = 0, minY = targetH, maxY = 0;
+        let visibleCount = 0;
+        for (let y = 0; y < targetH; y++) {
+          const rowOffset = y * targetW;
+          for (let x = 0; x < targetW; x++) {
+            const a = data[(rowOffset + x) * 4 + 3];
+            if (a > 20) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+              visibleCount++;
+            }
+          }
+        }
+
+        const naturalW = img.naturalWidth || targetW;
+        const naturalH = img.naturalHeight || targetH;
+        setCachedNaturalDimensions(imageUrl, { w: naturalW, h: naturalH });
+
+        const isDefaultExploded =
+          imageUrl.includes('exploded-after') ||
+          (naturalW === 1408 && naturalH === 768 && visibleCount > 0 && (maxX - minX + 1) * (naturalW / targetW) > 1200);
+
+        const isDefaultBefore =
+          imageUrl.includes('exploded-before') ||
+          (naturalW === 1024 && naturalH === 1024);
+
+        if (visibleCount > 0 && maxX >= minX && maxY >= minY) {
+          const scaleX = naturalW / targetW;
+          const scaleY = naturalH / targetH;
+          const bounds = {
+            x: Math.round(minX * scaleX),
+            y: Math.round(minY * scaleY),
+            width: Math.round((maxX - minX + 1) * scaleX),
+            height: Math.round((maxY - minY + 1) * scaleY),
+          };
+          if (!isDefaultExploded && !isDefaultBefore) {
+            setCachedArtworkBounds(imageUrl, bounds);
+          }
+        }
+
         ctx.putImageData(imgData, 0, 0);
         const resultDataUrl = canvas.toDataURL('image/png');
+
+        if (visibleCount > 0 && maxX >= minX && maxY >= minY) {
+          const scaleX = naturalW / targetW;
+          const scaleY = naturalH / targetH;
+          if (!isDefaultExploded && !isDefaultBefore) {
+            setCachedArtworkBounds(resultDataUrl, {
+              x: Math.round(minX * scaleX),
+              y: Math.round(minY * scaleY),
+              width: Math.round((maxX - minX + 1) * scaleX),
+              height: Math.round((maxY - minY + 1) * scaleY),
+            });
+          }
+          setCachedNaturalDimensions(resultDataUrl, { w: naturalW, h: naturalH });
+        }
 
         // Manage cache size
         if (processedImageCache.size >= MAX_CACHE_ENTRIES) {

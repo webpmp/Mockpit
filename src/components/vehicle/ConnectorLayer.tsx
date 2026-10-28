@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ComponentInstance, ConnectorAnchor, VehicleStatusConnector } from '../../types';
 import { useMockpitStore } from '../../store/useMockpitStore';
 import { getImageContentRect, getCachedNaturalDimensions, NaturalDimensions } from '../../utils/imageContentRect';
-import { DEFAULT_EXPLODED_VEHICLE_IMAGE } from '../../data/defaultExplodedVehicle';
+import { getExplodedImageSrc, getBeforeImageSrc } from '../../utils/explodedViewImages';
 import { Crosshair } from 'lucide-react';
 
 interface ConnectorLayerProps {
@@ -59,7 +59,7 @@ export function getTargetCanvasCoords(
   targetY: number,
   naturalSize?: NaturalDimensions | null
 ): { x: number; y: number } {
-  const imageSrc = targetComp.staticProps?.imageUrl || DEFAULT_EXPLODED_VEHICLE_IMAGE;
+  const imageSrc = getExplodedImageSrc(targetComp);
   const natural = naturalSize || getCachedNaturalDimensions(imageSrc);
   const rect = getImageContentRect(targetComp, natural, 4);
 
@@ -81,6 +81,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
   const updateComponentConnector = useMockpitStore((s) => s.updateComponentConnector);
   const storeActiveCalloutId = useMockpitStore((s) => s.activePresentationCalloutId);
   const animNonce = useMockpitStore((s) => s.presentationConnectorAnimNonce || 0);
+  const connectorLeadDelayMs = useMockpitStore((s) => s.connectorLeadDelayMs || 0);
   const effectiveActiveCalloutId =
     activePresentationCalloutIdProp !== undefined
       ? activePresentationCalloutIdProp
@@ -163,7 +164,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
       if (draggingTarget) {
         const targetComp = componentMap.get(draggingTarget.targetComponentId);
         if (targetComp) {
-          const imageSrc = targetComp.staticProps?.imageUrl || DEFAULT_EXPLODED_VEHICLE_IMAGE;
+          const imageSrc = getExplodedImageSrc(targetComp);
           const natural = getCachedNaturalDimensions(imageSrc);
           const contentRect = getImageContentRect(targetComp, natural, 4);
 
@@ -205,7 +206,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
           );
 
           if (hitTarget) {
-            const imageSrc = hitTarget.staticProps?.imageUrl || DEFAULT_EXPLODED_VEHICLE_IMAGE;
+            const imageSrc = getExplodedImageSrc(hitTarget);
             const natural = getCachedNaturalDimensions(imageSrc);
             const contentRect = getImageContentRect(hitTarget, natural, 4);
 
@@ -288,6 +289,9 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
           // If target component doesn't exist on this screen, do not draw line
           if (!targetComp) return null;
 
+          const hasBefore = getBeforeImageSrc(targetComp) !== null;
+          const lead = hasBefore ? connectorLeadDelayMs : 0;
+
           const sourcePt = getAnchorCanvasCoords(callout, connector.sourceAnchor);
           const targetPt = getTargetCanvasCoords(targetComp, connector.targetX, connector.targetY);
 
@@ -318,7 +322,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
                   isPresentation
                     ? {
                         strokeDashoffset: lineLength,
-                        animation: `drawConnectorLine 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+                        animation: `drawConnectorLine 420ms cubic-bezier(0.16, 1, 0.3, 1) ${lead}ms both`,
                         ['--line-length' as any]: `${lineLength}px`,
                       }
                     : undefined
@@ -337,7 +341,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
                 style={
                   isPresentation
                     ? {
-                        animation: `fadeInSourceDot 160ms ease-out both`,
+                        animation: `fadeInSourceDot 160ms ease-out ${lead}ms both`,
                       }
                     : undefined
                 }
@@ -349,7 +353,7 @@ export const ConnectorLayer: React.FC<ConnectorLayerProps> = ({
                 style={
                   isPresentation
                     ? {
-                        animation: `popTargetReticle 240ms ease-out 220ms both`,
+                        animation: `popTargetReticle 240ms ease-out ${lead + 220}ms both`,
                       }
                     : undefined
                 }

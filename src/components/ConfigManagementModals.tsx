@@ -25,6 +25,7 @@ interface SaveModalProps {
   onClose: () => void;
 }
 
+/* ds-raw-start */
 export const SaveConfigModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
   const screens = useMockpitStore((s) => s.screens);
   const componentsByScreen = useMockpitStore((s) => s.componentsByScreen);
@@ -500,3 +501,4 @@ export const ResetWorkspaceModal: React.FC<ResetModalProps> = ({ isOpen, onClose
     </div>
   );
 };
+/* ds-raw-end */

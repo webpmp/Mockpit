@@ -243,4 +243,7 @@ const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650
   </g>
 </svg>`;
 
-export const DEFAULT_EXPLODED_VEHICLE_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+import { DEFAULT_EXPLODED_IMAGE_URL } from '../utils/explodedViewImages';
+
+export const LEGACY_BLUEPRINT_SVG_UNUSED = `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+export const DEFAULT_EXPLODED_VEHICLE_IMAGE = DEFAULT_EXPLODED_IMAGE_URL;

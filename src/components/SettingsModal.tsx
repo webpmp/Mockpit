@@ -3,6 +3,7 @@ import { Settings, X, Palette, Info, Grid, Eye, EyeOff, Magnet, Image, Upload, T
 import { useMockpitStore } from '../store/useMockpitStore';
 import { VehicleBackgroundPosition, KeyboardSlideDirection, TextScalePreset, TEXT_SCALE_FACTORS } from '../types';
 import { getAvailableVehicles } from '../utils/vehicleAssets';
+import { EgoVehicleCarousel } from './EgoVehicleCarousel';
 
 export const SettingsModal: React.FC = () => {
   const isSettingsOpen = useMockpitStore((s) => s.isSettingsOpen);
@@ -701,12 +702,30 @@ export const SettingsModal: React.FC = () => {
           )}
         </div>
 
-        {/* Vehicle Model Binding Info */}
-        <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-400 flex items-start gap-2.5">
-          <Car className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold text-slate-200 block mb-0.5">Dual-Bound Vehicle Model</span>
-            <span>Selecting a Vehicle Model above drives both the subtle canvas background watermark and the Navigation Overhead Ego silhouette in real time.</span>
+        {/* Navigation Overhead Ego Silhouette Section */}
+        <div className="space-y-3.5 pt-4 border-t border-slate-800/80">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-200 font-mono">
+              <Car className="w-4 h-4 text-sky-400" />
+              <span>NAVIGATION OVERHEAD EGO SILHOUETTE</span>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-slate-300 font-mono">
+                Ego Vehicle Model
+              </label>
+              <span className="text-[10px] font-mono text-slate-400 capitalize">
+                {egoVehicleType || 'spyder'}
+              </span>
+            </div>
+            <EgoVehicleCarousel
+              selectedVehicleId={egoVehicleType || 'spyder'}
+              onSelectVehicle={(v) => {
+                setEgoVehicleType(v.id as any);
+              }}
+            />
           </div>
         </div>
 
