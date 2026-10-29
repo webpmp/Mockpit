@@ -25,6 +25,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
   compact = false,
 }) => {
   const activeView = useMockpitStore((s) => s.activeView);
+  const screens = useMockpitStore((s) => s.screens);
   const componentsByScreen = useMockpitStore((s) => s.componentsByScreen);
   const selectedComponentId = useMockpitStore((s) => s.selectedComponentId);
   const selectComponent = useMockpitStore((s) => s.selectComponent);
@@ -34,6 +35,13 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
   const updateComponentZIndex = useMockpitStore((s) => s.updateComponentZIndex);
 
   const activeComponents: ComponentInstance[] = componentsByScreen[activeView] || [];
+
+  // Resolve user-provided screen title/name
+  const activeScreen = screens.find((s) => s.id === activeView);
+  const rawScreenName = activeScreen?.name?.trim() || activeView;
+  const screenDisplayName = rawScreenName.toLowerCase().endsWith('screen')
+    ? rawScreenName
+    : `${rawScreenName} Screen`;
 
   // Sort components by z-index descending (top layer first)
   const sortedComponents = [...activeComponents].sort((a, b) => {
@@ -52,8 +60,8 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
               Layers ({activeComponents.length})
             </h3>
           </div>
-          <span className="text-[10px] font-mono text-slate-500 capitalize">
-            {activeView} Screen
+          <span className="text-[10px] font-mono text-slate-500">
+            {screenDisplayName}
           </span>
         </div>
       )}
@@ -98,20 +106,19 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
                   </div>
 
                   <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-xs text-slate-200 truncate">
-                        {label}
-                      </span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-900 text-slate-400 border border-slate-700/60 shrink-0">
-                        z: {zIndexVal}
-                      </span>
-                    </div>
+                    <span className="font-bold text-xs text-slate-200 truncate" title={label}>
+                      {label}
+                    </span>
 
                     {!compact && (
                       <span className="text-[10px] font-mono text-slate-400 truncate">
                         {comp.width}×{comp.height} at ({comp.x}, {comp.y})
                       </span>
                     )}
+
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-700/60 shrink-0 w-fit mt-0.5">
+                      z: {zIndexVal}
+                    </span>
                   </div>
                 </div>
 

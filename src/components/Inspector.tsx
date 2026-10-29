@@ -2462,7 +2462,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                     <button
                       type="button"
                       onClick={() => handleStaticPropChange('layout', 'horizontal')}
-                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                      className={`px-2 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer text-center flex items-center justify-center ${
                         (selectedComp.staticProps?.layout || 'horizontal') === 'horizontal'
                           ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
                           : 'bg-slate-900 text-slate-400 border border-slate-700 '
@@ -2473,7 +2473,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                     <button
                       type="button"
                       onClick={() => handleStaticPropChange('layout', 'vertical')}
-                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                      className={`px-2 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer text-center flex items-center justify-center ${
                         selectedComp.staticProps?.layout === 'vertical'
                           ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
                           : 'bg-slate-900 text-slate-400 border border-slate-700 '
@@ -2484,7 +2484,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                     <button
                       type="button"
                       onClick={() => handleStaticPropChange('layout', 'grid')}
-                      className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                      className={`px-2 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer text-center flex items-center justify-center ${
                         selectedComp.staticProps?.layout === 'grid'
                           ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50 shadow-sm'
                           : 'bg-slate-900 text-slate-400 border border-slate-700 '

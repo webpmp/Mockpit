@@ -78,4 +78,21 @@ describe('Media Discovery Component Specs & Regression Tests', () => {
     assert.equal(artSizeVertical, 64, 'Spec requires 64px art size in vertical mode');
     assert.ok(minRowHeightVertical >= 44, 'Vertical row min height must be >= 44px');
   });
+
+  it('7. Verifies Discovery Settings Layout buttons are centered in Inspector', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const inspectorPath = path.resolve(process.cwd(), 'src/components/Inspector.tsx');
+    const content = fs.readFileSync(inspectorPath, 'utf8');
+
+    // Find the Discovery Settings Layout section
+    assert.ok(content.includes('Discovery Settings'), 'Must have Discovery Settings');
+    assert.ok(content.includes("handleStaticPropChange('layout', 'horizontal')"));
+    assert.ok(content.includes("handleStaticPropChange('layout', 'vertical')"));
+
+    // Check that Carousel and Vertical buttons include centering classes
+    const layoutSection = content.substring(content.indexOf('Discovery Settings'), content.indexOf("selectedComp.type === 'nowPlaying'"));
+    assert.ok(layoutSection.includes('text-center flex items-center justify-center'), 'Layout buttons must include text-center and flex centering classes');
+  });
 });
+

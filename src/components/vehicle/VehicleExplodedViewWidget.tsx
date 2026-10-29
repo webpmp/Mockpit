@@ -166,38 +166,38 @@ export const VehicleExplodedViewWidget: React.FC<VehicleExplodedViewWidgetProps>
           }}
         >
           {/* Exploded Layer - Authoritative baseline, untouched scale/position/containment */}
-          <img
-            data-testid="exploded-layer"
-            src={explodedDisplayUrl || ''}
-            alt={showExploded ? label : undefined}
-            aria-hidden={!showExploded}
-            referrerPolicy="no-referrer"
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity motion-reduce:transition-none"
-            style={{
-              opacity: !explodedDisplayUrl ? 0 : showExploded ? 1 : 0,
-              transitionDuration: `${EXPLODE_TRANSITION_MS}ms`,
-              transitionTimingFunction: 'ease-in-out',
-            }}
-            draggable={false}
-            onLoad={(e) => {
-              const img = e.currentTarget;
-              if (img.naturalWidth && img.naturalHeight) {
-                const dimensions = { w: img.naturalWidth, h: img.naturalHeight };
-                if (!explodedDisplayUrl || explodedDisplayUrl === explodedSrc) {
-                  setCachedNaturalDimensions(explodedSrc, dimensions);
-                }
-                if (explodedDisplayUrl) {
+          {explodedDisplayUrl && (
+            <img
+              data-testid="exploded-layer"
+              src={explodedDisplayUrl}
+              alt={showExploded ? label : undefined}
+              aria-hidden={!showExploded}
+              referrerPolicy="no-referrer"
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity motion-reduce:transition-none"
+              style={{
+                opacity: showExploded ? 1 : 0,
+                transitionDuration: `${EXPLODE_TRANSITION_MS}ms`,
+                transitionTimingFunction: 'ease-in-out',
+              }}
+              draggable={false}
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth && img.naturalHeight) {
+                  const dimensions = { w: img.naturalWidth, h: img.naturalHeight };
+                  if (explodedDisplayUrl === explodedSrc) {
+                    setCachedNaturalDimensions(explodedSrc, dimensions);
+                  }
                   setCachedNaturalDimensions(explodedDisplayUrl, dimensions);
                 }
-              }
-            }}
-          />
+              }}
+            />
+          )}
 
           {/* Before Layer (mounted only if before state exists) - Scaled & centered to match exploded vehicle */}
-          {hasBefore && (
+          {hasBefore && beforeDisplayUrl && (
             <img
               data-testid="before-layer"
-              src={beforeDisplayUrl || ''}
+              src={beforeDisplayUrl}
               alt={!showExploded ? `${label} (Standard)` : undefined}
               aria-hidden={showExploded}
               referrerPolicy="no-referrer"
@@ -208,7 +208,7 @@ export const VehicleExplodedViewWidget: React.FC<VehicleExplodedViewWidgetProps>
                 width: beforeLayout.width,
                 height: beforeLayout.height,
                 objectFit: 'contain',
-                opacity: !beforeDisplayUrl ? 0 : showExploded ? 0 : 1,
+                opacity: showExploded ? 0 : 1,
                 transitionDuration: `${EXPLODE_TRANSITION_MS}ms`,
                 transitionTimingFunction: 'ease-in-out',
               }}
@@ -217,12 +217,10 @@ export const VehicleExplodedViewWidget: React.FC<VehicleExplodedViewWidgetProps>
                 const img = e.currentTarget;
                 if (img.naturalWidth && img.naturalHeight) {
                   const dimensions = { w: img.naturalWidth, h: img.naturalHeight };
-                  if (beforeSrc && (!beforeDisplayUrl || beforeDisplayUrl === beforeSrc)) {
+                  if (beforeSrc && beforeDisplayUrl === beforeSrc) {
                     setCachedNaturalDimensions(beforeSrc, dimensions);
                   }
-                  if (beforeDisplayUrl) {
-                    setCachedNaturalDimensions(beforeDisplayUrl, dimensions);
-                  }
+                  setCachedNaturalDimensions(beforeDisplayUrl, dimensions);
                 }
               }}
             />

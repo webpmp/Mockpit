@@ -146,12 +146,14 @@ export const AppShellBackground: React.FC<AppShellBackgroundProps> = ({ canvasSc
           height: '1080px',
         }}
       >
-        <img
-          src={backgroundImage}
-          alt="Vehicle Dashboard Environment"
-          className="w-full h-full object-cover pointer-events-none select-none block"
-          draggable={false}
-        />
+        {backgroundImage && (
+          <img
+            src={backgroundImage}
+            alt="Vehicle Dashboard Environment"
+            className="w-full h-full object-cover pointer-events-none select-none block"
+            draggable={false}
+          />
+        )}
 
         {/* Subtle direct manipulation outline when adjustment mode is active */}
         {isAdjustingBackground && (
